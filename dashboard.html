@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AcctVenta - Marketplace Dashboard</title>
+    <title>A cctventa — Marketplace Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif']
+                    },
                     colors: {
                         brandPrimary: '#0ea5e9', // Light Blue
                         brandHover: '#0284c7',   // Darker Blue for hover states
@@ -30,39 +36,40 @@
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-28 transition-colors duration-200" data-theme="light">
 
-    <!-- TOP HEADER -->
-    <div class="sticky top-0 z-[100] mx-auto w-full max-w-[500px]">
-        <div class="flex items-center justify-between px-3 py-3 md:px-0 bg-lightCard dark:bg-darkBg border-b border-slate-200 dark:border-slate-800">
-            <div class="flex items-center gap-x-2">
-                <i class="fa-solid fa-bars cursor-pointer text-xl text-slate-700 dark:text-white" onclick="toggleLeftMenu()"></i>
-                <a href="#" onclick="switchTab('home')" class="flex items-center gap-x-1.5">
-                    <div class="w-8 h-8 rounded-lg bg-brandPrimary flex items-center justify-center text-white shadow-md">
-                        <i class="fa-solid fa-bag-shopping text-sm"></i>
-                    </div>
-                    <span class="font-bold text-xl tracking-tight text-brandPrimary dark:text-white lowercase">acctventa</span>
+    <!-- TOP HEADER (acctbazaar-style layout, A cctventa branding + your blue) -->
+    <header class="fixed top-0 z-[100] w-full border-b border-slate-200 dark:border-slate-800 bg-lightCard dark:bg-darkBg shadow backdrop-blur-sm">
+        <div class="mx-auto flex h-14 max-w-[500px] items-center justify-between px-4">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="toggleLeftMenu()" class="text-slate-800 dark:text-white" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-1.5">
+                    <div class="size-7 sm:size-8 rounded-lg bg-brandPrimary flex items-center justify-center text-white font-black text-base shadow-sm">A</div>
+                    <span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctventa</span>
                 </a>
             </div>
-            <div class="flex items-center gap-x-3.5 text-slate-700 dark:text-white">
-                <button type="button" onclick="openSupportCenter()" class="hover:text-brandPrimary transition" title="Support">
-                    <i class="fa-solid fa-headphones text-lg"></i>
+            <div class="flex items-center gap-3 text-slate-800 dark:text-white">
+                <button type="button" onclick="openSupportCenter()" class="border-r border-slate-200 dark:border-slate-700 pr-2 hover:text-brandPrimary transition" title="Support">
+                    <i class="fa-solid fa-headset text-lg"></i>
                 </button>
-                <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller desk">
+                <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller">
                     <i class="fa-solid fa-desktop text-lg"></i>
                 </button>
                 <button type="button" onclick="switchTab('orders')" class="relative hover:text-brandPrimary transition" title="Cart">
                     <i class="fa-solid fa-cart-shopping text-lg"></i>
-                    <span class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[10px] font-bold text-white">0</span>
+                    <span class="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                 </button>
                 <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
                     <i class="fa-regular fa-bell text-lg"></i>
-                    <span class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[10px] font-bold text-white">1</span>
+                    <span class="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">1</span>
                 </button>
                 <button type="button" onclick="toggleRightMenu()" class="hover:text-brandPrimary transition" title="Help">
                     <i class="fa-regular fa-circle-question text-lg"></i>
                 </button>
             </div>
         </div>
-    </div>
+    </header>
+    <div class="h-14"></div>
 
     <!-- MAIN VIEWS -->
     <main class="max-w-md mx-auto px-4 py-4">
@@ -305,12 +312,9 @@
 
         <!-- TAB: REFERRAL -->
         <div id="tab_referral" class="app-tab hidden space-y-5">
-            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <button onclick="switchTab('home')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-brandPrimary transition"><i class="fa-solid fa-arrow-left"></i></button>
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral History</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Invite friends and earn rewards.</p>
-                </div>
+            <div class="">
+                <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Earn more when you invite friends to A cctventa</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -318,8 +322,8 @@
                     <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-brandPrimary mb-2">
                         <i class="fa-solid fa-users text-sm"></i>
                     </div>
-                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Total Referrals</p>
-                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Invitees</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">2</h4>
                 </div>
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
                     <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 mb-2">
@@ -336,13 +340,49 @@
                 </div>
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white">Receive $5 reward instantly</h3>
                 <p class="text-xs text-slate-600 dark:text-slate-400">When your friend registers, funds wallet with minimum of $50 and purchases at least one account, you get rewarded instantly.</p>
-                <div class="w-full bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-700 p-3 rounded-xl mt-2 flex justify-between items-center">
-                    <span class="text-xs truncate text-brandPrimary font-mono font-medium">app.acctventa.com/auth/sign-up?ref=oduwa</span>
-                    <button onclick="alert('Referral link copied!')" class="text-slate-500 hover:text-brandPrimary transition pl-2 border-l border-slate-200 dark:border-slate-700 ml-2">
+                <div class="w-full text-left space-y-1 pt-1">
+                    <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">How to use invitation code</p>
+                    <p class="text-[11px] text-slate-500">Share invitation link/code with friends</p>
+                    <p class="text-[11px] text-slate-500">Let friends sign up and fund wallet with minimum of $50</p>
+                </div>
+                <div class="w-full bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-700 p-3 rounded-xl mt-2 flex justify-between items-center gap-2">
+                    <div class="min-w-0 text-left">
+                        <span class="text-[10px] text-slate-400 block">Your Referral link:</span>
+                        <span class="text-xs truncate text-brandPrimary font-mono font-medium block">app.cctventa.com/auth/sign-up?ref=oduwa</span>
+                    </div>
+                    <button onclick="alert('Referral link copied!')" class="text-slate-500 hover:text-brandPrimary transition pl-2 border-l border-slate-200 dark:border-slate-700 shrink-0">
                         <i class="fa-regular fa-copy"></i>
                     </button>
                 </div>
-                <button onclick="alert('Referral link shared!')" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3 rounded-xl text-white font-bold text-sm shadow-md mt-2">Share Invitation Link</button>
+                <button onclick="alert('Referral link shared!')" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3 rounded-xl text-white font-bold text-sm shadow-md mt-2">Share Invitation link</button>
+            </div>
+
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                <h4 class="font-bold text-sm text-slate-800 dark:text-white px-4 pt-4 pb-2">Referral Record</h4>
+                <div class="flex border-b border-slate-200 dark:border-slate-800">
+                    <button class="flex-1 px-3 py-2 text-xs font-medium text-brandPrimary border-b-2 border-brandPrimary">Pending</button>
+                    <button class="flex-1 px-3 py-2 text-xs font-medium text-slate-400">Completed</button>
+                    <button class="flex-1 px-3 py-2 text-xs font-medium text-slate-400">Cancel</button>
+                </div>
+                <div class="px-4 py-3 space-y-3">
+                    <div class="flex gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <div class="w-12 h-12 rounded-full bg-brandPrimary/20 text-brandPrimary flex items-center justify-center font-bold shrink-0">O</div>
+                        <div class="min-w-0">
+                            <h5 class="font-medium text-sm text-slate-800 dark:text-white">ODUWA ELVIS OSAZEMWINDE</h5>
+                            <p class="text-[11px] text-emerald-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-circle-check"></i> Completed registration with shared link</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Fund wallet with $50</p>
+                            <p class="text-[10px] text-slate-400 mt-1">04 July 2024 at 03:30:27</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold shrink-0">O</div>
+                        <div class="min-w-0">
+                            <h5 class="font-medium text-sm text-slate-800 dark:text-white">Osazemwinde Kingsley Ikponmwosa</h5>
+                            <p class="text-[11px] text-emerald-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-circle-check"></i> Completed registration with shared link</p>
+                            <p class="text-[10px] text-slate-400 mt-1">04 July 2024 at 03:02:06</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -436,15 +476,33 @@
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notifications</h3>
                 <i class="fa-solid fa-xmark text-xl cursor-pointer text-slate-400 hover:text-brandPrimary transition" onclick="toggleNotificationDrawer()"></i>
             </div>
-            <div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-                <div class="relative pl-4 border-l border-brandPrimary">
-                    <div class="absolute w-2.5 h-2.5 bg-brandPrimary rounded-full -left-[5px] top-1"></div>
+            <div class="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+                <div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5">
+                    <div class="size-2 rounded-full bg-brandPrimary shadow absolute top-0 -translate-y-1/2 -left-1"></div>
                     <div class="flex justify-between items-start mb-1">
-                        <p class="font-semibold text-sm text-slate-800 dark:text-white">New Message</p>
-                        <span class="text-[10px] text-slate-400">7d Ago</span>
+                        <p class="font-medium text-sm text-slate-800 dark:text-white">New Message</p>
+                        <span class="text-[10px] text-slate-400">7d ago</span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">You have a new message from TRUST SELLER 🛒 🇺🇸</p>
-                    <a href="#" class="text-brandPrimary text-[10px] font-medium mt-1 inline-block hover:underline">View</a>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">You have a new message from TRUST SELLER</p>
+                    <a href="#" class="text-brandPrimary text-sm mt-2 inline-block hover:underline">View</a>
+                </div>
+                <div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5 pt-3">
+                    <div class="size-2 rounded-full bg-brandPrimary shadow absolute top-0 -translate-y-1/2 -left-1"></div>
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="font-medium text-sm text-slate-800 dark:text-white">Order Completed</p>
+                        <span class="text-[10px] text-slate-400">11d ago</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">Your order name "Old Google Account" is Completed By Admin</p>
+                    <a href="#" class="text-brandPrimary text-sm mt-2 inline-block hover:underline">View</a>
+                </div>
+                <div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5 pt-3">
+                    <div class="size-2 rounded-full bg-brandPrimary shadow absolute top-0 -translate-y-1/2 -left-1"></div>
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="font-medium text-sm text-slate-800 dark:text-white">Order Pending</p>
+                        <span class="text-[10px] text-slate-400">11d ago</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">You have a pending order from Kelvin</p>
+                    <a href="#" class="text-brandPrimary text-sm mt-2 inline-block hover:underline">View</a>
                 </div>
             </div>
         </div>
@@ -479,18 +537,19 @@
         </div>
     </div>
 
-    <!-- LEFT MENU DRAWER (FULL PROFILE & SETTINGS) -->
-    <div id="leftMenu" class="fixed inset-0 top-[57px] bg-lightCard dark:bg-black z-[70] hidden flex justify-center transition-opacity">
-        <div class="w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
+    <!-- LEFT MENU DRAWER — matches acctbazaar profile menu layout, your blue accents -->
+    <div id="leftMenu" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="toggleLeftMenu()"></div>
+        <div class="absolute inset-y-0 left-0 w-[85%] max-w-sm bg-lightCard dark:bg-black flex flex-col overflow-y-auto shadow-2xl">
             <!-- Back -->
             <div class="px-4 pt-4 pb-2">
-                <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-700 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition">
+                <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition">
                     <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
             </div>
 
             <!-- Profile -->
-            <div class="px-5 pb-5 space-y-3">
+            <div class="px-5 pb-4 space-y-3">
                 <div class="flex items-start gap-3">
                     <div class="w-12 h-12 rounded-md bg-sky-600 flex items-center justify-center text-white shrink-0">
                         <i class="fa-solid fa-question text-xl"></i>
@@ -506,40 +565,41 @@
             </div>
 
             <!-- Nav list -->
-            <nav class="flex-1 px-2 pb-4">
-                <a href="#" onclick="switchTab('account_dashboard'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+            <nav class="flex-1 px-2 pb-2">
+                <a href="#" onclick="switchTab('account_dashboard'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-border-all w-5 text-center"></i> Account Dashboard
                 </a>
-                <a href="#" onclick="switchTab('referral'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="switchTab('referral'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-users w-5 text-center"></i> Referral
                 </a>
-                <a href="#" onclick="switchTab('plans'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="switchTab('plans'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-award w-5 text-center"></i> Plans
                 </a>
-                <a href="#" onclick="switchTab('orders'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="switchTab('orders'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Purchase
                 </a>
-                <a href="#" onclick="openAccountSettings(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="openAccountSettings(); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
                 </a>
-                <a href="#" onclick="openSupportCenter(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="openSupportCenter(); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-headset w-5 text-center"></i> Support
                 </a>
-                <a href="#" onclick="openMyStories(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="openMyStories(); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-camera w-5 text-center"></i> My Stories
                 </a>
-                <button type="button" onclick="toggleDarkMode()" class="w-full flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition text-left">
-                    <i class="fa-solid fa-moon w-5 text-center" id="themeIcon"></i>
-                    <span id="themeText">Dark Mode</span>
-                </button>
-                <a href="#" onclick="handleLogout()" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <div class="flex items-center justify-between px-3 py-3.5 text-[15px] text-slate-800 dark:text-white">
+                    <span class="flex items-center gap-4"><i class="fa-solid fa-moon w-5 text-center" id="themeIcon"></i> <span id="themeText">Dark Mode</span></span>
+                    <div id="themeToggleSwitch" onclick="toggleDarkMode()" class="w-10 h-6 bg-slate-300 dark:bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner">
+                        <div class="w-4 h-4 bg-white rounded-full absolute left-1 dark:translate-x-4 top-1 transition-transform shadow" id="themeThumb"></div>
+                    </div>
+                </div>
+                <a href="#" onclick="handleLogout(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
                 </a>
             </nav>
 
-            <!-- CTA -->
             <div class="px-5 pb-8 pt-2 mt-auto">
-                <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm">
+                <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3.5 rounded-xl shadow-lg transition text-sm">
                     Sell Product
                 </button>
             </div>
@@ -654,14 +714,24 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 w-full bg-lightCard/95 dark:bg-darkCard/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 py-2.5 px-6 pb-safe">
-        <div class="max-w-md mx-auto flex justify-between items-center text-center">
-            <button onclick="switchTab('home'); setActiveNav(this);" class="nav-item text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-house text-lg mb-1"></i><span class="text-[10px] font-medium">Home</span></button>
-            <button onclick="switchTab('market'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-border-all text-lg mb-1"></i><span class="text-[10px] font-medium">Market</span></button>
-            <button onclick="switchTab('orders'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-regular fa-clipboard text-lg mb-1"></i><span class="text-[10px] font-medium">Orders</span></button>
-            <button onclick="switchTab('ads'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-bullhorn text-lg mb-1"></i><span class="text-[10px] font-medium">Ads</span></button>
-            <button onclick="switchTab('wallet'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-wallet text-lg mb-1"></i><span class="text-[10px] font-medium">Wallet</span></button>
+    <!-- BOTTOM NAVIGATION (acctbazaar-style) -->
+    <nav class="fixed bottom-0 left-0 z-40 w-full bg-lightCard dark:bg-darkCard shadow-[0px_-2px_80.7px_0px_rgba(200,209,212,0.25)] dark:shadow-[0px_-2px_40px_0px_rgba(0,0,0,0.4)] border-t border-slate-100 dark:border-slate-800">
+        <div class="mx-auto flex max-w-[500px] items-center justify-between px-6 py-3.5">
+            <button onclick="switchTab('home'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-brandPrimary transition">
+                <i class="fa-solid fa-house text-lg"></i><span class="text-xs">Home</span>
+            </button>
+            <button onclick="switchTab('market'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+                <i class="fa-solid fa-border-all text-lg"></i><span class="text-xs">Market</span>
+            </button>
+            <button onclick="switchTab('orders'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+                <i class="fa-regular fa-clipboard text-lg"></i><span class="text-xs">Orders</span>
+            </button>
+            <button onclick="switchTab('ads'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+                <i class="fa-solid fa-bullhorn text-lg"></i><span class="text-xs">Ads</span>
+            </button>
+            <button onclick="switchTab('wallet'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+                <i class="fa-solid fa-wallet text-lg"></i><span class="text-xs">Wallet</span>
+            </button>
         </div>
     </nav>
 
@@ -678,20 +748,13 @@
         function setActiveNav(el) {
             document.querySelectorAll('.nav-item').forEach(i => {
                 i.classList.remove('text-brandPrimary');
-                i.classList.add('text-slate-400');
+                i.classList.add('text-[#C7CED0]');
             });
-            el.classList.remove('text-slate-400');
+            el.classList.remove('text-[#C7CED0]');
             el.classList.add('text-brandPrimary');
         }
 
-        function toggleLeftMenu() {
-            const menu = document.getElementById('leftMenu');
-            const nav = document.querySelector('nav.fixed.bottom-0');
-            menu.classList.toggle('hidden');
-            if (nav) {
-                nav.classList.toggle('hidden', !menu.classList.contains('hidden'));
-            }
-        }
+        function toggleLeftMenu() { document.getElementById('leftMenu').classList.toggle('hidden'); }
         function toggleRightMenu() { document.getElementById('rightMenu').classList.toggle('hidden'); }
         function toggleNotificationDrawer() { document.getElementById('notificationDrawer').classList.toggle('hidden'); }
         function toggleFilterDrawer() { document.getElementById('filterDrawer').classList.toggle('hidden'); }
@@ -887,16 +950,22 @@
         function toggleDarkMode() {
             const htmlEl = document.documentElement;
             const isDark = htmlEl.classList.toggle('dark');
+            const thumb = document.getElementById('themeThumb');
             const text = document.getElementById('themeText');
             const icon = document.getElementById('themeIcon');
+            const switchBg = document.getElementById('themeToggleSwitch');
             
             if (isDark) {
+                thumb.style.transform = 'translateX(16px)';
                 text.innerText = 'Light Mode';
-                icon.className = 'fa-solid fa-sun w-5 text-center text-yellow-500';
+                icon.className = 'fa-solid fa-sun w-5 text-yellow-500';
+                switchBg.className = 'w-10 h-6 bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner';
                 localStorage.setItem('theme', 'dark');
             } else {
+                thumb.style.transform = 'translateX(0px)';
                 text.innerText = 'Dark Mode';
-                icon.className = 'fa-solid fa-moon w-5 text-center text-slate-700 dark:text-white';
+                icon.className = 'fa-solid fa-moon w-5 text-slate-400';
+                switchBg.className = 'w-10 h-6 bg-slate-300 rounded-full relative cursor-pointer transition shadow-inner';
                 localStorage.setItem('theme', 'light');
             }
         }
@@ -905,8 +974,10 @@
             const savedTheme = localStorage.getItem('theme');
             if(savedTheme === 'dark') {
                 document.documentElement.classList.add('dark');
+                document.getElementById('themeThumb').style.transform = 'translateX(16px)';
                 document.getElementById('themeText').innerText = 'Light Mode';
-                document.getElementById('themeIcon').className = 'fa-solid fa-sun w-5 text-center text-yellow-500';
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun w-5 text-yellow-500';
+                document.getElementById('themeToggleSwitch').className = 'w-10 h-6 bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner';
             }
         });
 
