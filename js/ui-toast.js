@@ -1,10 +1,10 @@
 /**
- * Site-wide Acctventa action toasts — branded, auto-dismiss (default 4s).
- * Also upgrades native alert() so existing calls match the app design.
+ * Top action toasts (acctbazaar-style): bold message, icon, timer bar, auto-dismiss.
+ * Patches window.alert on pages that load this script.
  */
 (function (global) {
   var DEFAULT_MS = 4000;
-  var MAX_VISIBLE = 3;
+  var MAX_VISIBLE = 2;
   var host = null;
   var queue = [];
 
@@ -30,50 +30,24 @@
     return host;
   }
 
-  function show(message, opts) {
-    opts = opts || {};
-    var text = String(message == null ? '' : message).trim();
-    if (!text) return null;
-    var type = opts.type || inferType(text);
-    var item = {
-      message: text,
-      title: opts.title || '',
-      type: type,
-      duration: Math.max(1800, Number(opts.duration) || DEFAULT_MS),
-    };
-    ensureHost();
-    if (!document.body || (host && host.querySelectorAll && host.querySelectorAll('.av-toast').length >= MAX_VISIBLE)) {
-      queue.push(item);
-      return item;
-    }
-    if (!document.body.contains(host)) {
-      queue.push(item);
-      return item;
-    }
-    mount(item);
-    return item;
-  }
-
   function inferType(message) {
     var m = String(message || '').toLowerCase();
-    if (/fail|error|invalid|required|denied|blocked|could not|couldn't|unable|missing/.test(m)) return 'error';
-    if (/warn|pending|review|owe|owing|locked|unavailable|no wallet|not set|not available/.test(m)) return 'warn';
-    if (/success|copied|credited|updated|submitted|sent|approved|completed|refunded|thanks|saved/.test(m)) return 'success';
+    if (/fail|error|invalid|required|denied|blocked|could not|couldn't|unable|missing|don't have|do not have|insufficient|not enough/.test(m)) {
+      return 'error';
+    }
+    if (/warn|pending|review|owe|owing|locked|unavailable|no wallet|not set|not available|moment/.test(m)) {
+      return 'warn';
+    }
+    if (/success|copied|credited|updated|submitted|sent|approved|completed|refunded|thanks|saved/.test(m)) {
+      return 'success';
+    }
     return 'info';
   }
 
   function iconFor(type) {
     if (type === 'success') return '✓';
-    if (type === 'warn') return '!';
-    if (type === 'error') return '×';
-    return 'i';
-  }
-
-  function titleFor(type) {
-    if (type === 'success') return 'Done';
-    if (type === 'warn') return 'Notice';
-    if (type === 'error') return 'Something went wrong';
-    return 'Acctventa';
+    if (type === 'info') return 'i';
+    return '!';
   }
 
   function dismiss(el) {
@@ -90,6 +64,7 @@
 
   function flushQueue() {
     ensureHost();
+    if (!document.body || !host || !document.body.contains(host)) return;
     while (queue.length && host.querySelectorAll('.av-toast').length < MAX_VISIBLE) {
       mount(queue.shift());
     }
@@ -104,13 +79,9 @@
       '<div class="av-toast__icon" aria-hidden="true">' +
       iconFor(item.type) +
       '</div>' +
-      '<div class="av-toast__body">' +
-      '<p class="av-toast__title"></p>' +
       '<p class="av-toast__msg"></p>' +
-      '</div>' +
       '<button type="button" class="av-toast__close" aria-label="Close">×</button>' +
       '<div class="av-toast__bar"></div>';
-    el.querySelector('.av-toast__title').textContent = item.title || titleFor(item.type);
     el.querySelector('.av-toast__msg').textContent = item.message || '';
     var bar = el.querySelector('.av-toast__bar');
     bar.style.animationDuration = item.duration + 'ms';
@@ -133,11 +104,14 @@
     var type = opts.type || inferType(text);
     var item = {
       message: text,
-      title: opts.title || '',
       type: type,
       duration: Math.max(1800, Number(opts.duration) || DEFAULT_MS),
     };
     ensureHost();
+    if (!document.body || !host || !document.body.contains(host)) {
+      queue.push(item);
+      return item;
+    }
     if (host.querySelectorAll('.av-toast').length >= MAX_VISIBLE) {
       queue.push(item);
       return item;
@@ -167,7 +141,9 @@
     return show(message, opts);
   }
 
-  var nativeAlert = global.alert ? global.alert.bind(global) : function (m) { console.log(m); };
+  var nativeAlert = global.alert ? global.alert.bind(global) : function (m) {
+    console.log(m);
+  };
 
   function toastAlert(message) {
     try {
@@ -177,7 +153,6 @@
     }
   }
 
-  /** Patch window.alert so legacy calls use branded toasts. */
   function patchAlert(enable) {
     if (enable === false) {
       global.alert = nativeAlert;
@@ -186,7 +161,6 @@
     global.alert = toastAlert;
   }
 
-  // Auto-patch once DOM is ready enough
   patchAlert(true);
 
   global.AcctventaToast = {
