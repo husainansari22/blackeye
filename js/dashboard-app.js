@@ -525,6 +525,37 @@
     else openWithdrawFlow();
   };
 
+  function openWalletFlow(title, subtitle, html) {
+    const overlay = document.getElementById('walletFlowOverlay');
+    const body = document.getElementById('walletFlowBody');
+    const t = document.getElementById('walletFlowTitle');
+    const s = document.getElementById('walletFlowSubtitle');
+    if (!overlay || !body) return;
+    if (t) t.textContent = title || 'Wallet';
+    if (s) s.textContent = subtitle || 'Back to wallet';
+    body.innerHTML = html;
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    // Hide main modal if open
+    const modal = document.getElementById('appModal');
+    if (modal) modal.classList.add('hidden');
+    try {
+      body.scrollTop = 0;
+    } catch (e) {}
+  }
+
+  window.closeWalletFlow = function () {
+    const overlay = document.getElementById('walletFlowOverlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+    const body = document.getElementById('walletFlowBody');
+    if (body) body.innerHTML = '';
+    try {
+      if (typeof switchTab === 'function') switchTab('wallet');
+    } catch (e) {}
+  };
+
   function openDepositFlow() {
     const cfg = A().CONFIG;
     const cur = walletCurrencies();
@@ -534,8 +565,11 @@
     if (!cur.local.find((c) => c.code === depositCurrency && c.enabled !== false)) {
       depositCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
     }
-    document.getElementById('modalBody').innerHTML = `
-      <div class="space-y-4">
+    openWalletFlow(
+      'Add Funds',
+      'Back to wallet',
+      `
+      <div class="space-y-4 max-w-md mx-auto">
         <div class="flex items-center gap-3">
           <span class="w-10 h-10 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
           <div>
@@ -567,8 +601,8 @@
         </div>
         <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Continue to payment</button>
         <p class="text-[10px] text-center text-slate-400"><i class="fa-solid fa-lock mr-1"></i>You will be redirected to a secure service provider</p>
-      </div>`;
-    document.getElementById('appModal').classList.remove('hidden');
+      </div>`
+    );
     renderDepositCurrencyGrid();
     updateDepositRateHint();
   }
@@ -674,8 +708,11 @@
           <div><label class="text-[11px] text-slate-500">Account name</label><input id="withdrawName" type="text" value="${escapeAttr(u.payoutAccountName || '')}" placeholder="Account name" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
         </div>`;
 
-    document.getElementById('modalBody').innerHTML = `
-      <div class="space-y-4">
+    openWalletFlow(
+      'Withdraw Funds',
+      'Back to wallet',
+      `
+      <div class="space-y-4 max-w-md mx-auto">
         <div class="flex items-center gap-3">
           <span class="w-10 h-10 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
           <div>
@@ -731,8 +768,8 @@
           <span>Secured and Trusted: Withdrawals are securely processed and reviewed to protect your account.</span>
         </div>
         <button onclick="submitWalletAction('withdraw')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Continue to withdraw</button>
-      </div>`;
-    document.getElementById('appModal').classList.remove('hidden');
+      </div>`
+    );
     window.__payoutBankLocked = locked;
     refreshWithdrawCurrencyBtn();
     refreshWithdrawBankRate();
@@ -853,7 +890,7 @@
             return;
           }
           if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
-          closeModal();
+          closeWalletFlow();
           applyProfileChrome(refreshUser());
           setWalletHistoryTab('deposit');
           renderTxHistory();
@@ -901,7 +938,7 @@
       alert(res.error);
       return;
     }
-    closeModal();
+    closeWalletFlow();
     applyProfileChrome(refreshUser());
     setWalletHistoryTab('withdrawal');
     alert(res.message || 'Withdrawal requested. Pending owner approval.');
