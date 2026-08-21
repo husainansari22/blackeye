@@ -61,16 +61,20 @@ try {
 
         case 'auth.forgot': {
             $email = strtolower(trim((string)($body['email'] ?? '')));
-            // Always return ok to avoid email enumeration
-            $generic = [
-                'ok' => true,
-                'message' => 'If an account exists for that email, a reset link is on the way. Check your inbox and spam folder.',
-            ];
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) json_out($generic);
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                json_out(['ok' => false, 'error' => 'Enter a valid email address', 'code' => 'invalid_email'], 422);
+            }
             $stmt = db()->prepare('SELECT * FROM users WHERE email = ? AND is_banned = 0 LIMIT 1');
             $stmt->execute([$email]);
             $u = $stmt->fetch();
-            if (!$u) json_out($generic);
+            if (!$u) {
+                json_out([
+                    'ok' => false,
+                    'error' => 'User does not exist',
+                    'code' => 'user_not_found',
+                    'message' => 'No account found with that email. Create an account to continue.',
+                ], 404);
+            }
             ensure_password_resets_table();
             $raw = uid_token(24);
             $hash = hash('sha256', $raw);
@@ -83,7 +87,10 @@ try {
             if (!$sent) {
                 json_out(['ok' => false, 'error' => 'Could not send email right now. Create mailbox help@acctventa.com in Hostinger and try again.'], 500);
             }
-            json_out($generic);
+            json_out([
+                'ok' => true,
+                'message' => 'Reset link sent. Check your inbox and spam folder.',
+            ]);
         }
 
         case 'auth.reset': {
@@ -139,8 +146,13 @@ try {
             $stmt = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
             $stmt->execute([$email]);
             $u = $stmt->fetch();
-            if (!$u || !password_verify($password, $u['password_hash'])) json_out(['ok' => false, 'error' => 'Invalid email or password'], 401);
-            if ((int)$u['is_banned'] === 1) json_out(['ok' => false, 'error' => 'Account banned'], 403);
+            if (!$u) {
+                json_out(['ok' => false, 'error' => 'User does not exist', 'code' => 'user_not_found'], 404);
+            }
+            if (!password_verify($password, $u['password_hash'])) {
+                json_out(['ok' => false, 'error' => 'Invalid email or password', 'code' => 'invalid_credentials'], 401);
+            }
+            if ((int)$u['is_banned'] === 1) json_out(['ok' => false, 'error' => 'Account banned', 'code' => 'banned'], 403);
             $token = create_session((int)$u['id']);
             json_out(['ok' => true, 'token' => $token, 'user' => public_user($u)]);
         }

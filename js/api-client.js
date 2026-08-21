@@ -46,9 +46,10 @@
     const res = await fetch(url.toString(), opts);
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.ok === false) {
-      const err = new Error(data.error || 'Request failed');
+      const err = new Error(data.error || data.message || 'Request failed');
       err.status = res.status;
       err.data = data;
+      err.code = data.code || '';
       throw err;
     }
     if (data.token) setToken(data.token);

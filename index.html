@@ -41,9 +41,38 @@
             animation: orbitBall 4s linear infinite;
         }
         html { scroll-behavior: smooth; }
+        #authToast {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: none;
+            padding: 12px 14px 10px;
+            background: #151b23;
+            border-bottom: 2px solid #ef4444;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+        }
+        #authToast.show { display: block; animation: toastIn 0.25s ease; }
+        @keyframes toastIn {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+
+    <div id="authToast" role="alert">
+        <div class="max-w-md mx-auto flex items-center gap-3">
+            <span class="shrink-0 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs">
+                <i class="fa-solid fa-exclamation"></i>
+            </span>
+            <p id="authToastText" class="flex-1 text-sm font-semibold text-white leading-snug"></p>
+            <button type="button" onclick="hideAuthToast()" class="shrink-0 text-gray-400 hover:text-white p-1" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
 
     <!-- HEADER / NAVBAR -->
     <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
@@ -376,6 +405,21 @@
             }
         }
 
+        function showAuthToast(message) {
+            const el = document.getElementById('authToast');
+            const text = document.getElementById('authToastText');
+            if (!el || !text) return;
+            text.textContent = message || 'Something went wrong';
+            el.classList.add('show');
+            clearTimeout(window.__authToastTimer);
+            window.__authToastTimer = setTimeout(hideAuthToast, 4500);
+        }
+
+        function hideAuthToast() {
+            const el = document.getElementById('authToast');
+            if (el) el.classList.remove('show');
+        }
+
         function openForgotPassword(e) {
             e.preventDefault();
             const modal = document.getElementById('appModal');
@@ -417,11 +461,34 @@
                 await window.AcctventaApi.forgotPassword({ email });
                 showForgotSuccess(email);
             } catch (ex) {
+                const code = (ex.data && ex.data.code) || '';
+                if (code === 'user_not_found' || /does not exist|not found|no account/i.test(ex.message || '')) {
+                    showForgotNotRegistered(email);
+                    return;
+                }
                 err.textContent = ex.message || 'Could not send reset email.';
                 err.classList.remove('hidden');
                 btn.disabled = false;
                 btn.textContent = 'Send reset link';
             }
+        }
+
+        function showForgotNotRegistered(email) {
+            const safe = String(email || '').replace(/</g, '&lt;');
+            showAuthToast('User does not exist');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-center py-2">
+                  <div class="mx-auto w-14 h-14 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center text-2xl mb-4">
+                    <i class="fa-solid fa-user-xmark"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-2 tracking-tight">No account found</h3>
+                  <p class="text-sm text-gray-300 mb-1">We couldn’t find</p>
+                  <p class="text-sm font-semibold text-skyBrand mb-4 break-all">${safe}</p>
+                  <p class="text-xs text-gray-400 mb-5 leading-relaxed">That email isn’t registered on Acctventa yet. Create an account to get started.</p>
+                  <button onclick="closeModal(); switchPage('signup');" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm mb-2">Create an account</button>
+                  <button onclick="openForgotPassword(event)" class="w-full text-xs text-gray-400 py-2">Try a different email</button>
+                </div>
+            `;
         }
 
         function showForgotSuccess(email) {
@@ -592,7 +659,9 @@
                         return;
                     }
                 } catch (err) {
-                    alert(err.message || 'Invalid email or password.');
+                    const code = (err.data && err.data.code) || '';
+                    if (code === 'user_not_found') showAuthToast('User does not exist');
+                    else showAuthToast(err.message || 'Invalid email or password');
                     return;
                 }
             }
@@ -600,8 +669,12 @@
             const users = getUsers();
             const user = users[email];
 
-            if (!user || user.password !== pass) {
-                alert('Invalid email or password.');
+            if (!user) {
+                showAuthToast('User does not exist');
+                return;
+            }
+            if (user.password !== pass) {
+                showAuthToast('Invalid email or password');
                 return;
             }
             setSession(user);
