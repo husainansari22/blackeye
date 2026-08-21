@@ -379,7 +379,7 @@
     }
   };
 
-  window.handleSellWizardNext = function () {
+  window.handleSellWizardNext = async function () {
     if (sellStep === 1) {
       const category = document.getElementById('wizardCat').value;
       const title = document.getElementById('wizardTitle').value.trim();
@@ -412,7 +412,7 @@
     }
     // submit
     const u = refreshUser();
-    const res = A().createAd(u, sellDraft);
+    const res = await Promise.resolve(A().createAd(u, sellDraft));
     if (!res.ok) {
       alert(res.error);
       return;
@@ -472,9 +472,9 @@
     document.getElementById('appModal').classList.remove('hidden');
   };
 
-  window.buyListing = function (id) {
+  window.buyListing = async function (id) {
     const u = refreshUser();
-    const res = A().purchaseListing(u, id);
+    const res = await Promise.resolve(A().purchaseListing(u, id));
     if (!res.ok) {
       alert(res.error);
       if (String(res.error).toLowerCase().includes('balance')) switchTab('wallet');
@@ -525,10 +525,10 @@
     document.getElementById('appModal').classList.remove('hidden');
   };
 
-  window.confirmRefund = function (orderId) {
+  window.confirmRefund = async function (orderId) {
     if (!confirm('Refund this order to the buyer? This will cancel the order and cannot be undone.')) return;
     const u = refreshUser();
-    const res = A().refundOrder(u, orderId);
+    const res = await Promise.resolve(A().refundOrder(u, orderId));
     if (!res.ok) {
       alert(res.error);
       return;
@@ -539,9 +539,9 @@
     alert('Buyer refunded.');
   };
 
-  window.releaseOrder = function (orderId) {
+  window.releaseOrder = async function (orderId) {
     const u = refreshUser();
-    const res = A().completeManualOrder(u, orderId);
+    const res = await Promise.resolve(A().completeManualOrder(u, orderId));
     if (!res.ok) {
       alert(res.error);
       return;
@@ -552,11 +552,14 @@
     alert('Order completed. Funds moved from escrow to your balance.');
   };
 
-  window.openOrderChat = function (orderId) {
+  window.openOrderChat = async function (orderId) {
     activeOrderId = orderId;
     closeModal();
     document.getElementById('chatOverlay').classList.remove('hidden');
     document.getElementById('chatOverlay').classList.add('flex');
+    if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi()) {
+      await window.AcctventaApiSync.loadMessages(orderId);
+    }
     renderChat();
   };
 
@@ -581,13 +584,16 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  window.sendChatMessage = function () {
+  window.sendChatMessage = async function () {
     const input = document.getElementById('chatInput');
     const text = (input.value || '').trim();
     if (!text || !activeOrderId) return;
     const u = refreshUser();
-    A().sendMessage(u, activeOrderId, text);
+    await Promise.resolve(A().sendMessage(u, activeOrderId, text));
     input.value = '';
+    if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi()) {
+      await window.AcctventaApiSync.loadMessages(activeOrderId);
+    }
     renderChat();
   };
 
@@ -619,12 +625,12 @@
     document.getElementById('appModal').classList.remove('hidden');
   };
 
-  window.submitWalletAction = function (type) {
+  window.submitWalletAction = async function (type) {
     const u = refreshUser();
     const amount = parseFloat(document.getElementById('walletAmountInput').value);
     let res;
-    if (type === 'deposit') res = A().deposit(u, amount);
-    else res = A().withdraw(u, amount, (document.getElementById('withdrawMethod') || {}).value);
+    if (type === 'deposit') res = await Promise.resolve(A().deposit(u, amount));
+    else res = await Promise.resolve(A().withdraw(u, amount, (document.getElementById('withdrawMethod') || {}).value));
     if (!res.ok) {
       alert(res.error);
       return;
@@ -723,11 +729,14 @@
     }
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (window.AcctventaApiSync) {
+      await window.AcctventaApiSync.hydrateFromApi();
+    }
     window.AcctventaUI.refreshAll();
-    // re-run pending AI reviews that never finished
+    // re-run pending AI reviews that never finished (localStorage mode only)
     const u = refreshUser();
-    if (u) {
+    if (u && !(window.AcctventaApiSync && window.AcctventaApiSync.usingApi())) {
       (u.ads || [])
         .filter((a) => a.status === 'pending')
         .forEach((a) => {

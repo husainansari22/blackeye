@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AcctVenta - The Marketplace for Digital Products & Services</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/api-client.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -446,7 +447,7 @@
             localStorage.setItem('walletBalance', String(user.balance ?? 0));
         }
 
-        function handleSignup(e) {
+        async function handleSignup(e) {
             e.preventDefault();
             const name = (document.getElementById('su_name').value || '').trim();
             const email = (document.getElementById('su_email').value || '').trim().toLowerCase();
@@ -464,6 +465,30 @@
                 return;
             }
 
+            const fullPhone = (code ? code + ' ' : '') + phone;
+            const ref = new URLSearchParams(window.location.search).get('ref') || '';
+
+            // Prefer MySQL API when installed on Hostinger
+            if (window.AcctventaApi) {
+                try {
+                    const online = await window.AcctventaApi.isAvailable();
+                    if (online) {
+                        await window.AcctventaApi.register({
+                            name: name,
+                            email: email,
+                            phone: fullPhone,
+                            password: pass,
+                            referredBy: ref
+                        });
+                        window.location.href = "/dashboard.html";
+                        return;
+                    }
+                } catch (err) {
+                    alert(err.message || 'Signup failed. Please try again.');
+                    return;
+                }
+            }
+
             const users = getUsers();
             if (users[email]) {
                 alert('An account with this email already exists. Please login.');
@@ -471,12 +496,11 @@
                 return;
             }
 
-            const ref = new URLSearchParams(window.location.search).get('ref') || '';
             const ownCode = name.split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, '') || ('user' + Date.now().toString(36).slice(-4));
             const user = {
                 name: name,
                 email: email,
-                phone: (code ? code + ' ' : '') + phone,
+                phone: fullPhone,
                 password: pass,
                 balance: 0,
                 escrowBalance: 0,
@@ -496,13 +520,29 @@
             users[email] = user;
             saveUsers(users);
             setSession(user);
+            try { localStorage.removeItem('acctventa_backend'); } catch (e) {}
             window.location.href = "/dashboard.html";
         }
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const email = (document.getElementById('li_email').value || '').trim().toLowerCase();
             const pass = document.getElementById('li_pass').value || '';
+
+            if (window.AcctventaApi) {
+                try {
+                    const online = await window.AcctventaApi.isAvailable();
+                    if (online) {
+                        await window.AcctventaApi.login({ email: email, password: pass });
+                        window.location.href = "/dashboard.html";
+                        return;
+                    }
+                } catch (err) {
+                    alert(err.message || 'Invalid email or password.');
+                    return;
+                }
+            }
+
             const users = getUsers();
             const user = users[email];
 
@@ -511,6 +551,7 @@
                 return;
             }
             setSession(user);
+            try { localStorage.removeItem('acctventa_backend'); } catch (e) {}
             window.location.href = "/dashboard.html";
         }
 

@@ -688,6 +688,8 @@
     </nav>
 
     <script src="/js/acctventa.js"></script>
+    <script src="/js/api-client.js"></script>
+    <script src="/js/api-sync.js"></script>
     <script src="/js/dashboard-app.js"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
@@ -838,13 +840,22 @@
         });
         function handleLogout() {
             if (!confirm('Are you sure you want to log out?')) return;
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('acctventa_session');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userPhone');
-            localStorage.removeItem('walletBalance');
-            window.location.href = '/index.html';
+            const finish = () => {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('acctventa_session');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userPhone');
+                localStorage.removeItem('walletBalance');
+                localStorage.removeItem('acctventa_backend');
+                localStorage.removeItem('acctventa_api_token');
+                window.location.href = '/index.html';
+            };
+            if (window.AcctventaApi) {
+                window.AcctventaApi.logout().finally(finish);
+            } else {
+                finish();
+            }
         }
     </script>
 </body>

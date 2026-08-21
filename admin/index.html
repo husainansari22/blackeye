@@ -522,12 +522,13 @@
       const form = document.getElementById('adminLoginForm');
       if (form) form.addEventListener('submit', doLogin);
 
-      if (!window.Acctventa) {
-        showLoginError('Cannot load js/acctventa.js — make sure the js folder is inside public_html.');
-        return;
+      if (window.Acctventa) {
+        try {
+          window.Acctventa.ensureAdminInitialized();
+          if (window.Acctventa.isAdminLoggedIn()) enterDash();
+        } catch (e) {}
       }
-      window.Acctventa.ensureAdminInitialized();
-      if (window.Acctventa.isAdminLoggedIn()) enterDash();
+      // If script missing, do not lock the page — fallback login still works on submit
     });
   </script>
 </body>

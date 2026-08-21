@@ -1,0 +1,166 @@
+/**
+ * Acctventa API client — talks to /api/index.php (MySQL backend).
+ * Falls back gracefully when API is offline so localStorage demo still works.
+ */
+(function (global) {
+  const API_URL = '/api/index.php';
+  const TOKEN_KEY = 'acctventa_api_token';
+
+  function getToken() {
+    try {
+      return localStorage.getItem(TOKEN_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function setToken(token) {
+    try {
+      if (token) localStorage.setItem(TOKEN_KEY, token);
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch (e) {}
+  }
+
+  async function request(action, { method = 'GET', body, query } = {}) {
+    const url = new URL(API_URL, window.location.origin);
+    url.searchParams.set('action', action);
+    if (query) {
+      Object.entries(query).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
+      });
+    }
+    const opts = {
+      method,
+      credentials: 'include',
+      headers: {},
+    };
+    const token = getToken();
+    if (token) {
+      opts.headers['Authorization'] = 'Bearer ' + token;
+      opts.headers['X-Auth-Token'] = token;
+    }
+    if (body !== undefined) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(url.toString(), opts);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      const err = new Error(data.error || 'Request failed');
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    if (data.token) setToken(data.token);
+    return data;
+  }
+
+  let available = null;
+
+  async function isAvailable() {
+    if (available !== null) return available;
+    try {
+      const r = await request('health');
+      available = !!(r && r.ok && r.installed !== false);
+    } catch (_) {
+      available = false;
+    }
+    return available;
+  }
+
+  function clearAvailabilityCache() {
+    available = null;
+  }
+
+  function applySessionUser(user) {
+    if (!user) return;
+    try {
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('acctventa_session', String(user.email || '').toLowerCase());
+      localStorage.setItem('userName', user.name || '');
+      localStorage.setItem('userEmail', user.email || '');
+      localStorage.setItem('userPhone', user.phone || '');
+      localStorage.setItem('walletBalance', String(user.balance ?? 0));
+      localStorage.setItem('acctventa_backend', 'api');
+    } catch (e) {}
+  }
+
+  const Api = {
+    request,
+    isAvailable,
+    clearAvailabilityCache,
+    getToken,
+    setToken,
+    applySessionUser,
+    register(payload) {
+      return request('auth.register', { method: 'POST', body: payload }).then((data) => {
+        if (data.token) setToken(data.token);
+        applySessionUser(data.user);
+        return data;
+      });
+    },
+    login(payload) {
+      return request('auth.login', { method: 'POST', body: payload }).then((data) => {
+        if (data.token) setToken(data.token);
+        applySessionUser(data.user);
+        return data;
+      });
+    },
+    async logout() {
+      try {
+        await request('auth.logout', { method: 'POST', body: {} });
+      } catch (_) {}
+      setToken('');
+      try {
+        localStorage.removeItem('acctventa_backend');
+      } catch (e) {}
+    },
+    me() {
+      return request('auth.me');
+    },
+    market(params) {
+      return request('market.list', { query: params });
+    },
+    myAds() {
+      return request('ads.mine');
+    },
+    createAd(payload) {
+      return request('ads.create', { method: 'POST', body: payload });
+    },
+    createOrder(payload) {
+      return request('orders.buy', { method: 'POST', body: payload });
+    },
+    myOrders() {
+      return request('orders.mine');
+    },
+    orderRefund(payload) {
+      return request('orders.refund', { method: 'POST', body: payload });
+    },
+    orderRelease(payload) {
+      return request('orders.release', { method: 'POST', body: payload });
+    },
+    getMessages(orderId) {
+      return request('messages.list', { query: { orderId } });
+    },
+    sendMessage(payload) {
+      return request('messages.send', { method: 'POST', body: payload });
+    },
+    wallet() {
+      return request('wallet.summary');
+    },
+    deposit(payload) {
+      return request('wallet.deposit', { method: 'POST', body: payload });
+    },
+    withdraw(payload) {
+      return request('wallet.withdraw', { method: 'POST', body: payload });
+    },
+    notifications() {
+      return request('notifications.list');
+    },
+    publicConfig() {
+      return request('config.public');
+    },
+  };
+
+  global.AcctventaApi = Api;
+})(window);
