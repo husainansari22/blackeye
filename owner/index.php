@@ -628,8 +628,8 @@ $tab = $_GET['tab'] ?? 'overview';
         <div><label class="text-xs text-slate-500">Min withdraw ($)</label><input name="min_withdraw" type="number" step="0.01" value="<?= h(setting_get('min_withdraw',5)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Withdraw commission (%)</label><input name="withdraw_commission" type="number" step="0.1" value="<?= h(((float)setting_get('withdraw_commission_rate',0.1))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Support email</label><input name="support_email" value="<?= h(setting_get('support_email','')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
+        <div><label class="text-xs text-slate-500">Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
+        <div><label class="text-xs text-slate-500">Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div class="sm:col-span-2"><button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save settings</button></div>
       </form>
     <?php endif; ?>

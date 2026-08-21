@@ -365,6 +365,21 @@ function wallet_currencies_set(array $data): void {
     }
 }
 
+/** One-time: rename legacy help@ mailbox to support@ */
+function migrate_legacy_support_email(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        $email = (string)setting_get('support_email', '');
+        if ($email === '' || $email === 'help@acctventa.com') {
+            setting_set('support_email', 'support@acctventa.com');
+        }
+    } catch (Throwable $e) {
+        // db may not be ready during install
+    }
+}
+
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/flutterwave.php';
 

@@ -8,11 +8,11 @@ declare(strict_types=1);
 function mail_cfg(): array {
     $c = app_config();
     return [
-        'from_email' => $c['mail_from'] ?? ($c['support_email'] ?? 'help@acctventa.com'),
+        'from_email' => $c['mail_from'] ?? ($c['support_email'] ?? 'support@acctventa.com'),
         'from_name' => $c['mail_from_name'] ?? ($c['app_name'] ?? 'Acctventa'),
         'app_name' => $c['app_name'] ?? 'Acctventa',
         'app_url' => rtrim($c['app_url'] ?? 'https://acctventa.com', '/'),
-        'support_email' => $c['support_email'] ?? 'help@acctventa.com',
+        'support_email' => $c['support_email'] ?? 'support@acctventa.com',
         'support_telegram' => $c['support_telegram'] ?? 'https://t.me/acctventa',
         'brand' => '#0ea5e9',
         'brand_hover' => '#0284c7',

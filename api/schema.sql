@@ -190,6 +190,6 @@ INSERT INTO settings (setting_key, setting_value) VALUES
 ('withdraw_commission_rate', '0.10'),
 ('deposit_fee_rate', '0'),
 ('support_telegram', 'https://t.me/acctventa'),
-('support_email', 'help@acctventa.com'),
+('support_email', 'support@acctventa.com'),
 ('installed', '1')
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);

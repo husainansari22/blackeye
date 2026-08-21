@@ -20,6 +20,7 @@ try {
             json_out(['ok' => true, 'installed' => setting_get('installed') === '1', 'app' => app_config()['app_name'] ?? 'Acctventa']);
 
         case 'config.public':
+            migrate_legacy_support_email();
             json_out([
                 'ok' => true,
                 'config' => [
@@ -28,7 +29,7 @@ try {
                     'withdrawCommissionRate' => (float)setting_get('withdraw_commission_rate', app_config()['withdraw_commission_rate']),
                     'depositFeeRate' => (float)setting_get('deposit_fee_rate', app_config()['deposit_fee_rate']),
                     'supportTelegram' => setting_get('support_telegram', app_config()['support_telegram']),
-                    'supportEmail' => setting_get('support_email', app_config()['support_email']),
+                    'supportEmail' => setting_get('support_email', app_config()['support_email'] ?? 'support@acctventa.com'),
                     'paymentCurrency' => setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'),
                     'usdNgnRate' => (float)setting_get('usd_ngn_rate', app_config()['usd_ngn_rate'] ?? 1600),
                     'walletCurrencies' => wallet_currencies_get(),
@@ -91,7 +92,7 @@ try {
             $mail = email_password_reset($u['name'], $resetUrl);
             $sent = send_app_mail($email, $mail['subject'], $mail['html'], $mail['text']);
             if (!$sent) {
-                json_out(['ok' => false, 'error' => 'Could not send email right now. Create mailbox help@acctventa.com in Hostinger and try again.'], 500);
+                json_out(['ok' => false, 'error' => 'Could not send email right now. Create mailbox support@acctventa.com in Hostinger and try again.'], 500);
             }
             json_out([
                 'ok' => true,

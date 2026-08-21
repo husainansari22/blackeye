@@ -837,16 +837,78 @@
         }
         function openSupportCenter() {
             const c = (window.Acctventa && window.Acctventa.CONFIG) || {};
-            const tg = c.supportTelegram || 'https://t.me/acctventa';
-            const em = c.supportEmail || 'help@acctventa.com';
-            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-2">Support Center</h3>
-            <p class="text-xs text-slate-500 mb-3">Need help? Use one channel only per issue.</p>
-            <div class="space-y-2 text-sm mb-4">
-              <a class="block p-3 rounded-xl border border-slate-200 dark:border-slate-800" href="${tg}" target="_blank" rel="noopener">Telegram</a>
-              <a class="block p-3 rounded-xl border border-slate-200 dark:border-slate-800" href="mailto:${em}">Email · ${em}</a>
-            </div>
-            <p class="text-[11px] text-slate-400 mb-3"><i class="fa-solid fa-shield-halved text-brandPrimary mr-1"></i>Never share your password with support.</p>
-            <button onclick="closeModal()" class="w-full bg-brandPrimary py-3 rounded-xl text-white font-bold">Close</button>`;
+            const em = c.supportEmail || 'support@acctventa.com';
+            const gmailLogo = `<svg viewBox="0 0 24 24" class="w-8 h-8" aria-hidden="true"><path fill="#EA4335" d="M12 12.713L1.5 5.25V18c0 .825.675 1.5 1.5 1.5h4.5V11.1L12 15.087 16.5 11.1V19.5H21c.825 0 1.5-.675 1.5-1.5V5.25L12 12.713z"/><path fill="#34A853" d="M21 4.5h-1.5L12 10.087 4.5 4.5H3c-.45 0-.862.2-1.125.525L12 12.713l10.125-7.688A1.49 1.49 0 0 0 21 4.5z"/><path fill="#4285F4" d="M3 4.5v14.25c0 .225.05.437.15.637L7.5 11.1V4.5H3z"/><path fill="#FBBC05" d="M21 4.5h-4.5v6.6l4.35 8.287c.1-.2.15-.412.15-.637V4.5z"/></svg>`;
+            const tgLogo = `<span class="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center text-white text-xl"><i class="fa-brands fa-telegram"></i></span>`;
+            const waLogo = `<span class="w-10 h-10 rounded-full bg-slate-600/40 flex items-center justify-center text-slate-500 text-xl"><i class="fa-brands fa-whatsapp"></i></span>`;
+            document.getElementById('modalBody').innerHTML = `
+              <div class="space-y-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-bold text-xl tracking-tight">Support Center</h3>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">Need help? Our team is ready to assist you. Choose your preferred channel below.</p>
+                  </div>
+                  <div class="shrink-0 w-14 h-14 rounded-2xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-headset"></i>
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-brandPrimary/40 bg-brandPrimary/10 px-3 py-2.5 text-[11px] text-slate-300 flex gap-2 items-start">
+                  <i class="fa-solid fa-circle-info text-brandPrimary mt-0.5 shrink-0"></i>
+                  <span>Please use one channel only per issue. Do not send the same message across WhatsApp, Telegram, and email simultaneously.</span>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <p class="text-sm font-bold">Contact channels</p>
+                    <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">● Fast response usually in minutes</span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 p-3 flex flex-col items-center text-center opacity-50 cursor-not-allowed">
+                      ${waLogo}
+                      <p class="text-xs font-bold mt-2 text-slate-400">WhatsApp</p>
+                      <p class="text-[10px] text-slate-500 mt-0.5">Unavailable</p>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 p-3 flex flex-col items-center text-center opacity-50 cursor-not-allowed">
+                      <span class="w-10 h-10 rounded-full bg-slate-600/40 flex items-center justify-center text-slate-500 text-xl"><i class="fa-brands fa-telegram"></i></span>
+                      <p class="text-xs font-bold mt-2 text-slate-400">Telegram</p>
+                      <p class="text-[10px] text-slate-500 mt-0.5">Unavailable</p>
+                    </div>
+                    <a href="mailto:${em}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
+                      <span class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">${gmailLogo}</span>
+                      <p class="text-xs font-bold mt-2">Email</p>
+                      <p class="text-[9px] text-slate-400 mt-0.5 truncate max-w-full px-0.5">${em}</p>
+                    </a>
+                  </div>
+                </div>
+
+                <div>
+                  <p class="text-sm font-bold mb-2">Before you reach out</p>
+                  <div class="space-y-2">
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex gap-3 items-start">
+                      <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-regular fa-clock"></i></span>
+                      <div>
+                        <p class="text-xs font-bold">Response Time</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Our team typically replies within a few minutes to a few hours depending on volume.</p>
+                      </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex gap-3 items-start">
+                      <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-solid fa-pen"></i></span>
+                      <div>
+                        <p class="text-xs font-bold">What to Include</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Share your registered email, order details, and a clear description of your issue to help us resolve it faster.</p>
+                      </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex gap-3 items-start">
+                      <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-solid fa-shield-halved"></i></span>
+                      <div>
+                        <p class="text-xs font-bold">Safe &amp; Secure</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Never share your password with anyone, including our support team. We will never ask for it.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>`;
             document.getElementById('appModal').classList.remove('hidden');
         }
         function openMyStories() {

@@ -16,7 +16,7 @@
     freeDailyUploadLimit: 5,
     brandPrimary: '#0ea5e9',
     supportTelegram: 'https://t.me/acctventa',
-    supportEmail: 'help@acctventa.com',
+    supportEmail: 'support@acctventa.com',
     siteName: 'acctventa',
     walletCurrencies: {
       local: [
