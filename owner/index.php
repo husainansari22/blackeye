@@ -283,11 +283,11 @@ $tab = $_GET['tab'] ?? 'overview';
     (function(){try{var t=localStorage.getItem('acctventa_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260821toast1">
-  <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast1">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260821toast2">
+  <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
   <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
-  <script src="/js/ui-toast.js?v=20260821toast1"></script>
+  <script src="/js/ui-toast.js?v=20260821toast2"></script>
   <style>
     body.av-app{font-family:"Plus Jakarta Sans",system-ui,sans-serif}
   </style>
@@ -404,8 +404,8 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-alerts.js?v=20260821toast1"></script>
-      <script src="/js/staff-inbox.js?v=20260821toast1"></script>
+      <script src="/js/staff-alerts.js?v=20260821toast2"></script>
+      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);
@@ -722,7 +722,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-inbox.js?v=20260821toast1"></script>
+      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
       <script>
         localStorage.setItem('acctventa_staff_token', <?= json_encode($staffToken) ?>);
         const FOCUS_ORDER = <?= (int)$focusOrder ?>;

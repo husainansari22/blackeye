@@ -52,8 +52,8 @@
 
   function showToast(title, body) {
     if (global.AcctventaToast && typeof global.AcctventaToast.show === 'function') {
-      global.AcctventaToast.show(String(body || ''), {
-        title: title || 'New message',
+      var msg = [title, body].filter(function (p) { return String(p || '').trim(); }).join(' — ');
+      global.AcctventaToast.show(msg || 'New message', {
         type: 'info',
         duration: 4500,
       });
