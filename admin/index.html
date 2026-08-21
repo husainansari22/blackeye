@@ -18,6 +18,8 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Relative path works even if domain/folder setup differs -->
+  <script src="../js/acctventa.js"></script>
   <script src="/js/acctventa.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
@@ -29,16 +31,18 @@
         <h1 class="text-xl font-bold">Admin Login</h1>
         <p class="text-xs text-slate-500 mt-1">Manage fees, plans, gateways & reviews</p>
       </div>
-      <div>
-        <label class="text-xs text-slate-500">Username</label>
-        <input id="adminUser" value="admin" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
-      </div>
-      <div>
-        <label class="text-xs text-slate-500">Password</label>
-        <input id="adminPass" type="password" placeholder="••••••••" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
-      </div>
-      <p id="loginError" class="text-xs text-red-500 hidden"></p>
-      <button onclick="doLogin()" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
+      <form id="adminLoginForm" action="#" method="post" class="space-y-4">
+        <div>
+          <label class="text-xs text-slate-500" for="adminUser">Username</label>
+          <input id="adminUser" name="username" autocomplete="username" value="admin" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500" for="adminPass">Password</label>
+          <input id="adminPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+        </div>
+        <p id="loginError" class="text-xs text-red-500 hidden"></p>
+        <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
+      </form>
       <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code> — change it after login.</p>
       <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
     </div>
@@ -270,23 +274,41 @@
       if (name === 'users') loadUsers();
     }
 
-    function doLogin() {
-      const res = A().adminLogin(document.getElementById('adminUser').value, document.getElementById('adminPass').value);
+    function showLoginError(msg) {
       const err = document.getElementById('loginError');
-      if (!res.ok) {
-        err.textContent = res.error;
-        err.classList.remove('hidden');
-        return;
+      err.textContent = msg;
+      err.classList.remove('hidden');
+    }
+
+    function doLogin(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      try {
+        if (!window.Acctventa || typeof window.Acctventa.adminLogin !== 'function') {
+          showLoginError('Login script missing. Upload the js folder to public_html (js/acctventa.js), then refresh.');
+          return false;
+        }
+        const res = window.Acctventa.adminLogin(
+          document.getElementById('adminUser').value,
+          document.getElementById('adminPass').value
+        );
+        if (!res.ok) {
+          showLoginError(res.error || 'Login failed.');
+          return false;
+        }
+        document.getElementById('loginError').classList.add('hidden');
+        enterDash();
+        if (res.admin && res.admin.mustChangePassword) {
+          showTab('security');
+          document.getElementById('pwMsg').textContent = 'Please change the default password now.';
+        }
+      } catch (err) {
+        showLoginError('Sign in error: ' + (err && err.message ? err.message : 'unknown'));
       }
-      enterDash();
-      if (res.admin.mustChangePassword) {
-        showTab('security');
-        document.getElementById('pwMsg').textContent = 'Please change the default password now.';
-      }
+      return false;
     }
 
     function doLogout() {
-      A().adminLogout();
+      if (window.Acctventa) window.Acctventa.adminLogout();
       document.getElementById('dashView').classList.add('hidden');
       document.getElementById('loginView').classList.remove('hidden');
     }
@@ -471,9 +493,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      A().ensureAdminInitialized();
-      if (A().isAdminLoggedIn()) enterDash();
-      document.getElementById('adminPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+      const form = document.getElementById('adminLoginForm');
+      if (form) form.addEventListener('submit', doLogin);
+
+      if (!window.Acctventa) {
+        showLoginError('Cannot load js/acctventa.js — make sure the js folder is inside public_html.');
+        return;
+      }
+      window.Acctventa.ensureAdminInitialized();
+      if (window.Acctventa.isAdminLoggedIn()) enterDash();
     });
   </script>
 </body>
