@@ -1,0 +1,641 @@
+/**
+ * Acctventa core — per-user marketplace data (localStorage).
+ * Brand colors stay in CSS. No demo identity data.
+ */
+(function (global) {
+  const USERS_KEY = 'acctventa_users';
+  const SESSION_KEY = 'acctventa_session';
+
+  const CONFIG = {
+    minDeposit: 3,
+    minWithdraw: 5,
+    withdrawCommissionRate: 0.1, // 10% platform fee on seller withdrawals
+    depositFeeRate: 0, // set later when gateway live
+    freeDailyUploadLimit: 5,
+    brandPrimary: '#0ea5e9'
+  };
+
+  const PLANS = {
+    free: {
+      id: 'free',
+      name: 'Free (Default)',
+      price: 0,
+      dailyUploads: 5,
+      approval: 'Standard AI review'
+    },
+    basic: {
+      id: 'basic',
+      name: 'Basic',
+      price: 9.99,
+      dailyUploads: 49,
+      approval: 'Basic upload approval'
+    },
+    business: {
+      id: 'business',
+      name: 'Business',
+      price: 19.99,
+      dailyUploads: 99,
+      approval: 'Priority upload approval'
+    },
+    pro: {
+      id: 'pro',
+      name: 'Pro',
+      price: 29.99,
+      dailyUploads: 299,
+      approval: 'Fast upload approval'
+    }
+  };
+
+  const CATEGORY_LINK_RULES = {
+    'Social Media': ['facebook.com', 'fb.com', 'fb.me', 'instagram.com', 'tiktok.com', 'twitter.com', 'x.com', 'linkedin.com', 'snapchat.com', 'pinterest.com', 'threads.net'],
+    Facebook: ['facebook.com', 'fb.com', 'fb.me'],
+    Instagram: ['instagram.com'],
+    TikTok: ['tiktok.com'],
+    Twitter: ['twitter.com', 'x.com'],
+    'Emails & Messaging': ['gmail.com', 'mail.google.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'proton.me', 'telegram.org', 't.me', 'whatsapp.com', 'wa.me'],
+    Gmail: ['gmail.com', 'mail.google.com'],
+    Telegram: ['t.me', 'telegram.org'],
+    WhatsApp: ['wa.me', 'whatsapp.com'],
+    'VPN & Proxies': ['expressvpn.com', 'nordvpn.com', 'surfshark.com', 'protonvpn.com', 'pia.com', 'privateinternetaccess.com'],
+    Giftcards: [],
+    Gaming: ['steamcommunity.com', 'xbox.com', 'playstation.com', 'epicgames.com'],
+    Subscription: ['netflix.com', 'spotify.com', 'disneyplus.com', 'youtube.com']
+  };
+
+  function getUsers() {
+    try {
+      return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function normalizeUser(user) {
+    if (!user) return null;
+    user.balance = Number(user.balance) || 0;
+    user.escrowBalance = Number(user.escrowBalance) || 0;
+    user.totalDeposits = Number(user.totalDeposits) || 0;
+    user.totalWithdrawals = Number(user.totalWithdrawals) || 0;
+    user.orders = Array.isArray(user.orders) ? user.orders : [];
+    user.ads = Array.isArray(user.ads) ? user.ads : [];
+    user.notifications = Array.isArray(user.notifications) ? user.notifications : [];
+    user.transactions = Array.isArray(user.transactions) ? user.transactions : [];
+    user.messages = user.messages && typeof user.messages === 'object' ? user.messages : {};
+    user.plan = user.plan && PLANS[user.plan] ? user.plan : 'free';
+    user.uploadsByDay = user.uploadsByDay && typeof user.uploadsByDay === 'object' ? user.uploadsByDay : {};
+    if (!user.referralCode) {
+      user.referralCode = (String(user.name || 'user').split(/\s+/)[0] || 'user')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '') || 'user';
+    }
+    return user;
+  }
+
+  function getSessionEmail() {
+    return (localStorage.getItem(SESSION_KEY) || localStorage.getItem('userEmail') || '').toLowerCase();
+  }
+
+  function getCurrentUser() {
+    if (localStorage.getItem('isLoggedIn') !== 'true') return null;
+    const email = getSessionEmail();
+    const users = getUsers();
+    const user = normalizeUser(users[email]);
+    return user || null;
+  }
+
+  function persistUser(user) {
+    if (!user || !user.email) return;
+    const users = getUsers();
+    const key = user.email.toLowerCase();
+    const prev = users[key] || {};
+    users[key] = normalizeUser({ ...prev, ...user, password: user.password || prev.password || '' });
+    saveUsers(users);
+    localStorage.setItem('userName', users[key].name);
+    localStorage.setItem('userEmail', users[key].email);
+    localStorage.setItem('userPhone', users[key].phone || '');
+    localStorage.setItem('walletBalance', String(users[key].balance || 0));
+    localStorage.setItem(SESSION_KEY, key);
+  }
+
+  function formatMoney(n) {
+    return '$' + (Number(n) || 0).toFixed(2);
+  }
+
+  function getInitials(name) {
+    const parts = String(name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function getPlan(user) {
+    return PLANS[(user && user.plan) || 'free'] || PLANS.free;
+  }
+
+  function getUploadsToday(user) {
+    if (!user) return 0;
+    return Number((user.uploadsByDay || {})[todayKey()] || 0);
+  }
+
+  function getRemainingUploads(user) {
+    const plan = getPlan(user);
+    return Math.max(0, plan.dailyUploads - getUploadsToday(user));
+  }
+
+  function canUploadToday(user) {
+    return getRemainingUploads(user) > 0;
+  }
+
+  function bumpUploadCount(user) {
+    const key = todayKey();
+    user.uploadsByDay = user.uploadsByDay || {};
+    user.uploadsByDay[key] = (Number(user.uploadsByDay[key]) || 0) + 1;
+  }
+
+  function isValidHttpUrl(str) {
+    try {
+      const u = new URL(str);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function linkMatchesAllowed(link, allowedHosts) {
+    if (!allowedHosts || !allowedHosts.length) return true;
+    try {
+      const host = new URL(link).hostname.replace(/^www\./, '').toLowerCase();
+      return allowedHosts.some((d) => host === d || host.endsWith('.' + d));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function allowedHostsForCategory(category) {
+    const cat = String(category || '');
+    if (CATEGORY_LINK_RULES[cat]) return CATEGORY_LINK_RULES[cat];
+    const lower = cat.toLowerCase();
+    for (const key of Object.keys(CATEGORY_LINK_RULES)) {
+      if (lower.includes(key.toLowerCase())) return CATEGORY_LINK_RULES[key];
+    }
+    return CATEGORY_LINK_RULES['Social Media'];
+  }
+
+  /**
+   * AI listing review — auto approve/deny based on credentials + preview link quality.
+   * Listings start as "pending" (under review), then become "active" or "denied".
+   */
+  function aiReviewListing(listing) {
+    const reasons = [];
+    const username = String(listing.username || '').trim();
+    const password = String(listing.password || '').trim();
+    const preview = String(listing.previewLink || '').trim();
+    const title = String(listing.title || '').trim();
+    const price = Number(listing.price);
+
+    if (!title) reasons.push('Missing account title');
+    if (!price || price <= 0) reasons.push('Invalid price');
+    if (!username) reasons.push('Missing account username');
+    if (!password || password.length < 3) reasons.push('Missing or weak account password');
+
+    const allowed = allowedHostsForCategory(listing.category || listing.platform);
+    const needsPublicLink = allowed && allowed.length > 0;
+
+    if (needsPublicLink) {
+      if (!preview) {
+        reasons.push('Preview link is required for this account type so buyers can verify before buying');
+      } else if (!isValidHttpUrl(preview)) {
+        reasons.push('Preview link is not a valid URL');
+      } else if (!linkMatchesAllowed(preview, allowed)) {
+        reasons.push('Preview link does not match the selected account category — incorrect or fake link');
+      }
+    } else if (preview && !isValidHttpUrl(preview)) {
+      reasons.push('Preview link is not a valid URL');
+    }
+
+    // Obvious junk / placeholder rejection
+    const junk = ['test', 'asdf', 'xxx', 'fake', 'example.com', 'localhost'];
+    const blob = (username + ' ' + password + ' ' + preview + ' ' + title).toLowerCase();
+    if (junk.some((j) => blob.includes(j) && j.length > 3 && preview.toLowerCase().includes(j))) {
+      // only hard-fail obvious example.com style links
+    }
+    if (/example\.com|localhost|127\.0\.0\.1/i.test(preview)) {
+      reasons.push('Preview link looks like a placeholder, not a real account link');
+    }
+
+    if (reasons.length) {
+      return {
+        status: 'denied',
+        reason: reasons.join('. ') + '.',
+        reviewedAt: new Date().toISOString(),
+        reviewedBy: 'AI Review'
+      };
+    }
+
+    return {
+      status: 'active',
+      reason: '',
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: 'AI Review'
+    };
+  }
+
+  function runAiReviewOnAd(user, adId) {
+    const ad = (user.ads || []).find((a) => a.id === adId);
+    if (!ad) return null;
+    const result = aiReviewListing(ad);
+    ad.status = result.status;
+    ad.denyReason = result.reason || '';
+    ad.reviewedAt = result.reviewedAt;
+    ad.reviewedBy = result.reviewedBy;
+    persistUser(user);
+    pushNotification(user, {
+      title: result.status === 'active' ? 'Ad Approved' : 'Ad Denied',
+      body:
+        result.status === 'active'
+          ? `Your listing "${ad.title}" was approved and is now live.`
+          : `Your listing "${ad.title}" was not approved. ${result.reason}`,
+      type: 'ad_review'
+    });
+    return ad;
+  }
+
+  function pushNotification(user, note) {
+    user.notifications = user.notifications || [];
+    user.notifications.unshift({
+      id: uid(),
+      title: note.title,
+      body: note.body,
+      type: note.type || 'info',
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+  }
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  /** All approved marketplace listings across users */
+  function getMarketplaceListings() {
+    const users = getUsers();
+    const list = [];
+    Object.keys(users).forEach((email) => {
+      const u = normalizeUser(users[email]);
+      (u.ads || []).forEach((ad) => {
+        if (ad.status === 'active') {
+          list.push({
+            ...ad,
+            sellerEmail: u.email,
+            sellerName: u.name,
+            sellerInitials: getInitials(u.name)
+          });
+        }
+      });
+    });
+    list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return list;
+  }
+
+  function findListingById(id) {
+    return getMarketplaceListings().find((a) => a.id === id) || null;
+  }
+
+  function findUserByEmail(email) {
+    const users = getUsers();
+    return normalizeUser(users[String(email || '').toLowerCase()]);
+  }
+
+  function createAd(user, draft) {
+    if (!canUploadToday(user)) {
+      return { ok: false, error: 'Daily upload limit reached. Upgrade your plan to upload more today.' };
+    }
+    const ad = {
+      id: uid(),
+      category: draft.category,
+      platform: draft.platform || draft.category,
+      title: draft.title,
+      description: draft.description || '',
+      price: Number(draft.price),
+      releaseType: draft.releaseType || 'auto',
+      username: draft.username,
+      password: draft.password,
+      previewLink: draft.previewLink || '',
+      attachedEmail: draft.attachedEmail || '',
+      attachedEmailPassword: draft.attachedEmailPassword || '',
+      twoFA: draft.twoFA || '',
+      extraInfo: draft.extraInfo || '',
+      status: 'pending',
+      denyReason: '',
+      stock: 1,
+      createdAt: new Date().toISOString()
+    };
+    bumpUploadCount(user);
+    user.ads = user.ads || [];
+    user.ads.unshift(ad);
+    persistUser(user);
+
+    // AI review shortly after submit (under review → active/denied)
+    setTimeout(() => {
+      const fresh = getCurrentUser();
+      if (fresh) runAiReviewOnAd(fresh, ad.id);
+      if (typeof global.AcctventaUI !== 'undefined' && global.AcctventaUI.onAdsUpdated) {
+        global.AcctventaUI.onAdsUpdated();
+      }
+    }, 1200);
+
+    return { ok: true, ad };
+  }
+
+  function purchaseListing(buyer, listingId) {
+    const listing = findListingById(listingId);
+    if (!listing) return { ok: false, error: 'Listing not found or no longer available.' };
+    if (listing.sellerEmail === buyer.email) return { ok: false, error: 'You cannot buy your own listing.' };
+    const price = Number(listing.price);
+    if ((buyer.balance || 0) < price) return { ok: false, error: 'Insufficient balance. Minimum deposit is $' + CONFIG.minDeposit + '.' };
+
+    const seller = findUserByEmail(listing.sellerEmail);
+    if (!seller) return { ok: false, error: 'Seller account not found.' };
+
+    buyer.balance = Number((buyer.balance - price).toFixed(2));
+    // Escrow: seller funds locked until complete (auto-complete for auto release)
+    const order = {
+      id: uid(),
+      listingId: listing.id,
+      title: listing.title,
+      price,
+      category: listing.category,
+      buyerEmail: buyer.email,
+      buyerName: buyer.name,
+      sellerEmail: seller.email,
+      sellerName: seller.name,
+      status: listing.releaseType === 'manual' ? 'pending' : 'completed',
+      credentials: {
+        username: listing.username,
+        password: listing.password,
+        previewLink: listing.previewLink,
+        attachedEmail: listing.attachedEmail,
+        attachedEmailPassword: listing.attachedEmailPassword,
+        twoFA: listing.twoFA,
+        extraInfo: listing.extraInfo
+      },
+      createdAt: new Date().toISOString()
+    };
+
+    if (order.status === 'completed') {
+      seller.balance = Number(((seller.balance || 0) + price).toFixed(2));
+      order.completedAt = new Date().toISOString();
+    } else {
+      seller.escrowBalance = Number(((seller.escrowBalance || 0) + price).toFixed(2));
+    }
+
+    buyer.orders = buyer.orders || [];
+    seller.orders = seller.orders || [];
+    buyer.orders.unshift({ ...order, role: 'buyer' });
+    seller.orders.unshift({ ...order, role: 'seller' });
+
+    // Reduce stock / remove listing if sold out
+    const sellerAd = (seller.ads || []).find((a) => a.id === listing.id);
+    if (sellerAd) {
+      sellerAd.stock = Math.max(0, (sellerAd.stock || 1) - 1);
+      if (sellerAd.stock <= 0) sellerAd.status = 'removed';
+    }
+
+    pushNotification(buyer, {
+      title: 'Order placed',
+      body: `You purchased "${listing.title}" for ${formatMoney(price)}.`,
+      type: 'order'
+    });
+    pushNotification(seller, {
+      title: 'New sale',
+      body: `${buyer.name} purchased "${listing.title}".`,
+      type: 'order'
+    });
+
+    persistUser(buyer);
+    persistUser(seller);
+    return { ok: true, order };
+  }
+
+  function refundOrder(seller, orderId) {
+    const sOrder = (seller.orders || []).find((o) => o.id === orderId && o.role === 'seller');
+    if (!sOrder) return { ok: false, error: 'Order not found.' };
+    if (sOrder.status === 'cancelled') return { ok: false, error: 'Order already cancelled.' };
+
+    const buyer = findUserByEmail(sOrder.buyerEmail);
+    if (!buyer) return { ok: false, error: 'Buyer not found.' };
+
+    const price = Number(sOrder.price);
+    if (sOrder.status === 'pending') {
+      seller.escrowBalance = Math.max(0, Number(((seller.escrowBalance || 0) - price).toFixed(2)));
+    } else if (sOrder.status === 'completed') {
+      if ((seller.balance || 0) < price) return { ok: false, error: 'Insufficient seller balance to refund.' };
+      seller.balance = Number(((seller.balance || 0) - price).toFixed(2));
+    }
+
+    buyer.balance = Number(((buyer.balance || 0) + price).toFixed(2));
+    sOrder.status = 'cancelled';
+    sOrder.refundedAt = new Date().toISOString();
+
+    const bOrder = (buyer.orders || []).find((o) => o.id === orderId);
+    if (bOrder) {
+      bOrder.status = 'cancelled';
+      bOrder.refundedAt = sOrder.refundedAt;
+    }
+
+    pushNotification(buyer, {
+      title: 'Refund received',
+      body: `Order "${sOrder.title}" was refunded (${formatMoney(price)}).`,
+      type: 'refund'
+    });
+    persistUser(seller);
+    persistUser(buyer);
+    return { ok: true };
+  }
+
+  function completeManualOrder(seller, orderId) {
+    const sOrder = (seller.orders || []).find((o) => o.id === orderId && o.role === 'seller');
+    if (!sOrder || sOrder.status !== 'pending') return { ok: false, error: 'Order not pending.' };
+    const price = Number(sOrder.price);
+    seller.escrowBalance = Math.max(0, Number(((seller.escrowBalance || 0) - price).toFixed(2)));
+    seller.balance = Number(((seller.balance || 0) + price).toFixed(2));
+    sOrder.status = 'completed';
+    sOrder.completedAt = new Date().toISOString();
+    const buyer = findUserByEmail(sOrder.buyerEmail);
+    if (buyer) {
+      const bOrder = (buyer.orders || []).find((o) => o.id === orderId);
+      if (bOrder) {
+        bOrder.status = 'completed';
+        bOrder.completedAt = sOrder.completedAt;
+      }
+      persistUser(buyer);
+    }
+    persistUser(seller);
+    return { ok: true };
+  }
+
+  function getThreadKey(orderId) {
+    return 'order_' + orderId;
+  }
+
+  function getMessages(orderId) {
+    // messages stored on both users under messages[thread]; merge from either
+    const users = getUsers();
+    const all = [];
+    Object.keys(users).forEach((email) => {
+      const u = users[email];
+      const thread = (u.messages || {})[getThreadKey(orderId)] || [];
+      thread.forEach((m) => all.push(m));
+    });
+    // dedupe by id
+    const map = {};
+    all.forEach((m) => {
+      map[m.id] = m;
+    });
+    return Object.values(map).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }
+
+  function sendMessage(fromUser, orderId, text) {
+    const msg = {
+      id: uid(),
+      orderId,
+      fromEmail: fromUser.email,
+      fromName: fromUser.name,
+      text: String(text || '').trim(),
+      createdAt: new Date().toISOString()
+    };
+    if (!msg.text) return { ok: false, error: 'Empty message' };
+    fromUser.messages = fromUser.messages || {};
+    const key = getThreadKey(orderId);
+    fromUser.messages[key] = fromUser.messages[key] || [];
+    fromUser.messages[key].push(msg);
+    persistUser(fromUser);
+
+    // notify counterparty
+    const order = (fromUser.orders || []).find((o) => o.id === orderId);
+    if (order) {
+      const otherEmail = order.role === 'buyer' ? order.sellerEmail : order.buyerEmail;
+      const other = findUserByEmail(otherEmail);
+      if (other) {
+        other.messages = other.messages || {};
+        other.messages[key] = other.messages[key] || [];
+        // keep a copy so both can read
+        if (!other.messages[key].some((m) => m.id === msg.id)) other.messages[key].push(msg);
+        pushNotification(other, {
+          title: 'New message',
+          body: `${fromUser.name}: ${msg.text.slice(0, 80)}`,
+          type: 'message'
+        });
+        persistUser(other);
+      }
+    }
+    return { ok: true, msg };
+  }
+
+  function deposit(user, amount) {
+    amount = Number(amount);
+    if (!amount || amount < CONFIG.minDeposit) {
+      return { ok: false, error: 'Minimum deposit is $' + CONFIG.minDeposit.toFixed(2) + '.' };
+    }
+    const fee = Number((amount * CONFIG.depositFeeRate).toFixed(2));
+    const credited = Number((amount - fee).toFixed(2));
+    user.balance = Number(((user.balance || 0) + credited).toFixed(2));
+    user.totalDeposits = Number(((user.totalDeposits || 0) + credited).toFixed(2));
+    user.transactions = user.transactions || [];
+    user.transactions.unshift({
+      id: uid(),
+      type: 'deposit',
+      amount: credited,
+      fee,
+      status: 'completed',
+      note: 'Deposit (payment gateway pending integration)',
+      createdAt: new Date().toISOString()
+    });
+    persistUser(user);
+    return { ok: true, credited };
+  }
+
+  function withdraw(user, amount, method) {
+    amount = Number(amount);
+    if (!amount || amount < CONFIG.minWithdraw) {
+      return { ok: false, error: 'Minimum withdrawal is $' + CONFIG.minWithdraw.toFixed(2) + '.' };
+    }
+    const commission = Number((amount * CONFIG.withdrawCommissionRate).toFixed(2));
+    const totalDebit = Number((amount + commission).toFixed(2));
+    // User receives `amount`, platform takes commission on top OR from amount?
+    // Standard: withdraw $X, fee taken from X so they receive X*(1-rate). Clearer for sellers:
+    // "I want to withdraw $10" → fee 10% → they get $9, balance reduces by $10.
+    const feeFromAmount = Number((amount * CONFIG.withdrawCommissionRate).toFixed(2));
+    const payout = Number((amount - feeFromAmount).toFixed(2));
+    if ((user.balance || 0) < amount) {
+      return { ok: false, error: 'Insufficient available balance.' };
+    }
+    user.balance = Number(((user.balance || 0) - amount).toFixed(2));
+    user.totalWithdrawals = Number(((user.totalWithdrawals || 0) + amount).toFixed(2));
+    user.transactions = user.transactions || [];
+    user.transactions.unshift({
+      id: uid(),
+      type: 'withdrawal',
+      amount,
+      fee: feeFromAmount,
+      payout,
+      method: method || 'crypto',
+      status: 'pending',
+      note: 'Withdrawal requested — connect payment gateway to pay out. Platform commission ' + (CONFIG.withdrawCommissionRate * 100) + '%.',
+      createdAt: new Date().toISOString()
+    });
+    persistUser(user);
+    return { ok: true, payout, fee: feeFromAmount };
+  }
+
+  function setPlan(user, planId) {
+    if (!PLANS[planId]) return { ok: false, error: 'Unknown plan' };
+    user.plan = planId;
+    persistUser(user);
+    return { ok: true };
+  }
+
+  global.Acctventa = {
+    CONFIG,
+    PLANS,
+    getUsers,
+    saveUsers,
+    getCurrentUser,
+    persistUser,
+    normalizeUser,
+    formatMoney,
+    getInitials,
+    getPlan,
+    getUploadsToday,
+    getRemainingUploads,
+    canUploadToday,
+    aiReviewListing,
+    runAiReviewOnAd,
+    createAd,
+    getMarketplaceListings,
+    findListingById,
+    purchaseListing,
+    refundOrder,
+    completeManualOrder,
+    getMessages,
+    sendMessage,
+    deposit,
+    withdraw,
+    setPlan,
+    pushNotification,
+    uid,
+    todayKey
+  };
+})(window);
