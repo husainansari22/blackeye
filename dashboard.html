@@ -49,22 +49,8 @@
                 </a>
             </div>
             <div class="flex items-center gap-3 text-slate-800 dark:text-white">
-                <button type="button" onclick="openSupportCenter()" class="border-r border-slate-200 dark:border-slate-700 pr-2 hover:text-brandPrimary transition" title="Support">
-                    <i class="fa-solid fa-headset text-lg"></i>
-                </button>
-                <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller">
-                    <i class="fa-solid fa-desktop text-lg"></i>
-                </button>
-                <button type="button" onclick="switchTab('orders')" class="relative hover:text-brandPrimary transition" title="Cart">
-                    <i class="fa-solid fa-cart-shopping text-lg"></i>
-                    <span class="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
-                </button>
-                <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
-                    <i class="fa-regular fa-bell text-lg"></i>
-                    <span class="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">1</span>
-                </button>
-                <button type="button" onclick="toggleRightMenu()" class="hover:text-brandPrimary transition" title="Help">
-                    <i class="fa-regular fa-circle-question text-lg"></i>
+                <button type="button" onclick="toggleRightMenu()" class="text-slate-800 dark:text-white" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
             </div>
         </div>
@@ -636,30 +622,44 @@
         </div>
     </div>
 
-    <!-- RIGHT MENU DRAWER (QUICK NAVIGATION) -->
-    <div id="rightMenu" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] hidden flex justify-end transition-opacity">
-        <div class="w-3/4 max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-4 shadow-2xl">
-            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+    <!-- RIGHT MENU DRAWER — same 3-line style as left menu -->
+    <div id="rightMenu" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
+        <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
+            <div class="flex items-center px-4 pt-3 pb-1">
                 <button type="button" onclick="toggleRightMenu()" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
-                <span class="font-bold text-lg text-brandPrimary dark:text-white">Quick Menu</span>
             </div>
-            <div class="space-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
-                <a href="#" onclick="switchTab('home'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-house w-5 text-slate-400"></i> Home Feed</a>
-                <a href="#" onclick="switchTab('market'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-border-all w-5 text-slate-400"></i> Marketplace</a>
-                <a href="#" onclick="switchTab('orders'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-regular fa-clipboard w-5 text-slate-400"></i> Purchases</a>
-                <a href="#" onclick="switchTab('ads'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-bullhorn w-5 text-slate-400"></i> Active Ads</a>
-                <a href="#" onclick="switchTab('wallet'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-wallet w-5 text-slate-400"></i> Wallet & Escrow</a>
-                
-                <div class="border-t border-slate-200 dark:border-slate-800 pt-4 mt-2">
-                    <p class="text-xs text-slate-400 font-bold mb-3 uppercase tracking-wider">Quick Categories</p>
-                    <div class="grid grid-cols-2 gap-2 text-xs font-normal">
-                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">Social Media</span>
-                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">Messaging</span>
-                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">VPN & Proxies</span>
-                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">Giftcards</span>
-                    </div>
+            <nav class="px-2 pt-1">
+                <a href="#" onclick="switchTab('home'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-house w-5 text-center"></i> Home Feed
+                </a>
+                <a href="#" onclick="switchTab('market'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-border-all w-5 text-center"></i> Marketplace
+                </a>
+                <a href="#" onclick="switchTab('orders'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-regular fa-clipboard w-5 text-center"></i> Purchases
+                </a>
+                <a href="#" onclick="switchTab('ads'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-bullhorn w-5 text-center"></i> Active Ads
+                </a>
+                <a href="#" onclick="switchTab('wallet'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-wallet w-5 text-center"></i> Wallet & Escrow
+                </a>
+                <a href="#" onclick="toggleNotificationDrawer(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-regular fa-bell w-5 text-center"></i> Notifications
+                </a>
+                <a href="#" onclick="openSupportCenter(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-headset w-5 text-center"></i> Support
+                </a>
+            </nav>
+            <div class="px-5 pt-3 pb-2">
+                <p class="text-xs text-slate-400 font-bold mb-2 uppercase tracking-wider">Quick Categories</p>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">Social Media</span>
+                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">Messaging</span>
+                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">VPN & Proxies</span>
+                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">Giftcards</span>
                 </div>
             </div>
         </div>
