@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AcctVenta - The Marketplace for Digital Products & Services</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        skyBrand: '#0ea5e9',
+                        skyHover: '#0284c7',
+                        darkBg: '#0b0f17',
+                        darkCard: '#151b23',
+                        inputBg: '#111827',
+                        inputBorder: '#374151'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-3px) scale(1.05); }
+        }
+        @keyframes orbitBall {
+            0% { transform: rotate(0deg) translateX(14px) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(14px) rotate(-360deg); }
+        }
+        .live-logo-glow {
+            animation: floatLogo 3s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(14,165,233,0.6);
+        }
+        .rolling-ball {
+            animation: orbitBall 4s linear infinite;
+        }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+
+    <!-- HEADER / NAVBAR -->
+    <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchPage('home')">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-white font-black text-lg live-logo-glow">A</div>
+                <span class="font-extrabold text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">cctventa</span>
+            </div>
+            
+            <!-- LIVE ANIMATED ELEMENT IN TOP BAR -->
+            <div class="relative w-8 h-8 flex items-center justify-center">
+                <div class="rolling-ball text-skyBrand text-sm opacity-80">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="themeToggle" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                    <i class="fa-solid fa-sun dark:hidden"></i>
+                    <i class="fa-solid fa-moon hidden dark:block"></i>
+                </button>
+                <button onclick="toggleMenu()" class="w-9 h-9 rounded-full bg-skyBrand text-white flex items-center justify-center focus:outline-none">
+                    <i class="fa-solid fa-bars" id="menuIcon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- DROPDOWN MENU -->
+        <div id="mobileMenu" class="hidden absolute top-full left-0 w-full bg-white dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 shadow-xl py-4 px-6 space-y-4">
+            <div class="flex flex-col space-y-3 font-medium text-sm">
+                <a href="#" onclick="switchPage('home'); toggleMenu();" class="hover:text-skyBrand">Home</a>
+                <a href="#features" onclick="toggleMenu()" class="hover:text-skyBrand">Features</a>
+                <a href="#howitworks" onclick="toggleMenu()" class="hover:text-skyBrand">How it Works</a>
+                <a href="#whyus" onclick="toggleMenu()" class="hover:text-skyBrand">Why Us</a>
+                <a href="#" onclick="switchPage('login'); toggleMenu();" class="text-skyBrand font-bold pt-2 border-t border-gray-100 dark:border-gray-800"><i class="fa-solid fa-right-to-bracket mr-2"></i> Login</a>
+                <a href="#" onclick="switchPage('signup'); toggleMenu();" class="bg-skyBrand text-white text-center py-2.5 rounded-xl font-bold"><i class="fa-solid fa-user-plus mr-2"></i> Sign Up</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- PAGE 1: HOME PAGE -->
+    <div id="page_home" class="block pb-10">
+        <!-- HERO SECTION -->
+        <section class="px-4 pt-10 pb-6 text-center max-w-md mx-auto">
+            <div class="inline-flex items-center gap-1.5 bg-sky-100 dark:bg-sky-950/60 text-skyBrand text-xs px-3 py-1.5 rounded-full font-medium mb-6">
+                <span class="animate-pulse">✨</span> Trusted by 300k+ users
+            </div>
+
+            <h1 class="text-3xl font-extrabold tracking-tight mb-4 leading-tight">
+                The Marketplace for Digital Products & Services.
+            </h1>
+
+            <p class="text-gray-600 dark:text-gray-400 text-sm mb-8 leading-relaxed">
+                Buy and sell digital products, business tools, subscriptions, virtual numbers, gift cards, and more through verified merchants with secure escrow protection.
+            </p>
+
+            <div class="flex flex-col gap-3">
+                <button onclick="handleBrowseMarket()" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-store"></i> Browse Marketplace
+                </button>
+                <button onclick="openAppInstallModal()" class="w-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-mobile-screen"></i> Mobile App
+                </button>
+                <a href="https://t.me/acctventa" target="_blank" rel="noopener noreferrer" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-paper-plane"></i> Join Groupchat
+                </a>
+            </div>
+        </section>
+
+        <!-- FEATURES SECTION -->
+        <section id="features" class="px-4 py-8 max-w-md mx-auto space-y-6">
+            <div class="text-center">
+                <span class="bg-sky-100 dark:bg-sky-950/60 text-skyBrand text-xs px-4 py-1.5 rounded-full font-semibold">Features</span>
+                <h2 class="text-2xl font-bold mt-4">Buy & Sell Verified Digital Products Securely</h2>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Verified Digital Products Marketplace</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Buy and sell TikTok accounts, Telegram numbers, social media accounts, VPN accounts, email accounts, and websites from verified sellers on AcctVenta.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Secure Escrow Transactions</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    All purchases are protected through secure escrow payments, ensuring buyers receive their digital accounts before funds are released to sellers.
+                </p>
+                <div class="bg-gray-100 dark:bg-gray-900 p-4 rounded-xl text-center">
+                    <div class="w-full bg-skyBrand text-white text-xs py-2 rounded-lg font-bold">Pay</div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Chat With Sellers Before Buying</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Message sellers directly to verify account details, ask questions, and confirm delivery before purchasing digital accounts.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Buyer Reviews & Seller Ratings</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    View seller ratings, buyer reviews, and transaction history to safely buy verified digital accounts from trusted merchants.
+                </p>
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS SECTION -->
+        <section id="howitworks" class="px-4 py-8 max-w-md mx-auto space-y-6">
+            <div class="text-center">
+                <span class="bg-sky-100 dark:bg-sky-950/60 text-skyBrand text-xs px-4 py-1.5 rounded-full font-semibold">How It Works</span>
+                <h2 class="text-2xl font-bold mt-4">Buy & Sell Digital Products in 3 Simple Steps</h2>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-950/60 text-skyBrand flex items-center justify-center font-bold text-sm mb-4">01</span>
+                <h3 class="font-bold text-base mb-2">Browse Digital Accounts Marketplace</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Search and explore TikTok accounts, Telegram numbers, email accounts, VPN accounts, and other digital products listed by verified sellers on AcctVenta.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-950/60 text-skyBrand flex items-center justify-center font-bold text-sm mb-4">02</span>
+                <h3 class="font-bold text-base mb-2">Secure Payment & Escrow Protection</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Payments are protected through escrow until the digital accounts are fully delivered.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-950/60 text-skyBrand flex items-center justify-center font-bold text-sm mb-4">03</span>
+                <h3 class="font-bold text-base mb-2">Receive Your Digital Product Instantly</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Get your TikTok account, Telegram number, VPN access, or other digital product delivered instantly or within the seller's delivery time.
+                </p>
+            </div>
+        </section>
+
+        <!-- WHY US SECTION -->
+        <section id="whyus" class="px-4 py-8 max-w-md mx-auto space-y-4">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold">Why Choose AcctVenta</h2>
+            </div>
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3 text-xs text-gray-600 dark:text-gray-300">
+                <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>Trusted Digital Accounts Marketplace:</strong> Buy and sell verified accounts safely.</p>
+                <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>Secure Escrow Protection:</strong> Every purchase is guarded against fraud.</p>
+                <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>Instant Delivery:</strong> Automated dispatch for digital assets.</p>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="bg-white dark:bg-darkCard border-t border-gray-200 dark:border-gray-800 px-4 py-8 mt-6">
+            <div class="max-w-md mx-auto space-y-6 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-skyBrand flex items-center justify-center text-white font-bold text-sm">A</div>
+                    <span class="font-bold text-lg tracking-tight">acctventa</span>
+                </div>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    AcctVenta is a global marketplace for digital products and services. Browse virtual numbers, VPN services, subscriptions, gift cards, software tools, and other digital solutions from verified merchants.
+                </p>
+
+                <div class="flex gap-3">
+                    <a href="#" class="w-9 h-9 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand flex items-center justify-center"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand flex items-center justify-center"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand flex items-center justify-center"><i class="fa-brands fa-telegram"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand flex items-center justify-center"><i class="fa-brands fa-tiktok"></i></a>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold">Quick Links</h4>
+                    <div class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <a href="#" onclick="switchPage('home')">Home</a>
+                        <a href="#features">Features</a>
+                        <a href="#howitworks">How it Works</a>
+                        <a href="#whyus">Why Us</a>
+                        <a href="#" onclick="switchPage('signup')">Become a Merchant</a>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold">Contact Us</h4>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                        <p>help@acctventa.com</p>
+                        <p>Telegram: @acctventa</p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+                    <span>Copyright © 2026 Acctventa. All rights reserved</span>
+                    <a href="#">Privacy Policy</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- PAGE 2: SIGN UP PAGE -->
+    <div id="page_signup" class="hidden min-h-screen bg-black px-6 py-10 flex flex-col max-w-md mx-auto relative">
+        <div class="mb-6 mt-4">
+            <h1 class="text-2xl font-bold text-white mb-1">Welcome to AcctVenta 👋</h1>
+            <p class="text-gray-400 text-sm">Already have an account? <span class="text-skyBrand cursor-pointer font-medium" onclick="switchPage('login')">Login</span></p>
+        </div>
+
+        <form class="space-y-4" onsubmit="handleSignup(event)">
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Full Name <span class="text-red-500">*</span></label>
+                <input type="text" id="su_name" placeholder="Type your full name" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Email address <span class="text-red-500">*</span></label>
+                <input type="email" id="su_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                <div class="flex bg-inputBg border border-inputBorder rounded-xl overflow-hidden focus-within:border-skyBrand transition">
+                    <div class="flex items-center px-3 border-r border-inputBorder bg-inputBg text-white text-sm gap-2">
+                        <img id="country_flag" src="https://flagcdn.com/24x18/ng.png" alt="flag" class="w-6 h-4 rounded-sm object-cover">
+                        <span id="country_code" class="text-xs font-semibold">+234</span>
+                    </div>
+                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-white text-sm focus:outline-none" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="su_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_pass', this)"></i>
+                </div>
+                <ul class="text-gray-500 text-xs mt-1.5 space-y-0.5 list-disc pl-4">
+                    <li>Minimum length of 3-30 characters</li>
+                    <li>Only lowercase, numeric and symbols allowed</li>
+                </ul>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Confirm password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_cpass', this)"></i>
+                </div>
+            </div>
+
+            <div class="flex items-start gap-2.5 mt-2">
+                <input type="checkbox" id="su_terms" class="mt-1 w-4 h-4 rounded border-gray-600 bg-inputBg focus:ring-skyBrand" required>
+                <p class="text-xs text-gray-400 leading-tight">By clicking on this, I give consent to AcctVenta Privacy Policy and Terms of Use</p>
+            </div>
+
+            <button type="submit" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl transition mt-3">
+                Sign up
+            </button>
+        </form>
+        
+        <button class="absolute top-4 left-4 text-gray-400 hover:text-white" onclick="switchPage('home')">
+            <i class="fa-solid fa-arrow-left text-lg"></i>
+        </button>
+    </div>
+
+    <!-- PAGE 3: LOGIN PAGE -->
+    <div id="page_login" class="hidden min-h-screen bg-black px-6 py-12 flex flex-col max-w-md mx-auto relative justify-center">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Login to your account</h1>
+            <p class="text-gray-400 text-sm">Don't have an account? <span class="text-skyBrand cursor-pointer font-medium" onclick="switchPage('signup')">Sign up</span></p>
+        </div>
+
+        <form class="space-y-5" onsubmit="handleLogin(event)">
+            <div>
+                <label class="block text-xs text-gray-300 mb-1.5">Email address <span class="text-red-500">*</span></label>
+                <input type="email" id="li_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+            </div>
+            
+            <div>
+                <label class="block text-xs text-gray-300 mb-1.5">Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="li_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('li_pass', this)"></i>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <a href="#" onclick="openForgotPassword(event)" class="text-xs text-skyBrand hover:underline">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="w-full bg-inputBg border border-inputBorder text-gray-300 hover:bg-skyBrand hover:text-white hover:border-skyBrand font-semibold py-3.5 rounded-xl transition">
+                Login
+            </button>
+        </form>
+        
+        <button class="absolute top-6 left-6 text-gray-400 hover:text-white" onclick="switchPage('home')">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+        </button>
+    </div>
+
+    <!-- MODAL POPUP (FORGOT PASSWORD & MOBILE APP INSTALL) -->
+    <div id="appModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-darkCard border border-gray-800 w-full max-w-sm rounded-2xl p-6 relative space-y-4 text-white">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function switchPage(pageId) {
+            document.getElementById('page_home').classList.add('hidden');
+            document.getElementById('page_signup').classList.add('hidden');
+            document.getElementById('page_login').classList.add('hidden');
+            document.getElementById('page_' + pageId).classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function togglePass(fieldId, icon) {
+            const input = document.getElementById(fieldId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function openForgotPassword(e) {
+            e.preventDefault();
+            const modal = document.getElementById('appModal');
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-lg mb-2">Reset Password</h3>
+                <p class="text-xs text-gray-400 mb-4">Enter your registered email address to receive password reset instructions.</p>
+                <input type="email" placeholder="Your email address" class="w-full bg-inputBg border border-inputBorder rounded-xl p-3 text-sm mb-4 text-white">
+                <button onclick="alert('Password reset link sent to your email!'); closeModal();" class="w-full bg-skyBrand py-3 rounded-xl font-bold text-sm">Send Reset Link</button>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function openAppInstallModal() {
+            const modal = document.getElementById('appModal');
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-xl mb-1 text-white">Install the AcctVenta App</h3>
+                <p class="text-xs text-gray-400 mb-4">Add app.acctventa.com to your home screen and use it like a native app — no app store required.</p>
+                
+                <div class="bg-darkBg p-4 rounded-xl border border-gray-800 space-y-2 mb-3">
+                    <div class="flex items-center gap-2 text-sm font-bold text-white">
+                        <i class="fa-brands fa-apple text-xl"></i> iOS (Safari)
+                    </div>
+                    <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
+                        <li>Open <span class="text-skyBrand underline">app.acctventa.com</span> in Safari</li>
+                        <li>Tap the Share icon in the toolbar</li>
+                        <li>Select <strong>Add to Home Screen</strong></li>
+                    </ol>
+                </div>
+
+                <div class="bg-darkBg p-4 rounded-xl border border-gray-800 space-y-2 mb-4">
+                    <div class="flex items-center gap-2 text-sm font-bold text-white">
+                        <i class="fa-brands fa-android text-emerald-400 text-xl"></i> Android (Chrome)
+                    </div>
+                    <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
+                        <li>Open <span class="text-skyBrand underline">app.acctventa.com</span> in Chrome</li>
+                        <li>Tap the menu (⋮) top-right corner</li>
+                        <li>Select <strong>Install app</strong> or <strong>Add to Home screen</strong></li>
+                    </ol>
+                </div>
+
+                <button onclick="closeModal()" class="w-full bg-skyBrand hover:bg-skyHover text-white py-3.5 rounded-xl font-bold text-sm transition shadow-lg">Download Now</button>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function handleBrowseMarket() {
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                window.location.href = "/dashboard.html";
+            } else {
+                switchPage('signup');
+            }
+        }
+
+        function handleSignup(e) {
+            e.preventDefault();
+            localStorage.setItem('isLoggedIn', 'true');
+            // Keep any referral code from the URL
+            const ref = new URLSearchParams(window.location.search).get('ref');
+            if (ref) localStorage.setItem('referralCode', ref);
+            window.location.href = "/dashboard.html";
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            localStorage.setItem('isLoggedIn', 'true');
+            window.location.href = "/dashboard.html";
+        }
+
+        function closeModal() {
+            document.getElementById('appModal').classList.add('hidden');
+        }
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // Open signup/login when visiting /auth/sign-up or ?page=signup
+        (function openAuthPageFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const page = (params.get('page') || '').toLowerCase();
+            const path = window.location.pathname.toLowerCase();
+            if (page === 'signup' || path.indexOf('/auth/sign-up') !== -1 || path.indexOf('/signup') !== -1) {
+                switchPage('signup');
+            } else if (page === 'login' || path.indexOf('/auth/login') !== -1 || path.indexOf('/auth/sign-in') !== -1 || path.indexOf('/login') !== -1) {
+                switchPage('login');
+            }
+        })();
+
+        // Detect user country for signup phone prefix
+        async function detectUserCountry() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data.country_code && data.country_calling_code) {
+                    document.getElementById('country_flag').src = `https://flagcdn.com/24x18/${data.country_code.toLowerCase()}.png`;
+                    document.getElementById('country_code').innerText = data.country_calling_code;
+                }
+            } catch (e) {
+                console.log("Using default country settings.");
+            }
+        }
+        detectUserCountry();
+    </script>
+</body>
+</html>

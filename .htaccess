@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Auth routes → landing page signup/login views
+RewriteRule ^auth/sign-up/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^auth/sign-in/?$ /index.html?page=login [L,QSA]
+RewriteRule ^auth/login/?$ /index.html?page=login [L,QSA]
+
+# Optional: /signup and /login shortcuts
+RewriteRule ^signup/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^login/?$ /index.html?page=login [L,QSA]
