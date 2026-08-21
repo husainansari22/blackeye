@@ -207,6 +207,7 @@
                         <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight">$0.00</h3>
                         <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-sky-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
                     </div>
+                    <p class="text-[11px] text-sky-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
                 </div>
                 <div class="flex gap-2 relative z-10">
                     <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-2.5 rounded-full text-xs shadow-md">Deposit</button>
@@ -735,10 +736,10 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260821zoom1"></script>
-    <script src="/js/api-client.js?v=20260821zoom1"></script>
-    <script src="/js/api-sync.js?v=20260821zoom1"></script>
-    <script src="/js/dashboard-app.js?v=20260821zoom1"></script>
+    <script src="/js/acctventa.js?v=20260821wd1"></script>
+    <script src="/js/api-client.js?v=20260821wd1"></script>
+    <script src="/js/api-sync.js?v=20260821wd1"></script>
+    <script src="/js/dashboard-app.js?v=20260821wd1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

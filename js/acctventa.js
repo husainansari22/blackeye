@@ -12,6 +12,7 @@
     minDeposit: 3,
     minWithdraw: 5,
     withdrawCommissionRate: 0.1, // platform fee on seller withdrawals (not shown in wallet UI)
+    salesCommissionRate: 0.22, // AI sales settlement: deducted from every successful sale
     depositFeeRate: 0,
     freeDailyUploadLimit: 5,
     brandPrimary: '#0ea5e9',
@@ -284,6 +285,7 @@
   function normalizeUser(user) {
     if (!user) return null;
     user.balance = Number(user.balance) || 0;
+    user.withdrawableBalance = Number(user.withdrawableBalance) || 0;
     user.escrowBalance = Number(user.escrowBalance) || 0;
     user.totalDeposits = Number(user.totalDeposits) || 0;
     user.totalWithdrawals = Number(user.totalWithdrawals) || 0;
@@ -579,7 +581,13 @@
     const seller = findUserByEmail(listing.sellerEmail);
     if (!seller) return { ok: false, error: 'Seller account not found.' };
 
-    buyer.balance = Number((buyer.balance - price).toFixed(2));
+    const prevBal = Number(buyer.balance || 0);
+    const buyerWd = Number(buyer.withdrawableBalance || 0);
+    buyer.balance = Number((prevBal - price).toFixed(2));
+    const depositPortion = Math.max(0, prevBal - buyerWd);
+    const fromDeposit = Math.min(price, depositPortion);
+    const fromWd = Number((price - fromDeposit).toFixed(2));
+    buyer.withdrawableBalance = Number(Math.max(0, buyerWd - fromWd).toFixed(2));
     // Escrow: seller funds locked until complete (auto-complete for auto release)
     const order = {
       id: uid(),
@@ -605,8 +613,38 @@
     };
 
     if (order.status === 'completed') {
-      seller.balance = Number(((seller.balance || 0) + price).toFixed(2));
+      const rate = Number(CONFIG.salesCommissionRate != null ? CONFIG.salesCommissionRate : 0.22);
+      const commission = Number((price * rate).toFixed(2));
+      const net = Number((price - commission).toFixed(2));
+      order.platformFee = commission;
+      order.sellerNet = net;
+      const sellerBal = Number(seller.balance || 0);
+      let wdAdd = net;
+      if (sellerBal < 0) {
+        wdAdd = Math.max(0, Number((net - Math.abs(sellerBal)).toFixed(2)));
+      }
+      seller.balance = Number((sellerBal + net).toFixed(2));
+      seller.withdrawableBalance = Number(((seller.withdrawableBalance || 0) + wdAdd).toFixed(2));
       order.completedAt = new Date().toISOString();
+      seller.transactions = seller.transactions || [];
+      seller.transactions.unshift({
+        id: uid(),
+        type: 'sale',
+        amount: net,
+        status: 'completed',
+        note: 'Sold · AI settlement net after ' + Math.round(rate * 100) + '% fee',
+        createdAt: new Date().toISOString(),
+      });
+      if (commission > 0) {
+        seller.transactions.unshift({
+          id: uid(),
+          type: 'commission',
+          amount: commission,
+          status: 'completed',
+          note: 'Platform sales commission',
+          createdAt: new Date().toISOString(),
+        });
+      }
     } else {
       seller.escrowBalance = Number(((seller.escrowBalance || 0) + price).toFixed(2));
     }
@@ -651,8 +689,10 @@
     if (sOrder.status === 'pending') {
       seller.escrowBalance = Math.max(0, Number(((seller.escrowBalance || 0) - price).toFixed(2)));
     } else if (sOrder.status === 'completed') {
-      if ((seller.balance || 0) < price) return { ok: false, error: 'Insufficient seller balance to refund.' };
-      seller.balance = Number(((seller.balance || 0) - price).toFixed(2));
+      const rate = Number(CONFIG.salesCommissionRate != null ? CONFIG.salesCommissionRate : 0.22);
+      const sellerDebit = sOrder.sellerNet != null ? Number(sOrder.sellerNet) : Number((price - Number((price * rate).toFixed(2))).toFixed(2));
+      seller.balance = Number(((seller.balance || 0) - sellerDebit).toFixed(2));
+      seller.withdrawableBalance = Number(Math.max(0, (seller.withdrawableBalance || 0) - sellerDebit).toFixed(2));
     }
 
     buyer.balance = Number(((buyer.balance || 0) + price).toFixed(2));
@@ -679,8 +719,19 @@
     const sOrder = (seller.orders || []).find((o) => o.id === orderId && o.role === 'seller');
     if (!sOrder || sOrder.status !== 'pending') return { ok: false, error: 'Order not pending.' };
     const price = Number(sOrder.price);
+    const rate = Number(CONFIG.salesCommissionRate != null ? CONFIG.salesCommissionRate : 0.22);
+    const commission = Number((price * rate).toFixed(2));
+    const net = Number((price - commission).toFixed(2));
     seller.escrowBalance = Math.max(0, Number(((seller.escrowBalance || 0) - price).toFixed(2)));
-    seller.balance = Number(((seller.balance || 0) + price).toFixed(2));
+    const sellerBal = Number(seller.balance || 0);
+    let wdAdd = net;
+    if (sellerBal < 0) {
+      wdAdd = Math.max(0, Number((net - Math.abs(sellerBal)).toFixed(2)));
+    }
+    seller.balance = Number((sellerBal + net).toFixed(2));
+    seller.withdrawableBalance = Number(((seller.withdrawableBalance || 0) + wdAdd).toFixed(2));
+    sOrder.platformFee = commission;
+    sOrder.sellerNet = net;
     sOrder.status = 'completed';
     sOrder.completedAt = new Date().toISOString();
     const buyer = findUserByEmail(sOrder.buyerEmail);
@@ -784,6 +835,10 @@
     }
     const feeFromAmount = Number((amount * CONFIG.withdrawCommissionRate).toFixed(2));
     const payout = Number((amount - feeFromAmount).toFixed(2));
+    const wd = Number(user.withdrawableBalance || 0);
+    if (wd < amount) {
+      return { ok: false, error: 'Insufficient withdrawable balance. Only sales and referral earnings can be withdrawn.' };
+    }
     if ((user.balance || 0) < amount) {
       return { ok: false, error: 'Insufficient available balance.' };
     }
@@ -808,6 +863,7 @@
       user.payoutCurrency = currency;
     }
     user.balance = Number(((user.balance || 0) - amount).toFixed(2));
+    user.withdrawableBalance = Number(Math.max(0, (user.withdrawableBalance || 0) - amount).toFixed(2));
     user.totalWithdrawals = Number(((user.totalWithdrawals || 0) + amount).toFixed(2));
     user.transactions = user.transactions || [];
     user.transactions.unshift({

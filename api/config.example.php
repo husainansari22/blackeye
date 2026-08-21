@@ -19,6 +19,9 @@ return [
     'min_deposit' => 3,
     'min_withdraw' => 5,
     'withdraw_commission_rate' => 0.10,
+    'sales_commission_rate' => 0.22,
+    'referral_reward_amount' => 5,
+    'referral_min_deposit' => 50,
     'deposit_fee_rate' => 0,
     'free_daily_uploads' => 5,
 

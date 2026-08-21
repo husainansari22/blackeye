@@ -63,6 +63,7 @@
     const plan = A().getPlan(u);
     set('walletBalanceDisplay', money(u.balance));
     set('dashBalanceDisplay', money(u.balance));
+    set('walletWithdrawableDisplay', money(u.withdrawableBalance != null ? u.withdrawableBalance : 0));
     set('walletEscrowDisplay', money(u.escrowBalance));
     set('walletDepositsDisplay', money(u.totalDeposits));
     set('walletWithdrawalsDisplay', money(u.totalWithdrawals));
@@ -680,7 +681,8 @@
   function openWithdrawFlow() {
     const cfg = A().CONFIG;
     const u = refreshUser() || {};
-    const bal = money(u.balance);
+    const bal = money(u.withdrawableBalance != null ? u.withdrawableBalance : 0);
+    const walletBal = money(u.balance);
     const cur = walletCurrencies();
     const locked = !!u.payoutBankLocked;
     withdrawMethodCard = 'bank';
@@ -728,7 +730,8 @@
             <input id="walletAmountInput" type="number" min="${cfg.minWithdraw}" step="0.01" placeholder="0" oninput="updateWithdrawLocalConvert()" class="w-full bg-transparent pl-6 pr-2 py-1 text-2xl font-extrabold focus:outline-none"></div>
             <p id="withdrawLocalConvert" class="text-sm text-slate-400 mt-1 min-h-[1.25rem]"></p>
           </div>
-          <div class="flex justify-between text-[11px] mt-2"><span class="text-brandPrimary font-semibold">Min. withdrawal is ${money(cfg.minWithdraw)}</span><span class="text-slate-400">Balance: <span class="text-brandPrimary font-semibold">${bal}</span></span></div>
+          <div class="flex justify-between gap-2 text-[11px] mt-2"><span class="text-brandPrimary font-semibold shrink-0">Min. withdrawal is ${money(cfg.minWithdraw)}</span><span class="text-slate-400 text-right">Withdrawable balance: <span class="text-brandPrimary font-semibold">${bal}</span></span></div>
+          <p class="text-[10px] text-slate-400 mt-1">Wallet total ${walletBal}. Only sales &amp; referral earnings are withdrawable — deposits are for buying.</p>
         </div>
         <div class="pt-1 border-t border-slate-200 dark:border-slate-800">
           <p class="text-xs font-bold mb-2 mt-3">Withdraw to</p>

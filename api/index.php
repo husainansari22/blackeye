@@ -27,6 +27,7 @@ try {
                     'minDeposit' => (float)setting_get('min_deposit', app_config()['min_deposit']),
                     'minWithdraw' => (float)setting_get('min_withdraw', app_config()['min_withdraw']),
                     'withdrawCommissionRate' => (float)setting_get('withdraw_commission_rate', app_config()['withdraw_commission_rate']),
+                    'salesCommissionRate' => (float)setting_get('sales_commission_rate', app_config()['sales_commission_rate'] ?? 0.22),
                     'depositFeeRate' => (float)setting_get('deposit_fee_rate', app_config()['deposit_fee_rate']),
                     'supportTelegram' => setting_get('support_telegram', app_config()['support_telegram']),
                     'supportEmail' => setting_get('support_email', app_config()['support_email'] ?? 'support@acctventa.com'),
@@ -279,6 +280,8 @@ try {
         case 'orders.create':
         case 'orders.buy': {
             $u = require_user();
+            ensure_wallet_ledger_columns();
+            ensure_marketplace_extras();
             $listingId = (int)($body['listingId'] ?? $body['id'] ?? 0);
             $stmt = db()->prepare("SELECT a.*, u.email AS seller_email, u.name AS seller_name FROM ads a JOIN users u ON u.id = a.seller_id WHERE a.id = ? AND a.status = 'active' AND a.stock > 0 LIMIT 1");
             $stmt->execute([$listingId]);
@@ -290,8 +293,9 @@ try {
 
             $pdo = db();
             $pdo->beginTransaction();
+            $saleSplit = null;
             try {
-                $pdo->prepare('UPDATE users SET balance = balance - ? WHERE id = ?')->execute([money_f($price), (int)$u['id']]);
+                debit_user_for_purchase($pdo, (int)$u['id'], $price);
                 $creds = json_encode([
                     'username' => $ad['username'],
                     'password' => $ad['password_plain'],
@@ -310,7 +314,8 @@ try {
                 ]);
                 $orderId = (int)$pdo->lastInsertId();
                 if ($status === 'completed') {
-                    credit_seller_balance($pdo, (int)$ad['seller_id'], $price, 'Sold #' . $publicId);
+                    $saleSplit = credit_seller_balance($pdo, (int)$ad['seller_id'], $price, 'Sold #' . $publicId);
+                    record_order_sale_split($pdo, $orderId, $saleSplit);
                 } else {
                     $pdo->prepare('UPDATE users SET escrow_balance = escrow_balance + ? WHERE id = ?')->execute([money_f($price), (int)$ad['seller_id']]);
                 }
@@ -323,17 +328,26 @@ try {
                 throw $e;
             }
             notify_user((int)$u['id'], 'Order placed', 'You purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order');
-            notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $u['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order');
+            $sellerNetNote = '';
+            if ($saleSplit) {
+                $sellerNetNote = ' AI deducted ' . round(($saleSplit['rate'] ?? 0) * 100, 2) . '% ($' . money_f($saleSplit['commission']) . '); $' . money_f($saleSplit['net']) . ' added to withdrawable balance.';
+                notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $u['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId . '.' . $sellerNetNote, 'order');
+            } else {
+                notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $u['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order');
+            }
             $sellerReleaseNote = $status === 'pending'
-                ? 'Funds are on hold in escrow until you send the buyer the login details in order chat. AI will release funds when credentials are detected.'
-                : 'Sale proceeds were credited to your balance (any seller debt was repaid first).';
+                ? 'Funds are on hold in escrow until you send the buyer the login details in order chat. AI will release funds when credentials are detected (platform sales commission applies on release).'
+                : ('AI sales settlement credited $' . money_f($saleSplit['net'] ?? 0) . ' to your withdrawable balance after platform commission (any seller debt was repaid first).');
             try {
                 $buyerMail = email_order_notice($u['name'], $ad['title'], 'buyer', money_f($price), $publicId);
                 send_app_mail($u['email'], $buyerMail['subject'], $buyerMail['html'], $buyerMail['text']);
                 $sellerMail = email_order_notice($ad['seller_name'], $ad['title'], 'seller', money_f($price), $publicId, $sellerReleaseNote);
                 send_app_mail($ad['seller_email'], $sellerMail['subject'], $sellerMail['html'], $sellerMail['text']);
             } catch (Throwable $e) {}
-            json_out(['ok' => true, 'orderId' => $orderId, 'publicId' => $publicId, 'txid' => $publicId, 'status' => $status]);
+            try {
+                maybe_credit_referral_reward((int)$u['id']);
+            } catch (Throwable $e) {}
+            json_out(['ok' => true, 'orderId' => $orderId, 'publicId' => $publicId, 'txid' => $publicId, 'status' => $status, 'sellerNet' => $saleSplit['net'] ?? null, 'platformFee' => $saleSplit['commission'] ?? null]);
         }
 
         case 'orders.refund': {
@@ -566,12 +580,21 @@ try {
         case 'wallet.withdraw': {
             $u = require_user();
             ensure_user_payout_columns();
+            ensure_wallet_ledger_columns();
             // reload with payout columns
             $u = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
             $amount = (float)($body['amount'] ?? 0);
             $min = (float)setting_get('min_withdraw', 5);
             if ($amount < $min) json_out(['ok' => false, 'error' => "Minimum withdrawal is $$min"], 422);
-            if ((float)$u['balance'] < $amount) json_out(['ok' => false, 'error' => 'Insufficient balance'], 400);
+            $withdrawable = (float)($u['withdrawable_balance'] ?? 0);
+            $balance = (float)$u['balance'];
+            if ($balance <= 0 || $withdrawable <= 0) {
+                json_out(['ok' => false, 'error' => 'No withdrawable balance. Only sales and referral earnings can be withdrawn — deposits are for purchases only.'], 400);
+            }
+            if ($withdrawable < $amount) {
+                json_out(['ok' => false, 'error' => 'Insufficient withdrawable balance ($' . money_f($withdrawable) . '). Deposits cannot be withdrawn.'], 400);
+            }
+            if ($balance < $amount) json_out(['ok' => false, 'error' => 'Insufficient balance'], 400);
             $method = trim((string)($body['method'] ?? 'bank'));
             $destination = trim((string)($body['destination'] ?? $body['account'] ?? ''));
             $accountName = trim((string)($body['accountName'] ?? ''));
@@ -605,8 +628,8 @@ try {
                     ->execute([$bankName, $destination, $accountName, $currency, (int)$u['id']]);
             }
 
-            db()->prepare('UPDATE users SET balance = balance - ?, total_withdrawals = total_withdrawals + ? WHERE id = ?')
-                ->execute([money_f($amount), money_f($amount), (int)$u['id']]);
+            db()->prepare('UPDATE users SET balance = balance - ?, withdrawable_balance = GREATEST(0, withdrawable_balance - ?), total_withdrawals = total_withdrawals + ? WHERE id = ?')
+                ->execute([money_f($amount), money_f($amount), money_f($amount), (int)$u['id']]);
             db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, payout, status, method, note, reference) VALUES (?, \'withdrawal\', ?, ?, ?, \'pending\', ?, ?, ?)')
                 ->execute([(int)$u['id'], money_f($amount), money_f($fee), money_f($payout), $method, $note, $txRef]);
             notify_user((int)$u['id'], 'Withdrawal requested', 'Your withdrawal of $' . money_f($amount) . ' is pending review.', 'wallet');

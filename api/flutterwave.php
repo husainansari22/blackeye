@@ -246,5 +246,8 @@ function credit_deposit_from_gateway(string $txRef, float $amountPaid, string $f
         throw $e;
     }
     notify_user((int)$tx['user_id'], 'Deposit successful', 'Your wallet was funded with $' . money_f($credited), 'wallet');
+    try {
+        maybe_credit_referral_reward((int)$tx['user_id']);
+    } catch (Throwable $e) {}
     return ['ok' => true, 'credited' => $credited, 'user_id' => (int)$tx['user_id']];
 }

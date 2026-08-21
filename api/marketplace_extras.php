@@ -70,6 +70,17 @@ function ensure_marketplace_extras(): void {
         }
     }
 
+    foreach ([
+        'platform_fee' => "ALTER TABLE orders ADD COLUMN platform_fee DECIMAL(12,2) NULL AFTER price",
+        'seller_net' => "ALTER TABLE orders ADD COLUMN seller_net DECIMAL(12,2) NULL AFTER platform_fee",
+    ] as $col => $sql) {
+        try {
+            db()->query("SELECT {$col} FROM orders LIMIT 1");
+        } catch (Throwable $e) {
+            try { db()->exec($sql); } catch (Throwable $e2) {}
+        }
+    }
+
     $uploadDir = dirname(__DIR__) . '/uploads/chat';
     if (!is_dir($uploadDir)) {
         @mkdir($uploadDir, 0755, true);
@@ -135,36 +146,209 @@ function save_chat_attachment(string $data, string $filename = '', string $mimeH
 }
 
 /**
- * Credit seller balance; if balance is negative (debt), sale proceeds reduce the owing first.
- * Call inside an open transaction when possible.
+ * Debit wallet for a purchase. Prefers spending deposit funds first so sales/referral
+ * earnings remain withdrawable when possible.
+ * Call inside an open transaction.
  */
-function credit_seller_balance(PDO $pdo, int $sellerId, float $amount, string $note): void {
+function debit_user_for_purchase(PDO $pdo, int $userId, float $amount): void {
+    ensure_wallet_ledger_columns();
     $amount = (float)money_f($amount);
     if ($amount <= 0) return;
+    $chk = $pdo->prepare('SELECT balance, withdrawable_balance FROM users WHERE id = ? FOR UPDATE');
+    $chk->execute([$userId]);
+    $row = $chk->fetch();
+    if (!$row) throw new RuntimeException('User not found');
+    $bal = (float)$row['balance'];
+    $wd = (float)$row['withdrawable_balance'];
+    if ($bal < $amount) {
+        throw new RuntimeException('Insufficient balance');
+    }
+    $depositPortion = max(0.0, $bal - max(0.0, $wd));
+    $fromDeposit = min($amount, $depositPortion);
+    $fromWithdrawable = (float)money_f($amount - $fromDeposit);
+    $pdo->prepare('UPDATE users SET balance = balance - ?, withdrawable_balance = GREATEST(0, withdrawable_balance - ?) WHERE id = ?')
+        ->execute([money_f($amount), money_f($fromWithdrawable), $userId]);
+}
+
+/**
+ * Credit sales / referral earnings to balance + withdrawable_balance.
+ * Deposits must NOT use this helper.
+ * Call inside an open transaction when possible.
+ */
+function credit_withdrawable_earnings(PDO $pdo, int $userId, float $amount, string $type, string $note): float {
+    ensure_wallet_ledger_columns();
+    $amount = (float)money_f($amount);
+    if ($amount <= 0) return 0.0;
+    $chk = $pdo->prepare('SELECT balance, withdrawable_balance FROM users WHERE id = ? FOR UPDATE');
+    $chk->execute([$userId]);
+    $row = $chk->fetch();
+    if (!$row) throw new RuntimeException('User not found');
+    $bal = (float)$row['balance'];
+    $withdrawableAdd = 0.0;
+    if ($bal < 0) {
+        $debt = abs($bal);
+        if ($amount > $debt) {
+            $withdrawableAdd = (float)money_f($amount - $debt);
+        }
+    } else {
+        $withdrawableAdd = $amount;
+    }
+    $pdo->prepare('UPDATE users SET balance = balance + ?, withdrawable_balance = withdrawable_balance + ? WHERE id = ?')
+        ->execute([money_f($amount), money_f($withdrawableAdd), $userId]);
+    $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, ?, ?, \'completed\', ?)')
+        ->execute([$userId, $type, money_f($amount), $note]);
+    return $withdrawableAdd;
+}
+
+/**
+ * AI sales settlement: deduct platform sales commission, credit net to seller withdrawable balance.
+ * Example: $3 sale at 22% → commission $0.66, seller net $2.34.
+ * Call inside an open transaction when possible.
+ *
+ * @return array{gross:float,commission:float,net:float,rate:float,withdrawableAdd:float}
+ */
+function credit_seller_balance(PDO $pdo, int $sellerId, float $grossAmount, string $note): array {
+    ensure_wallet_ledger_columns();
+    $split = sales_split($grossAmount);
+    $gross = $split['gross'];
+    $commission = $split['commission'];
+    $net = $split['net'];
+    $rate = $split['rate'];
+    if ($gross <= 0) {
+        return ['gross' => 0.0, 'commission' => 0.0, 'net' => 0.0, 'rate' => $rate, 'withdrawableAdd' => 0.0];
+    }
+
     $chk = $pdo->prepare('SELECT balance FROM users WHERE id = ? FOR UPDATE');
     $chk->execute([$sellerId]);
     $row = $chk->fetch();
     if (!$row) throw new RuntimeException('Seller not found');
     $bal = (float)$row['balance'];
-    $pdo->prepare('UPDATE users SET balance = balance + ? WHERE id = ?')->execute([money_f($amount), $sellerId]);
-    $newBal = $bal + $amount;
-    $txNote = $note;
+
+    $txNote = $note . ' · AI settlement: $' . money_f($gross) . ' sale − ' . round($rate * 100, 2) . '% platform fee ($' . money_f($commission) . ') → net $' . money_f($net);
     if ($bal < 0) {
-        $applied = min($amount, abs($bal));
+        $applied = min($net, abs($bal));
         $txNote .= ' · $' . money_f($applied) . ' applied to seller debt';
+        $newBal = $bal + $net;
         if ($newBal < 0) {
             $txNote .= ' · still owing $' . money_f(abs($newBal));
         }
     }
-    $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'sale\', ?, \'completed\', ?)')
-        ->execute([$sellerId, money_f($amount), $txNote]);
+
+    $withdrawableAdd = credit_withdrawable_earnings($pdo, $sellerId, $net, 'sale', $txNote);
+
+    if ($commission > 0) {
+        $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'commission\', ?, \'completed\', ?)')
+            ->execute([
+                $sellerId,
+                money_f($commission),
+                'Platform sales commission (' . round($rate * 100, 2) . '%) on $' . money_f($gross) . ' · ' . $note,
+            ]);
+    }
+
+    return [
+        'gross' => $gross,
+        'commission' => $commission,
+        'net' => $net,
+        'rate' => $rate,
+        'withdrawableAdd' => $withdrawableAdd,
+    ];
+}
+
+/**
+ * Persist fee split on the order row for accurate refunds later.
+ */
+function record_order_sale_split(PDO $pdo, int $orderId, array $split): void {
+    ensure_marketplace_extras();
+    try {
+        $pdo->prepare('UPDATE orders SET platform_fee = ?, seller_net = ? WHERE id = ?')
+            ->execute([money_f($split['commission'] ?? 0), money_f($split['net'] ?? 0), $orderId]);
+    } catch (Throwable $e) {
+        // columns may not exist yet on very old DBs; ignore
+    }
+}
+
+/**
+ * Seller debit amount for a completed-order refund (net credited, not full sale price).
+ */
+function seller_refund_debit_amount(array $order): float {
+    $price = (float)$order['price'];
+    if (isset($order['seller_net']) && $order['seller_net'] !== null && $order['seller_net'] !== '') {
+        return (float)money_f((float)$order['seller_net']);
+    }
+    $split = sales_split($price);
+    return $split['net'];
+}
+
+/**
+ * When a referred buyer has deposited ≥ threshold and completed ≥1 purchase, credit referrer.
+ */
+function maybe_credit_referral_reward(int $buyerId): void {
+    ensure_wallet_ledger_columns();
+    $reward = (float)money_f((float)setting_get('referral_reward_amount', app_config()['referral_reward_amount'] ?? 5));
+    $minDeposit = (float)money_f((float)setting_get('referral_min_deposit', app_config()['referral_min_deposit'] ?? 50));
+    if ($reward <= 0) return;
+
+    $buyerStmt = db()->prepare('SELECT id, name, referred_by, total_deposits FROM users WHERE id = ? LIMIT 1');
+    $buyerStmt->execute([$buyerId]);
+    $buyer = $buyerStmt->fetch();
+    if (!$buyer) return;
+    $refCode = trim((string)($buyer['referred_by'] ?? ''));
+    if ($refCode === '') return;
+    if ((float)$buyer['total_deposits'] + 0.0001 < $minDeposit) return;
+
+    $purchases = db()->prepare("SELECT COUNT(*) AS c FROM orders WHERE buyer_id = ? AND status IN ('completed','pending')");
+    $purchases->execute([$buyerId]);
+    if ((int)($purchases->fetch()['c'] ?? 0) < 1) return;
+
+    $refStmt = db()->prepare('SELECT id, name FROM users WHERE referral_code = ? LIMIT 1');
+    $refStmt->execute([$refCode]);
+    $referrer = $refStmt->fetch();
+    if (!$referrer || (int)$referrer['id'] === $buyerId) return;
+
+    $dup = db()->prepare("SELECT id FROM transactions WHERE user_id = ? AND type = 'sale' AND note LIKE ? LIMIT 1");
+    $dup->execute([(int)$referrer['id'], 'Referral reward%buyer #' . $buyerId . '%']);
+    if ($dup->fetch()) return;
+
+    // Use type sale-like earnings path via credit helper with type that ENUM allows: use 'sale' note tagged, or commission?
+    // schema ENUM includes commission — use a distinct note with type that fits. Prefer inserting as sale isn't ideal.
+    // ENUM: deposit,withdrawal,sale,purchase,refund,commission — no 'referral'. Use 'sale' with clear note, or extend.
+    // Keep ENUM stable: record as completed 'sale' note "Referral reward..." so withdrawable credits work.
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $dup2 = $pdo->prepare("SELECT id FROM transactions WHERE user_id = ? AND note LIKE ? LIMIT 1 FOR UPDATE");
+        $dup2->execute([(int)$referrer['id'], 'Referral reward%buyer #' . $buyerId . '%']);
+        if ($dup2->fetch()) {
+            $pdo->commit();
+            return;
+        }
+        credit_withdrawable_earnings(
+            $pdo,
+            (int)$referrer['id'],
+            $reward,
+            'sale',
+            'Referral reward · $' . money_f($reward) . ' · buyer #' . $buyerId . ' (' . ($buyer['name'] ?? '') . ')'
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        return;
+    }
+    notify_user(
+        (int)$referrer['id'],
+        'Referral reward credited',
+        'You earned $' . money_f($reward) . ' withdrawable balance — your invitee funded and purchased.',
+        'wallet'
+    );
 }
 
 /**
  * Refund buyer and deduct seller; allows negative seller balance (owing).
+ * Completed sales debit only the seller net (after platform commission), not the full price.
  */
 function refund_order_with_debt(array $order, string $actorNote = 'Refund'): void {
     ensure_marketplace_extras();
+    ensure_wallet_ledger_columns();
     if (($order['status'] ?? '') === 'cancelled') {
         throw new RuntimeException('Already cancelled');
     }
@@ -180,12 +364,14 @@ function refund_order_with_debt(array $order, string $actorNote = 'Refund'): voi
             $pdo->prepare('UPDATE users SET escrow_balance = GREATEST(0, escrow_balance - ?) WHERE id = ?')
                 ->execute([money_f($price), $sellerId]);
         } else {
+            $sellerDebit = seller_refund_debit_amount($order);
             // Allow going negative — seller owes the platform/buyer remainder
-            $pdo->prepare('UPDATE users SET balance = balance - ? WHERE id = ?')
-                ->execute([money_f($price), $sellerId]);
+            $pdo->prepare('UPDATE users SET balance = balance - ?, withdrawable_balance = GREATEST(0, withdrawable_balance - ?) WHERE id = ?')
+                ->execute([money_f($sellerDebit), money_f($sellerDebit), $sellerId]);
             $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'refund\', ?, \'completed\', ?)')
-                ->execute([$sellerId, money_f($price), 'Seller debit #' . $publicId . ' · ' . $actorNote]);
+                ->execute([$sellerId, money_f($sellerDebit), 'Seller debit #' . $publicId . ' · net after commission · ' . $actorNote]);
         }
+        // Buyer refund is full purchase price (deposits back as spendable, not withdrawable)
         $pdo->prepare('UPDATE users SET balance = balance + ? WHERE id = ?')->execute([money_f($price), $buyerId]);
         $pdo->prepare("UPDATE orders SET status = 'cancelled', refunded_at = NOW() WHERE id = ?")->execute([$orderId]);
         $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'refund\', ?, \'completed\', ?)')
@@ -199,7 +385,10 @@ function refund_order_with_debt(array $order, string $actorNote = 'Refund'): voi
     $chk->execute([$sellerId]);
     $sellerBal = (float)($chk->fetch()['balance'] ?? 0);
     notify_user($buyerId, 'Refund received', 'Order #' . $publicId . ' was refunded ($' . money_f($price) . ').', 'refund');
-    $sellerMsg = 'Order #' . $publicId . ' refunded. $' . money_f($price) . ' deducted from your balance.';
+    $sellerMsg = 'Order #' . $publicId . ' refunded. $' . money_f(seller_refund_debit_amount($order)) . ' deducted from your balance.';
+    if (($order['status'] ?? '') === 'pending') {
+        $sellerMsg = 'Order #' . $publicId . ' refunded. Escrow of $' . money_f($price) . ' was released.';
+    }
     if ($sellerBal < 0) {
         $sellerMsg .= ' You owe $' . money_f(abs($sellerBal)) . ' — future sales will repay this automatically.';
     }
@@ -253,6 +442,7 @@ function release_pending_order_to_seller(array $order, string $noteSuffix = ''):
     if (($order['status'] ?? '') !== 'pending') {
         throw new RuntimeException('Order is not pending escrow');
     }
+    ensure_marketplace_extras();
     $price = (float)$order['price'];
     $sellerId = (int)$order['seller_id'];
     $orderId = (int)$order['id'];
@@ -262,14 +452,17 @@ function release_pending_order_to_seller(array $order, string $noteSuffix = ''):
     try {
         $pdo->prepare('UPDATE users SET escrow_balance = GREATEST(0, escrow_balance - ?) WHERE id = ?')
             ->execute([money_f($price), $sellerId]);
-        credit_seller_balance($pdo, $sellerId, $price, 'Released #' . $publicId . ($noteSuffix !== '' ? ' · ' . $noteSuffix : ''));
+        $split = credit_seller_balance($pdo, $sellerId, $price, 'Released #' . $publicId . ($noteSuffix !== '' ? ' · ' . $noteSuffix : ''));
+        record_order_sale_split($pdo, $orderId, $split);
         $pdo->prepare("UPDATE orders SET status = 'completed', completed_at = NOW() WHERE id = ?")->execute([$orderId]);
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
         throw $e;
     }
-    notify_user($sellerId, 'Funds released', 'Escrow for #' . $publicId . ' was released to your balance.', 'order');
+    $net = money_f($split['net'] ?? 0);
+    $fee = money_f($split['commission'] ?? 0);
+    notify_user($sellerId, 'Funds released', 'Escrow for #' . $publicId . ' was settled: $' . $net . ' credited to withdrawable balance after $' . $fee . ' platform fee.', 'order');
     notify_user((int)$order['buyer_id'], 'Order completed', 'Seller delivered login details for #' . $publicId . '.', 'order');
 }
 

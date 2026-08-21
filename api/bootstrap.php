@@ -149,7 +149,17 @@ function require_user(): array {
 
 function public_user(array $u): array {
     ensure_user_payout_columns();
+    ensure_wallet_ledger_columns();
     $bal = (float)$u['balance'];
+    $wd = array_key_exists('withdrawable_balance', $u)
+        ? (float)$u['withdrawable_balance']
+        : 0.0;
+    // Never expose withdrawable above available balance (or below zero).
+    if ($bal <= 0) {
+        $wd = 0.0;
+    } else {
+        $wd = min($wd, $bal);
+    }
     return [
         'id' => (int)$u['id'],
         'name' => $u['name'],
@@ -157,6 +167,7 @@ function public_user(array $u): array {
         'phone' => $u['phone'],
         'countryCode' => strtolower((string)($u['country_code'] ?? '')),
         'balance' => $bal,
+        'withdrawableBalance' => (float)money_f($wd),
         'owing' => $bal < 0 ? abs($bal) : 0,
         'escrowBalance' => (float)$u['escrow_balance'],
         'totalDeposits' => (float)$u['total_deposits'],
@@ -196,6 +207,48 @@ function ensure_user_payout_columns(): void {
             }
         }
     }
+}
+
+/**
+ * Separates deposit funds (spend-only) from sales/referral earnings (withdrawable).
+ */
+function ensure_wallet_ledger_columns(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->query('SELECT withdrawable_balance FROM users LIMIT 1');
+    } catch (Throwable $e) {
+        try {
+            db()->exec("ALTER TABLE users ADD COLUMN withdrawable_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER balance");
+        } catch (Throwable $e2) {
+            // ignore
+        }
+    }
+}
+
+/** Platform fee taken from every successful sale (seller receives the remainder). */
+function sales_commission_rate(): float {
+    $cfg = app_config();
+    $default = (float)($cfg['sales_commission_rate'] ?? 0.22);
+    return max(0.0, min(0.95, (float)setting_get('sales_commission_rate', $default)));
+}
+
+function sales_split(float $gross): array {
+    $gross = (float)money_f($gross);
+    $rate = sales_commission_rate();
+    $commission = (float)money_f($gross * $rate);
+    $net = (float)money_f($gross - $commission);
+    if ($net < 0) {
+        $net = 0.0;
+        $commission = $gross;
+    }
+    return [
+        'gross' => $gross,
+        'rate' => $rate,
+        'commission' => $commission,
+        'net' => $net,
+    ];
 }
 
 /** Map ISO country (ng, gh, …) to wallet local currency code. */

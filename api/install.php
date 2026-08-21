@@ -45,6 +45,9 @@ try {
     setting_set('min_deposit', (string)$cfg['min_deposit']);
     setting_set('min_withdraw', (string)$cfg['min_withdraw']);
     setting_set('withdraw_commission_rate', (string)$cfg['withdraw_commission_rate']);
+    setting_set('sales_commission_rate', (string)($cfg['sales_commission_rate'] ?? 0.22));
+    setting_set('referral_reward_amount', (string)($cfg['referral_reward_amount'] ?? 5));
+    setting_set('referral_min_deposit', (string)($cfg['referral_min_deposit'] ?? 50));
     setting_set('deposit_fee_rate', (string)$cfg['deposit_fee_rate']);
     setting_set('support_telegram', (string)$cfg['support_telegram']);
     setting_set('support_email', (string)$cfg['support_email']);

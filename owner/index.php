@@ -38,7 +38,10 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('min_deposit', (string)(float)$_POST['min_deposit']);
             setting_set('min_withdraw', (string)(float)$_POST['min_withdraw']);
             setting_set('withdraw_commission_rate', (string)((float)$_POST['withdraw_commission'] / 100));
+            setting_set('sales_commission_rate', (string)((float)$_POST['sales_commission'] / 100));
             setting_set('deposit_fee_rate', (string)((float)$_POST['deposit_fee'] / 100));
+            setting_set('referral_reward_amount', (string)(float)($_POST['referral_reward'] ?? 5));
+            setting_set('referral_min_deposit', (string)(float)($_POST['referral_min_deposit'] ?? 50));
             setting_set('support_telegram', trim((string)$_POST['support_telegram']));
             setting_set('support_email', trim((string)$_POST['support_email']));
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
@@ -90,12 +93,34 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = 'Verification updated.';
         }
         if ($form === 'adjust_balance') {
+            ensure_wallet_ledger_columns();
             $uid = (int)$_POST['user_id'];
             $amount = (float)$_POST['amount'];
             $note = trim((string)$_POST['note']);
-            db()->prepare('UPDATE users SET balance = balance + ? WHERE id = ?')->execute([money_f($amount), $uid]);
-            db()->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, ?, ?, \'completed\', ?)')
-                ->execute([$uid, $amount >= 0 ? 'deposit' : 'withdrawal', money_f(abs($amount)), 'Owner adjust: ' . $note]);
+            $asWithdrawable = !empty($_POST['as_withdrawable']);
+            if ($amount >= 0) {
+                if ($asWithdrawable) {
+                    $pdo = db();
+                    $pdo->beginTransaction();
+                    try {
+                        credit_withdrawable_earnings($pdo, $uid, $amount, 'sale', 'Owner adjust (withdrawable): ' . $note);
+                        $pdo->commit();
+                    } catch (Throwable $e) {
+                        $pdo->rollBack();
+                        throw $e;
+                    }
+                } else {
+                    db()->prepare('UPDATE users SET balance = balance + ? WHERE id = ?')->execute([money_f($amount), $uid]);
+                    db()->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'deposit\', ?, \'completed\', ?)')
+                        ->execute([$uid, money_f($amount), 'Owner adjust: ' . $note]);
+                }
+            } else {
+                $abs = abs($amount);
+                db()->prepare('UPDATE users SET balance = balance - ?, withdrawable_balance = GREATEST(0, withdrawable_balance - ?) WHERE id = ?')
+                    ->execute([money_f($abs), money_f($abs), $uid]);
+                db()->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'withdrawal\', ?, \'completed\', ?)')
+                    ->execute([$uid, money_f($abs), 'Owner adjust: ' . $note]);
+            }
             $flash = 'Balance adjusted.';
         }
         if ($form === 'ad_status') {
@@ -117,9 +142,10 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $old = $row['status'];
                 // If cancelling/rejecting a pending withdrawal, refund the user
                 if ($row['type'] === 'withdrawal' && $old === 'pending' && in_array($newStatus, ['cancelled', 'failed'], true)) {
-                    db()->prepare('UPDATE users SET balance = balance + ?, total_withdrawals = GREATEST(0, total_withdrawals - ?) WHERE id = ?')
-                        ->execute([money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
-                    notify_user((int)$row['user_id'], 'Withdrawal declined', 'Your withdrawal of $' . money_f($row['amount']) . ' was declined and refunded to your wallet.', 'wallet');
+                    ensure_wallet_ledger_columns();
+                    db()->prepare('UPDATE users SET balance = balance + ?, withdrawable_balance = withdrawable_balance + ?, total_withdrawals = GREATEST(0, total_withdrawals - ?) WHERE id = ?')
+                        ->execute([money_f($row['amount']), money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
+                    notify_user((int)$row['user_id'], 'Withdrawal declined', 'Your withdrawal of $' . money_f($row['amount']) . ' was declined and refunded to your withdrawable balance.', 'wallet');
                 }
                 if ($row['type'] === 'withdrawal' && $old === 'pending' && $newStatus === 'completed') {
                     notify_user((int)$row['user_id'], 'Withdrawal paid', 'Your withdrawal of $' . money_f($row['payout'] ?? $row['amount']) . ' was marked completed.', 'wallet');
@@ -134,7 +160,10 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 if ($row['type'] === 'deposit' && $old === 'pending' && $newStatus === 'completed') {
                     db()->prepare('UPDATE users SET balance = balance + ?, total_deposits = total_deposits + ? WHERE id = ?')
                         ->execute([money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
-                    notify_user((int)$row['user_id'], 'Deposit credited', 'Your deposit of $' . money_f($row['amount']) . ' was credited to your wallet.', 'wallet');
+                    notify_user((int)$row['user_id'], 'Deposit credited', 'Your deposit of $' . money_f($row['amount']) . ' was credited to your wallet (spendable — not withdrawable).', 'wallet');
+                    try {
+                        maybe_credit_referral_reward((int)$row['user_id']);
+                    } catch (Throwable $e) {}
                 }
                 if (!empty($_POST['note_edit'])) {
                     db()->prepare('UPDATE transactions SET status = ?, note = ? WHERE id = ?')
@@ -424,7 +453,9 @@ $tab = $_GET['tab'] ?? 'overview';
       </script>
     <?php endif; ?>
 
-    <?php if ($tab === 'users'): $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>
+    <?php if ($tab === 'users'):
+      ensure_wallet_ledger_columns();
+      $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>
       <div class="av-table-wrap">
         <table class="w-full text-left text-xs">
           <thead><tr>
@@ -436,7 +467,7 @@ $tab = $_GET['tab'] ?? 'overview';
               <td class="p-3"><?= (int)$u['id'] ?></td>
               <td class="p-3 font-medium"><?= h($u['name']) ?></td>
               <td class="p-3"><?= h($u['email']) ?></td>
-              <td class="p-3 <?= (float)$u['balance'] < 0 ? 'text-red-600 font-bold' : '' ?>">$<?= number_format((float)$u['balance'], 2) ?><?php if ((float)$u['balance'] < 0): ?> <span class="text-[10px]">(owing)</span><?php endif; ?></td>
+              <td class="p-3 <?= (float)$u['balance'] < 0 ? 'text-red-600 font-bold' : '' ?>">$<?= number_format((float)$u['balance'], 2) ?><?php if ((float)$u['balance'] < 0): ?> <span class="text-[10px]">(owing)</span><?php endif; ?><br><span class="text-[10px] text-slate-500">WD $<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?></span></td>
               <td class="p-3"><?= h($u['plan']) ?></td>
               <td class="p-3"><?= (int)$u['is_banned']?'Banned ':'' ?><?= (int)$u['is_verified']?'Verified':'' ?></td>
               <td class="p-3 space-y-1 min-w-[220px]">
@@ -457,6 +488,7 @@ $tab = $_GET['tab'] ?? 'overview';
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
                   <input name="amount" type="number" step="0.01" placeholder="+/- amount" class="border rounded px-2 py-1 w-24">
                   <input name="note" placeholder="note" class="border rounded px-2 py-1 w-24">
+                  <label class="text-[10px] flex items-center gap-1 whitespace-nowrap" title="Credit as withdrawable earnings (sales/referral). Leave unchecked for spend-only deposit funds."><input type="checkbox" name="as_withdrawable" value="1"> WD</label>
                   <button class="px-2 py-1 rounded bg-brand text-white">Adjust</button>
                 </form>
               </td>
@@ -940,8 +972,11 @@ $tab = $_GET['tab'] ?? 'overview';
         </div>
         <div><label class="text-xs text-slate-500">Min deposit ($)</label><input name="min_deposit" type="number" step="0.01" value="<?= h(setting_get('min_deposit',3)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Min withdraw ($)</label><input name="min_withdraw" type="number" step="0.01" value="<?= h(setting_get('min_withdraw',5)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
+        <div><label class="text-xs text-slate-500">Sales commission (%)</label><input name="sales_commission" type="number" step="0.1" value="<?= h(((float)setting_get('sales_commission_rate',0.22))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm" title="Deducted from every successful sale; seller receives the remainder as withdrawable balance"></div>
         <div><label class="text-xs text-slate-500">Withdraw commission (%)</label><input name="withdraw_commission" type="number" step="0.1" value="<?= h(((float)setting_get('withdraw_commission_rate',0.1))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
+        <div><label class="text-xs text-slate-500">Referral reward ($)</label><input name="referral_reward" type="number" step="0.01" value="<?= h(setting_get('referral_reward_amount',5)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
+        <div><label class="text-xs text-slate-500">Referral min deposit ($)</label><input name="referral_min_deposit" type="number" step="0.01" value="<?= h(setting_get('referral_min_deposit',50)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div class="sm:col-span-2"><button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save settings</button></div>
