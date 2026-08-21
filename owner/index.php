@@ -371,7 +371,10 @@ $tab = $_GET['tab'] ?? 'overview';
             <h2 class="font-bold text-lg av-text">Live Chat Support</h2>
             <p class="text-xs av-muted">Messaging-app layout — readable bubbles & images in light/dark.</p>
           </div>
-          <button type="button" onclick="ownerEnableNotif()" class="av-icon-btn">Notifications</button>
+          <div class="text-right">
+            <button type="button" id="staffNotifBtn" onclick="ownerEnableNotif()" class="av-icon-btn">Enable alerts</button>
+            <p id="staffNotifStatus" class="text-[10px] av-muted mt-1">In-app alerts</p>
+          </div>
         </div>
         <div class="av-chat-shell">
           <div class="av-chat-list">
@@ -395,6 +398,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
+      <script src="/js/staff-alerts.js?v=20260821alert1"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);
@@ -417,8 +421,13 @@ $tab = $_GET['tab'] ?? 'overview';
           reader.onload=()=>{ownerAttach={dataUrl:reader.result,name:file.name}; const h=document.getElementById('ownerSupportAttachHint'); if(h){h.classList.remove('hidden');h.textContent='Attached: '+file.name;}};
           reader.readAsDataURL(file); ev.target.value='';
         }
-        function ownerEnableNotif(){ if(!('Notification' in window)) return alert('Not supported'); Notification.requestPermission(); }
-        function ownerNotify(t,b){ if(!('Notification' in window)||Notification.permission!=='granted')return; if(document.visibilityState==='visible')return; try{new Notification(t,{body:String(b||'').slice(0,120)});}catch(e){} }
+        function ownerEnableNotif(){
+          if (window.AcctventaStaffAlerts) window.AcctventaStaffAlerts.enable({ buttonId: 'staffNotifBtn' });
+          else alert('Alert helper failed to load. Hard-refresh and try again.');
+        }
+        function ownerNotify(t,b){
+          if (window.AcctventaStaffAlerts) window.AcctventaStaffAlerts.notify(t, b);
+        }
         async function apiStaff(action, opts={}){
           const url = new URL('/api/index.php', location.origin);
           url.searchParams.set('action', action);
@@ -479,7 +488,10 @@ $tab = $_GET['tab'] ?? 'overview';
         }
         ownerLoadThreads();
         setInterval(()=>{ ownerLoadThreads(); if(ownerActive) ownerOpen(ownerActive); }, 3000);
-        ownerEnableNotif();
+        if (window.AcctventaStaffAlerts) {
+          window.AcctventaStaffAlerts.enable({ silent: true, buttonId: 'staffNotifBtn' });
+          window.AcctventaStaffAlerts.updateButton('staffNotifBtn');
+        }
       </script>
     <?php endif; ?>
 

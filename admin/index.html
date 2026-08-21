@@ -20,9 +20,10 @@
     (function(){try{var t=localStorage.getItem('acctventa_admin_theme')||'light';if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');}}catch(e){}})();
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=20260821zoom1"></script>
-  <script src="/js/api-client.js?v=20260821zoom1"></script>
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260821zoom1">
+  <script src="/js/acctventa.js?v=20260821alert1"></script>
+  <script src="/js/api-client.js?v=20260821alert1"></script>
+  <script src="/js/staff-alerts.js?v=20260821alert1"></script>
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260821alert1">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
   <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -90,7 +91,10 @@
             <h2 class="font-bold text-lg av-text">Live Chat Support</h2>
             <p class="text-xs av-muted">Reply like a messaging app — messages, photos, and files stay readable in light & dark.</p>
           </div>
-          <button onclick="enableAdminNotifications()" class="av-icon-btn">Notifications</button>
+          <div class="text-right">
+            <button onclick="enableAdminNotifications()" id="staffNotifBtn" class="av-icon-btn">Enable alerts</button>
+            <p id="staffNotifStatus" class="text-[10px] av-muted mt-1">In-app alerts</p>
+          </div>
         </div>
         <div id="staffLoginBox" class="av-warn p-3 space-y-2">
           <p class="text-xs">Connect with Owner credentials (same as <code>/owner</code>).</p>
@@ -409,14 +413,15 @@
     let staffTypingTimer = null;
 
     function enableAdminNotifications() {
-      if (!('Notification' in window)) { alert('Notifications not supported in this browser'); return; }
-      Notification.requestPermission().then((p) => alert(p === 'granted' ? 'Notifications enabled' : 'Permission: ' + p));
+      if (window.AcctventaStaffAlerts) {
+        window.AcctventaStaffAlerts.enable({ buttonId: 'staffNotifBtn' });
+      } else {
+        alert('Alert helper failed to load. Hard-refresh and try again.');
+      }
     }
 
     function staffNotify(title, body) {
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      if (document.visibilityState === 'visible') return;
-      try { new Notification(title, { body: String(body||'').slice(0,120) }); } catch(e) {}
+      if (window.AcctventaStaffAlerts) window.AcctventaStaffAlerts.notify(title, body);
     }
 
     async function staffConnect() {
@@ -432,7 +437,10 @@
         msg.textContent = 'Connected.';
         document.getElementById('staffLoginBox').classList.add('hidden');
         document.getElementById('supportInbox').classList.remove('hidden');
-        enableAdminNotifications();
+        if (window.AcctventaStaffAlerts) {
+          window.AcctventaStaffAlerts.enable({ silent: true, buttonId: 'staffNotifBtn' });
+          window.AcctventaStaffAlerts.updateButton('staffNotifBtn');
+        }
         loadSupportThreads();
         if (supportPoll) clearInterval(supportPoll);
         supportPoll = setInterval(() => {
