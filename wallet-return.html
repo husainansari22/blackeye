@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirming payment · Acctventa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { skyBrand: '#0ea5e9', skyHover: '#0284c7', darkBg: '#070a0f', darkCard: '#111827' }
+        }
+      }
+    }
+  </script>
+  <script src="/js/api-client.js"></script>
+</head>
+<body class="bg-darkBg min-h-screen text-white flex items-center justify-center p-6">
+  <div class="w-full max-w-sm bg-darkCard border border-slate-800 rounded-2xl p-6 text-center">
+    <div id="spin" class="mx-auto w-12 h-12 rounded-full border-2 border-skyBrand border-t-transparent animate-spin mb-4"></div>
+    <h1 id="title" class="text-lg font-bold mb-2">Confirming your payment</h1>
+    <p id="msg" class="text-xs text-slate-400 mb-4">Please wait — we’re verifying with Flutterwave…</p>
+    <a id="go" href="/dashboard.html" class="hidden inline-block w-full bg-skyBrand hover:bg-skyHover font-bold py-3 rounded-xl">Open wallet</a>
+  </div>
+  <script>
+    (async function () {
+      const params = new URLSearchParams(location.search);
+      const status = (params.get('status') || '').toLowerCase();
+      const txRef = params.get('tx_ref') || params.get('txRef') || '';
+      const transactionId = params.get('transaction_id') || params.get('transactionId') || '';
+      const title = document.getElementById('title');
+      const msg = document.getElementById('msg');
+      const spin = document.getElementById('spin');
+      const go = document.getElementById('go');
+
+      if (status && status !== 'successful' && status !== 'completed') {
+        spin.classList.add('hidden');
+        title.textContent = 'Payment not completed';
+        msg.textContent = 'No funds were added. You can try again from your wallet.';
+        go.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        if (!window.AcctventaApi || !(await window.AcctventaApi.isAvailable())) {
+          throw new Error('API offline');
+        }
+        const res = await window.AcctventaApi.confirmDeposit({
+          tx_ref: txRef,
+          transaction_id: transactionId,
+        });
+        spin.classList.add('hidden');
+        title.textContent = res.already ? 'Already credited' : 'Deposit successful';
+        msg.textContent = res.already
+          ? 'This payment was already added to your wallet.'
+          : ('$' + Number(res.credited || 0).toFixed(2) + ' is now in your wallet.');
+        go.classList.remove('hidden');
+        go.href = '/dashboard.html#wallet';
+      } catch (e) {
+        spin.classList.add('hidden');
+        title.textContent = 'Still confirming…';
+        msg.textContent = (e && e.message) ? e.message : 'If you were charged, funds will appear shortly after Flutterwave confirms.';
+        go.classList.remove('hidden');
+        go.textContent = 'Back to dashboard';
+      }
+    })();
+  </script>
+</body>
+</html>

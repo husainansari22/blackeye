@@ -270,6 +270,7 @@ function ensure_password_resets_table(): void {
 }
 
 require_once __DIR__ . '/mail.php';
+require_once __DIR__ . '/flutterwave.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     json_out(['ok' => true]);

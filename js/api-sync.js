@@ -259,6 +259,10 @@
     A.deposit = async function (_user, amount) {
       try {
         const res = await Api.deposit({ amount: Number(amount) });
+        if (res.paymentLink) {
+          window.location.href = res.paymentLink;
+          return { ok: true, checkout: true, paymentLink: res.paymentLink };
+        }
         await hydrateFromApi();
         return { ok: true, credited: res.credited };
       } catch (e) {
@@ -266,11 +270,18 @@
       }
     };
 
-    A.withdraw = async function (_user, amount, method) {
+    A.withdraw = async function (_user, amount, method, extra) {
       try {
-        const res = await Api.withdraw({ amount: Number(amount), method: method || 'crypto' });
+        const payload = {
+          amount: Number(amount),
+          method: method || 'bank',
+          destination: (extra && extra.destination) || '',
+          accountName: (extra && extra.accountName) || '',
+          bankName: (extra && extra.bankName) || '',
+        };
+        const res = await Api.withdraw(payload);
         await hydrateFromApi();
-        return { ok: true, payout: res.payout, fee: res.fee };
+        return { ok: true, payout: res.payout, fee: res.fee, message: res.message };
       } catch (e) {
         return { ok: false, error: e.message || 'Withdraw failed' };
       }

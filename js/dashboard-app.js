@@ -603,24 +603,38 @@
     const bal = money((refreshUser() || {}).balance);
     if (type === 'deposit') {
       document.getElementById('modalBody').innerHTML = `
-        <h3 class="font-bold text-xl mb-1">Fund Wallet</h3>
-        <p class="text-xs text-slate-500 mb-2">Minimum deposit: ${money(cfg.minDeposit)}. Payment gateway will be connected next (see setup notes).</p>
-        <div class="relative"><span class="absolute left-4 top-3.5 text-slate-400">$</span>
-        <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="${cfg.minDeposit.toFixed(2)}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 my-3 text-sm"></div>
-        <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary text-white py-3.5 rounded-xl font-bold text-sm">Continue</button>`;
+        <div class="space-y-1">
+          <div class="w-11 h-11 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center mb-3"><i class="fa-solid fa-wallet"></i></div>
+          <h3 class="font-bold text-xl tracking-tight">Fund Wallet</h3>
+          <p class="text-xs text-slate-500">Secure checkout powered by Flutterwave. Minimum ${money(cfg.minDeposit)}.</p>
+          <div class="relative mt-3"><span class="absolute left-4 top-3.5 text-slate-400 font-semibold">$</span>
+          <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="${cfg.minDeposit.toFixed(2)}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-sm focus:outline-none focus:border-brandPrimary"></div>
+          <ul class="text-[11px] text-slate-500 space-y-1 mt-3 mb-4">
+            <li><i class="fa-solid fa-shield-halved text-brandPrimary mr-1"></i>Card, bank & more via Flutterwave</li>
+            <li><i class="fa-solid fa-bolt text-brandPrimary mr-1"></i>Balance updates after payment confirms</li>
+          </ul>
+          <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Pay securely</button>
+        </div>`;
     } else {
       const feePct = (cfg.withdrawCommissionRate * 100).toFixed(0);
       document.getElementById('modalBody').innerHTML = `
-        <h3 class="font-bold text-xl mb-1">Withdraw Funds</h3>
-        <p class="text-xs text-slate-500 mb-1">Available: ${bal}. Minimum withdrawal: ${money(cfg.minWithdraw)}.</p>
-        <p class="text-xs text-amber-600 mb-2">Platform commission: ${feePct}% on withdrawal (your payout = amount − commission).</p>
-        <div class="relative"><span class="absolute left-4 top-3.5 text-slate-400">$</span>
-        <input id="walletAmountInput" type="number" min="${cfg.minWithdraw}" step="0.01" placeholder="${cfg.minWithdraw.toFixed(2)}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 my-3 text-sm"></div>
-        <select id="withdrawMethod" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-3">
-          <option value="crypto">Crypto address</option>
-          <option value="bank">Local bank</option>
-        </select>
-        <button onclick="submitWalletAction('withdraw')" class="w-full bg-brandPrimary text-white py-3.5 rounded-xl font-bold text-sm">Request Withdrawal</button>`;
+        <div class="space-y-1">
+          <div class="w-11 h-11 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center mb-3"><i class="fa-solid fa-money-bill-transfer"></i></div>
+          <h3 class="font-bold text-xl tracking-tight">Withdraw Funds</h3>
+          <p class="text-xs text-slate-500">Available ${bal}. Minimum ${money(cfg.minWithdraw)}. Platform fee ${feePct}%.</p>
+          <div class="relative mt-3"><span class="absolute left-4 top-3.5 text-slate-400 font-semibold">$</span>
+          <input id="walletAmountInput" type="number" min="${cfg.minWithdraw}" step="0.01" placeholder="${cfg.minWithdraw.toFixed(2)}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-sm"></div>
+          <label class="block text-[11px] text-slate-500 mt-3 mb-1">Payout method</label>
+          <select id="withdrawMethod" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-2">
+            <option value="bank">Bank account</option>
+            <option value="crypto">Crypto wallet</option>
+          </select>
+          <input id="withdrawDest" type="text" placeholder="Account number or wallet address" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-2">
+          <input id="withdrawName" type="text" placeholder="Account / wallet name" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-2">
+          <input id="withdrawBank" type="text" placeholder="Bank name (optional)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-4">
+          <p class="text-[11px] text-slate-400 mb-3">You’ll receive amount − ${feePct}% fee after owner approval.</p>
+          <button onclick="submitWalletAction('withdraw')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Request withdrawal</button>
+        </div>`;
     }
     document.getElementById('appModal').classList.remove('hidden');
   };
@@ -629,17 +643,36 @@
     const u = refreshUser();
     const amount = parseFloat(document.getElementById('walletAmountInput').value);
     let res;
-    if (type === 'deposit') res = await Promise.resolve(A().deposit(u, amount));
-    else res = await Promise.resolve(A().withdraw(u, amount, (document.getElementById('withdrawMethod') || {}).value));
+    if (type === 'deposit') {
+      const btn = event && event.target;
+      if (btn && btn.tagName === 'BUTTON') {
+        btn.disabled = true;
+        btn.textContent = 'Opening Flutterwave…';
+      }
+      res = await Promise.resolve(A().deposit(u, amount));
+      if (res.ok && res.checkout) return; // redirected
+    } else {
+      const dest = (document.getElementById('withdrawDest') || {}).value || '';
+      const accountName = (document.getElementById('withdrawName') || {}).value || '';
+      const bankName = (document.getElementById('withdrawBank') || {}).value || '';
+      res = await Promise.resolve(
+        A().withdraw(u, amount, (document.getElementById('withdrawMethod') || {}).value, {
+          destination: dest.trim(),
+          accountName: accountName.trim(),
+          bankName: bankName.trim(),
+        })
+      );
+    }
     if (!res.ok) {
       alert(res.error);
+      if (type === 'deposit') openWalletModal('deposit');
       return;
     }
     closeModal();
     applyProfileChrome(refreshUser());
     renderTxHistory();
-    if (type === 'deposit') alert('Deposit recorded: ' + money(res.credited) + '. Connect a live payment gateway to accept real money.');
-    else alert('Withdrawal requested. Payout after commission: ' + money(res.payout) + '. Connect payout gateway to send funds.');
+    if (type === 'deposit') alert('Deposit credited: ' + money(res.credited));
+    else alert(res.message || ('Withdrawal requested. Payout after fee: ' + money(res.payout)));
   };
 
   window.selectPlan = function (planId) {

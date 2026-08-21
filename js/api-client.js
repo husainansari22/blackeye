@@ -164,6 +164,9 @@
     deposit(payload) {
       return request('wallet.deposit', { method: 'POST', body: payload });
     },
+    confirmDeposit(payload) {
+      return request('wallet.deposit.confirm', { method: 'POST', body: payload });
+    },
     withdraw(payload) {
       return request('wallet.withdraw', { method: 'POST', body: payload });
     },

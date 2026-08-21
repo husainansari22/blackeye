@@ -407,13 +407,87 @@ try {
             $feeRate = (float)setting_get('deposit_fee_rate', 0);
             $fee = round($amount * $feeRate, 2);
             $credited = round($amount - $fee, 2);
-            // Mark completed for now until live gateway webhooks are connected; owner can also approve pending later
-            db()->prepare('UPDATE users SET balance = balance + ?, total_deposits = total_deposits + ? WHERE id = ?')
-                ->execute([money_f($credited), money_f($credited), (int)$u['id']]);
-            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note) VALUES (?, \'deposit\', ?, ?, \'completed\', ?, ?)')
-                ->execute([(int)$u['id'], money_f($credited), money_f($fee), (string)($body['method'] ?? 'manual'), 'Deposit recorded (connect live gateway webhook for automatic paid confirmations)']);
+
+            if (!flw_deposit_enabled()) {
+                json_out([
+                    'ok' => false,
+                    'error' => 'Live deposits are not enabled. In Owner Admin → Gateways, set provider to flutterwave, enable it, and paste your FLWSECK secret key.',
+                    'code' => 'gateway_disabled',
+                ], 503);
+            }
+
+            ensure_tx_reference_column();
+            $txRef = 'AVD' . strtoupper(substr(uid_token(8), 0, 16));
+            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'deposit\', ?, ?, \'pending\', \'flutterwave\', ?, ?)')
+                ->execute([(int)$u['id'], money_f($credited), money_f($fee), 'Awaiting Flutterwave payment', $txRef]);
+
+            $checkout = flw_create_checkout($u, $amount, $txRef);
+            if (!$checkout['ok']) {
+                db()->prepare('UPDATE transactions SET status = \'failed\', note = ? WHERE reference = ?')
+                    ->execute([$checkout['error'] ?? 'Checkout failed', $txRef]);
+                json_out(['ok' => false, 'error' => $checkout['error'] ?? 'Could not start payment'], 502);
+            }
+            json_out([
+                'ok' => true,
+                'checkout' => true,
+                'paymentLink' => $checkout['link'],
+                'reference' => $txRef,
+                'amount' => $amount,
+                'credited' => $credited,
+            ]);
+        }
+
+        case 'wallet.deposit.confirm': {
+            $u = require_user();
+            $txRef = trim((string)($body['tx_ref'] ?? $body['reference'] ?? $_GET['tx_ref'] ?? ''));
+            $transactionId = $body['transaction_id'] ?? $_GET['transaction_id'] ?? null;
+            if ($txRef === '' && !$transactionId) {
+                json_out(['ok' => false, 'error' => 'Missing payment reference'], 422);
+            }
+            $verified = null;
+            if ($transactionId) {
+                $verified = flw_verify_by_id($transactionId);
+            }
+            if ((!$verified || !$verified['ok']) && $txRef !== '') {
+                $verified = flw_verify_by_tx_ref($txRef);
+            }
+            if (!$verified || !$verified['ok']) {
+                json_out(['ok' => false, 'error' => $verified['error'] ?? 'Payment not confirmed yet'], 400);
+            }
+            $data = $verified['data'];
+            $ref = (string)($data['tx_ref'] ?? $txRef);
+            $paid = (float)($data['amount'] ?? 0);
+            $flwId = (string)($data['id'] ?? $transactionId ?? '');
+            // Ensure this pending deposit belongs to current user
+            ensure_tx_reference_column();
+            $chk = db()->prepare('SELECT * FROM transactions WHERE reference = ? AND user_id = ? LIMIT 1');
+            $chk->execute([$ref, (int)$u['id']]);
+            if (!$chk->fetch()) {
+                json_out(['ok' => false, 'error' => 'Deposit not found for this account'], 404);
+            }
+            $credit = credit_deposit_from_gateway($ref, $paid, $flwId);
+            if (!$credit['ok']) json_out($credit, 400);
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
-            json_out(['ok' => true, 'credited' => $credited, 'user' => public_user($fresh)]);
+            json_out(['ok' => true, 'credited' => $credit['credited'] ?? null, 'already' => !empty($credit['already']), 'user' => public_user($fresh)]);
+        }
+
+        case 'webhook.flutterwave': {
+            $payload = $body ?: read_json_body();
+            $event = $payload['event'] ?? '';
+            $data = $payload['data'] ?? [];
+            if ($event === 'charge.completed' && ($data['status'] ?? '') === 'successful') {
+                $ref = (string)($data['tx_ref'] ?? '');
+                $paid = (float)($data['amount'] ?? 0);
+                $flwId = (string)($data['id'] ?? '');
+                if ($ref !== '') {
+                    try {
+                        credit_deposit_from_gateway($ref, $paid, $flwId);
+                    } catch (Throwable $e) {
+                        json_out(['ok' => false, 'error' => $e->getMessage()], 500);
+                    }
+                }
+            }
+            json_out(['ok' => true]);
         }
 
         case 'wallet.withdraw': {
@@ -422,16 +496,36 @@ try {
             $min = (float)setting_get('min_withdraw', 5);
             if ($amount < $min) json_out(['ok' => false, 'error' => "Minimum withdrawal is $$min"], 422);
             if ((float)$u['balance'] < $amount) json_out(['ok' => false, 'error' => 'Insufficient balance'], 400);
+            $method = trim((string)($body['method'] ?? 'bank'));
+            $destination = trim((string)($body['destination'] ?? $body['account'] ?? ''));
+            $accountName = trim((string)($body['accountName'] ?? ''));
+            $bankName = trim((string)($body['bankName'] ?? ''));
+            if ($destination === '') {
+                json_out(['ok' => false, 'error' => 'Enter your payout account / wallet address'], 422);
+            }
             $rate = (float)setting_get('withdraw_commission_rate', 0.1);
             $fee = round($amount * $rate, 2);
             $payout = round($amount - $fee, 2);
+            ensure_tx_reference_column();
+            $txRef = 'AVW' . strtoupper(substr(uid_token(8), 0, 16));
+            $note = 'Payout via ' . $method . ' · ' . $destination;
+            if ($accountName !== '') $note .= ' · ' . $accountName;
+            if ($bankName !== '') $note .= ' · ' . $bankName;
             db()->prepare('UPDATE users SET balance = balance - ?, total_withdrawals = total_withdrawals + ? WHERE id = ?')
                 ->execute([money_f($amount), money_f($amount), (int)$u['id']]);
-            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, payout, status, method, note) VALUES (?, \'withdrawal\', ?, ?, ?, \'pending\', ?, ?)')
-                ->execute([(int)$u['id'], money_f($amount), money_f($fee), money_f($payout), (string)($body['method'] ?? 'crypto'), 'Awaiting owner payout / gateway']);
-            // platform commission ledger on a system note — tracked as fee on the row
+            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, payout, status, method, note, reference) VALUES (?, \'withdrawal\', ?, ?, ?, \'pending\', ?, ?, ?)')
+                ->execute([(int)$u['id'], money_f($amount), money_f($fee), money_f($payout), $method, $note, $txRef]);
+            notify_user((int)$u['id'], 'Withdrawal requested', 'Payout of $' . money_f($payout) . ' is pending review (fee $' . money_f($fee) . ').', 'wallet');
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
-            json_out(['ok' => true, 'payout' => $payout, 'fee' => $fee, 'user' => public_user($fresh)]);
+            json_out([
+                'ok' => true,
+                'payout' => $payout,
+                'fee' => $fee,
+                'reference' => $txRef,
+                'status' => 'pending',
+                'user' => public_user($fresh),
+                'message' => 'Withdrawal submitted. You’ll be paid to your account after owner approval.',
+            ]);
         }
 
         case 'wallet.transactions': {
