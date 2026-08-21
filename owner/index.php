@@ -55,6 +55,11 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($id === 'free') setting_set('free_daily_uploads', (string)(int)$_POST['daily_uploads']);
             $flash = 'Plan updated.';
         }
+        if ($form === 'fx_rate') {
+            setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
+            setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
+            $flash = 'Naira rate saved. New deposits will use this rate.';
+        }
         if ($form === 'gateway') {
             $stmt = db()->prepare('UPDATE gateway_settings SET
                 deposit_provider=?, deposit_enabled=?, deposit_public_key=?, deposit_secret_key=?, deposit_webhook=?, deposit_notes=?,
@@ -315,6 +320,31 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php endif; ?>
 
     <?php if ($tab === 'gateways'): ?>
+      <?php
+        $fxRate = (float)setting_get('usd_ngn_rate', '1600');
+        $fxCur = setting_get('payment_currency', 'NGN');
+      ?>
+      <form method="post" class="bg-sky-50 border border-sky-200 rounded-xl p-5 space-y-3 mb-4">
+        <input type="hidden" name="form" value="fx_rate">
+        <h2 class="font-bold text-lg text-slate-900">₦ Naira rate (live deposits)</h2>
+        <p class="text-xs text-slate-600">Wallet balances stay in <strong>USD ($)</strong>. Flutterwave charges customers in Naira using this rate.</p>
+        <div class="grid sm:grid-cols-3 gap-3 items-end">
+          <div>
+            <label class="text-xs text-slate-500 font-medium">Charge currency</label>
+            <select name="payment_currency" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white">
+              <option value="NGN" <?= $fxCur==='NGN'?'selected':'' ?>>NGN (Naira)</option>
+              <option value="USD" <?= $fxCur==='USD'?'selected':'' ?>>USD (no convert)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 font-medium">1 USD = how many ₦?</label>
+            <input name="usd_ngn_rate" type="number" min="1" step="1" value="<?= h((string)$fxRate) ?>" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white font-semibold" required>
+          </div>
+          <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save Naira rate</button>
+        </div>
+        <p class="text-[11px] text-slate-500">Example at ₦<?= number_format($fxRate) ?>: deposit <strong>$3.00</strong> → customer pays about <strong>₦<?= number_format(3 * $fxRate) ?></strong>.</p>
+      </form>
+
       <form method="post" class="bg-white rounded-xl border p-5 space-y-4">
         <input type="hidden" name="form" value="gateway">
         <h2 class="font-bold text-lg">Payment gateways</h2>
@@ -355,21 +385,31 @@ $tab = $_GET['tab'] ?? 'overview';
       <form method="post" class="bg-white rounded-xl border p-5 grid sm:grid-cols-2 gap-4">
         <input type="hidden" name="form" value="settings">
         <h2 class="font-bold text-lg sm:col-span-2">Platform fees & support</h2>
+        <div class="sm:col-span-2 rounded-xl border border-sky-200 bg-sky-50 p-4 grid sm:grid-cols-2 gap-3">
+          <div class="sm:col-span-2">
+            <h3 class="font-bold text-sm text-slate-800">₦ Naira rate</h3>
+            <p class="text-[11px] text-slate-500">Same control as Gateways tab. Changes apply to the next Flutterwave deposit.</p>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Flutterwave charge currency</label>
+            <select name="payment_currency" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm bg-white">
+              <?php $pc = setting_get('payment_currency', 'NGN'); ?>
+              <option value="NGN" <?= $pc==='NGN'?'selected':'' ?>>NGN (Naira) — recommended</option>
+              <option value="USD" <?= $pc==='USD'?'selected':'' ?>>USD</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">USD → NGN rate (e.g. 1600)</label>
+            <input name="usd_ngn_rate" type="number" step="1" min="1" value="<?= h(setting_get('usd_ngn_rate','1600')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm bg-white">
+            <p class="text-[11px] text-slate-400 mt-1">$3 deposit → ₦(3 × rate) on Flutterwave.</p>
+          </div>
+        </div>
         <div><label class="text-xs text-slate-500">Min deposit ($)</label><input name="min_deposit" type="number" step="0.01" value="<?= h(setting_get('min_deposit',3)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Min withdraw ($)</label><input name="min_withdraw" type="number" step="0.01" value="<?= h(setting_get('min_withdraw',5)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Withdraw commission (%)</label><input name="withdraw_commission" type="number" step="0.1" value="<?= h(((float)setting_get('withdraw_commission_rate',0.1))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Support email</label><input name="support_email" value="<?= h(setting_get('support_email','')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div>
-          <label class="text-xs text-slate-500">Flutterwave charge currency</label>
-          <select name="payment_currency" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm">
-            <?php $pc = setting_get('payment_currency', 'NGN'); ?>
-            <option value="NGN" <?= $pc==='NGN'?'selected':'' ?>>NGN (Naira) — recommended</option>
-            <option value="USD" <?= $pc==='USD'?'selected':'' ?>>USD</option>
-          </select>
-        </div>
-        <div><label class="text-xs text-slate-500">USD → NGN rate (e.g. 1600)</label><input name="usd_ngn_rate" type="number" step="1" value="<?= h(setting_get('usd_ngn_rate','1600')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"><p class="text-[11px] text-slate-400 mt-1">Wallet stays in $. Deposit $3 → Flutterwave charges ₦(3 × rate).</p></div>
         <div class="sm:col-span-2"><button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save settings</button></div>
       </form>
     <?php endif; ?>
