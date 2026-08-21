@@ -495,7 +495,7 @@ try {
                 if ($address === '') {
                     json_out([
                         'ok' => false,
-                        'error' => 'Deposit address not set for ' . $coin . ' (' . $network . '). Owner must add it under Admin → Currencies.',
+                        'error' => 'No wallet is available at the moment.',
                         'code' => 'crypto_address_missing',
                     ], 503);
                 }

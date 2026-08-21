@@ -1,0 +1,163 @@
+/**
+ * Acctventa action toasts — matches app brand (sky #0ea5e9), auto-dismiss.
+ */
+:root {
+  --av-toast-bg: #ffffff;
+  --av-toast-text: #0f172a;
+  --av-toast-muted: #64748b;
+  --av-toast-border: #e2e8f0;
+  --av-toast-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  --av-toast-brand: #0ea5e9;
+  --av-toast-ok: #10b981;
+  --av-toast-warn: #f59e0b;
+  --av-toast-err: #ef4444;
+}
+
+html.dark,
+html.dark body,
+body.dark,
+[data-theme="dark"] {
+  --av-toast-bg: #0f172a;
+  --av-toast-text: #f8fafc;
+  --av-toast-muted: #94a3b8;
+  --av-toast-border: #334155;
+  --av-toast-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+#avToastHost {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.85rem;
+  pointer-events: none;
+}
+
+.av-toast {
+  pointer-events: auto;
+  width: min(100%, 26rem);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.7rem;
+  align-items: start;
+  padding: 0.85rem 0.9rem 0.95rem;
+  border-radius: 1rem;
+  background: var(--av-toast-bg);
+  color: var(--av-toast-text);
+  border: 1px solid var(--av-toast-border);
+  box-shadow: var(--av-toast-shadow);
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  transform: translateY(120%);
+  opacity: 0;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.av-toast.is-in {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.av-toast.is-out {
+  transform: translateY(110%);
+  opacity: 0;
+}
+
+.av-toast__icon {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--av-toast-brand);
+}
+
+.av-toast--success .av-toast__icon { background: var(--av-toast-ok); }
+.av-toast--warn .av-toast__icon { background: var(--av-toast-warn); color: #111827; }
+.av-toast--error .av-toast__icon { background: var(--av-toast-err); }
+.av-toast--info .av-toast__icon { background: var(--av-toast-brand); }
+
+.av-toast__body {
+  min-width: 0;
+  padding-top: 0.1rem;
+}
+
+.av-toast__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.av-toast__msg {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--av-toast-muted);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.av-toast__close {
+  border: 0;
+  background: transparent;
+  color: var(--av-toast-muted);
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.av-toast__close:hover {
+  background: color-mix(in srgb, var(--av-toast-brand) 12%, transparent);
+  color: var(--av-toast-text);
+}
+
+.av-toast__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: color-mix(in srgb, var(--av-toast-brand) 22%, transparent);
+  transform-origin: left center;
+  animation: avToastBar linear forwards;
+}
+
+.av-toast--success .av-toast__bar { background: color-mix(in srgb, var(--av-toast-ok) 35%, transparent); }
+.av-toast--warn .av-toast__bar { background: color-mix(in srgb, var(--av-toast-warn) 40%, transparent); }
+.av-toast--error .av-toast__bar { background: color-mix(in srgb, var(--av-toast-err) 40%, transparent); }
+
+@keyframes avToastBar {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (min-width: 768px) {
+  #avToastHost {
+    left: auto;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    align-items: flex-end;
+    width: min(26rem, calc(100vw - 2rem));
+    padding: 0;
+  }
+}

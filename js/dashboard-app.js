@@ -639,7 +639,7 @@
             <p class="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Send only to this address</p>
             <p id="depositAddressText" class="font-mono text-xs break-all text-slate-800 dark:text-slate-100"></p>
             <button type="button" onclick="copyDepositAddress()" class="text-[11px] font-bold text-brandPrimary"><i class="fa-regular fa-copy mr-1"></i>Copy address</button>
-            <p id="depositAddressWarn" class="text-[10px] text-amber-600 hidden">No deposit address configured for this network. Contact support / owner.</p>
+            <p id="depositAddressWarn" class="text-[10px] text-amber-600 hidden">No wallet is available at the moment.</p>
           </div>
           <div>
             <label class="text-[11px] text-slate-500 mb-1 block">Transaction hash (optional)</label>
@@ -707,7 +707,7 @@
           const ready = cryptoNetworksWithAddress(c).length > 0;
           return `<button type="button" onclick="selectDepositCurrency('${escapeAttr(c.code)}')" class="dep-cur rounded-xl border p-3 text-center text-xs font-bold transition ${depositCurrency === c.code ? 'border-brandPrimary bg-brandPrimary/10 text-brandPrimary' : 'border-slate-200 dark:border-slate-800'} ${ready ? '' : 'opacity-50'}">
           <div class="text-lg mb-1">${c.code === 'BTC' ? '₿' : c.code === 'ETH' ? 'Ξ' : '◎'}</div>${escapeHtml(c.code)}
-          ${ready ? '' : '<p class="text-[9px] font-normal text-amber-500 mt-1">No address</p>'}
+          ${ready ? '' : '<p class="text-[9px] font-normal text-amber-500 mt-1">Unavailable</p>'}
         </button>`;
         })
         .join('');
@@ -733,7 +733,7 @@
     if (btn) btn.textContent = isCrypto ? "I've sent payment — submit for review" : 'Continue to payment';
     if (hint) {
       hint.innerHTML = isCrypto
-        ? '<i class="fa-solid fa-clock mr-1"></i>Wallet credits only after owner confirms your on-chain payment'
+        ? '<i class="fa-solid fa-clock mr-1"></i>Wallet credits after your on-chain payment is confirmed'
         : '<i class="fa-solid fa-lock mr-1"></i>You will be redirected to a secure service provider';
     }
     if (trust) {
@@ -748,11 +748,11 @@
     const allNets = ((coin && coin.networks) || []).map((n) => String(n).toUpperCase());
     if (sel) {
       const options = (nets.length ? nets : allNets).map(
-        (n) => `<option value="${escapeAttr(n)}" ${depositNetwork === n ? 'selected' : ''}>${escapeHtml(n)}${nets.indexOf(n) === -1 ? ' (no address)' : ''}</option>`
+        (n) => `<option value="${escapeAttr(n)}" ${depositNetwork === n ? 'selected' : ''}>${escapeHtml(n)}${nets.indexOf(n) === -1 ? ' (unavailable)' : ''}</option>`
       );
       sel.innerHTML = options.length
         ? options.join('')
-        : '<option value="">No networks configured</option>';
+        : '<option value="">No networks available</option>';
       if (!depositNetwork && nets[0]) depositNetwork = nets[0];
       if (depositNetwork) sel.value = depositNetwork;
     }
@@ -779,7 +779,7 @@
   window.copyDepositAddress = async function () {
     const addr = cryptoAddressFor(depositCurrency, depositNetwork);
     if (!addr) {
-      alert('No deposit address configured for this network.');
+      alert('No wallet is available at the moment.');
       return;
     }
     try {
@@ -811,8 +811,8 @@
       const addr = cryptoAddressFor(depositCurrency, depositNetwork);
       if (el) {
         el.textContent = addr
-          ? 'Send ' + depositCurrency + ' on ' + (depositNetwork || 'selected network') + ' to the address above, then submit for owner review. Min $' + money(A().CONFIG.minDeposit).replace('$', '')
-          : 'Owner has not set a deposit address for this coin/network yet.';
+          ? 'Send ' + depositCurrency + ' on ' + (depositNetwork || 'selected network') + ' to the address above, then submit for review. Min $' + money(A().CONFIG.minDeposit).replace('$', '')
+          : 'Wallet unavailable for this coin/network right now.';
       }
       if (convertEl) convertEl.textContent = usd > 0 ? 'Requesting $' + usd.toFixed(2) + ' wallet credit' : '';
       return;
@@ -1035,10 +1035,10 @@
           if (depositChannel === 'crypto') {
             const addr = cryptoAddressFor(depositCurrency, depositNetwork);
             if (!addr) {
-              alert('No deposit address is set for ' + depositCurrency + ' / ' + (depositNetwork || 'network') + '. Ask the owner to add it under Admin → Currencies.');
+              alert('No wallet is available at the moment.');
               return;
             }
-            if (!confirm('Confirm you will send (or already sent) $' + amount.toFixed(2) + ' in ' + depositCurrency + ' on ' + depositNetwork + ' to:\n\n' + addr + '\n\nYour wallet will NOT credit until the owner confirms.')) {
+            if (!confirm('Confirm you will send (or already sent) $' + amount.toFixed(2) + ' in ' + depositCurrency + ' on ' + depositNetwork + ' to:\n\n' + addr + '\n\nYour wallet will NOT credit until payment is confirmed.')) {
               return;
             }
           }
@@ -1074,7 +1074,7 @@
           return;
         }
       } catch (e) {
-        alert(e.message || 'Deposit failed. Check Flutterwave Secret key (FLWSECK-) in /owner Gateways.');
+        alert(e.message || 'Deposit failed. Please try again in a moment.');
         return;
       }
       alert('Live backend not connected. Log out, log in again, then retry deposit.');
@@ -1117,7 +1117,7 @@
     closeWalletFlow();
     applyProfileChrome(refreshUser());
     setWalletHistoryTab('withdrawal');
-    alert(res.message || 'Withdrawal requested. Pending owner approval.');
+    alert(res.message || 'Withdrawal requested. Pending approval.');
   };
 
   window.openSellProductWizard = function () {

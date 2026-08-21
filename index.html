@@ -25,7 +25,9 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
+    <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast1">
     <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
+    <script src="/js/ui-toast.js?v=20260821toast1"></script>
     <style>
         @keyframes floatLogo {
             0%, 100% { transform: translateY(0px) scale(1); }
@@ -43,38 +45,9 @@
             animation: orbitBall 4s linear infinite;
         }
         html { scroll-behavior: smooth; }
-        #authToast {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            display: none;
-            padding: 12px 14px 10px;
-            background: #151b23;
-            border-bottom: 2px solid #ef4444;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-        }
-        #authToast.show { display: block; animation: toastIn 0.25s ease; }
-        @keyframes toastIn {
-            from { transform: translateY(-100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
-
-    <div id="authToast" role="alert">
-        <div class="max-w-md mx-auto flex items-center gap-3">
-            <span class="shrink-0 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs">
-                <i class="fa-solid fa-exclamation"></i>
-            </span>
-            <p id="authToastText" class="flex-1 text-sm font-semibold text-white leading-snug"></p>
-            <button type="button" onclick="hideAuthToast()" class="shrink-0 text-gray-400 hover:text-white p-1" aria-label="Close">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    </div>
 
     <!-- HEADER / NAVBAR -->
     <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
@@ -408,18 +381,15 @@
         }
 
         function showAuthToast(message) {
-            const el = document.getElementById('authToast');
-            const text = document.getElementById('authToastText');
-            if (!el || !text) return;
-            text.textContent = message || 'Something went wrong';
-            el.classList.add('show');
-            clearTimeout(window.__authToastTimer);
-            window.__authToastTimer = setTimeout(hideAuthToast, 4500);
+            if (window.AcctventaToast) {
+                window.AcctventaToast.show(message || 'Something went wrong', { type: 'error', duration: 4500 });
+                return;
+            }
+            alert(message || 'Something went wrong');
         }
 
         function hideAuthToast() {
-            const el = document.getElementById('authToast');
-            if (el) el.classList.remove('show');
+            /* legacy no-op — toasts auto-dismiss */
         }
 
         function openForgotPassword(e) {
