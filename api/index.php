@@ -927,18 +927,26 @@ try {
         case 'support.threads': {
             $staff = require_staff();
             ensure_support_tables();
-            $rows = db()->query("SELECT t.*, u.name AS user_name, u.email AS user_email, u.last_seen_at,
-                (SELECT body FROM support_messages sm WHERE sm.thread_id = t.id ORDER BY sm.id DESC LIMIT 1) AS last_body
+            $rows = db()->query("SELECT t.*, u.name AS user_name, u.email AS user_email, u.last_seen_at, u.balance AS user_balance, u.plan AS user_plan,
+                (SELECT body FROM support_messages sm WHERE sm.thread_id = t.id ORDER BY sm.id DESC LIMIT 1) AS last_body,
+                (SELECT sender_role FROM support_messages sm WHERE sm.thread_id = t.id ORDER BY sm.id DESC LIMIT 1) AS last_role,
+                (SELECT COUNT(*) FROM support_messages sm WHERE sm.thread_id = t.id AND sm.sender_role = 'user'
+                  AND (t.staff_last_seen_at IS NULL OR sm.created_at > t.staff_last_seen_at)) AS unread_count
               FROM support_threads t
               JOIN users u ON u.id = t.user_id
               ORDER BY COALESCE(t.last_message_at, t.created_at) DESC
-              LIMIT 100")->fetchAll();
+              LIMIT 300")->fetchAll();
             $list = [];
             foreach ($rows as $r) {
                 $list[] = array_merge(support_public_thread($r, ['last_seen_at' => $r['last_seen_at'] ?? null]), [
                     'userName' => $r['user_name'],
                     'userEmail' => $r['user_email'],
+                    'userBalance' => (float)($r['user_balance'] ?? 0),
+                    'userPlan' => $r['user_plan'] ?? 'free',
                     'lastBody' => $r['last_body'] ?? '',
+                    'lastRole' => $r['last_role'] ?? '',
+                    'unreadCount' => (int)($r['unread_count'] ?? 0),
+                    'staffLastSeenAt' => $r['staff_last_seen_at'] ?? null,
                 ]);
             }
             json_out(['ok' => true, 'threads' => $list, 'staff' => ['name' => $staff['staff_name'], 'role' => $staff['role']]]);

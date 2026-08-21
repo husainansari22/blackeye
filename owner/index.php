@@ -283,7 +283,7 @@ $tab = $_GET['tab'] ?? 'overview';
     (function(){try{var t=localStorage.getItem('acctventa_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260821zoom1">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260821inbox1">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
   <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
   <style>
@@ -336,12 +336,12 @@ $tab = $_GET['tab'] ?? 'overview';
     </div>
   </header>
 
-  <main class="av-shell space-y-4 py-4">
+  <main class="av-shell space-y-4 py-4<?= in_array($tab, ['support', 'chats', 'wallet'], true) ? ' av-shell-wide' : '' ?>">
     <?php if ($flash): ?><div class="av-ok text-sm px-4 py-3"><?= h($flash) ?></div><?php endif; ?>
     <?php if ($error): ?><div class="av-warn text-sm px-4 py-3"><?= h($error) ?></div><?php endif; ?>
 
     <div class="av-tabs">
-      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats','reports'=>'Reports','wallet'=>'Wallet','support'=>'Support','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
+      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats','reports'=>'Reports','wallet'=>'Wallet','support'=>'Inbox','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
         <a href="?tab=<?= $k ?>" class="av-tab <?= $tab===$k?'av-tab-active':'' ?>"><?= $label ?></a>
       <?php endforeach; ?>
     </div>
@@ -365,32 +365,36 @@ $tab = $_GET['tab'] ?? 'overview';
       ensure_support_tables();
       $staffToken = create_staff_session('owner', 'Owner Support');
     ?>
-      <div class="av-card p-4 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="av-inbox">
+        <div class="av-inbox-toolbar">
           <div>
-            <h2 class="font-bold text-lg av-text">Live Chat Support</h2>
-            <p class="text-xs av-muted">Messaging-app layout — readable bubbles & images in light/dark.</p>
+            <h2 class="av-inbox-title">Support inbox</h2>
+            <p class="av-inbox-sub">All customer chats in one place — search, unread badges, mobile-friendly.</p>
           </div>
-          <div class="text-right">
+          <div class="flex flex-wrap items-center gap-2">
+            <div id="ownerInboxStats" class="av-inbox-stats"></div>
             <button type="button" id="staffNotifBtn" onclick="ownerEnableNotif()" class="av-icon-btn">Enable alerts</button>
-            <p id="staffNotifStatus" class="text-[10px] av-muted mt-1">In-app alerts</p>
           </div>
         </div>
-        <div class="av-chat-shell">
+        <p id="staffNotifStatus" class="text-[10px] av-muted -mt-1">In-app alerts</p>
+        <div id="ownerChatShell" class="av-chat-shell">
           <div class="av-chat-list">
-            <div class="av-chat-list-head flex justify-between items-center">
+            <div class="av-chat-list-head flex justify-between items-center gap-2">
               <span>Conversations</span>
               <button type="button" onclick="ownerLoadThreads()" class="av-icon-btn">Refresh</button>
             </div>
-            <div id="ownerThreadList" class="flex-1 overflow-y-auto" style="max-height:55vh"></div>
+            <div class="av-chat-search">
+              <input id="ownerThreadSearch" type="search" placeholder="Search name, email, message…" oninput="ownerRenderThreads()" autocomplete="off">
+            </div>
+            <div id="ownerThreadList" class="av-thread-scroll"></div>
           </div>
           <div class="av-chat-pane">
-            <div id="ownerChatHeader" class="av-chat-pane-head">Select a conversation</div>
+            <div id="ownerChatHeader" class="av-chat-pane-head"></div>
             <div id="ownerChatMsgs" class="av-chat-msgs"></div>
-            <p id="ownerTyping" class="px-3 text-[11px] av-muted h-5"></p>
+            <p id="ownerTyping" class="px-3 text-[11px] av-muted h-5 shrink-0"></p>
             <div class="av-composer">
               <input type="file" id="ownerSupportFile" class="hidden" accept="image/*,.pdf,.txt,.doc,.docx,.zip" onchange="onOwnerSupportFile(event)">
-              <button type="button" class="av-icon-btn" onclick="document.getElementById('ownerSupportFile').click()">📎</button>
+              <button type="button" class="av-icon-btn" onclick="document.getElementById('ownerSupportFile').click()" title="Attach">📎</button>
               <input id="ownerReply" type="text" placeholder="Type a reply…" oninput="ownerTyping()" onkeydown="if(event.key==='Enter'){ownerSend();}">
               <button type="button" onclick="ownerSend()" class="av-send">Send</button>
             </div>
@@ -398,29 +402,19 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-alerts.js?v=20260821alert1"></script>
+      <script src="/js/staff-alerts.js?v=20260821inbox1"></script>
+      <script src="/js/staff-inbox.js?v=20260821inbox1"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);
+        const Inbox = () => window.AcctventaStaffInbox;
         let ownerActive = null;
         let ownerFp = '';
         let ownerAttach = null;
-        function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-        function ownerAttachHtml(m){
-          if(!m||!m.attachmentUrl) return '';
-          const url=esc(m.attachmentUrl);
-          const mime=String(m.attachmentMime||'');
-          const isImg=mime.startsWith('image/')||/\.(png|jpe?g|gif|webp|heic)$/i.test(m.attachmentUrl||'');
-          if(isImg) return `<a href="${url}" target="_blank" rel="noopener"><img class="av-attach" src="${url}" alt="${esc(m.attachmentName||'image')}"></a>`;
-          return `<a class="av-file" href="${url}" target="_blank" rel="noopener">📎 ${esc(m.attachmentName||'file')}</a>`;
-        }
-        function onOwnerSupportFile(ev){
-          const file=ev.target.files&&ev.target.files[0]; if(!file)return;
-          if(file.size>8*1024*1024){alert('Max 8MB');ev.target.value='';return;}
-          const reader=new FileReader();
-          reader.onload=()=>{ownerAttach={dataUrl:reader.result,name:file.name}; const h=document.getElementById('ownerSupportAttachHint'); if(h){h.classList.remove('hidden');h.textContent='Attached: '+file.name;}};
-          reader.readAsDataURL(file); ev.target.value='';
-        }
+        let ownerThreadsCache = [];
+        let ownerActiveThread = null;
+
+        function ownerShell(){ return document.getElementById('ownerChatShell'); }
         function ownerEnableNotif(){
           if (window.AcctventaStaffAlerts) window.AcctventaStaffAlerts.enable({ buttonId: 'staffNotifBtn' });
           else alert('Alert helper failed to load. Hard-refresh and try again.');
@@ -441,35 +435,80 @@ $tab = $_GET['tab'] ?? 'overview';
           if(!res.ok||data.ok===false) throw new Error(data.error||'Request failed');
           return data;
         }
-        async function ownerLoadThreads(){
+        function onOwnerSupportFile(ev){
+          const file=ev.target.files&&ev.target.files[0]; if(!file)return;
+          if(file.size>8*1024*1024){alert('Max 8MB');ev.target.value='';return;}
+          const reader=new FileReader();
+          reader.onload=()=>{ownerAttach={dataUrl:reader.result,name:file.name}; const h=document.getElementById('ownerSupportAttachHint'); if(h){h.classList.remove('hidden');h.textContent='Attached: '+file.name;}};
+          reader.readAsDataURL(file); ev.target.value='';
+        }
+        function ownerRenderHeader(){
+          const head = document.getElementById('ownerChatHeader');
+          if (!head || !Inbox()) return;
+          head.innerHTML = Inbox().headerHtml(ownerActiveThread, { showBack: true });
+          const back = head.querySelector('[data-inbox-back]');
+          if (back) back.onclick = () => {
+            ownerActive = null;
+            ownerActiveThread = null;
+            Inbox().setChatOpen(ownerShell(), false);
+            ownerRenderHeader();
+            document.getElementById('ownerChatMsgs').innerHTML = '<div class="av-empty-chat"><i class="fa-regular fa-comments"></i><p>Select a conversation</p></div>';
+            ownerRenderThreads();
+          };
+        }
+        function ownerRenderThreads(){
+          if (!Inbox()) return;
+          const q = (document.getElementById('ownerThreadSearch')||{}).value || '';
+          Inbox().renderStats(document.getElementById('ownerInboxStats'), ownerThreadsCache);
+          Inbox().renderThreadList({
+            box: document.getElementById('ownerThreadList'),
+            threads: ownerThreadsCache,
+            query: q,
+            activeId: ownerActive,
+            onOpen: (id) => ownerOpen(id),
+          });
+        }
+        async function ownerLoadThreads(silent){
           try{
             const res = await apiStaff('support.threads');
             const threads = res.threads||[];
-            const fp = threads.map(t=>t.id+':'+(t.lastMessageAt||'')+':'+(t.lastBody||'')).join('|');
-            if(fp!==ownerFp && ownerFp && threads[0]) ownerNotify('New support message', (threads[0].userName||'User')+': '+(threads[0].lastBody||''));
+            const fp = threads.map(t=>t.id+':'+(t.lastMessageAt||'')+':'+(t.unreadCount||0)+':'+(t.lastBody||'')).join('|');
+            if(fp!==ownerFp && ownerFp){
+              const hot = threads.find(t => (Number(t.unreadCount)||0) > 0) || threads[0];
+              if (hot) ownerNotify('New support message', (hot.userName||'User')+': '+(hot.lastBody||''));
+            }
             ownerFp = fp;
-            const box = document.getElementById('ownerThreadList');
-            if(!threads.length){ box.innerHTML='<p class="p-3 text-xs av-muted">No conversations yet.</p>'; return; }
-            box.innerHTML = threads.map(t=>`<button type="button" onclick="ownerOpen(${t.id})" class="av-thread ${ownerActive===t.id?'is-active':''}">
-              <div class="flex justify-between"><p class="name truncate">${esc(t.userName)}</p>${t.userOnline?'<span class="w-2 h-2 rounded-full bg-emerald-500 mt-1"></span>':''}</div>
-              <p class="meta truncate">${esc(t.userEmail)}</p>
-              <p class="preview truncate">${esc(t.lastBody||'No messages')}</p>
-            </button>`).join('');
-          }catch(e){ document.getElementById('ownerThreadList').innerHTML='<p class="p-3 text-xs" style="color:#ef4444">'+esc(e.message)+'</p>'; }
+            ownerThreadsCache = threads;
+            if (ownerActive) {
+              ownerActiveThread = threads.find(t => Number(t.id) === Number(ownerActive)) || ownerActiveThread;
+            }
+            ownerRenderThreads();
+            ownerRenderHeader();
+          }catch(e){
+            if (!silent) document.getElementById('ownerThreadList').innerHTML='<p class="p-3 text-xs" style="color:#ef4444">'+Inbox().esc(e.message)+'</p>';
+          }
         }
-        async function ownerOpen(id){
+        async function ownerOpen(id, silent){
           ownerActive=id;
+          Inbox().setChatOpen(ownerShell(), true);
           try{
             const res = await apiStaff('support.messages',{query:{threadId:id}});
             const t=res.thread||{};
-            document.getElementById('ownerChatHeader').innerHTML=esc(t.userName||'User')+' <span class="text-xs font-normal av-muted">'+esc(t.userEmail||'')+(t.userOnline?' · <span style="color:#10b981">Online</span>':'')+'</span>';
-            document.getElementById('ownerTyping').textContent=t.userTyping?'User is typing…':'';
-            const box=document.getElementById('ownerChatMsgs');
-            const msgs=res.messages||[];
-            box.innerHTML=msgs.length?msgs.map(m=>{const mine=m.role==='staff';return `<div class="av-bubble ${mine?'av-bubble-out':'av-bubble-in'}"><p class="who">${esc(mine?(m.staffName||'Support'):(t.userName||'User'))}</p><p class="body">${esc(m.body||'')}</p>${ownerAttachHtml(m)}</div>`;}).join(''):'<p class="text-center text-xs av-muted py-6">No messages yet.</p>';
-            box.scrollTop=box.scrollHeight;
-            ownerLoadThreads();
-          }catch(e){alert(e.message);}
+            const cached = ownerThreadsCache.find(x => Number(x.id) === Number(id)) || {};
+            ownerActiveThread = Object.assign({}, cached, t, {
+              userName: cached.userName || t.userName,
+              userEmail: cached.userEmail || t.userEmail,
+              userPlan: cached.userPlan,
+              userOnline: t.userOnline != null ? t.userOnline : cached.userOnline,
+            });
+            ownerRenderHeader();
+            document.getElementById('ownerTyping').textContent=ownerActiveThread.userTyping?'User is typing…':'';
+            const msgBox = document.getElementById('ownerChatMsgs');
+            Inbox().renderMessages(msgBox, res.messages||[], ownerActiveThread, { preserveScroll: !!silent });
+            // clear unread locally after open
+            ownerThreadsCache = ownerThreadsCache.map(x => Number(x.id)===Number(id) ? Object.assign({}, x, { unreadCount: 0 }) : x);
+            ownerRenderThreads();
+          }catch(e){ if(!silent) alert(e.message); }
         }
         let ot;
         function ownerTyping(){ if(!ownerActive)return; clearTimeout(ot); apiStaff('support.typing',{method:'POST',body:{threadId:ownerActive,typing:true}}).catch(()=>{}); ot=setTimeout(()=>apiStaff('support.typing',{method:'POST',body:{threadId:ownerActive,typing:false}}).catch(()=>{}),1500); }
@@ -486,8 +525,9 @@ $tab = $_GET['tab'] ?? 'overview';
             ownerOpen(ownerActive);
           }catch(e){alert(e.message);}
         }
+        ownerRenderHeader();
         ownerLoadThreads();
-        setInterval(()=>{ ownerLoadThreads(); if(ownerActive) ownerOpen(ownerActive); }, 3000);
+        setInterval(()=>{ ownerLoadThreads(true); if(ownerActive) ownerOpen(ownerActive, true); }, 5000);
         if (window.AcctventaStaffAlerts) {
           window.AcctventaStaffAlerts.enable({ silent: true, buttonId: 'staffNotifBtn' });
           window.AcctventaStaffAlerts.updateButton('staffNotifBtn');
@@ -652,19 +692,27 @@ $tab = $_GET['tab'] ?? 'overview';
       $staffToken = create_staff_session('owner', 'Owner Support');
       $focusOrder = (int)($_GET['order_id'] ?? 0);
     ?>
-      <div class="av-card p-4 space-y-3">
-        <h2 class="font-bold text-lg av-text">All buyer ↔ seller chats</h2>
-        <p class="text-xs av-muted">View any order thread by TXID to resolve disputes, then refund from Orders.</p>
-        <div class="av-chat-shell">
+      <div class="av-inbox">
+        <div class="av-inbox-toolbar">
+          <div>
+            <h2 class="av-inbox-title">Order chats</h2>
+            <p class="av-inbox-sub">Buyer ↔ seller threads — search by TXID, title, or name.</p>
+          </div>
+          <div id="ownerOrderStats" class="av-inbox-stats"></div>
+        </div>
+        <div id="ownerOrderShell" class="av-chat-shell">
           <div class="av-chat-list">
-            <div class="av-chat-list-head flex justify-between items-center">
+            <div class="av-chat-list-head flex justify-between items-center gap-2">
               <span>Threads</span>
               <button type="button" onclick="loadOrderChats()" class="av-icon-btn">Refresh</button>
             </div>
-            <div id="orderChatList" class="overflow-y-auto" style="max-height:55vh"></div>
+            <div class="av-chat-search">
+              <input id="ownerOrderSearch" type="search" placeholder="Search TXID, title, buyer, seller…" oninput="renderOrderChats()" autocomplete="off">
+            </div>
+            <div id="orderChatList" class="av-thread-scroll"></div>
           </div>
           <div class="av-chat-pane">
-            <div id="orderChatHeader" class="av-chat-pane-head">Select a chat</div>
+            <div id="orderChatHeader" class="av-chat-pane-head"></div>
             <div id="orderChatMsgs" class="av-chat-msgs"></div>
             <div id="orderChatActions" class="p-2 border-t hidden" style="border-color:var(--av-border)">
               <button type="button" id="orderChatRefundBtn" class="av-send" style="background:#ef4444">Refund buyer (allows seller debt)</button>
@@ -672,11 +720,15 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
+      <script src="/js/staff-inbox.js?v=20260821inbox1"></script>
       <script>
         localStorage.setItem('acctventa_staff_token', <?= json_encode($staffToken) ?>);
         const FOCUS_ORDER = <?= (int)$focusOrder ?>;
+        const Inbox = () => window.AcctventaStaffInbox;
         let activeOrderChat = null;
-        function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+        let orderChatsCache = [];
+        function esc(s){return Inbox() ? Inbox().esc(s) : String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+        function orderShell(){ return document.getElementById('ownerOrderShell'); }
         async function apiStaff(action, opts={}){
           const url=new URL('/api/index.php',location.origin);
           url.searchParams.set('action',action);
@@ -687,40 +739,83 @@ $tab = $_GET['tab'] ?? 'overview';
           if(!res.ok||data.ok===false) throw new Error(data.error||'Failed');
           return data;
         }
+        function renderOrderHeader(o){
+          const head=document.getElementById('orderChatHeader');
+          if(!head) return;
+          if(!o){
+            head.innerHTML=(Inbox()?Inbox().headerHtml(null,{showBack:true}):'Select a chat');
+          } else {
+            head.innerHTML =
+              '<button type="button" class="av-back-chat" data-inbox-back aria-label="Back">←</button>' +
+              '<span class="av-avatar">' + esc((o.public_id||'OR').slice(0,2).toUpperCase()) + '</span>' +
+              '<div class="head-main"><div class="head-title truncate font-mono">' + esc(o.public_id) + ' · ' + esc(o.status) + '</div>' +
+              '<div class="head-sub truncate">' + esc(o.title) + ' · ' + esc(o.buyer_name) + ' ↔ ' + esc(o.seller_name) +
+              ' · seller $' + Number(o.seller_balance||0).toFixed(2) + '</div></div>';
+          }
+          const back=head.querySelector('[data-inbox-back]');
+          if(back) back.onclick=()=>{
+            activeOrderChat=null;
+            if(Inbox()) Inbox().setChatOpen(orderShell(), false);
+            renderOrderHeader(null);
+            document.getElementById('orderChatMsgs').innerHTML='<div class="av-empty-chat"><i class="fa-regular fa-comments"></i><p>Select a conversation</p></div>';
+            document.getElementById('orderChatActions').classList.add('hidden');
+            renderOrderChats();
+          };
+        }
+        function renderOrderChats(){
+          const box=document.getElementById('orderChatList');
+          const q=(document.getElementById('ownerOrderSearch')||{}).value||'';
+          const stats=document.getElementById('ownerOrderStats');
+          if(stats) stats.innerHTML='<span class="av-chip"><strong>'+orderChatsCache.length+'</strong> threads</span>';
+          if(!Inbox()) return;
+          const filtered=Inbox().filterThreads(orderChatsCache, q);
+          if(!filtered.length){
+            box.innerHTML='<div class="av-empty-chat"><i class="fa-regular fa-comments"></i><p>No order chats match.</p></div>';
+            return;
+          }
+          box.innerHTML=filtered.map(c=>{
+            const label=(c.public_id||'OR').toString();
+            return '<button type="button" class="av-thread '+(activeOrderChat===c.id?'is-active':'')+'" data-order-id="'+esc(c.id)+'">' +
+              '<span class="av-avatar">'+esc(label.slice(0,2).toUpperCase())+'</span>' +
+              '<span class="mid min-w-0"><p class="name truncate font-mono">'+esc(c.public_id)+'</p>' +
+              '<p class="meta truncate">'+esc(c.title)+' · '+esc(c.status)+'</p>' +
+              '<p class="preview">'+esc(c.buyer_name)+' ↔ '+esc(c.seller_name)+' · '+(c.message_count||0)+' msgs'+(c.last_body?' · '+esc(c.last_body):'')+'</p></span>' +
+              '<span class="side"><span class="time">'+esc(Inbox().relativeTime(c.last_message_at||c.updated_at||c.created_at))+'</span></span></button>';
+          }).join('');
+          box.querySelectorAll('[data-order-id]').forEach(btn=>{
+            btn.addEventListener('click',()=>openOrderChat(Number(btn.getAttribute('data-order-id'))));
+          });
+        }
         async function loadOrderChats(){
           const res=await apiStaff('staff.orders.chats');
-          const box=document.getElementById('orderChatList');
-          const chats=res.chats||[];
-          if(!chats.length){box.innerHTML='<p class="p-3 text-xs text-slate-400">No order chats yet.</p>';return;}
-          box.innerHTML=chats.map(c=>`<button type="button" onclick="openOrderChat(${c.id})" class="av-thread ${activeOrderChat===c.id?'is-active':''}">
-            <p class="name font-mono">${esc(c.public_id)}</p>
-            <p class="meta truncate">${esc(c.title)} · ${esc(c.status)}</p>
-            <p class="meta">${esc(c.buyer_name)} ↔ ${esc(c.seller_name)} · ${c.message_count} msgs</p>
-            <p class="preview truncate">${esc(c.last_body||'')}</p>
-          </button>`).join('');
+          orderChatsCache=res.chats||[];
+          renderOrderChats();
         }
         async function openOrderChat(id){
           activeOrderChat=id;
+          if(Inbox()) Inbox().setChatOpen(orderShell(), true);
           const res=await apiStaff('staff.orders.get',{query:{orderId:id}});
           const o=res.order||{};
-          document.getElementById('orderChatHeader').innerHTML=`<span class="font-mono">${esc(o.public_id)}</span> · ${esc(o.title)} · ${esc(o.status)}<br><span class="text-xs font-normal av-muted">${esc(o.buyer_name)} ↔ ${esc(o.seller_name)} · seller bal $${Number(o.seller_balance).toFixed(2)}</span>`;
+          renderOrderHeader(o);
           const msgs=res.messages||[];
           const box=document.getElementById('orderChatMsgs');
           box.className='av-chat-msgs';
           box.innerHTML=msgs.length?msgs.map(m=>{
             const mime=String(m.attachmentMime||'');
             const isImg=m.attachmentUrl&&(mime.startsWith('image/')||/\.(png|jpe?g|gif|webp)$/i.test(m.attachmentUrl));
-            const att=m.attachmentUrl?(isImg?`<a href="${esc(m.attachmentUrl)}" target="_blank" rel="noopener"><img class="av-attach" src="${esc(m.attachmentUrl)}" alt=""></a>`:`<a class="av-file" href="${esc(m.attachmentUrl)}" target="_blank" rel="noopener">📎 ${esc(m.attachmentName||'file')}</a>`):'';
-            return `<div class="av-bubble av-bubble-in"><p class="who">${esc(m.fromName)} · ${esc(m.fromEmail)}</p><p class="body">${esc(m.text||m.body||'')}</p>${att}</div>`;
-          }).join(''):'<p class="text-xs av-muted text-center py-6">No messages</p>';
+            const att=m.attachmentUrl?(isImg?'<a href="'+esc(m.attachmentUrl)+'" target="_blank" rel="noopener"><img class="av-attach" src="'+esc(m.attachmentUrl)+'" alt=""></a>':'<a class="av-file" href="'+esc(m.attachmentUrl)+'" target="_blank" rel="noopener">📎 '+esc(m.attachmentName||'file')+'</a>'):'';
+            return '<div class="av-bubble av-bubble-in"><p class="who">'+esc(m.fromName)+' · '+esc(m.fromEmail)+'</p><p class="body">'+esc(m.text||m.body||'')+'</p>'+att+'</div>';
+          }).join(''):'<div class="av-empty-chat"><i class="fa-regular fa-comment-dots"></i><p>No messages</p></div>';
+          box.scrollTop=box.scrollHeight;
           const actions=document.getElementById('orderChatActions');
           actions.classList.toggle('hidden', o.status==='cancelled');
           document.getElementById('orderChatRefundBtn').onclick=async()=>{
             if(!confirm('Refund buyer and deduct seller (negative OK)?'))return;
             try{const r=await apiStaff('staff.orders.refund',{method:'POST',body:{orderId:id}});alert('Refunded. Seller balance: $'+Number(r.sellerBalance).toFixed(2)+(r.owing?' (owing $'+Number(r.owing).toFixed(2)+')':''));openOrderChat(id);}catch(e){alert(e.message);}
           };
-          loadOrderChats();
+          renderOrderChats();
         }
+        renderOrderHeader(null);
         loadOrderChats().then(()=>{ if(FOCUS_ORDER) openOrderChat(FOCUS_ORDER); }).catch(e=>alert(e.message));
       </script>
     <?php endif; ?>
