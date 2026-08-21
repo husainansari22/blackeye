@@ -869,6 +869,9 @@
                 const switchBg = document.getElementById('themeToggleSwitch');
                 if (switchBg) switchBg.className = 'w-10 h-6 bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner';
             }
+            if (location.hash === '#wallet') {
+                try { switchTab('wallet'); } catch (e) {}
+            }
         });
         function handleLogout() {
             if (!confirm('Are you sure you want to log out?')) return;

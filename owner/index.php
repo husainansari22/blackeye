@@ -325,10 +325,11 @@ $tab = $_GET['tab'] ?? 'overview';
               <?php endforeach; ?>
             </select>
             <label class="text-sm flex gap-2 items-center"><input type="checkbox" name="deposit_enabled" <?= !empty($gw['deposit_enabled'])?'checked':'' ?>> Enabled</label>
-            <input name="deposit_public_key" value="<?= h($gw['deposit_public_key']??'') ?>" placeholder="Public key" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <input name="deposit_secret_key" value="<?= h($gw['deposit_secret_key']??'') ?>" placeholder="Secret key" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <input name="deposit_webhook" value="<?= h($gw['deposit_webhook']??'') ?>" placeholder="Webhook URL" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <textarea name="deposit_notes" class="w-full border rounded-xl px-3 py-2 text-sm" rows="2" placeholder="Notes"><?= h($gw['deposit_notes']??'') ?></textarea>
+            <input name="deposit_public_key" value="<?= h($gw['deposit_public_key']??'') ?>" placeholder="Flutterwave Public Key (FLWPUBK_...)" class="w-full border rounded-xl px-3 py-2 text-sm">
+            <input name="deposit_secret_key" value="<?= h($gw['deposit_secret_key']??'') ?>" placeholder="Flutterwave Secret Key (FLWSECK_...) — required" class="w-full border rounded-xl px-3 py-2 text-sm">
+            <input name="deposit_webhook" value="<?= h($gw['deposit_webhook']??'') ?>" placeholder="https://acctventa.com/api/index.php?action=webhook.flutterwave" class="w-full border rounded-xl px-3 py-2 text-sm">
+            <textarea name="deposit_notes" class="w-full border rounded-xl px-3 py-2 text-sm" rows="2" placeholder="Optional notes / encryption key"><?= h($gw['deposit_notes']??'') ?></textarea>
+            <p class="text-[11px] text-slate-500">Use <strong>Settings → API Keys</strong> in Flutterwave (keys starting with FLWPUBK_ / FLWSECK_), not only V4 Client ID. Set webhook URL in Flutterwave to the same webhook above.</p>
           </div>
           <div class="border rounded-xl p-4 space-y-2">
             <h3 class="font-semibold">Withdraw / payout</h3>

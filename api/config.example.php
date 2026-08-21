@@ -24,6 +24,7 @@ return [
 
     'app_name' => 'Acctventa',
     'app_url' => 'https://acctventa.com',
+    'currency' => 'USD',
     'support_telegram' => 'https://t.me/acctventa',
     'support_email' => 'help@acctventa.com',
 

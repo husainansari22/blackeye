@@ -107,10 +107,12 @@ CREATE TABLE IF NOT EXISTS transactions (
   status ENUM('pending','completed','failed','cancelled') NOT NULL DEFAULT 'pending',
   method VARCHAR(60) DEFAULT '',
   note VARCHAR(500) DEFAULT '',
+  reference VARCHAR(80) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX (user_id),
   INDEX (type),
   INDEX (status),
+  INDEX (reference),
   CONSTRAINT fk_tx_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
