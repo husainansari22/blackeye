@@ -166,6 +166,8 @@
             depositFeeRate: cfgRes.config.depositFeeRate,
             supportTelegram: cfgRes.config.supportTelegram,
             supportEmail: cfgRes.config.supportEmail,
+            paymentCurrency: cfgRes.config.paymentCurrency || 'NGN',
+            usdNgnRate: cfgRes.config.usdNgnRate || 1600,
           },
         });
         if (Array.isArray(cfgRes.plans)) {

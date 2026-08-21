@@ -38,6 +38,8 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('deposit_fee_rate', (string)((float)$_POST['deposit_fee'] / 100));
             setting_set('support_telegram', trim((string)$_POST['support_telegram']));
             setting_set('support_email', trim((string)$_POST['support_email']));
+            setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
+            setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
         }
         if ($form === 'plan') {
@@ -359,6 +361,15 @@ $tab = $_GET['tab'] ?? 'overview';
         <div><label class="text-xs text-slate-500">Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Support email</label><input name="support_email" value="<?= h(setting_get('support_email','')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
+        <div>
+          <label class="text-xs text-slate-500">Flutterwave charge currency</label>
+          <select name="payment_currency" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm">
+            <?php $pc = setting_get('payment_currency', 'NGN'); ?>
+            <option value="NGN" <?= $pc==='NGN'?'selected':'' ?>>NGN (Naira) — recommended</option>
+            <option value="USD" <?= $pc==='USD'?'selected':'' ?>>USD</option>
+          </select>
+        </div>
+        <div><label class="text-xs text-slate-500">USD → NGN rate (e.g. 1600)</label><input name="usd_ngn_rate" type="number" step="1" value="<?= h(setting_get('usd_ngn_rate','1600')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"><p class="text-[11px] text-slate-400 mt-1">Wallet stays in $. Deposit $3 → Flutterwave charges ₦(3 × rate).</p></div>
         <div class="sm:col-span-2"><button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save settings</button></div>
       </form>
     <?php endif; ?>

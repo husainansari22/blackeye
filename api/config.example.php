@@ -25,6 +25,8 @@ return [
     'app_name' => 'Acctventa',
     'app_url' => 'https://acctventa.com',
     'currency' => 'USD',
+    'payment_currency' => 'NGN',
+    'usd_ngn_rate' => 1600,
     'support_telegram' => 'https://t.me/acctventa',
     'support_email' => 'help@acctventa.com',
 

@@ -606,15 +606,17 @@
         <div class="space-y-1">
           <div class="w-11 h-11 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center mb-3"><i class="fa-solid fa-wallet"></i></div>
           <h3 class="font-bold text-xl tracking-tight">Fund Wallet</h3>
-          <p class="text-xs text-slate-500">Secure checkout powered by Flutterwave. Minimum ${money(cfg.minDeposit)}.</p>
+          <p class="text-xs text-slate-500">Enter USD amount. You’ll pay in Naira on Flutterwave (converted at the live rate).</p>
           <div class="relative mt-3"><span class="absolute left-4 top-3.5 text-slate-400 font-semibold">$</span>
-          <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="${cfg.minDeposit.toFixed(2)}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-sm focus:outline-none focus:border-brandPrimary"></div>
+          <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="${cfg.minDeposit.toFixed(2)}" oninput="updateDepositNairaHint()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-sm focus:outline-none focus:border-brandPrimary"></div>
+          <p id="depositNairaHint" class="text-xs text-brandPrimary font-semibold mt-2"></p>
           <ul class="text-[11px] text-slate-500 space-y-1 mt-3 mb-4">
-            <li><i class="fa-solid fa-shield-halved text-brandPrimary mr-1"></i>Card, bank & more via Flutterwave</li>
-            <li><i class="fa-solid fa-bolt text-brandPrimary mr-1"></i>Balance updates after payment confirms</li>
+            <li><i class="fa-solid fa-shield-halved text-brandPrimary mr-1"></i>Card, bank & more via Flutterwave (NGN)</li>
+            <li><i class="fa-solid fa-bolt text-brandPrimary mr-1"></i>Wallet balance credits in USD after payment</li>
           </ul>
-          <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Pay securely</button>
+          <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Pay in Naira</button>
         </div>`;
+      setTimeout(updateDepositNairaHint, 0);
     } else {
       const feePct = (cfg.withdrawCommissionRate * 100).toFixed(0);
       document.getElementById('modalBody').innerHTML = `
@@ -637,6 +639,19 @@
         </div>`;
     }
     document.getElementById('appModal').classList.remove('hidden');
+  };
+
+  window.updateDepositNairaHint = function () {
+    const el = document.getElementById('depositNairaHint');
+    const input = document.getElementById('walletAmountInput');
+    if (!el || !input) return;
+    const usd = parseFloat(input.value) || 0;
+    const rate = Number((A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
+    if (usd <= 0) {
+      el.textContent = 'Rate ≈ ₦' + rate.toLocaleString() + ' per $1';
+      return;
+    }
+    el.textContent = 'You will pay about ₦' + Math.round(usd * rate).toLocaleString() + ' on Flutterwave';
   };
 
   window.submitWalletAction = async function (type) {
