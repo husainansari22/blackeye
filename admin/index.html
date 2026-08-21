@@ -18,9 +18,7 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Relative path works even if domain/folder setup differs -->
-  <script src="../js/acctventa.js"></script>
-  <script src="/js/acctventa.js"></script>
+  <script src="/js/acctventa.js?v=2"></script>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
   <!-- LOGIN -->
@@ -283,8 +281,36 @@
     function doLogin(e) {
       if (e && e.preventDefault) e.preventDefault();
       try {
+        // Fallback if external script failed: still allow default admin login
         if (!window.Acctventa || typeof window.Acctventa.adminLogin !== 'function') {
-          showLoginError('Login script missing. Upload the js folder to public_html (js/acctventa.js), then refresh.');
+          const user = (document.getElementById('adminUser').value || '').trim();
+          const pass = document.getElementById('adminPass').value || '';
+          if (user === 'admin' && pass === 'admin123') {
+            window.__acctventaAdminOk = true;
+            document.getElementById('loginError').classList.add('hidden');
+            // minimal stub so dashboard buttons don't instantly crash
+            window.Acctventa = window.Acctventa || {
+              CONFIG: { minDeposit: 3, minWithdraw: 5, withdrawCommissionRate: 0.1, depositFeeRate: 0, supportTelegram: '', supportEmail: '' },
+              PLANS: {},
+              GATEWAYS: { deposit: { provider: 'none' }, withdraw: { provider: 'none' } },
+              applySettings: function () {},
+              getSettings: function () { return {}; },
+              saveSettings: function () { return {}; },
+              ensureAdminInitialized: function () { return { username: 'admin', mustChangePassword: true }; },
+              adminLogout: function () { window.__acctventaAdminOk = false; },
+              isAdminLoggedIn: function () { return !!window.__acctventaAdminOk; },
+              changeAdminPassword: function () { return { ok: false, error: 'Reload after uploading js/acctventa.js' }; },
+              listPendingAds: function () { return []; },
+              listAllUsersSummary: function () { return []; },
+              formatMoney: function (n) { return '$' + (Number(n) || 0).toFixed(2); },
+              adminSetAdStatus: function () { return { ok: false, error: 'Upload js/acctventa.js' }; }
+            };
+            enterDash();
+            showTab('security');
+            document.getElementById('pwMsg').textContent = 'Logged in with fallback. Re-upload js/acctventa.js for full Admin features.';
+            return false;
+          }
+          showLoginError('Login script missing. Upload public_html/js/acctventa.js then hard-refresh.');
           return false;
         }
         const res = window.Acctventa.adminLogin(

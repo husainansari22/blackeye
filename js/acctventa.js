@@ -76,9 +76,26 @@
 
   function getSettings() {
     try {
-      return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      return JSON.parse(safeGet(SETTINGS_KEY) || '{}');
     } catch (e) {
       return {};
+    }
+  }
+
+  function safeGet(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function safeSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -134,21 +151,21 @@
         next.plans[id] = { ...((current.plans && current.plans[id]) || {}), ...partial.plans[id] };
       });
     }
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    safeSet(SETTINGS_KEY, JSON.stringify(next));
     applySettings(next);
     return next;
   }
 
   function getAdminRecord() {
     try {
-      return JSON.parse(localStorage.getItem(ADMIN_KEY) || 'null');
+      return JSON.parse(safeGet(ADMIN_KEY) || 'null');
     } catch (e) {
       return null;
     }
   }
 
   function saveAdminRecord(rec) {
-    localStorage.setItem(ADMIN_KEY, JSON.stringify(rec));
+    safeSet(ADMIN_KEY, JSON.stringify(rec));
   }
 
   /** First-time setup: default password admin123 — change immediately in Admin */
@@ -171,15 +188,24 @@
     if (String(username || '').trim() !== admin.username || String(password || '') !== admin.password) {
       return { ok: false, error: 'Invalid admin username or password.' };
     }
-    sessionStorage.setItem('acctventa_admin_session', JSON.stringify({ at: Date.now(), user: admin.username }));
+    try {
+      sessionStorage.setItem('acctventa_admin_session', JSON.stringify({ at: Date.now(), user: admin.username }));
+    } catch (e) {
+      // still allow login for this page session
+      global.__acctventaAdminOk = true;
+    }
     return { ok: true, admin: { username: admin.username, mustChangePassword: !!admin.mustChangePassword } };
   }
 
   function adminLogout() {
-    sessionStorage.removeItem('acctventa_admin_session');
+    try {
+      sessionStorage.removeItem('acctventa_admin_session');
+    } catch (e) {}
+    global.__acctventaAdminOk = false;
   }
 
   function isAdminLoggedIn() {
+    if (global.__acctventaAdminOk) return true;
     try {
       const s = JSON.parse(sessionStorage.getItem('acctventa_admin_session') || 'null');
       return !!(s && s.user);
@@ -199,9 +225,8 @@
     return { ok: true };
   }
 
-  // load saved settings on boot
-  applySettings(getSettings());
-  ensureAdminInitialized();
+  // Do NOT init storage yet — export API first so login never breaks if storage is blocked
+  // (boot continues after Acctventa is assigned below)
 
   const CATEGORY_LINK_RULES = {
     'Social Media': ['facebook.com', 'fb.com', 'fb.me', 'instagram.com', 'tiktok.com', 'twitter.com', 'x.com', 'linkedin.com', 'snapchat.com', 'pinterest.com', 'threads.net'],
@@ -221,14 +246,14 @@
 
   function getUsers() {
     try {
-      return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+      return JSON.parse(safeGet(USERS_KEY) || '{}');
     } catch (e) {
       return {};
     }
   }
 
   function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    safeSet(USERS_KEY, JSON.stringify(users));
   }
 
   function todayKey() {
@@ -258,11 +283,11 @@
   }
 
   function getSessionEmail() {
-    return (localStorage.getItem(SESSION_KEY) || localStorage.getItem('userEmail') || '').toLowerCase();
+    return (safeGet(SESSION_KEY) || safeGet('userEmail') || '').toLowerCase();
   }
 
   function getCurrentUser() {
-    if (localStorage.getItem('isLoggedIn') !== 'true') return null;
+    if (safeGet('isLoggedIn') !== 'true') return null;
     const email = getSessionEmail();
     const users = getUsers();
     const user = normalizeUser(users[email]);
@@ -276,11 +301,11 @@
     const prev = users[key] || {};
     users[key] = normalizeUser({ ...prev, ...user, password: user.password || prev.password || '' });
     saveUsers(users);
-    localStorage.setItem('userName', users[key].name);
-    localStorage.setItem('userEmail', users[key].email);
-    localStorage.setItem('userPhone', users[key].phone || '');
-    localStorage.setItem('walletBalance', String(users[key].balance || 0));
-    localStorage.setItem(SESSION_KEY, key);
+    safeSet('userName', users[key].name);
+    safeSet('userEmail', users[key].email);
+    safeSet('userPhone', users[key].phone || '');
+    safeSet('walletBalance', String(users[key].balance || 0));
+    safeSet(SESSION_KEY, key);
   }
 
   function formatMoney(n) {
@@ -865,6 +890,11 @@
     todayKey
   };
 
-  // refresh exported refs after settings apply
-  applySettings(getSettings());
+  // refresh exported refs after settings apply (never crash boot)
+  try {
+    applySettings(getSettings());
+    ensureAdminInitialized();
+  } catch (e) {
+    console.warn('Acctventa boot warning:', e);
+  }
 })(window);
