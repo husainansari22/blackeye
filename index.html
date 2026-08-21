@@ -428,18 +428,82 @@
             }
         }
 
+        function getUsers() {
+            try { return JSON.parse(localStorage.getItem('acctventa_users') || '{}'); }
+            catch (e) { return {}; }
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('acctventa_users', JSON.stringify(users));
+        }
+
+        function setSession(user) {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('acctventa_session', user.email.toLowerCase());
+            localStorage.setItem('userName', user.name);
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userPhone', user.phone || '');
+            localStorage.setItem('walletBalance', String(user.balance ?? 0));
+        }
+
         function handleSignup(e) {
             e.preventDefault();
-            localStorage.setItem('isLoggedIn', 'true');
-            // Keep any referral code from the URL
-            const ref = new URLSearchParams(window.location.search).get('ref');
-            if (ref) localStorage.setItem('referralCode', ref);
+            const name = (document.getElementById('su_name').value || '').trim();
+            const email = (document.getElementById('su_email').value || '').trim().toLowerCase();
+            const phone = (document.getElementById('su_phone').value || '').trim();
+            const pass = document.getElementById('su_pass').value || '';
+            const cpass = document.getElementById('su_cpass').value || '';
+            const code = document.getElementById('country_code') ? document.getElementById('country_code').innerText : '';
+
+            if (!name || !email || !phone || !pass) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            if (pass !== cpass) {
+                alert('Passwords do not match.');
+                return;
+            }
+
+            const users = getUsers();
+            if (users[email]) {
+                alert('An account with this email already exists. Please login.');
+                switchPage('login');
+                return;
+            }
+
+            const ref = new URLSearchParams(window.location.search).get('ref') || '';
+            const ownCode = name.split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, '') || ('user' + Date.now().toString(36).slice(-4));
+            const user = {
+                name: name,
+                email: email,
+                phone: (code ? code + ' ' : '') + phone,
+                password: pass,
+                balance: 0,
+                orders: [],
+                ads: [],
+                notifications: [],
+                referralCode: ownCode,
+                referredBy: ref,
+                createdAt: new Date().toISOString()
+            };
+            users[email] = user;
+            saveUsers(users);
+            setSession(user);
             window.location.href = "/dashboard.html";
         }
 
         function handleLogin(e) {
             e.preventDefault();
-            localStorage.setItem('isLoggedIn', 'true');
+            const email = (document.getElementById('li_email').value || '').trim().toLowerCase();
+            const pass = document.getElementById('li_pass').value || '';
+            const users = getUsers();
+            const user = users[email];
+
+            if (!user || user.password !== pass) {
+                alert('Invalid email or password.');
+                return;
+            }
+            setSession(user);
             window.location.href = "/dashboard.html";
         }
 

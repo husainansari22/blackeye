@@ -61,10 +61,10 @@
                 </button>
                 <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
                     <i class="fa-regular fa-bell text-lg"></i>
-                    <span class="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">1</span>
+                    <span id="notifBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                 </button>
-                <button type="button" onclick="toggleRightMenu()" class="hover:text-brandPrimary transition" title="Help">
-                    <i class="fa-regular fa-circle-question text-lg"></i>
+                <button type="button" onclick="toggleRightMenu()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
+                    <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-brandPrimary text-white text-xs font-bold uppercase">?</span>
                 </button>
             </div>
         </div>
@@ -234,15 +234,11 @@
                 <h2 class="text-xl font-bold">My Purchases</h2>
             </div>
             <div class="space-y-3" id="ordersListContainer">
-                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
-                    <div>
-                        <h4 class="font-bold text-sm">Pia VPN 1-Year Access</h4>
-                        <p class="text-[10px] text-slate-500 mt-0.5">Order No: 9f063f...15c0</p>
-                    </div>
-                    <div class="text-right">
-                        <span class="font-bold text-sm text-brandPrimary">$2.50</span>
-                        <button onclick="openOrderCredentials()" class="block text-xs mt-1 text-brandPrimary hover:text-brandHover underline transition">View Order</button>
-                    </div>
+                <div id="ordersEmptyState" class="text-center py-12 space-y-2">
+                    <i class="fa-regular fa-clipboard text-4xl text-slate-300 dark:text-slate-700"></i>
+                    <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No purchases yet</p>
+                    <p class="text-xs text-slate-400">Orders you buy will show up here.</p>
+                    <button onclick="switchTab('market')" class="mt-2 text-xs text-brandPrimary font-semibold hover:underline">Browse Market</button>
                 </div>
             </div>
         </div>
@@ -258,12 +254,12 @@
                 </div>
                 <button onclick="openSellProductWizard()" class="w-10 h-10 rounded-xl bg-brandPrimary hover:bg-brandHover text-white flex items-center justify-center font-bold text-lg shadow-md transition"><i class="fa-solid fa-plus"></i></button>
             </div>
-            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
-                <div>
-                    <h4 class="font-bold text-sm">USA Facebook Account</h4>
-                    <p class="text-sm font-extrabold mt-1 text-brandPrimary">$1.99</p>
+            <div id="adsListContainer" class="space-y-3">
+                <div id="adsEmptyState" class="text-center py-12 space-y-2">
+                    <i class="fa-solid fa-bullhorn text-4xl text-slate-300 dark:text-slate-700"></i>
+                    <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No ads yet</p>
+                    <p class="text-xs text-slate-400">Tap + to list your first product.</p>
                 </div>
-                <span class="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg font-medium">Active</span>
             </div>
         </div>
 
@@ -279,7 +275,7 @@
                 <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
                 <div class="relative z-10">
                     <p class="text-xs text-sky-100 font-medium tracking-wide uppercase">Available Balance</p>
-                    <h3 class="text-4xl font-extrabold mt-1 tracking-tight">$2.03</h3>
+                    <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold mt-1 tracking-tight">$0.00</h3>
                 </div>
                 <div class="flex gap-3 relative z-10 pt-2">
                     <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-3 rounded-xl text-xs shadow-md hover:bg-slate-50 transition">Deposit</button>
@@ -306,14 +302,14 @@
                         <i class="fa-solid fa-wallet text-sm"></i>
                     </div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Balance</p>
-                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">$0</h4>
+                    <h4 id="dashBalanceDisplay" class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">$0.00</h4>
                 </div>
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
                     <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 mb-2">
                         <i class="fa-solid fa-bullhorn text-sm"></i>
                     </div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Active Ad</p>
-                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
+                    <h4 id="dashActiveAds" class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
                 </div>
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
                     <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-500 mb-2">
@@ -350,7 +346,7 @@
                         <i class="fa-solid fa-users text-sm"></i>
                     </div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Invitees</p>
-                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">2</h4>
+                    <h4 id="referralInviteesCount" class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
                 </div>
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
                     <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 mb-2">
@@ -375,13 +371,13 @@
                 <div class="w-full bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-700 p-3 rounded-xl mt-2 flex justify-between items-center gap-2">
                     <div class="min-w-0 text-left">
                         <span class="text-[10px] text-slate-400 block">Your Referral link:</span>
-                        <span class="text-xs truncate text-brandPrimary font-mono font-medium block">acctventa.com/auth/sign-up?ref=oduwa</span>
+                        <span id="referralLinkText" class="text-xs truncate text-brandPrimary font-mono font-medium block">acctventa.com/auth/sign-up</span>
                     </div>
-                    <button onclick="alert('Referral link copied!')" class="text-slate-500 hover:text-brandPrimary transition pl-2 border-l border-slate-200 dark:border-slate-700 shrink-0">
+                    <button onclick="copyReferralLink()" class="text-slate-500 hover:text-brandPrimary transition pl-2 border-l border-slate-200 dark:border-slate-700 shrink-0">
                         <i class="fa-regular fa-copy"></i>
                     </button>
                 </div>
-                <button onclick="alert('Referral link shared!')" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3 rounded-xl text-white font-bold text-sm shadow-md mt-2">Share Invitation link</button>
+                <button onclick="shareReferralLink()" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3 rounded-xl text-white font-bold text-sm shadow-md mt-2">Share Invitation link</button>
             </div>
 
             <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
@@ -391,24 +387,8 @@
                     <button class="flex-1 px-3 py-2 text-xs font-medium text-slate-400">Completed</button>
                     <button class="flex-1 px-3 py-2 text-xs font-medium text-slate-400">Cancel</button>
                 </div>
-                <div class="px-4 py-3 space-y-3">
-                    <div class="flex gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-                        <div class="w-12 h-12 rounded-full bg-brandPrimary/20 text-brandPrimary flex items-center justify-center font-bold shrink-0">O</div>
-                        <div class="min-w-0">
-                            <h5 class="font-medium text-sm text-slate-800 dark:text-white">ODUWA ELVIS OSAZEMWINDE</h5>
-                            <p class="text-[11px] text-emerald-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-circle-check"></i> Completed registration with shared link</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5">Fund wallet with $50</p>
-                            <p class="text-[10px] text-slate-400 mt-1">04 July 2024 at 03:30:27</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold shrink-0">O</div>
-                        <div class="min-w-0">
-                            <h5 class="font-medium text-sm text-slate-800 dark:text-white">Osazemwinde Kingsley Ikponmwosa</h5>
-                            <p class="text-[11px] text-emerald-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-circle-check"></i> Completed registration with shared link</p>
-                            <p class="text-[10px] text-slate-400 mt-1">04 July 2024 at 03:02:06</p>
-                        </div>
-                    </div>
+                <div id="referralRecordsList" class="px-4 py-8 text-center">
+                    <p class="text-xs text-slate-400">No referrals yet. Share your link to invite friends.</p>
                 </div>
             </div>
         </div>
@@ -505,33 +485,10 @@
                 </button>
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notifications</h3>
             </div>
-            <div class="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-                <div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5">
-                    <div class="size-2 rounded-full bg-brandPrimary shadow absolute top-0 -translate-y-1/2 -left-1"></div>
-                    <div class="flex justify-between items-start mb-1">
-                        <p class="font-medium text-sm text-slate-800 dark:text-white">New Message</p>
-                        <span class="text-[10px] text-slate-400">7d ago</span>
-                    </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">You have a new message from TRUST SELLER</p>
-                    <a href="#" class="text-brandPrimary text-sm mt-2 inline-block hover:underline">View</a>
-                </div>
-                <div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5 pt-3">
-                    <div class="size-2 rounded-full bg-brandPrimary shadow absolute top-0 -translate-y-1/2 -left-1"></div>
-                    <div class="flex justify-between items-start mb-1">
-                        <p class="font-medium text-sm text-slate-800 dark:text-white">Order Completed</p>
-                        <span class="text-[10px] text-slate-400">11d ago</span>
-                    </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">Your order name "Old Google Account" is Completed By Admin</p>
-                    <a href="#" class="text-brandPrimary text-sm mt-2 inline-block hover:underline">View</a>
-                </div>
-                <div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5 pt-3">
-                    <div class="size-2 rounded-full bg-brandPrimary shadow absolute top-0 -translate-y-1/2 -left-1"></div>
-                    <div class="flex justify-between items-start mb-1">
-                        <p class="font-medium text-sm text-slate-800 dark:text-white">Order Pending</p>
-                        <span class="text-[10px] text-slate-400">11d ago</span>
-                    </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">You have a pending order from Kelvin</p>
-                    <a href="#" class="text-brandPrimary text-sm mt-2 inline-block hover:underline">View</a>
+            <div id="notificationsList" class="flex-1 overflow-y-auto px-4 py-2 space-y-1">
+                <div id="notificationsEmptyState" class="text-center py-16 space-y-2">
+                    <i class="fa-regular fa-bell-slash text-3xl text-slate-300 dark:text-slate-700"></i>
+                    <p class="text-sm font-medium text-slate-500">No notifications yet</p>
                 </div>
             </div>
         </div>
@@ -581,12 +538,10 @@
             <!-- Profile -->
             <div class="px-5 pb-2 space-y-2 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-start gap-3">
-                    <div class="w-11 h-11 rounded-md bg-sky-600 flex items-center justify-center text-white shrink-0">
-                        <i class="fa-solid fa-question text-lg"></i>
-                    </div>
+                    <div id="leftProfileAvatar" class="w-11 h-11 rounded-md bg-sky-600 flex items-center justify-center text-white shrink-0 text-sm font-bold uppercase">?</div>
                     <div class="min-w-0 pt-0.5">
-                        <h3 class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug">ODUWA ELVIS OSAZEMWINDE</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">elvissmith5544@gmail.com</p>
+                        <h3 id="leftProfileName" class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug">Guest</h3>
+                        <p id="leftProfileEmail" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">—</p>
                     </div>
                 </div>
                 <button onclick="openBecomeVerified(); toggleLeftMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-1.5 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
@@ -636,46 +591,65 @@
         </div>
     </div>
 
-    <!-- RIGHT MENU DRAWER — same 3-line style as left menu -->
+    <!-- RIGHT PROFILE PANEL — signed-in user's details -->
     <div id="rightMenu" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
         <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
-            <div class="flex items-center px-4 pt-3 pb-1">
+            <div class="flex items-center gap-3 px-4 pt-3 pb-2">
                 <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
                     <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">My Profile</h3>
             </div>
-            <nav class="px-2 pt-1">
-                <a href="#" onclick="switchTab('home'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-house w-5 text-center"></i> Home Feed
-                </a>
-                <a href="#" onclick="switchTab('market'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-border-all w-5 text-center"></i> Marketplace
-                </a>
-                <a href="#" onclick="switchTab('orders'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-regular fa-clipboard w-5 text-center"></i> Purchases
-                </a>
-                <a href="#" onclick="switchTab('ads'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-bullhorn w-5 text-center"></i> Active Ads
-                </a>
-                <a href="#" onclick="switchTab('wallet'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-wallet w-5 text-center"></i> Wallet & Escrow
-                </a>
-                <a href="#" onclick="toggleNotificationDrawer(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-regular fa-bell w-5 text-center"></i> Notifications
-                </a>
-                <a href="#" onclick="openSupportCenter(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-headset w-5 text-center"></i> Support
-                </a>
-            </nav>
-            <div class="px-5 pt-3 pb-2">
-                <p class="text-xs text-slate-400 font-bold mb-2 uppercase tracking-wider">Quick Categories</p>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">Social Media</span>
-                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">Messaging</span>
-                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">VPN & Proxies</span>
-                    <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:text-brandPrimary transition text-center" onclick="switchTab('market'); toggleRightMenu();">Giftcards</span>
+
+            <div class="px-5 pb-4 space-y-4 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center gap-4">
+                    <div id="rightProfileAvatar" class="w-16 h-16 rounded-xl bg-brandPrimary flex items-center justify-center text-white text-xl font-bold uppercase shrink-0">?</div>
+                    <div class="min-w-0">
+                        <h4 id="rightProfileName" class="font-bold text-base text-slate-900 dark:text-white leading-snug">Guest</h4>
+                        <p id="rightProfileEmail" class="text-sm text-brandPrimary mt-0.5 truncate underline">—</p>
+                        <p id="rightProfilePhone" class="text-xs text-slate-500 mt-1">—</p>
+                    </div>
+                </div>
+                <button onclick="openBecomeVerified(); toggleRightMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-1.5 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
+                    Become Verified
+                </button>
+            </div>
+
+            <div class="px-5 py-4 space-y-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500">Wallet balance</span>
+                    <span id="rightProfileBalance" class="font-bold text-slate-800 dark:text-white">$0.00</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500">Member since</span>
+                    <span id="rightProfileJoined" class="font-medium text-slate-800 dark:text-white">—</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500">Referral code</span>
+                    <span id="rightProfileRefCode" class="font-mono text-brandPrimary text-xs">—</span>
                 </div>
             </div>
+
+            <nav class="px-2 pt-2">
+                <a href="#" onclick="openAccountSettings(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
+                </a>
+                <a href="#" onclick="switchTab('wallet'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-wallet w-5 text-center"></i> Wallet
+                </a>
+                <a href="#" onclick="switchTab('orders'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-clipboard-check w-5 text-center"></i> My purchases
+                </a>
+                <a href="#" onclick="switchTab('referral'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-users w-5 text-center"></i> Referral
+                </a>
+                <a href="#" onclick="openSupportCenter(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-headset w-5 text-center"></i> Support
+                </a>
+                <a href="#" onclick="handleLogout(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition">
+                    <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
+                </a>
+            </nav>
         </div>
     </div>
 
@@ -788,6 +762,153 @@
     <!-- SCRIPT LOGIC -->
     <script>
         let currentSellStep = 1;
+        let currentUser = null;
+
+        function getUsers() {
+            try { return JSON.parse(localStorage.getItem('acctventa_users') || '{}'); }
+            catch (e) { return {}; }
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('acctventa_users', JSON.stringify(users));
+        }
+
+        function formatMoney(n) {
+            const val = Number(n) || 0;
+            return '$' + val.toFixed(2);
+        }
+
+        function getInitials(name) {
+            const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+            if (!parts.length) return '?';
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        function requireAuth() {
+            if (localStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = '/index.html?page=login';
+                return null;
+            }
+            const email = (localStorage.getItem('acctventa_session') || localStorage.getItem('userEmail') || '').toLowerCase();
+            const users = getUsers();
+            let user = email ? users[email] : null;
+            if (!user) {
+                // Fallback for older sessions that only stored name/email flags
+                const name = localStorage.getItem('userName');
+                const storedEmail = (localStorage.getItem('userEmail') || '').toLowerCase();
+                if (name && storedEmail) {
+                    user = {
+                        name,
+                        email: storedEmail,
+                        phone: localStorage.getItem('userPhone') || '',
+                        balance: parseFloat(localStorage.getItem('walletBalance') || '0') || 0,
+                        orders: [],
+                        ads: [],
+                        notifications: [],
+                        referralCode: (name.split(/\s+/)[0] || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''),
+                        createdAt: new Date().toISOString()
+                    };
+                    users[storedEmail] = { ...user, password: users[storedEmail]?.password || '' };
+                    saveUsers(users);
+                }
+            }
+            if (!user) {
+                localStorage.removeItem('isLoggedIn');
+                window.location.href = '/index.html?page=login';
+                return null;
+            }
+            if (user.balance == null) user.balance = 0;
+            if (!Array.isArray(user.orders)) user.orders = [];
+            if (!Array.isArray(user.ads)) user.ads = [];
+            if (!Array.isArray(user.notifications)) user.notifications = [];
+            if (!user.referralCode) {
+                user.referralCode = (user.name.split(/\s+/)[0] || 'user').toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+            }
+            currentUser = user;
+            localStorage.setItem('userName', user.name);
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userPhone', user.phone || '');
+            localStorage.setItem('walletBalance', String(user.balance));
+            localStorage.setItem('acctventa_session', user.email.toLowerCase());
+            return user;
+        }
+
+        function persistCurrentUser() {
+            if (!currentUser || !currentUser.email) return;
+            const users = getUsers();
+            const key = currentUser.email.toLowerCase();
+            users[key] = { ...(users[key] || {}), ...currentUser };
+            saveUsers(users);
+            localStorage.setItem('walletBalance', String(currentUser.balance || 0));
+            localStorage.setItem('userName', currentUser.name);
+            localStorage.setItem('userEmail', currentUser.email);
+            localStorage.setItem('userPhone', currentUser.phone || '');
+        }
+
+        function applyUserToUI(user) {
+            const initials = getInitials(user.name);
+            const balanceText = formatMoney(user.balance);
+            const nameUpper = (user.name || '').toUpperCase();
+
+            const headerAvatar = document.getElementById('headerProfileAvatar');
+            if (headerAvatar) headerAvatar.textContent = initials;
+
+            const leftAvatar = document.getElementById('leftProfileAvatar');
+            const leftName = document.getElementById('leftProfileName');
+            const leftEmail = document.getElementById('leftProfileEmail');
+            if (leftAvatar) leftAvatar.textContent = initials;
+            if (leftName) leftName.textContent = nameUpper;
+            if (leftEmail) leftEmail.textContent = user.email;
+
+            const rightAvatar = document.getElementById('rightProfileAvatar');
+            const rightName = document.getElementById('rightProfileName');
+            const rightEmail = document.getElementById('rightProfileEmail');
+            const rightPhone = document.getElementById('rightProfilePhone');
+            const rightBalance = document.getElementById('rightProfileBalance');
+            const rightJoined = document.getElementById('rightProfileJoined');
+            const rightRef = document.getElementById('rightProfileRefCode');
+            if (rightAvatar) rightAvatar.textContent = initials;
+            if (rightName) rightName.textContent = user.name;
+            if (rightEmail) rightEmail.textContent = user.email;
+            if (rightPhone) rightPhone.textContent = user.phone || 'No phone added';
+            if (rightBalance) rightBalance.textContent = balanceText;
+            if (rightRef) rightRef.textContent = user.referralCode || '—';
+            if (rightJoined) {
+                try {
+                    rightJoined.textContent = user.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                        : '—';
+                } catch (e) {
+                    rightJoined.textContent = '—';
+                }
+            }
+
+            const walletEl = document.getElementById('walletBalanceDisplay');
+            const dashBal = document.getElementById('dashBalanceDisplay');
+            if (walletEl) walletEl.textContent = balanceText;
+            if (dashBal) dashBal.textContent = balanceText;
+
+            const refLink = 'acctventa.com/auth/sign-up?ref=' + encodeURIComponent(user.referralCode || 'user');
+            const refEl = document.getElementById('referralLinkText');
+            if (refEl) {
+                refEl.textContent = refLink;
+                refEl.dataset.full = 'https://' + refLink;
+            }
+
+            const notifBadge = document.getElementById('notifBadge');
+            const notifCount = (user.notifications || []).length;
+            if (notifBadge) {
+                if (notifCount > 0) {
+                    notifBadge.textContent = String(notifCount);
+                    notifBadge.classList.remove('hidden');
+                    notifBadge.classList.add('flex');
+                } else {
+                    notifBadge.classList.add('hidden');
+                    notifBadge.classList.remove('flex');
+                }
+            }
+        }
 
         function switchTab(tabId) {
             document.querySelectorAll('.app-tab').forEach(t => t.classList.add('hidden'));
@@ -868,10 +989,35 @@
                 <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl mb-5 text-sm space-y-3">
                     <div class="flex justify-between"><span class="text-slate-500">Item:</span> <span class="font-medium text-right ml-4 text-slate-800 dark:text-white">${title}</span></div>
                     <div class="flex justify-between border-t border-slate-200 dark:border-slate-800 pt-3"><span class="text-slate-500">Price:</span> <span class="font-bold text-brandPrimary text-lg">$${price.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Your balance:</span> <span class="font-medium">${formatMoney(currentUser ? currentUser.balance : 0)}</span></div>
                 </div>
-                <button onclick="alert('Payment successful!'); closeModal(); switchTab('orders');" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Pay $${price.toFixed(2)} Now</button>
+                <button onclick="completePurchase('${title.replace(/'/g, "\\'")}', ${price})" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Pay $${price.toFixed(2)} Now</button>
             `;
             document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function completePurchase(title, price) {
+            if (!currentUser) return;
+            if ((currentUser.balance || 0) < price) {
+                alert('Insufficient balance. Please deposit funds first.');
+                closeModal();
+                switchTab('wallet');
+                return;
+            }
+            currentUser.balance = Number((currentUser.balance - price).toFixed(2));
+            currentUser.orders = currentUser.orders || [];
+            currentUser.orders.unshift({
+                id: Date.now().toString(36),
+                title,
+                price,
+                createdAt: new Date().toISOString()
+            });
+            persistCurrentUser();
+            applyUserToUI(currentUser);
+            renderOrders();
+            alert('Payment successful!');
+            closeModal();
+            switchTab('orders');
         }
 
         // FULL SCREEN SELL PRODUCT WIZARD
@@ -888,14 +1034,12 @@
 
         function closeSellProductWizard() {
             if(currentSellStep === 2) {
-                // Go back to Step 1 instead of closing
                 currentSellStep = 1;
                 document.getElementById('sellWizardStepText').innerText = "Step 1 of 2";
                 document.getElementById('sellStep1').classList.remove('hidden');
                 document.getElementById('sellStep2').classList.add('hidden');
                 document.getElementById('sellWizardBtn').innerText = "Continue";
             } else {
-                // Completely close modal
                 document.getElementById('sellWizardOverlay').classList.remove('flex');
                 document.getElementById('sellWizardOverlay').classList.add('hidden');
             }
@@ -934,19 +1078,32 @@
             } else {
                 const user = document.getElementById('wizardUser').value;
                 const pass = document.getElementById('wizardPass').value;
+                const title = document.getElementById('wizardTitle').value;
+                const price = parseFloat(document.getElementById('wizardPrice').value) || 0;
                 
                 if(!user || !pass) {
                     alert("Please enter the delivery credentials.");
                     return;
                 }
+
+                if (currentUser) {
+                    currentUser.ads = currentUser.ads || [];
+                    currentUser.ads.unshift({
+                        id: Date.now().toString(36),
+                        title,
+                        price,
+                        status: 'Active',
+                        createdAt: new Date().toISOString()
+                    });
+                    persistCurrentUser();
+                    renderAds();
+                }
                 
                 alert('Listing published successfully!');
-                closeSellProductWizard(); // This resets it
-                // Make sure we actually close it since closeSellProductWizard checks step
                 document.getElementById('sellWizardOverlay').classList.remove('flex');
                 document.getElementById('sellWizardOverlay').classList.add('hidden');
+                currentSellStep = 1;
                 
-                // Clear all values
                 document.getElementById('wizardTitle').value = '';
                 document.getElementById('wizardPrice').value = '';
                 document.getElementById('wizardUser').value = '';
@@ -957,22 +1114,122 @@
             }
         }
 
+        function renderOrders() {
+            const container = document.getElementById('ordersListContainer');
+            if (!container || !currentUser) return;
+            const orders = currentUser.orders || [];
+            if (!orders.length) {
+                container.innerHTML = `<div id="ordersEmptyState" class="text-center py-12 space-y-2">
+                    <i class="fa-regular fa-clipboard text-4xl text-slate-300 dark:text-slate-700"></i>
+                    <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No purchases yet</p>
+                    <p class="text-xs text-slate-400">Orders you buy will show up here.</p>
+                    <button onclick="switchTab('market')" class="mt-2 text-xs text-brandPrimary font-semibold hover:underline">Browse Market</button>
+                </div>`;
+                return;
+            }
+            container.innerHTML = orders.map(o => `
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
+                    <div>
+                        <h4 class="font-bold text-sm">${o.title}</h4>
+                        <p class="text-[10px] text-slate-500 mt-0.5">Order No: ${o.id}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-sm text-brandPrimary">${formatMoney(o.price)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAds() {
+            const container = document.getElementById('adsListContainer');
+            if (!container || !currentUser) return;
+            const ads = currentUser.ads || [];
+            const adStat = document.getElementById('dashActiveAds');
+            if (adStat) adStat.textContent = String(ads.length);
+            if (!ads.length) {
+                container.innerHTML = `<div id="adsEmptyState" class="text-center py-12 space-y-2">
+                    <i class="fa-solid fa-bullhorn text-4xl text-slate-300 dark:text-slate-700"></i>
+                    <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No ads yet</p>
+                    <p class="text-xs text-slate-400">Tap + to list your first product.</p>
+                </div>`;
+                return;
+            }
+            container.innerHTML = ads.map(a => `
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
+                    <div>
+                        <h4 class="font-bold text-sm">${a.title}</h4>
+                        <p class="text-sm font-extrabold mt-1 text-brandPrimary">${formatMoney(a.price)}</p>
+                    </div>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg font-medium">${a.status || 'Active'}</span>
+                </div>
+            `).join('');
+        }
+
         function openWalletModal(type) {
+            const bal = formatMoney(currentUser ? currentUser.balance : 0);
             document.getElementById('modalBody').innerHTML = `
                 <h3 class="font-bold text-xl mb-1 text-slate-800 dark:text-white">${type === 'deposit' ? 'Fund Wallet' : 'Withdraw Funds'}</h3>
-                <p class="text-xs text-slate-500 mb-4">${type === 'deposit' ? 'Add funds securely.' : 'Available Balance: $2.03'}</p>
+                <p class="text-xs text-slate-500 mb-4">${type === 'deposit' ? 'Add funds securely.' : 'Available Balance: ' + bal}</p>
                 <div class="relative">
                     <span class="absolute left-4 top-3.5 text-slate-400 font-medium">$</span>
-                    <input type="number" placeholder="0.00" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 my-3 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+                    <input type="number" id="walletAmountInput" placeholder="0.00" min="0" step="0.01" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 my-3 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
                 </div>
-                <button onclick="alert('Transaction submitted!'); closeModal();" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white py-3.5 rounded-xl font-bold text-sm shadow-md mt-2">Submit</button>
+                <button onclick="submitWalletAction('${type}')" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white py-3.5 rounded-xl font-bold text-sm shadow-md mt-2">Submit</button>
             `;
             document.getElementById('appModal').classList.remove('hidden');
         }
 
+        function submitWalletAction(type) {
+            if (!currentUser) return;
+            const amount = parseFloat(document.getElementById('walletAmountInput').value);
+            if (!amount || amount <= 0) {
+                alert('Enter a valid amount.');
+                return;
+            }
+            if (type === 'deposit') {
+                currentUser.balance = Number(((currentUser.balance || 0) + amount).toFixed(2));
+            } else {
+                if (amount > (currentUser.balance || 0)) {
+                    alert('Insufficient balance.');
+                    return;
+                }
+                currentUser.balance = Number(((currentUser.balance || 0) - amount).toFixed(2));
+            }
+            persistCurrentUser();
+            applyUserToUI(currentUser);
+            alert(type === 'deposit' ? 'Deposit successful!' : 'Withdrawal submitted!');
+            closeModal();
+        }
+
         function openAccountSettings() {
-            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Account Settings</h3><input type="text" value="A cctventa" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white"><button onclick="alert('Saved successfully!'); closeModal();" class="w-full bg-brandPrimary py-3.5 rounded-xl text-white font-bold shadow-md">Save Changes</button>`;
+            const u = currentUser || {};
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Account Settings</h3>
+                <label class="block text-xs text-slate-500 mb-1">Full name</label>
+                <input type="text" id="settingsName" value="${(u.name || '').replace(/"/g, '&quot;')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+                <label class="block text-xs text-slate-500 mb-1">Email</label>
+                <input type="email" id="settingsEmail" value="${(u.email || '').replace(/"/g, '&quot;')}" readonly class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 text-sm text-slate-500">
+                <label class="block text-xs text-slate-500 mb-1">Phone</label>
+                <input type="text" id="settingsPhone" value="${(u.phone || '').replace(/"/g, '&quot;')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+                <button onclick="saveAccountSettings()" class="w-full bg-brandPrimary py-3.5 rounded-xl text-white font-bold shadow-md">Save Changes</button>
+            `;
             document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function saveAccountSettings() {
+            if (!currentUser) return;
+            const name = (document.getElementById('settingsName').value || '').trim();
+            const phone = (document.getElementById('settingsPhone').value || '').trim();
+            if (!name) {
+                alert('Name is required.');
+                return;
+            }
+            currentUser.name = name;
+            currentUser.phone = phone;
+            persistCurrentUser();
+            applyUserToUI(currentUser);
+            alert('Saved successfully!');
+            closeModal();
         }
 
         function openSupportCenter() {
@@ -990,12 +1247,27 @@
             document.getElementById('appModal').classList.remove('hidden');
         }
 
-        function openOrderCredentials() {
-            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-3 text-slate-800 dark:text-white">Order Credentials</h3><div class="text-sm font-mono bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-800 dark:text-white"><p><span class="text-slate-500">User:</span> pia_user</p><p><span class="text-slate-500">Pass:</span> ********</p></div><button onclick="closeModal()" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3.5 rounded-xl text-white font-bold mt-4 shadow-md">Close</button>`;
-            document.getElementById('appModal').classList.remove('hidden');
+        function openMerchantStore(name) { alert("Opening merchant: " + name); }
+
+        function copyReferralLink() {
+            const el = document.getElementById('referralLinkText');
+            const link = (el && el.dataset.full) || ('https://acctventa.com/auth/sign-up?ref=' + encodeURIComponent((currentUser && currentUser.referralCode) || 'user'));
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(link).then(() => alert('Referral link copied!')).catch(() => alert(link));
+            } else {
+                alert(link);
+            }
         }
 
-        function openMerchantStore(name) { alert("Opening merchant: " + name); }
+        function shareReferralLink() {
+            const el = document.getElementById('referralLinkText');
+            const link = (el && el.dataset.full) || ('https://acctventa.com/auth/sign-up?ref=' + encodeURIComponent((currentUser && currentUser.referralCode) || 'user'));
+            if (navigator.share) {
+                navigator.share({ title: 'Join Acctventa', url: link }).catch(() => copyReferralLink());
+            } else {
+                copyReferralLink();
+            }
+        }
 
         function toggleDarkMode() {
             const htmlEl = document.documentElement;
@@ -1021,6 +1293,13 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            const user = requireAuth();
+            if (!user) return;
+
+            applyUserToUI(user);
+            renderOrders();
+            renderAds();
+
             const savedTheme = localStorage.getItem('theme');
             if(savedTheme === 'dark') {
                 document.documentElement.classList.add('dark');
@@ -1033,6 +1312,12 @@
 
         function handleLogout() {
             if(confirm("Are you sure you want to log out?")) {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('acctventa_session');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userPhone');
+                localStorage.removeItem('walletBalance');
                 window.location.href = "/index.html";
             }
         }
