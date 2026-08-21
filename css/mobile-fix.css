@@ -1,0 +1,41 @@
+/**
+ * Site-wide mobile hardening: stop iOS auto-zoom / double-tap zoom,
+ * keep taps responsive, prevent horizontal page drift.
+ */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Disables double-tap-to-zoom on interactive controls (main iOS culprit) */
+a, button, input, select, textarea, label,
+[onclick], [role="button"], .nav-item, .av-tab, .av-icon-btn,
+.av-link-btn, .av-send, .av-thread, summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Stop focus zoom on iPhone (requires >= 16px) */
+@media screen and (max-width: 900px) {
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}

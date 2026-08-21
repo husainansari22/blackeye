@@ -219,7 +219,7 @@ $tab = $_GET['tab'] ?? 'overview';
 <html lang="en" id="ownerHtml">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Owner Admin — Acctventa</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -227,7 +227,9 @@ $tab = $_GET['tab'] ?? 'overview';
     (function(){try{var t=localStorage.getItem('acctventa_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260821adv2">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260821zoom1">
+  <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
+  <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
   <style>
     body.av-app{font-family:"Plus Jakarta Sans",system-ui,sans-serif}
   </style>

@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Confirming payment · Acctventa</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -15,13 +15,15 @@
     }
   </script>
   <script src="/js/api-client.js?v=20260821flw2"></script>
+  <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
+  <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
 </head>
 <body class="bg-darkBg min-h-screen text-white flex items-center justify-center p-6">
   <div class="w-full max-w-sm bg-darkCard border border-slate-800 rounded-2xl p-6 text-center">
     <div id="spin" class="mx-auto w-12 h-12 rounded-full border-2 border-skyBrand border-t-transparent animate-spin mb-4"></div>
     <h1 id="title" class="text-lg font-bold mb-2">Confirming your payment</h1>
     <p id="msg" class="text-xs text-slate-400 mb-4">Please wait — we’re verifying with Flutterwave…</p>
-    <a id="go" href="/dashboard.html" class="hidden inline-block w-full bg-skyBrand hover:bg-skyHover font-bold py-3 rounded-xl">Open wallet</a>
+    <a id="go" href="/dashboard.html#wallet" class="hidden inline-block w-full bg-skyBrand hover:bg-skyHover font-bold py-3 rounded-xl">Open wallet</a>
   </div>
   <script>
     (async function () {
@@ -62,7 +64,8 @@
         title.textContent = 'Still confirming…';
         msg.textContent = (e && e.message) ? e.message : 'If you were charged, funds will appear shortly after Flutterwave confirms.';
         go.classList.remove('hidden');
-        go.textContent = 'Back to dashboard';
+        go.textContent = 'Open wallet';
+        go.href = '/dashboard.html#wallet';
       }
     })();
   </script>

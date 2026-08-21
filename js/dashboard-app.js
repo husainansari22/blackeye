@@ -1583,6 +1583,10 @@
       await window.AcctventaApiSync.hydrateFromApi();
     }
     window.AcctventaUI.refreshAll();
+    // Keep the user on wallet/orders/etc after refresh (do not bounce to home)
+    try {
+      if (typeof window.restoreDashTab === 'function') window.restoreDashTab();
+    } catch (e) {}
     // re-run pending AI reviews that never finished (localStorage mode only)
     const u = refreshUser();
     if (u && !(window.AcctventaApiSync && window.AcctventaApiSync.usingApi())) {

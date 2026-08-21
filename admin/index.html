@@ -2,7 +2,7 @@
 <html lang="en" class="light" id="adminHtml">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Acctventa Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -20,9 +20,11 @@
     (function(){try{var t=localStorage.getItem('acctventa_admin_theme')||'light';if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');}}catch(e){}})();
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=20260821adv2"></script>
-  <script src="/js/api-client.js?v=20260821adv2"></script>
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260821adv2">
+  <script src="/js/acctventa.js?v=20260821zoom1"></script>
+  <script src="/js/api-client.js?v=20260821zoom1"></script>
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260821zoom1">
+  <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
+  <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
@@ -189,17 +191,36 @@
     const A = () => window.Acctventa;
 
     function showTab(name) {
+      if (!name) name = 'support';
       document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
       const panel = document.getElementById('tab_' + name);
       if (panel) panel.classList.remove('hidden');
+      else {
+        name = 'support';
+        const fallback = document.getElementById('tab_support');
+        if (fallback) fallback.classList.remove('hidden');
+      }
       document.querySelectorAll('.admin-tab').forEach(b => {
         const on = b.dataset.tab === name;
         b.className = on ? 'av-tab admin-tab av-tab-active' : 'av-tab admin-tab';
       });
+      try {
+        sessionStorage.setItem('acctventa_admin_tab', name);
+        if (history.replaceState) history.replaceState(null, '', '#' + name);
+      } catch (e) {}
       if (name === 'ads') loadAds();
       if (name === 'users') loadUsers();
       if (name === 'support') initSupportInbox();
       if (name === 'chats') loadAdminOrderChats();
+    }
+    function restoreAdminTab() {
+      let name = '';
+      try { name = (location.hash || '').replace(/^#/, ''); } catch (e) {}
+      if (!name) {
+        try { name = sessionStorage.getItem('acctventa_admin_tab') || ''; } catch (e) {}
+      }
+      if (!document.getElementById('tab_' + name)) name = 'support';
+      showTab(name);
     }
 
     function toggleAdminTheme() {
@@ -374,7 +395,7 @@
     function enterDash() {
       document.getElementById('loginView').classList.add('hidden');
       document.getElementById('dashView').classList.remove('hidden');
-      showTab('support');
+      restoreAdminTab();
     }
 
     function fillForms() {

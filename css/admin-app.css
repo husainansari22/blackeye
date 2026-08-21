@@ -231,9 +231,32 @@ html, body.av-app {
 }
 .av-table-wrap table {
   width: 100%;
-  min-width: 640px;
+  min-width: 520px;
   border-collapse: collapse;
   color: var(--av-text);
+}
+@media (max-width: 640px) {
+  .av-table-wrap table {
+    min-width: 100%;
+  }
+  .av-topbar-inner,
+  .av-shell,
+  .av-tabs {
+    max-width: 100%;
+  }
+  .av-brand .title {
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+html.av-app,
+body.av-app,
+.av-app {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 .av-table-wrap th {
   background: var(--av-surface-2);

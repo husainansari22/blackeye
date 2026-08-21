@@ -2,7 +2,7 @@
 <html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>A cctventa — Marketplace Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,18 +29,16 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
         .modal-scroll::-webkit-scrollbar { display: none; }
         .modal-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Prevent iOS Safari auto-zoom on focus */
-        @media screen and (max-width: 768px) {
-          input, select, textarea, button { font-size: 16px !important; }
-        }
-        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-        input, textarea, select { touch-action: manipulation; }
+        html, body { overflow-x: hidden; max-width: 100%; }
+        header, main, nav, .app-tab { max-width: 100%; }
     </style>
+    <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-28 transition-colors duration-200" data-theme="light">
 
@@ -723,26 +721,80 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260821adv1"></script>
-    <script src="/js/api-client.js?v=20260821adv1"></script>
-    <script src="/js/api-sync.js?v=20260821adv1"></script>
-    <script src="/js/dashboard-app.js?v=20260821adv1"></script>
+    <script src="/js/acctventa.js?v=20260821zoom1"></script>
+    <script src="/js/api-client.js?v=20260821zoom1"></script>
+    <script src="/js/api-sync.js?v=20260821zoom1"></script>
+    <script src="/js/dashboard-app.js?v=20260821zoom1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
+        const DASH_TABS = [
+            'home', 'market', 'orders', 'ads', 'wallet',
+            'account_dashboard', 'referral', 'plans', 'support'
+        ];
+        const DASH_TAB_KEY = 'acctventa_dash_tab';
+
         function switchTab(tabId) {
-            document.querySelectorAll('.app-tab').forEach(t => t.classList.add('hidden'));
+            if (!tabId) tabId = 'home';
+            document.querySelectorAll('.app-tab').forEach((t) => t.classList.add('hidden'));
             const el = document.getElementById('tab_' + tabId);
-            if (el) el.classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (el) {
+                el.classList.remove('hidden');
+            } else {
+                tabId = 'home';
+                const home = document.getElementById('tab_home');
+                if (home) home.classList.remove('hidden');
+            }
+            try {
+                sessionStorage.setItem(DASH_TAB_KEY, tabId);
+                localStorage.setItem(DASH_TAB_KEY, tabId);
+                if (history.replaceState) {
+                    history.replaceState(null, '', '#' + tabId);
+                } else {
+                    location.hash = tabId;
+                }
+            } catch (e) {}
+            syncBottomNav(tabId);
+            window.scrollTo({ top: 0, behavior: 'auto' });
             if (window.AcctventaUI) window.AcctventaUI.refreshAll();
         }
+
+        function syncBottomNav(tabId) {
+            const map = { home: 0, market: 1, orders: 2, ads: 3, wallet: 4 };
+            const items = document.querySelectorAll('nav .nav-item');
+            if (!items.length) return;
+            const idx = map[tabId];
+            items.forEach((i, n) => {
+                const on = idx !== undefined && n === idx;
+                i.classList.toggle('text-brandPrimary', on);
+                i.classList.toggle('text-[#C7CED0]', !on);
+            });
+        }
+
+        function restoreDashTab() {
+            let tab = '';
+            try {
+                tab = (location.hash || '').replace(/^#/, '').split(/[?&]/)[0];
+            } catch (e) {}
+            if (!DASH_TABS.includes(tab)) {
+                try {
+                    tab = sessionStorage.getItem(DASH_TAB_KEY) || localStorage.getItem(DASH_TAB_KEY) || '';
+                } catch (e) {
+                    tab = '';
+                }
+            }
+            if (!DASH_TABS.includes(tab)) tab = 'home';
+            switchTab(tab);
+        }
+
         function setActiveNav(el) {
-            document.querySelectorAll('.nav-item').forEach(i => {
+            document.querySelectorAll('.nav-item').forEach((i) => {
                 i.classList.remove('text-brandPrimary');
                 i.classList.add('text-[#C7CED0]');
             });
-            el.classList.remove('text-[#C7CED0]');
-            el.classList.add('text-brandPrimary');
+            if (el) {
+                el.classList.remove('text-[#C7CED0]');
+                el.classList.add('text-brandPrimary');
+            }
         }
         function toggleLeftMenu() { document.getElementById('leftMenu').classList.toggle('hidden'); }
         function toggleRightMenu() { document.getElementById('rightMenu').classList.toggle('hidden'); }
@@ -968,13 +1020,21 @@
                 const switchBg = document.getElementById('themeToggleSwitch');
                 if (switchBg) switchBg.className = 'w-10 h-6 bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner';
             }
-            if (location.hash === '#wallet') {
-                try { switchTab('wallet'); } catch (e) {}
-            }
+            restoreDashTab();
+        });
+        window.addEventListener('hashchange', () => {
+            try {
+                const tab = (location.hash || '').replace(/^#/, '').split(/[?&]/)[0];
+                if (DASH_TABS.includes(tab)) switchTab(tab);
+            } catch (e) {}
         });
         function handleLogout() {
             if (!confirm('Are you sure you want to log out?')) return;
             const finish = () => {
+                try {
+                    sessionStorage.removeItem(DASH_TAB_KEY);
+                    localStorage.removeItem(DASH_TAB_KEY);
+                } catch (e) {}
                 localStorage.removeItem('isLoggedIn');
                 localStorage.removeItem('acctventa_session');
                 localStorage.removeItem('userName');
