@@ -32,6 +32,8 @@
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+        .modal-scroll::-webkit-scrollbar { display: none; }
+        .modal-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-28 transition-colors duration-200" data-theme="light">
@@ -545,7 +547,7 @@
 
     <!-- GENERAL MODAL CONTAINER -->
     <div id="appModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
-        <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-scroll">
             <button onclick="closeModal()" class="absolute top-4 left-4 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
                     <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
@@ -706,10 +708,10 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260821wallet3"></script>
-    <script src="/js/api-client.js?v=20260821wallet3"></script>
-    <script src="/js/api-sync.js?v=20260821wallet3"></script>
-    <script src="/js/dashboard-app.js?v=20260821wallet3"></script>
+    <script src="/js/acctventa.js?v=20260821wallet4"></script>
+    <script src="/js/api-client.js?v=20260821wallet4"></script>
+    <script src="/js/api-sync.js?v=20260821wallet4"></script>
+    <script src="/js/dashboard-app.js?v=20260821wallet4"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         function switchTab(tabId) {

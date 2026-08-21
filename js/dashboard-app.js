@@ -459,6 +459,41 @@
     document.getElementById('appModal').classList.remove('hidden');
   };
 
+  function currencySymbol(code) {
+    const map = { NGN: '₦', GHS: 'GH₵', KES: 'KSh', ZAR: 'R', XAF: 'CFA ', XOF: 'CFA ', USD: '$', GBP: '£' };
+    return map[code] || code + ' ';
+  }
+
+  function countryToCurrency(cc) {
+    const map = {
+      ng: 'NGN', gh: 'GHS', ke: 'KES', za: 'ZAR',
+      cm: 'XAF', td: 'XAF', cg: 'XAF', ga: 'XAF',
+      sn: 'XOF', ci: 'XOF', bj: 'XOF', tg: 'XOF', bf: 'XOF', ml: 'XOF',
+      us: 'USD', gb: 'GBP',
+    };
+    return map[String(cc || '').toLowerCase()] || 'NGN';
+  }
+
+  function preferredLocalCurrency(user) {
+    const cur = walletCurrencies().local.filter((c) => c.enabled !== false);
+    if (user && user.payoutCurrency) {
+      const hit = cur.find((c) => c.code === user.payoutCurrency);
+      if (hit) return hit.code;
+    }
+    const fromCountry = countryToCurrency(user && user.countryCode);
+    if (cur.find((c) => c.code === fromCountry)) return fromCountry;
+    return (cur[0] || { code: 'NGN' }).code;
+  }
+
+  function localConvertLine(usdAmount, code) {
+    const cur = walletCurrencies().local.find((c) => c.code === code);
+    const rate = Number((cur && cur.rate) || (A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
+    const sym = currencySymbol(code);
+    const usd = Number(usdAmount) || 0;
+    if (usd <= 0) return '';
+    return `≈ ${sym}${Math.round(usd * rate).toLocaleString()}`;
+  }
+
   // -------- Wallet --------
   window.openWalletModal = function (type) {
     if (type === 'deposit') openDepositFlow();
@@ -468,10 +503,14 @@
   function openDepositFlow() {
     const cfg = A().CONFIG;
     const cur = walletCurrencies();
+    const u = refreshUser() || {};
     depositChannel = 'local';
-    depositCurrency = (cur.local.find((c) => c.enabled !== false) || cur.local[0] || { code: 'NGN' }).code;
+    depositCurrency = preferredLocalCurrency(u);
+    if (!cur.local.find((c) => c.code === depositCurrency && c.enabled !== false)) {
+      depositCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+    }
     document.getElementById('modalBody').innerHTML = `
-      <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-0.5">
+      <div class="space-y-4">
         <div class="flex items-center gap-3">
           <span class="w-10 h-10 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
           <div>
@@ -488,9 +527,12 @@
           <div id="depositCurrencyGrid" class="grid grid-cols-3 gap-2"></div>
         </div>
         <div>
-          <label class="text-xs font-semibold mb-1 block">Amount (USD credit)</label>
-          <div class="relative"><span class="absolute left-4 top-3.5 text-slate-400 font-bold">$</span>
-          <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="0" oninput="updateDepositRateHint()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-lg font-bold focus:outline-none focus:border-brandPrimary"></div>
+          <label class="text-xs font-semibold mb-1 block">Amount</label>
+          <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-white dark:bg-slate-900">
+            <div class="relative"><span class="absolute left-0 top-1 text-slate-400 font-bold text-xl">$</span>
+            <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="0" oninput="updateDepositRateHint()" class="w-full bg-transparent pl-6 pr-2 py-1 text-2xl font-extrabold focus:outline-none"></div>
+            <p id="depositLocalConvert" class="text-sm text-slate-400 mt-1 min-h-[1.25rem]"></p>
+          </div>
           <p id="depositNairaHint" class="text-xs text-brandPrimary font-semibold mt-2"></p>
           <p class="text-[11px] text-slate-400 mt-1">Min deposit ${money(cfg.minDeposit)}</p>
         </div>
@@ -518,7 +560,8 @@
       cryptoBtn.innerHTML = '<i class="fa-brands fa-bitcoin mr-1"></i> Crypto';
     }
     const cur = walletCurrencies();
-    if (depositChannel === 'local') depositCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+    const u = refreshUser() || {};
+    if (depositChannel === 'local') depositCurrency = preferredLocalCurrency(u);
     else depositCurrency = (cur.crypto.find((c) => c.enabled !== false) || { code: 'USDT' }).code;
     renderDepositCurrencyGrid();
     updateDepositRateHint();
@@ -556,31 +599,58 @@
 
   window.updateDepositRateHint = function () {
     const el = document.getElementById('depositNairaHint');
+    const convertEl = document.getElementById('depositLocalConvert');
     const input = document.getElementById('walletAmountInput');
-    if (!el || !input) return;
+    if (!input) return;
     const usd = parseFloat(input.value) || 0;
     if (depositChannel === 'crypto') {
-      el.textContent = 'Crypto deposits are reviewed after you send funds (owner confirms).';
+      if (el) el.textContent = 'Crypto deposits are reviewed after you send funds (owner confirms).';
+      if (convertEl) convertEl.textContent = '';
       return;
     }
     const cur = walletCurrencies().local.find((c) => c.code === depositCurrency);
     const rate = Number((cur && cur.rate) || (A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
-    const symbol = depositCurrency === 'NGN' ? '₦' : depositCurrency + ' ';
-    if (usd <= 0) {
-      el.textContent = `$1 ≈ ${symbol}${rate.toLocaleString()}`;
-      return;
+    const symbol = currencySymbol(depositCurrency);
+    if (convertEl) convertEl.textContent = localConvertLine(usd, depositCurrency);
+    if (el) {
+      if (usd <= 0) el.textContent = `$1 ≈ ${symbol}${rate.toLocaleString()}`;
+      else el.textContent = `You will pay about ${symbol}${Math.round(usd * rate).toLocaleString()} · wallet credits $${usd.toFixed(2)}`;
     }
-    el.textContent = `You will pay about ${symbol}${Math.round(usd * rate).toLocaleString()} · wallet credits $${usd.toFixed(2)}`;
   };
 
   function openWithdrawFlow() {
     const cfg = A().CONFIG;
-    const bal = money((refreshUser() || {}).balance);
+    const u = refreshUser() || {};
+    const bal = money(u.balance);
     const cur = walletCurrencies();
+    const locked = !!u.payoutBankLocked;
     withdrawMethodCard = 'bank';
-    withdrawCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+    withdrawCurrency = preferredLocalCurrency(u);
+    if (!cur.local.find((c) => c.code === withdrawCurrency && c.enabled !== false)) {
+      withdrawCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+    }
+    const bankFields = locked
+      ? `<div id="wdFieldsBankLocked" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold">Bank Details</p>
+            <span class="text-[10px] text-amber-500 font-semibold"><i class="fa-solid fa-lock mr-1"></i>Locked</span>
+          </div>
+          <div class="rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-3 text-sm space-y-1">
+            <p><span class="text-slate-500 text-[11px]">Bank</span><br><span class="font-semibold">${escapeHtml(u.payoutBank || '—')}</span></p>
+            <p><span class="text-slate-500 text-[11px]">Account number</span><br><span class="font-semibold">${escapeHtml(u.payoutAccount || '—')}</span></p>
+            <p><span class="text-slate-500 text-[11px]">Account name</span><br><span class="font-semibold">${escapeHtml(u.payoutAccountName || '—')}</span></p>
+          </div>
+          <p class="text-[10px] text-slate-400">Bank details were locked after your first successful withdrawal. Contact support to change them.</p>
+        </div>`
+      : `<div id="wdFieldsBank" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+          <p class="text-xs font-bold">Bank Details</p>
+          <div><label class="text-[11px] text-slate-500">Select bank</label><input id="withdrawBank" type="text" value="${escapeAttr(u.payoutBank || '')}" placeholder="e.g. Opay, GTBank" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+          <div><label class="text-[11px] text-slate-500">Account number <span class="text-red-500">*</span></label><input id="withdrawDest" type="text" value="${escapeAttr(u.payoutAccount || '')}" placeholder="Enter account number" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+          <div><label class="text-[11px] text-slate-500">Account name</label><input id="withdrawName" type="text" value="${escapeAttr(u.payoutAccountName || '')}" placeholder="Account name" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+        </div>`;
+
     document.getElementById('modalBody').innerHTML = `
-      <div class="space-y-4 max-h-[75vh] overflow-y-auto">
+      <div class="space-y-4">
         <div class="flex items-center gap-3">
           <span class="w-10 h-10 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
           <div>
@@ -591,14 +661,15 @@
         <div>
           <p class="text-xs font-bold mb-2">Enter Amount</p>
           <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-white dark:bg-slate-900">
-            <button type="button" id="wdCurBtn" onclick="cycleWithdrawCurrency()" class="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-bold mb-2"></button>
+            <button type="button" id="wdCurBtn" onclick="cycleWithdrawCurrency()" class="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-bold mb-2 ${locked ? 'pointer-events-none opacity-80' : ''}"></button>
             <div class="relative"><span class="absolute left-0 top-1 text-slate-400 font-bold text-xl">$</span>
-            <input id="walletAmountInput" type="number" min="${cfg.minWithdraw}" step="0.01" placeholder="0" class="w-full bg-transparent pl-6 pr-2 py-1 text-2xl font-extrabold focus:outline-none"></div>
+            <input id="walletAmountInput" type="number" min="${cfg.minWithdraw}" step="0.01" placeholder="0" oninput="updateWithdrawLocalConvert()" class="w-full bg-transparent pl-6 pr-2 py-1 text-2xl font-extrabold focus:outline-none"></div>
+            <p id="withdrawLocalConvert" class="text-sm text-slate-400 mt-1 min-h-[1.25rem]"></p>
           </div>
-          <div class="flex justify-between text-[11px] mt-2"><span class="text-brandPrimary font-semibold">Min. withdrawal is ${money(cfg.minWithdraw)}</span><span class="text-slate-400">Balance: ${bal}</span></div>
+          <div class="flex justify-between text-[11px] mt-2"><span class="text-brandPrimary font-semibold">Min. withdrawal is ${money(cfg.minWithdraw)}</span><span class="text-slate-400">Balance: <span class="text-brandPrimary font-semibold">${bal}</span></span></div>
         </div>
-        <div>
-          <p class="text-xs font-bold mb-2">Withdraw to</p>
+        <div class="pt-1 border-t border-slate-200 dark:border-slate-800">
+          <p class="text-xs font-bold mb-2 mt-3">Withdraw to</p>
           <div class="space-y-2">
             <button type="button" id="wdCardBank" onclick="setWithdrawMethodCard('bank')" class="w-full text-left rounded-2xl border-2 border-brandPrimary bg-brandPrimary/10 p-3 flex gap-3 items-center">
               <span class="w-10 h-10 rounded-full bg-brandPrimary/20 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-building-columns"></i></span>
@@ -619,12 +690,8 @@
             </button>
           </div>
         </div>
-        <div id="wdFieldsBank" class="space-y-2">
-          <div><label class="text-[11px] text-slate-500">Select bank</label><input id="withdrawBank" type="text" placeholder="e.g. Opay, GTBank" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
-          <div><label class="text-[11px] text-slate-500">Account number <span class="text-red-500">*</span></label><input id="withdrawDest" type="text" placeholder="Enter account number" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
-          <div><label class="text-[11px] text-slate-500">Account name</label><input id="withdrawName" type="text" placeholder="Account name" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
-        </div>
-        <div id="wdFieldsCrypto" class="space-y-2 hidden">
+        ${bankFields}
+        <div id="wdFieldsCrypto" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2 hidden">
           <div>
             <label class="text-[11px] text-slate-500 mb-1 block">Select cryptocurrency</label>
             <div id="wdCryptoGrid" class="grid grid-cols-4 gap-2"></div>
@@ -634,11 +701,17 @@
           </div>
           <div><label class="text-[11px] text-slate-500">Wallet address <span class="text-red-500">*</span></label><input id="withdrawCryptoDest" type="text" placeholder="Enter wallet address" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
         </div>
+        <div class="border border-brandPrimary/40 rounded-xl p-3 text-[11px] text-slate-500 flex gap-2 items-start">
+          <i class="fa-solid fa-shield-halved text-brandPrimary mt-0.5"></i>
+          <span>Secured and Trusted: Withdrawals are securely processed and reviewed to protect your account.</span>
+        </div>
         <button onclick="submitWalletAction('withdraw')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Continue to withdraw</button>
       </div>`;
     document.getElementById('appModal').classList.remove('hidden');
+    window.__payoutBankLocked = locked;
     refreshWithdrawCurrencyBtn();
     refreshWithdrawBankRate();
+    updateWithdrawLocalConvert();
     const firstCrypto = (cur.crypto.find((c) => c.enabled !== false) || { code: 'USDT' }).code;
     withdrawCryptoCoin = firstCrypto;
     renderWithdrawCryptoGrid();
@@ -676,17 +749,26 @@
     if (!el) return;
     const cur = walletCurrencies().local.find((c) => c.code === withdrawCurrency);
     const rate = Number((cur && cur.rate) || (A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
-    const sym = withdrawCurrency === 'NGN' ? '₦' : withdrawCurrency + ' ';
-    el.textContent = `$1 ~ ${sym}${rate.toLocaleString()}`;
+    const sym = currencySymbol(withdrawCurrency);
+    el.textContent = `$1 ≈ ${sym}${rate.toLocaleString()}`;
   }
 
+  window.updateWithdrawLocalConvert = function () {
+    const el = document.getElementById('withdrawLocalConvert');
+    const input = document.getElementById('walletAmountInput');
+    if (!el || !input) return;
+    el.textContent = localConvertLine(parseFloat(input.value) || 0, withdrawCurrency);
+  };
+
   window.cycleWithdrawCurrency = function () {
+    if (window.__payoutBankLocked) return;
     const list = walletCurrencies().local.filter((c) => c.enabled !== false);
     if (!list.length) return;
     const i = list.findIndex((c) => c.code === withdrawCurrency);
     withdrawCurrency = list[(i + 1) % list.length].code;
     refreshWithdrawCurrencyBtn();
     refreshWithdrawBankRate();
+    updateWithdrawLocalConvert();
   };
 
   window.setWithdrawMethodCard = function (m) {
@@ -706,7 +788,10 @@
         ? '<span class="w-6 h-6 rounded-full bg-brandPrimary text-white flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></span>'
         : '<span class="w-6 h-6 rounded-full border border-slate-400"></span>';
     }
+    // When bank is locked, bank fields are always shown (read-only block) — hide only when crypto
+    const lockedBlock = document.getElementById('wdFieldsBankLocked');
     if (fb) fb.classList.toggle('hidden', withdrawMethodCard !== 'bank');
+    if (lockedBlock) lockedBlock.classList.toggle('hidden', withdrawMethodCard !== 'bank');
     if (fc) fc.classList.toggle('hidden', withdrawMethodCard !== 'crypto');
     fillWithdrawNetworks();
   };
@@ -759,11 +844,21 @@
     }
 
     const isCrypto = withdrawMethodCard === 'crypto';
-    const dest = isCrypto
-      ? ((document.getElementById('withdrawCryptoDest') || {}).value || '').trim()
-      : ((document.getElementById('withdrawDest') || {}).value || '').trim();
-    const accountName = ((document.getElementById('withdrawName') || {}).value || '').trim();
-    const bankName = ((document.getElementById('withdrawBank') || {}).value || '').trim();
+    const locked = !!(u && u.payoutBankLocked) || !!window.__payoutBankLocked;
+    let dest = '';
+    let accountName = '';
+    let bankName = '';
+    if (isCrypto) {
+      dest = ((document.getElementById('withdrawCryptoDest') || {}).value || '').trim();
+    } else if (locked) {
+      dest = (u.payoutAccount || '').trim();
+      accountName = (u.payoutAccountName || '').trim();
+      bankName = (u.payoutBank || '').trim();
+    } else {
+      dest = ((document.getElementById('withdrawDest') || {}).value || '').trim();
+      accountName = ((document.getElementById('withdrawName') || {}).value || '').trim();
+      bankName = ((document.getElementById('withdrawBank') || {}).value || '').trim();
+    }
     const network = ((document.getElementById('withdrawNetwork') || {}).value || '').trim();
     if (!dest) {
       alert(isCrypto ? 'Enter wallet address' : 'Enter account number');
@@ -772,8 +867,9 @@
     res = await Promise.resolve(
       A().withdraw(u, amount, isCrypto ? 'crypto' : 'bank', {
         destination: dest,
-        accountName: isCrypto ? (withdrawCryptoCoin + ' · ' + network) : accountName,
+        accountName: isCrypto ? withdrawCryptoCoin + ' · ' + network : accountName,
         bankName: isCrypto ? withdrawCryptoCoin + (network ? ' / ' + network : '') : bankName || withdrawCurrency,
+        currency: withdrawCurrency,
       })
     );
     if (!res.ok) {

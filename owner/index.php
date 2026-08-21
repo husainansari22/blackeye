@@ -57,8 +57,15 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         }
         if ($form === 'fx_rate') {
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
-            setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
-            $flash = 'Naira rate saved. New deposits will use this rate.';
+            $ngnRate = max(1, (float)($_POST['usd_ngn_rate'] ?? 1600));
+            setting_set('usd_ngn_rate', (string)$ngnRate);
+            $wc = wallet_currencies_get();
+            foreach ($wc['local'] as &$row) {
+                if (strtoupper((string)($row['code'] ?? '')) === 'NGN') $row['rate'] = $ngnRate;
+            }
+            unset($row);
+            wallet_currencies_set($wc);
+            $flash = 'Naira rate saved. New deposits & withdraws will use this rate.';
         }
         if ($form === 'gateway') {
             $stmt = db()->prepare('UPDATE gateway_settings SET
@@ -113,6 +120,12 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 }
                 if ($row['type'] === 'withdrawal' && $old === 'pending' && $newStatus === 'completed') {
                     notify_user((int)$row['user_id'], 'Withdrawal paid', 'Your withdrawal of $' . money_f($row['payout'] ?? $row['amount']) . ' was marked completed.', 'wallet');
+                    // Lock bank details after first successful bank payout
+                    if (strtolower((string)($row['method'] ?? '')) === 'bank') {
+                        ensure_user_payout_columns();
+                        db()->prepare('UPDATE users SET payout_bank_locked = 1 WHERE id = ? AND payout_account != \'\'')
+                            ->execute([(int)$row['user_id']]);
+                    }
                 }
                 // Approving a pending deposit credits the wallet (crypto / manual)
                 if ($row['type'] === 'deposit' && $old === 'pending' && $newStatus === 'completed') {
@@ -130,15 +143,43 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = 'Transaction status updated.';
         }
         if ($form === 'currencies') {
-            $localRaw = trim((string)($_POST['local_json'] ?? ''));
-            $cryptoRaw = trim((string)($_POST['crypto_json'] ?? ''));
-            $local = json_decode($localRaw, true);
-            $crypto = json_decode($cryptoRaw, true);
-            if (!is_array($local) || !is_array($crypto)) {
-                throw new RuntimeException('Invalid currencies JSON');
+            $localIn = $_POST['local'] ?? [];
+            $cryptoIn = $_POST['crypto'] ?? [];
+            if (!is_array($localIn) || !is_array($cryptoIn)) {
+                throw new RuntimeException('Invalid currency form');
+            }
+            $local = [];
+            foreach ($localIn as $row) {
+                if (!is_array($row)) continue;
+                $code = strtoupper(trim((string)($row['code'] ?? '')));
+                if ($code === '') continue;
+                $local[] = [
+                    'code' => $code,
+                    'name' => trim((string)($row['name'] ?? $code)),
+                    'flag' => strtolower(trim((string)($row['flag'] ?? ''))),
+                    'rate' => max(0.0001, (float)($row['rate'] ?? 1)),
+                    'enabled' => !empty($row['enabled']),
+                ];
+            }
+            $crypto = [];
+            foreach ($cryptoIn as $row) {
+                if (!is_array($row)) continue;
+                $code = strtoupper(trim((string)($row['code'] ?? '')));
+                if ($code === '') continue;
+                $netsRaw = trim((string)($row['networks'] ?? ''));
+                $nets = array_values(array_filter(array_map('trim', preg_split('/[,|]+/', $netsRaw) ?: [])));
+                $crypto[] = [
+                    'code' => $code,
+                    'name' => trim((string)($row['name'] ?? $code)),
+                    'networks' => $nets ?: ['TRC20'],
+                    'enabled' => !empty($row['enabled']),
+                ];
+            }
+            if (!$local) {
+                throw new RuntimeException('Add at least one local currency');
             }
             wallet_currencies_set(['local' => $local, 'crypto' => $crypto]);
-            $flash = 'Wallet currencies saved.';
+            $flash = 'Currency rates saved. Deposit & withdraw will use the new rates.';
         }
         if ($form === 'order_status') {
             db()->prepare('UPDATE orders SET status = ? WHERE id = ?')->execute([$_POST['status'], (int)$_POST['order_id']]);
@@ -416,19 +457,85 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php endif; ?>
 
     <?php if ($tab === 'currencies'): $wc = wallet_currencies_get(); ?>
-      <form method="post" class="bg-white rounded-xl border p-5 space-y-4">
+      <form method="post" class="space-y-4">
         <input type="hidden" name="form" value="currencies">
-        <h2 class="font-bold text-lg">Wallet currencies (flags & rates)</h2>
-        <p class="text-xs text-slate-500">Shown on Deposit/Withdraw. Edit JSON carefully. Each local currency needs <code>code</code>, <code>name</code>, <code>flag</code> (ISO country like <code>ng</code>), <code>rate</code> (units per $1), <code>enabled</code>.</p>
-        <div>
-          <label class="text-xs font-semibold text-slate-600">Local currencies (with flags)</label>
-          <textarea name="local_json" rows="12" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"><?= h(json_encode($wc['local'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></textarea>
+        <div class="bg-white rounded-xl border p-5 space-y-3">
+          <h2 class="font-bold text-lg">Deposit & withdraw rates</h2>
+          <p class="text-xs text-slate-500">Edit the rate for each country (units per $1). These rates show on user Deposit and Withdraw screens.</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="text-xs text-slate-500 border-b">
+                <tr>
+                  <th class="py-2 pr-2">Country</th>
+                  <th class="py-2 pr-2">Code</th>
+                  <th class="py-2 pr-2">1 USD =</th>
+                  <th class="py-2 pr-2 text-center">On</th>
+                </tr>
+              </thead>
+              <tbody>
+              <?php foreach (($wc['local'] ?? []) as $i => $c): ?>
+                <tr class="border-b border-slate-100">
+                  <td class="py-3 pr-2">
+                    <div class="flex items-center gap-2">
+                      <?php if (!empty($c['flag'])): ?>
+                        <img src="https://flagcdn.com/w40/<?= h($c['flag']) ?>.png" alt="" class="w-6 h-6 rounded-full object-cover">
+                      <?php endif; ?>
+                      <input type="hidden" name="local[<?= $i ?>][flag]" value="<?= h($c['flag'] ?? '') ?>">
+                      <input type="hidden" name="local[<?= $i ?>][code]" value="<?= h($c['code'] ?? '') ?>">
+                      <input name="local[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>" class="border rounded-lg px-2 py-1.5 text-sm w-36 sm:w-44">
+                    </div>
+                  </td>
+                  <td class="py-3 pr-2 font-mono font-bold text-xs"><?= h($c['code'] ?? '') ?></td>
+                  <td class="py-3 pr-2">
+                    <input name="local[<?= $i ?>][rate]" type="number" step="0.01" min="0.01" value="<?= h((string)($c['rate'] ?? 1)) ?>" class="border rounded-lg px-2 py-1.5 text-sm w-28 font-semibold" required>
+                  </td>
+                  <td class="py-3 pr-2 text-center">
+                    <input type="checkbox" name="local[<?= $i ?>][enabled]" value="1" class="accent-sky-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-600">Crypto currencies</label>
-          <textarea name="crypto_json" rows="12" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"><?= h(json_encode($wc['crypto'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></textarea>
+
+        <div class="bg-white rounded-xl border p-5 space-y-3">
+          <h2 class="font-bold text-lg">Crypto options</h2>
+          <p class="text-xs text-slate-500">Networks are comma-separated (e.g. TRC20, BEP20, ERC20).</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="text-xs text-slate-500 border-b">
+                <tr>
+                  <th class="py-2 pr-2">Coin</th>
+                  <th class="py-2 pr-2">Name</th>
+                  <th class="py-2 pr-2">Networks</th>
+                  <th class="py-2 pr-2 text-center">On</th>
+                </tr>
+              </thead>
+              <tbody>
+              <?php foreach (($wc['crypto'] ?? []) as $i => $c): ?>
+                <tr class="border-b border-slate-100">
+                  <td class="py-3 pr-2 font-mono font-bold text-xs">
+                    <?= h($c['code'] ?? '') ?>
+                    <input type="hidden" name="crypto[<?= $i ?>][code]" value="<?= h($c['code'] ?? '') ?>">
+                  </td>
+                  <td class="py-3 pr-2">
+                    <input name="crypto[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>" class="border rounded-lg px-2 py-1.5 text-sm w-32">
+                  </td>
+                  <td class="py-3 pr-2">
+                    <input name="crypto[<?= $i ?>][networks]" value="<?= h(implode(', ', $c['networks'] ?? [])) ?>" class="border rounded-lg px-2 py-1.5 text-sm w-48 sm:w-64">
+                  </td>
+                  <td class="py-3 pr-2 text-center">
+                    <input type="checkbox" name="crypto[<?= $i ?>][enabled]" value="1" class="accent-sky-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save currencies</button>
+
+        <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save rates</button>
       </form>
     <?php endif; ?>
 
@@ -439,8 +546,8 @@ $tab = $_GET['tab'] ?? 'overview';
       ?>
       <form method="post" class="bg-sky-50 border border-sky-200 rounded-xl p-5 space-y-3 mb-4">
         <input type="hidden" name="form" value="fx_rate">
-        <h2 class="font-bold text-lg text-slate-900">₦ Naira rate (live deposits)</h2>
-        <p class="text-xs text-slate-600">Wallet balances stay in <strong>USD ($)</strong>. Flutterwave charges customers in Naira using this rate.</p>
+        <h2 class="font-bold text-lg text-slate-900">Quick Naira rate</h2>
+        <p class="text-xs text-slate-600">Wallet stays in <strong>USD ($)</strong>. For all country rates use <a href="?tab=currencies" class="text-brand font-semibold underline">Currencies</a>.</p>
         <div class="grid sm:grid-cols-3 gap-3 items-end">
           <div>
             <label class="text-xs text-slate-500 font-medium">Charge currency</label>

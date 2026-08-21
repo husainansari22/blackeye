@@ -133,6 +133,7 @@
         name: user.name,
         email: user.email,
         phone: user.phone || '',
+        countryCode: user.countryCode || '',
         balance: user.balance,
         escrowBalance: user.escrowBalance,
         totalDeposits: user.totalDeposits,
@@ -140,6 +141,11 @@
         plan: user.plan || 'free',
         referralCode: user.referralCode,
         createdAt: user.createdAt,
+        payoutBank: user.payoutBank || '',
+        payoutAccount: user.payoutAccount || '',
+        payoutAccountName: user.payoutAccountName || '',
+        payoutCurrency: user.payoutCurrency || '',
+        payoutBankLocked: !!user.payoutBankLocked,
         ads: (adsRes.ads || []).map(mapAd),
         orders: (ordersRes.orders || []).map(mapOrder),
         transactions: (walletRes.transactions || []).map(mapTx),
@@ -281,6 +287,7 @@
           destination: (extra && extra.destination) || '',
           accountName: (extra && extra.accountName) || '',
           bankName: (extra && extra.bankName) || '',
+          currency: (extra && extra.currency) || '',
         };
         const res = await Api.withdraw(payload);
         await hydrateFromApi();

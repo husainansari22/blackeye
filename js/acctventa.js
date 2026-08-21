@@ -294,6 +294,12 @@
     user.messages = user.messages && typeof user.messages === 'object' ? user.messages : {};
     user.plan = user.plan && PLANS[user.plan] ? user.plan : 'free';
     user.uploadsByDay = user.uploadsByDay && typeof user.uploadsByDay === 'object' ? user.uploadsByDay : {};
+    user.countryCode = user.countryCode || '';
+    user.payoutBank = user.payoutBank || '';
+    user.payoutAccount = user.payoutAccount || '';
+    user.payoutAccountName = user.payoutAccountName || '';
+    user.payoutCurrency = user.payoutCurrency || '';
+    user.payoutBankLocked = !!user.payoutBankLocked;
     if (!user.referralCode) {
       user.referralCode = (String(user.name || 'user').split(/\s+/)[0] || 'user')
         .toLowerCase()
@@ -769,20 +775,35 @@
     return { ok: true, credited };
   }
 
-  function withdraw(user, amount, method) {
+  function withdraw(user, amount, method, extra) {
     amount = Number(amount);
     if (!amount || amount < CONFIG.minWithdraw) {
       return { ok: false, error: 'Minimum withdrawal is $' + CONFIG.minWithdraw.toFixed(2) + '.' };
     }
-    const commission = Number((amount * CONFIG.withdrawCommissionRate).toFixed(2));
-    const totalDebit = Number((amount + commission).toFixed(2));
-    // User receives `amount`, platform takes commission on top OR from amount?
-    // Standard: withdraw $X, fee taken from X so they receive X*(1-rate). Clearer for sellers:
-    // "I want to withdraw $10" → fee 10% → they get $9, balance reduces by $10.
     const feeFromAmount = Number((amount * CONFIG.withdrawCommissionRate).toFixed(2));
     const payout = Number((amount - feeFromAmount).toFixed(2));
     if ((user.balance || 0) < amount) {
       return { ok: false, error: 'Insufficient available balance.' };
+    }
+    extra = extra || {};
+    let destination = String(extra.destination || '').trim();
+    let accountName = String(extra.accountName || '').trim();
+    let bankName = String(extra.bankName || '').trim();
+    const currency = String(extra.currency || user.payoutCurrency || 'NGN').toUpperCase();
+    const isBank = (method || 'bank') === 'bank';
+    if (isBank && user.payoutBankLocked) {
+      destination = user.payoutAccount || destination;
+      accountName = user.payoutAccountName || accountName;
+      bankName = user.payoutBank || bankName;
+    }
+    if (!destination) {
+      return { ok: false, error: isBank ? 'Enter account number' : 'Enter wallet address' };
+    }
+    if (isBank && !user.payoutBankLocked) {
+      user.payoutBank = bankName;
+      user.payoutAccount = destination;
+      user.payoutAccountName = accountName;
+      user.payoutCurrency = currency;
     }
     user.balance = Number(((user.balance || 0) - amount).toFixed(2));
     user.totalWithdrawals = Number(((user.totalWithdrawals || 0) + amount).toFixed(2));
@@ -793,7 +814,7 @@
       amount,
       fee: feeFromAmount,
       payout,
-      method: method || 'crypto',
+      method: method || 'bank',
       status: 'pending',
       note: 'Withdrawal requested — pending admin approval.',
       createdAt: new Date().toISOString()
@@ -881,6 +902,9 @@
         body: 'Your withdrawal was marked completed.',
         type: 'wallet'
       });
+      if (String(tx.method || '').toLowerCase() === 'bank' && user.payoutAccount) {
+        user.payoutBankLocked = true;
+      }
     }
     if (String(tx.type).toLowerCase() === 'deposit' && old === 'pending' && next === 'completed') {
       user.balance = Number(((user.balance || 0) + Number(tx.amount || 0)).toFixed(2));

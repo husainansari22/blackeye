@@ -148,11 +148,13 @@ function require_user(): array {
 }
 
 function public_user(array $u): array {
+    ensure_user_payout_columns();
     return [
         'id' => (int)$u['id'],
         'name' => $u['name'],
         'email' => $u['email'],
         'phone' => $u['phone'],
+        'countryCode' => strtolower((string)($u['country_code'] ?? '')),
         'balance' => (float)$u['balance'],
         'escrowBalance' => (float)$u['escrow_balance'],
         'totalDeposits' => (float)$u['total_deposits'],
@@ -161,7 +163,54 @@ function public_user(array $u): array {
         'referralCode' => $u['referral_code'],
         'isVerified' => (int)$u['is_verified'] === 1,
         'createdAt' => $u['created_at'],
+        'payoutBank' => (string)($u['payout_bank'] ?? ''),
+        'payoutAccount' => (string)($u['payout_account'] ?? ''),
+        'payoutAccountName' => (string)($u['payout_account_name'] ?? ''),
+        'payoutCurrency' => (string)($u['payout_currency'] ?? ''),
+        'payoutBankLocked' => (int)($u['payout_bank_locked'] ?? 0) === 1,
     ];
+}
+
+function ensure_user_payout_columns(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    $cols = [
+        'country_code' => "ALTER TABLE users ADD COLUMN country_code VARCHAR(8) NOT NULL DEFAULT '' AFTER phone",
+        'payout_bank' => "ALTER TABLE users ADD COLUMN payout_bank VARCHAR(120) NOT NULL DEFAULT '' AFTER plan",
+        'payout_account' => "ALTER TABLE users ADD COLUMN payout_account VARCHAR(120) NOT NULL DEFAULT '' AFTER payout_bank",
+        'payout_account_name' => "ALTER TABLE users ADD COLUMN payout_account_name VARCHAR(120) NOT NULL DEFAULT '' AFTER payout_account",
+        'payout_currency' => "ALTER TABLE users ADD COLUMN payout_currency VARCHAR(10) NOT NULL DEFAULT '' AFTER payout_account_name",
+        'payout_bank_locked' => "ALTER TABLE users ADD COLUMN payout_bank_locked TINYINT(1) NOT NULL DEFAULT 0 AFTER payout_currency",
+    ];
+    foreach ($cols as $name => $sql) {
+        try {
+            db()->query('SELECT ' . $name . ' FROM users LIMIT 1');
+        } catch (Throwable $e) {
+            try {
+                db()->exec($sql);
+            } catch (Throwable $e2) {
+                // ignore
+            }
+        }
+    }
+}
+
+/** Map ISO country (ng, gh, …) to wallet local currency code. */
+function country_to_currency(string $countryCode): string {
+    $map = [
+        'ng' => 'NGN', 'gh' => 'GHS', 'ke' => 'KES', 'za' => 'ZAR',
+        'cm' => 'XAF', 'td' => 'XAF', 'cg' => 'XAF', 'ga' => 'XAF',
+        'sn' => 'XOF', 'ci' => 'XOF', 'bj' => 'XOF', 'tg' => 'XOF', 'bf' => 'XOF', 'ml' => 'XOF',
+        'us' => 'USD', 'gb' => 'GBP',
+    ];
+    $cc = strtolower(trim($countryCode));
+    return $map[$cc] ?? 'NGN';
+}
+
+function currency_symbol(string $code): string {
+    $map = ['NGN' => '₦', 'GHS' => 'GH₵', 'KES' => 'KSh', 'ZAR' => 'R', 'XAF' => 'CFA', 'XOF' => 'CFA', 'USD' => '$', 'GBP' => '£'];
+    return $map[strtoupper($code)] ?? (strtoupper($code) . ' ');
 }
 
 function notify_user(int $userId, string $title, string $body, string $type = 'info'): void {

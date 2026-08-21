@@ -599,7 +599,8 @@
                             email: email,
                             phone: fullPhone,
                             password: pass,
-                            referredBy: ref
+                            referredBy: ref,
+                            countryCode: (window.__signupCountryCode || document.getElementById('country_flag')?.src?.match(/\/([a-z]{2})\.png/i)?.[1] || 'ng')
                         });
                         window.location.href = "/dashboard.html";
                         return;
@@ -708,6 +709,7 @@
                 const res = await fetch('https://ipapi.co/json/');
                 const data = await res.json();
                 if (data.country_code && data.country_calling_code) {
+                    window.__signupCountryCode = String(data.country_code).toLowerCase();
                     document.getElementById('country_flag').src = `https://flagcdn.com/24x18/${data.country_code.toLowerCase()}.png`;
                     document.getElementById('country_code').innerText = data.country_calling_code;
                 }

@@ -42,14 +42,17 @@ try {
             $phone = trim((string)($body['phone'] ?? ''));
             $password = (string)($body['password'] ?? '');
             $ref = trim((string)($body['referredBy'] ?? $body['ref'] ?? ''));
+            $countryCode = strtolower(trim((string)($body['countryCode'] ?? $body['country_code'] ?? '')));
+            if (strlen($countryCode) > 8) $countryCode = substr($countryCode, 0, 8);
             if ($name === '' || $email === '' || $password === '') json_out(['ok' => false, 'error' => 'Name, email and password required'], 422);
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) json_out(['ok' => false, 'error' => 'Invalid email'], 422);
             $exists = db()->prepare('SELECT id FROM users WHERE email = ?');
             $exists->execute([$email]);
             if ($exists->fetch()) json_out(['ok' => false, 'error' => 'Email already registered'], 409);
+            ensure_user_payout_columns();
             $code = strtolower(preg_replace('/[^a-z0-9]/', '', explode(' ', $name)[0] ?? 'user')) ?: ('user' . substr(uid_token(3), 0, 6));
-            $stmt = db()->prepare('INSERT INTO users (name, email, phone, password_hash, referral_code, referred_by, plan) VALUES (?, ?, ?, ?, ?, ?, ?)');
-            $stmt->execute([$name, $email, $phone, password_hash($password, PASSWORD_DEFAULT), $code, $ref, 'free']);
+            $stmt = db()->prepare('INSERT INTO users (name, email, phone, country_code, password_hash, referral_code, referred_by, plan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $stmt->execute([$name, $email, $phone, $countryCode, password_hash($password, PASSWORD_DEFAULT), $code, $ref, 'free']);
             $id = (int)db()->lastInsertId();
             $token = create_session($id);
             $u = db()->query('SELECT * FROM users WHERE id = ' . $id)->fetch();
@@ -521,6 +524,9 @@ try {
 
         case 'wallet.withdraw': {
             $u = require_user();
+            ensure_user_payout_columns();
+            // reload with payout columns
+            $u = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
             $amount = (float)($body['amount'] ?? 0);
             $min = (float)setting_get('min_withdraw', 5);
             if ($amount < $min) json_out(['ok' => false, 'error' => "Minimum withdrawal is $$min"], 422);
@@ -529,6 +535,16 @@ try {
             $destination = trim((string)($body['destination'] ?? $body['account'] ?? ''));
             $accountName = trim((string)($body['accountName'] ?? ''));
             $bankName = trim((string)($body['bankName'] ?? ''));
+            $currency = strtoupper(trim((string)($body['currency'] ?? ($u['payout_currency'] ?? '') ?: country_to_currency((string)($u['country_code'] ?? 'ng')))));
+
+            $locked = (int)($u['payout_bank_locked'] ?? 0) === 1;
+            if ($method === 'bank' && $locked) {
+                $destination = (string)($u['payout_account'] ?? '');
+                $accountName = (string)($u['payout_account_name'] ?? '');
+                $bankName = (string)($u['payout_bank'] ?? '');
+                if (($u['payout_currency'] ?? '') !== '') $currency = strtoupper((string)$u['payout_currency']);
+            }
+
             if ($destination === '') {
                 json_out(['ok' => false, 'error' => 'Enter your payout account / wallet address'], 422);
             }
@@ -540,6 +556,14 @@ try {
             $note = 'Payout via ' . $method . ' · ' . $destination;
             if ($accountName !== '') $note .= ' · ' . $accountName;
             if ($bankName !== '') $note .= ' · ' . $bankName;
+            if ($currency !== '') $note .= ' · ' . $currency;
+
+            // Save bank details on first bank withdraw (editable until first successful payout)
+            if ($method === 'bank' && !$locked) {
+                db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ? WHERE id = ?')
+                    ->execute([$bankName, $destination, $accountName, $currency, (int)$u['id']]);
+            }
+
             db()->prepare('UPDATE users SET balance = balance - ?, total_withdrawals = total_withdrawals + ? WHERE id = ?')
                 ->execute([money_f($amount), money_f($amount), (int)$u['id']]);
             db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, payout, status, method, note, reference) VALUES (?, \'withdrawal\', ?, ?, ?, \'pending\', ?, ?, ?)')

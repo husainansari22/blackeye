@@ -18,7 +18,7 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=20260821wallet3"></script>
+  <script src="/js/acctventa.js?v=20260821wallet4"></script>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
   <!-- LOGIN -->
@@ -108,17 +108,12 @@
 
       <!-- CURRENCIES -->
       <section id="tab_currencies" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 class="font-bold text-lg">Wallet currencies (flags & rates)</h2>
-        <p class="text-xs text-slate-500">Used on Deposit/Withdraw. Each local currency needs <code>code</code>, <code>name</code>, <code>flag</code> (e.g. <code>ng</code>), <code>rate</code>, <code>enabled</code>. For live site currencies use <strong>/owner → Currencies</strong>.</p>
-        <div>
-          <label class="text-xs font-semibold text-slate-600">Local currencies JSON</label>
-          <textarea id="cfg_localCurrencies" rows="10" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"></textarea>
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-600">Crypto currencies JSON</label>
-          <textarea id="cfg_cryptoCurrencies" rows="10" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"></textarea>
-        </div>
-        <button onclick="saveCurrencies()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save currencies</button>
+        <h2 class="font-bold text-lg">Deposit & withdraw rates</h2>
+        <p class="text-xs text-slate-500">Edit rates (units per $1). For the live site use <strong>/owner → Currencies</strong> — this tab only affects this browser.</p>
+        <div id="localRatesEditor" class="space-y-2"></div>
+        <h3 class="font-semibold text-sm pt-2">Crypto</h3>
+        <div id="cryptoRatesEditor" class="space-y-2"></div>
+        <button onclick="saveCurrencies()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save rates</button>
       </section>
 
       <!-- WITHDRAWALS -->
@@ -421,10 +416,30 @@
     function fillCurrencyForms() {
       const c = A().CONFIG || {};
       const wc = c.walletCurrencies || (A().DEFAULT_CONFIG && A().DEFAULT_CONFIG.walletCurrencies) || { local: [], crypto: [] };
-      const localEl = document.getElementById('cfg_localCurrencies');
-      const cryptoEl = document.getElementById('cfg_cryptoCurrencies');
-      if (localEl) localEl.value = JSON.stringify(wc.local || [], null, 2);
-      if (cryptoEl) cryptoEl.value = JSON.stringify(wc.crypto || [], null, 2);
+      const localBox = document.getElementById('localRatesEditor');
+      const cryptoBox = document.getElementById('cryptoRatesEditor');
+      if (localBox) {
+        localBox.innerHTML = (wc.local || []).map((row, i) => `
+          <div class="grid grid-cols-12 gap-2 items-center border border-slate-100 rounded-xl p-2" data-local-i="${i}">
+            <div class="col-span-1">${row.flag ? `<img src="https://flagcdn.com/w40/${row.flag}.png" class="w-6 h-6 rounded-full" alt="">` : ''}</div>
+            <div class="col-span-3 text-xs font-bold">${escapeHtml(row.code)}</div>
+            <div class="col-span-4"><input data-field="name" value="${escapeHtml(row.name || '')}" class="w-full border rounded-lg px-2 py-1.5 text-xs"></div>
+            <div class="col-span-3"><input data-field="rate" type="number" step="0.01" value="${Number(row.rate) || 1}" class="w-full border rounded-lg px-2 py-1.5 text-xs font-semibold"></div>
+            <div class="col-span-1 text-center"><input data-field="enabled" type="checkbox" class="accent-sky-500" ${row.enabled !== false ? 'checked' : ''}></div>
+            <input type="hidden" data-field="code" value="${escapeHtml(row.code)}">
+            <input type="hidden" data-field="flag" value="${escapeHtml(row.flag || '')}">
+          </div>`).join('');
+      }
+      if (cryptoBox) {
+        cryptoBox.innerHTML = (wc.crypto || []).map((row, i) => `
+          <div class="grid grid-cols-12 gap-2 items-center border border-slate-100 rounded-xl p-2" data-crypto-i="${i}">
+            <div class="col-span-2 text-xs font-bold">${escapeHtml(row.code)}</div>
+            <div class="col-span-3"><input data-field="name" value="${escapeHtml(row.name || '')}" class="w-full border rounded-lg px-2 py-1.5 text-xs"></div>
+            <div class="col-span-6"><input data-field="networks" value="${escapeHtml((row.networks || []).join(', '))}" class="w-full border rounded-lg px-2 py-1.5 text-xs"></div>
+            <div class="col-span-1 text-center"><input data-field="enabled" type="checkbox" class="accent-sky-500" ${row.enabled !== false ? 'checked' : ''}></div>
+            <input type="hidden" data-field="code" value="${escapeHtml(row.code)}">
+          </div>`).join('');
+      }
     }
 
     function saveFees() {
@@ -440,24 +455,31 @@
     }
 
     function saveCurrencies() {
-      let local, crypto;
-      try {
-        local = JSON.parse(document.getElementById('cfg_localCurrencies').value || '[]');
-        crypto = JSON.parse(document.getElementById('cfg_cryptoCurrencies').value || '[]');
-      } catch (e) {
-        alert('Invalid JSON. Check local/crypto currency fields.');
-        return;
-      }
-      if (!Array.isArray(local) || !Array.isArray(crypto)) {
-        alert('Both fields must be JSON arrays.');
-        return;
-      }
+      const local = [];
+      document.querySelectorAll('#localRatesEditor [data-local-i]').forEach((row) => {
+        local.push({
+          code: row.querySelector('[data-field="code"]').value,
+          flag: row.querySelector('[data-field="flag"]').value,
+          name: row.querySelector('[data-field="name"]').value,
+          rate: parseFloat(row.querySelector('[data-field="rate"]').value) || 1,
+          enabled: row.querySelector('[data-field="enabled"]').checked,
+        });
+      });
+      const crypto = [];
+      document.querySelectorAll('#cryptoRatesEditor [data-crypto-i]').forEach((row) => {
+        crypto.push({
+          code: row.querySelector('[data-field="code"]').value,
+          name: row.querySelector('[data-field="name"]').value,
+          networks: (row.querySelector('[data-field="networks"]').value || '').split(/[,|]+/).map((s) => s.trim()).filter(Boolean),
+          enabled: row.querySelector('[data-field="enabled"]').checked,
+        });
+      });
       A().saveSettings({
         config: {
           walletCurrencies: { local, crypto }
         }
       });
-      alert('Currencies saved for this browser. Live site: edit in /owner → Currencies.');
+      alert('Rates saved for this browser. Live site: edit in /owner → Currencies.');
     }
 
     function loadWithdrawals() {
