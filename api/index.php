@@ -50,7 +50,87 @@ try {
             $id = (int)db()->lastInsertId();
             $token = create_session($id);
             $u = db()->query('SELECT * FROM users WHERE id = ' . $id)->fetch();
+            try {
+                $mail = email_welcome($name);
+                send_app_mail($email, $mail['subject'], $mail['html'], $mail['text']);
+            } catch (Throwable $e) {
+                // registration still succeeds if mail fails
+            }
             json_out(['ok' => true, 'token' => $token, 'user' => public_user($u)]);
+        }
+
+        case 'auth.forgot': {
+            $email = strtolower(trim((string)($body['email'] ?? '')));
+            // Always return ok to avoid email enumeration
+            $generic = [
+                'ok' => true,
+                'message' => 'If an account exists for that email, a reset link is on the way. Check your inbox and spam folder.',
+            ];
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) json_out($generic);
+            $stmt = db()->prepare('SELECT * FROM users WHERE email = ? AND is_banned = 0 LIMIT 1');
+            $stmt->execute([$email]);
+            $u = $stmt->fetch();
+            if (!$u) json_out($generic);
+            ensure_password_resets_table();
+            $raw = uid_token(24);
+            $hash = hash('sha256', $raw);
+            db()->prepare('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL')->execute([(int)$u['id']]);
+            db()->prepare('INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))')
+                ->execute([(int)$u['id'], $hash]);
+            $resetUrl = rtrim(app_config()['app_url'] ?? 'https://acctventa.com', '/') . '/reset.html?token=' . urlencode($raw);
+            $mail = email_password_reset($u['name'], $resetUrl);
+            $sent = send_app_mail($email, $mail['subject'], $mail['html'], $mail['text']);
+            if (!$sent) {
+                json_out(['ok' => false, 'error' => 'Could not send email right now. Create mailbox help@acctventa.com in Hostinger and try again.'], 500);
+            }
+            json_out($generic);
+        }
+
+        case 'auth.reset': {
+            $token = trim((string)($body['token'] ?? ''));
+            $password = (string)($body['password'] ?? '');
+            if ($token === '' || strlen($password) < 6) {
+                json_out(['ok' => false, 'error' => 'Password must be at least 6 characters'], 422);
+            }
+            ensure_password_resets_table();
+            $hash = hash('sha256', $token);
+            $stmt = db()->prepare('SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1');
+            $stmt->execute([$hash]);
+            $row = $stmt->fetch();
+            if (!$row) json_out(['ok' => false, 'error' => 'This reset link is invalid or has expired. Request a new one.'], 400);
+            $pdo = db();
+            $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?')->execute([password_hash($password, PASSWORD_DEFAULT), (int)$row['user_id']]);
+            $pdo->prepare('UPDATE password_resets SET used_at = NOW() WHERE id = ?')->execute([(int)$row['id']]);
+            $u = $pdo->query('SELECT * FROM users WHERE id = ' . (int)$row['user_id'])->fetch();
+            try {
+                $mail = email_password_changed($u['name'] ?? '');
+                send_app_mail($u['email'], $mail['subject'], $mail['html'], $mail['text']);
+            } catch (Throwable $e) {}
+            json_out(['ok' => true, 'message' => 'Password updated. You can sign in now.']);
+        }
+
+        case 'auth.profile': {
+            $u = require_user();
+            $name = trim((string)($body['name'] ?? $u['name']));
+            $phone = trim((string)($body['phone'] ?? $u['phone']));
+            if ($name === '') json_out(['ok' => false, 'error' => 'Name is required'], 422);
+            db()->prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?')->execute([$name, $phone, (int)$u['id']]);
+            $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
+            json_out(['ok' => true, 'user' => public_user($fresh)]);
+        }
+
+        case 'auth.changePassword': {
+            $u = require_user();
+            $current = (string)($body['currentPassword'] ?? '');
+            $next = (string)($body['newPassword'] ?? '');
+            if (!password_verify($current, $u['password_hash'])) json_out(['ok' => false, 'error' => 'Current password is incorrect'], 400);
+            if (strlen($next) < 6) json_out(['ok' => false, 'error' => 'New password must be at least 6 characters'], 422);
+            db()->prepare('UPDATE users SET password_hash = ? WHERE id = ?')->execute([password_hash($next, PASSWORD_DEFAULT), (int)$u['id']]);
+            try {
+                $mail = email_password_changed($u['name']);
+                send_app_mail($u['email'], $mail['subject'], $mail['html'], $mail['text']);
+            } catch (Throwable $e) {}
+            json_out(['ok' => true]);
         }
 
         case 'auth.login': {
@@ -212,6 +292,12 @@ try {
             }
             notify_user((int)$u['id'], 'Order placed', 'You purchased ' . $ad['title'], 'order');
             notify_user((int)$ad['seller_id'], 'New sale', $u['name'] . ' purchased ' . $ad['title'], 'order');
+            try {
+                $buyerMail = email_order_notice($u['name'], $ad['title'], 'buyer', money_f($price));
+                send_app_mail($u['email'], $buyerMail['subject'], $buyerMail['html'], $buyerMail['text']);
+                $sellerMail = email_order_notice($ad['seller_name'], $ad['title'], 'seller', money_f($price));
+                send_app_mail($ad['seller_email'], $sellerMail['subject'], $sellerMail['html'], $sellerMail['text']);
+            } catch (Throwable $e) {}
             json_out(['ok' => true, 'orderId' => $orderId, 'publicId' => $publicId, 'status' => $status]);
         }
 

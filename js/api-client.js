@@ -115,6 +115,18 @@
         localStorage.removeItem('acctventa_backend');
       } catch (e) {}
     },
+    forgotPassword(payload) {
+      return request('auth.forgot', { method: 'POST', body: payload });
+    },
+    resetPassword(payload) {
+      return request('auth.reset', { method: 'POST', body: payload });
+    },
+    updateProfile(payload) {
+      return request('auth.profile', { method: 'POST', body: payload });
+    },
+    changePassword(payload) {
+      return request('auth.changePassword', { method: 'POST', body: payload });
+    },
     me() {
       return request('auth.me');
     },

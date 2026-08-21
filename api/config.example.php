@@ -23,6 +23,11 @@ return [
     'free_daily_uploads' => 5,
 
     'app_name' => 'Acctventa',
+    'app_url' => 'https://acctventa.com',
     'support_telegram' => 'https://t.me/acctventa',
     'support_email' => 'help@acctventa.com',
+
+    // Create this mailbox in Hostinger → Emails first
+    'mail_from' => 'help@acctventa.com',
+    'mail_from_name' => 'Acctventa',
 ];

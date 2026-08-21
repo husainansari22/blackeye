@@ -255,6 +255,22 @@ function ai_review_listing(array $ad): array {
     return ['status' => 'active', 'reason' => '', 'reviewed_by' => 'AI Review'];
 }
 
+function ensure_password_resets_table(): void {
+    db()->exec("CREATE TABLE IF NOT EXISTS password_resets (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      user_id INT UNSIGNED NOT NULL,
+      token_hash CHAR(64) NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used_at DATETIME NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX (token_hash),
+      INDEX (user_id),
+      CONSTRAINT fk_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+require_once __DIR__ . '/mail.php';
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     json_out(['ok' => true]);
 }

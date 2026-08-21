@@ -10,5 +10,8 @@ RewriteRule ^auth/admin/?$ /admin/ [L,QSA]
 RewriteRule ^signup/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^login/?$ /index.html?page=login [L,QSA]
 
+# Password reset page
+RewriteRule ^reset/?$ /reset.html [L,QSA]
+
 # Owner control panel
 RewriteRule ^owner/?$ /owner/index.php [L,QSA]

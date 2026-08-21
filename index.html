@@ -380,12 +380,66 @@
             e.preventDefault();
             const modal = document.getElementById('appModal');
             document.getElementById('modalBody').innerHTML = `
-                <h3 class="font-bold text-lg mb-2">Reset Password</h3>
-                <p class="text-xs text-gray-400 mb-4">Enter your registered email address to receive password reset instructions.</p>
-                <input type="email" placeholder="Your email address" class="w-full bg-inputBg border border-inputBorder rounded-xl p-3 text-sm mb-4 text-white">
-                <button onclick="alert('Password reset link sent to your email!'); closeModal();" class="w-full bg-skyBrand py-3 rounded-xl font-bold text-sm">Send Reset Link</button>
+                <div class="pr-4">
+                  <div class="w-11 h-11 rounded-xl bg-skyBrand/15 text-skyBrand flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-key"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-1.5 tracking-tight">Forgot your password?</h3>
+                  <p class="text-xs text-gray-400 mb-5 leading-relaxed">Enter the email on your Acctventa account. We’ll send a secure link so you can choose a new password.</p>
+                  <label class="block text-xs text-gray-300 mb-1.5">Email address</label>
+                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="w-full bg-inputBg border border-inputBorder rounded-xl p-3.5 text-sm mb-3 text-white focus:outline-none focus:border-skyBrand" required>
+                  <p id="forgotErr" class="hidden text-xs text-red-400 mb-3"></p>
+                  <button id="forgotBtn" onclick="submitForgotPassword()" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm transition">Send reset link</button>
+                  <p class="text-[11px] text-gray-500 mt-4 text-center">Remembered it? <button type="button" onclick="closeModal()" class="text-skyBrand font-medium">Back to login</button></p>
+                </div>
             `;
             modal.classList.remove('hidden');
+            const known = document.getElementById('li_email');
+            if (known && known.value) document.getElementById('forgotEmail').value = known.value;
+        }
+
+        async function submitForgotPassword() {
+            const email = (document.getElementById('forgotEmail').value || '').trim().toLowerCase();
+            const err = document.getElementById('forgotErr');
+            const btn = document.getElementById('forgotBtn');
+            err.classList.add('hidden');
+            if (!email) {
+                err.textContent = 'Please enter your email address.';
+                err.classList.remove('hidden');
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Sending…';
+            try {
+                if (!window.AcctventaApi || !(await window.AcctventaApi.isAvailable())) {
+                    throw new Error('Email service is not connected yet. Make sure the backend is installed.');
+                }
+                await window.AcctventaApi.forgotPassword({ email });
+                showForgotSuccess(email);
+            } catch (ex) {
+                err.textContent = ex.message || 'Could not send reset email.';
+                err.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Send reset link';
+            }
+        }
+
+        function showForgotSuccess(email) {
+            const safe = String(email || '').replace(/</g, '&lt;');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-center py-2">
+                  <div class="mx-auto w-14 h-14 rounded-full bg-skyBrand/15 text-skyBrand flex items-center justify-center text-2xl mb-4">
+                    <i class="fa-regular fa-envelope"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-2 tracking-tight">Check your inbox</h3>
+                  <p class="text-sm text-gray-300 mb-1">We sent a reset link to</p>
+                  <p class="text-sm font-semibold text-skyBrand mb-4 break-all">${safe}</p>
+                  <div class="bg-black/40 border border-gray-800 rounded-xl p-3 text-left mb-5">
+                    <p class="text-[11px] text-gray-400 leading-relaxed">Open the email from <strong class="text-gray-200">Acctventa</strong>, tap <strong class="text-gray-200">Choose a new password</strong>, and you’re done. The link expires in 30 minutes. Check spam if you don’t see it.</p>
+                  </div>
+                  <button onclick="closeModal()" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm">Back to login</button>
+                </div>
+            `;
         }
 
         function openAppInstallModal() {
