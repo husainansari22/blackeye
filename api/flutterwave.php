@@ -92,27 +92,37 @@ function usd_ngn_rate(): float {
     return $rate > 0 ? $rate : 1600.0;
 }
 
-/** Site wallet is USD; Flutterwave charge may be NGN. */
-function flw_charge_amount(float $usdAmount): array {
+/** Site wallet is USD; Flutterwave charge may be NGN (or selected local currency converted to NGN). */
+function flw_charge_amount(float $usdAmount, string $preferCode = 'NGN'): array {
+    $currencies = wallet_currencies_get();
+    $rate = usd_ngn_rate();
+    $code = strtoupper($preferCode ?: 'NGN');
+    foreach (($currencies['local'] ?? []) as $row) {
+        if (strtoupper((string)($row['code'] ?? '')) === $code && !empty($row['enabled'])) {
+            $rate = (float)($row['rate'] ?? $rate);
+            break;
+        }
+    }
+    // Flutterwave hosted checkout on this site charges NGN
     $currency = flw_currency();
     if ($currency === 'NGN') {
-        $ngn = (int)round($usdAmount * usd_ngn_rate());
-        if ($ngn < 100) $ngn = 100; // Flutterwave practical minimum
-        return ['amount' => $ngn, 'currency' => 'NGN', 'usd' => $usdAmount, 'rate' => usd_ngn_rate()];
+        $ngn = (int)round($usdAmount * $rate);
+        if ($ngn < 100) $ngn = 100;
+        return ['amount' => $ngn, 'currency' => 'NGN', 'usd' => $usdAmount, 'rate' => $rate, 'display' => $code];
     }
-    return ['amount' => round($usdAmount, 2), 'currency' => $currency, 'usd' => $usdAmount, 'rate' => 1];
+    return ['amount' => round($usdAmount, 2), 'currency' => $currency, 'usd' => $usdAmount, 'rate' => 1, 'display' => $code];
 }
 
 /**
  * Create hosted checkout link (Flutterwave Standard v3).
  */
-function flw_create_checkout(array $user, float $usdAmount, string $txRef): array {
+function flw_create_checkout(array $user, float $usdAmount, string $txRef, string $preferCode = 'NGN'): array {
     $secret = flw_secret();
     if ($secret === '') {
         return ['ok' => false, 'error' => 'Flutterwave secret key missing in Owner Admin → Gateways'];
     }
 
-    $charge = flw_charge_amount($usdAmount);
+    $charge = flw_charge_amount($usdAmount, $preferCode);
     $appUrl = rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/');
     $payload = [
         'tx_ref' => $txRef,
@@ -217,12 +227,16 @@ function credit_deposit_from_gateway(string $txRef, float $amountPaid, string $f
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ? AND status = \'pending\'')
-            ->execute([
-                'Flutterwave confirmed' . ($flwId !== '' ? ' #' . $flwId : '') . ($paidCurrency !== '' ? ' ' . $paidCurrency . ' ' . $amountPaid : ''),
-                'flutterwave',
-                (int)$tx['id'],
-            ]);
+        $upd = $pdo->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ? AND status = \'pending\'');
+        $upd->execute([
+            'Flutterwave confirmed' . ($flwId !== '' ? ' #' . $flwId : '') . ($paidCurrency !== '' ? ' ' . $paidCurrency . ' ' . $amountPaid : ''),
+            'flutterwave',
+            (int)$tx['id'],
+        ]);
+        if ($upd->rowCount() < 1) {
+            $pdo->commit();
+            return ['ok' => true, 'already' => true, 'user_id' => (int)$tx['user_id']];
+        }
         $credited = (float)$tx['amount'];
         $pdo->prepare('UPDATE users SET balance = balance + ?, total_deposits = total_deposits + ? WHERE id = ?')
             ->execute([money_f($credited), money_f($credited), (int)$tx['user_id']]);

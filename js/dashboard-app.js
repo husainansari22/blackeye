@@ -296,30 +296,496 @@
       .join('');
   }
 
+  let walletHistTab = 'deposit';
+  let walletBalanceHidden = false;
+  let depositChannel = 'local'; // local | crypto
+  let depositCurrency = 'NGN';
+  let withdrawMethodCard = 'bank'; // bank | crypto
+  let withdrawCurrency = 'NGN';
+  let withdrawCryptoCoin = 'USDT';
+  let withdrawNetwork = '';
+
+  function defaultCurrencies() {
+    return {
+      local: [
+        { code: 'NGN', name: 'Nigeria', flag: 'ng', rate: 1600, enabled: true },
+        { code: 'GHS', name: 'Ghana', flag: 'gh', rate: 15, enabled: true },
+        { code: 'KES', name: 'Kenya', flag: 'ke', rate: 130, enabled: true },
+        { code: 'ZAR', name: 'South Africa', flag: 'za', rate: 18, enabled: true },
+        { code: 'XAF', name: 'Central Africa', flag: 'cm', rate: 600, enabled: true },
+        { code: 'XOF', name: 'West Africa', flag: 'sn', rate: 600, enabled: true },
+      ],
+      crypto: [
+        { code: 'USDT', name: 'Tether', networks: ['TRC20', 'BEP20', 'ERC20'], enabled: true },
+        { code: 'BTC', name: 'Bitcoin', networks: ['BTC'], enabled: true },
+        { code: 'ETH', name: 'Ethereum', networks: ['ERC20'], enabled: true },
+        { code: 'USDC', name: 'USD Coin', networks: ['ERC20', 'BEP20'], enabled: true },
+        { code: 'BNB', name: 'BNB', networks: ['BEP20'], enabled: true },
+        { code: 'TRX', name: 'Tron', networks: ['TRC20'], enabled: true },
+        { code: 'LTC', name: 'Litecoin', networks: ['LTC'], enabled: true },
+        { code: 'SOL', name: 'Solana', networks: ['SOL'], enabled: true },
+      ],
+    };
+  }
+
+  function walletCurrencies() {
+    const c = (A().CONFIG && A().CONFIG.walletCurrencies) || {};
+    const d = defaultCurrencies();
+    return {
+      local: Array.isArray(c.local) && c.local.length ? c.local : d.local,
+      crypto: Array.isArray(c.crypto) && c.crypto.length ? c.crypto : d.crypto,
+    };
+  }
+
+  function flagImg(code) {
+    if (!code) return '';
+    return `<img src="https://flagcdn.com/w40/${escapeAttr(code)}.png" alt="" class="w-5 h-5 rounded-full object-cover inline-block">`;
+  }
+
+  function formatTxWhen(iso) {
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const sameDay = d.toDateString() === now.toDateString();
+      const t = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      if (sameDay) return 'Today, ' + t;
+      return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ', ' + t;
+    } catch (e) {
+      return relativeTime(iso);
+    }
+  }
+
+  function statusDot(status) {
+    const s = String(status || '').toLowerCase();
+    if (s === 'completed') return '<span class="inline-flex items-center gap-1 text-[10px] text-emerald-500"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Completed</span>';
+    if (s === 'pending') return '<span class="inline-flex items-center gap-1 text-[10px] text-amber-500"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Pending</span>';
+    if (s === 'failed' || s === 'cancelled') return '<span class="inline-flex items-center gap-1 text-[10px] text-red-500"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>' + escapeHtml(s.charAt(0).toUpperCase() + s.slice(1)) + '</span>';
+    return '<span class="text-[10px] text-slate-400">' + escapeHtml(status || '') + '</span>';
+  }
+
+  window.toggleWalletBalanceVisibility = function () {
+    walletBalanceHidden = !walletBalanceHidden;
+    const el = document.getElementById('walletBalanceDisplay');
+    const icon = document.getElementById('walletEyeIcon');
+    const u = refreshUser();
+    if (!el) return;
+    if (walletBalanceHidden) {
+      el.textContent = '••••';
+      if (icon) icon.className = 'fa-regular fa-eye-slash';
+    } else {
+      el.textContent = money(u ? u.balance : 0);
+      if (icon) icon.className = 'fa-regular fa-eye';
+    }
+  };
+
+  window.setWalletHistoryTab = function (tab) {
+    walletHistTab = tab === 'withdrawal' ? 'withdrawal' : 'deposit';
+    document.querySelectorAll('.wallet-hist-tab').forEach((b) => {
+      const on = b.getAttribute('data-wallet-hist') === walletHistTab;
+      b.classList.toggle('text-brandPrimary', on);
+      b.classList.toggle('border-b-2', on);
+      b.classList.toggle('border-brandPrimary', on);
+      b.classList.toggle('font-bold', on);
+      b.classList.toggle('text-slate-400', !on);
+      b.classList.toggle('font-semibold', !on);
+    });
+    renderTxHistory();
+  };
+
   function renderTxHistory() {
     const u = refreshUser();
     const box = document.getElementById('txHistoryList');
     if (!box || !u) return;
-    const txs = u.transactions || [];
+    const wantDeposit = walletHistTab === 'deposit';
+    const txs = (u.transactions || []).filter((t) => {
+      const ty = String(t.type || '').toLowerCase();
+      return wantDeposit ? ty === 'deposit' : ty === 'withdrawal' || ty === 'withdraw';
+    });
     if (!txs.length) {
-      box.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No transactions yet.</p>`;
+      box.innerHTML = `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl py-10 text-center text-xs text-slate-400">No ${wantDeposit ? 'deposits' : 'withdrawals'} yet.</div>`;
       return;
     }
     box.innerHTML = txs
-      .map(
-        (t) => `<div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 py-3 text-sm">
-      <div>
-        <p class="font-medium capitalize">${escapeHtml(t.type)}</p>
-        <p class="text-[10px] text-slate-400">${escapeHtml(t.status)} · ${relativeTime(t.createdAt)}</p>
-        ${t.fee ? `<p class="text-[10px] text-slate-400">Fee: ${money(t.fee)}${t.payout != null ? ' · Payout: ' + money(t.payout) : ''}</p>` : ''}
+      .map((t) => {
+        const isDep = String(t.type).toLowerCase() === 'deposit';
+        const txid = t.reference || t.id || '';
+        const methodLabel = isDep
+          ? t.method === 'flutterwave'
+            ? 'From Flutterwave'
+            : 'From bank'
+          : t.method === 'crypto'
+            ? 'To crypto'
+            : 'To bank';
+        return `<button type="button" onclick="openTxDetail('${escapeAttr(String(t.id || txid))}')" class="w-full text-left bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-start hover:border-brandPrimary transition">
+          <span class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isDep ? 'bg-emerald-500/15 text-emerald-500' : 'bg-brandPrimary/15 text-brandPrimary'}">
+            <i class="fa-solid ${isDep ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="flex justify-between gap-2">
+              <p class="font-bold text-sm">${isDep ? 'Deposit' : 'Withdrawal'}</p>
+              <p class="font-bold text-sm ${isDep ? 'text-emerald-500' : 'text-rose-400'}">${isDep ? '+' : '-'}${money(t.amount)}</p>
+            </div>
+            <div class="flex justify-between gap-2 mt-0.5">
+              <p class="text-[11px] text-slate-500">${escapeHtml(methodLabel)}</p>
+              ${statusDot(t.status)}
+            </div>
+            <div class="flex justify-between gap-2 mt-1 items-center">
+              <p class="text-[10px] text-slate-400 font-mono truncate">TXID: ${escapeHtml(String(txid).slice(0, 14))}${String(txid).length > 14 ? '…' : ''}
+                <button type="button" onclick="event.stopPropagation(); navigator.clipboard && navigator.clipboard.writeText('${escapeAttr(String(txid))}');" class="ml-1 text-slate-500"><i class="fa-regular fa-copy"></i></button>
+              </p>
+              <p class="text-[10px] text-slate-400 shrink-0">${formatTxWhen(t.createdAt)}</p>
+            </div>
+          </div>
+        </button>`;
+      })
+      .join('');
+  }
+
+  window.openTxDetail = function (id) {
+    const u = refreshUser();
+    const t = (u.transactions || []).find((x) => String(x.id) === String(id) || String(x.reference) === String(id));
+    if (!t) return;
+    const isDep = String(t.type).toLowerCase() === 'deposit';
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="font-bold text-lg mb-3">${isDep ? 'Deposit' : 'Withdrawal'} details</h3>
+      <div class="space-y-2 text-sm mb-4">
+        <div class="flex justify-between"><span class="text-slate-500">Amount</span><span class="font-bold ${isDep ? 'text-emerald-500' : ''}">${isDep ? '+' : '-'}${money(t.amount)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Status</span><span>${statusDot(t.status)}</span></div>
+        <div class="flex justify-between gap-3"><span class="text-slate-500 shrink-0">TXID</span><span class="font-mono text-[11px] text-right break-all">${escapeHtml(t.reference || t.id || '—')}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Method</span><span>${escapeHtml(t.method || '—')}</span></div>
+        ${t.note ? `<p class="text-xs text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-800">${escapeHtml(t.note)}</p>` : ''}
       </div>
-      <span class="font-bold ${t.type === 'deposit' ? 'text-emerald-500' : 'text-slate-800 dark:text-white'}">${t.type === 'deposit' ? '+' : '-'}${money(t.amount)}</span>
-    </div>`
+      <button onclick="closeModal()" class="w-full bg-brandPrimary text-white py-3 rounded-xl font-bold text-sm">Close</button>`;
+    document.getElementById('appModal').classList.remove('hidden');
+  };
+
+  // -------- Wallet --------
+  window.openWalletModal = function (type) {
+    if (type === 'deposit') openDepositFlow();
+    else openWithdrawFlow();
+  };
+
+  function openDepositFlow() {
+    const cfg = A().CONFIG;
+    const cur = walletCurrencies();
+    depositChannel = 'local';
+    depositCurrency = (cur.local.find((c) => c.enabled !== false) || cur.local[0] || { code: 'NGN' }).code;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-0.5">
+        <div class="flex items-center gap-3">
+          <span class="w-10 h-10 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
+          <div>
+            <h3 class="font-bold text-lg tracking-tight">Add Funds</h3>
+            <p class="text-xs text-slate-500">Fund your wallet securely</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <button type="button" id="depChLocal" onclick="setDepositChannel('local')" class="py-2.5 rounded-lg text-xs font-bold bg-slate-900 dark:bg-slate-800 text-white"><i class="fa-solid fa-building-columns mr-1"></i> Local</button>
+          <button type="button" id="depChCrypto" onclick="setDepositChannel('crypto')" class="py-2.5 rounded-lg text-xs font-semibold text-slate-500"><i class="fa-brands fa-bitcoin mr-1"></i> Crypto</button>
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] text-slate-500 mb-2"><span>Select currency</span><span>One currency per deposit</span></div>
+          <div id="depositCurrencyGrid" class="grid grid-cols-3 gap-2"></div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold mb-1 block">Amount (USD credit)</label>
+          <div class="relative"><span class="absolute left-4 top-3.5 text-slate-400 font-bold">$</span>
+          <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="0" oninput="updateDepositRateHint()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-lg font-bold focus:outline-none focus:border-brandPrimary"></div>
+          <p id="depositNairaHint" class="text-xs text-brandPrimary font-semibold mt-2"></p>
+          <p class="text-[11px] text-slate-400 mt-1">Min deposit ${money(cfg.minDeposit)}</p>
+        </div>
+        <div class="border border-brandPrimary/40 rounded-xl p-3 text-[11px] text-slate-500 flex gap-2 items-start">
+          <i class="fa-solid fa-shield-halved text-brandPrimary mt-0.5"></i>
+          <span>Secured and Trusted: Your funds are protected and processed through a licensed payment partner.</span>
+        </div>
+        <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Continue to payment</button>
+        <p class="text-[10px] text-center text-slate-400"><i class="fa-solid fa-lock mr-1"></i>You will be redirected to a secure service provider</p>
+      </div>`;
+    document.getElementById('appModal').classList.remove('hidden');
+    renderDepositCurrencyGrid();
+    updateDepositRateHint();
+  }
+
+  window.setDepositChannel = function (ch) {
+    depositChannel = ch === 'crypto' ? 'crypto' : 'local';
+    const localBtn = document.getElementById('depChLocal');
+    const cryptoBtn = document.getElementById('depChCrypto');
+    if (localBtn && cryptoBtn) {
+      const onLocal = depositChannel === 'local';
+      localBtn.className = 'py-2.5 rounded-lg text-xs font-bold ' + (onLocal ? 'bg-slate-900 dark:bg-slate-800 text-white' : 'text-slate-500 font-semibold');
+      cryptoBtn.className = 'py-2.5 rounded-lg text-xs font-bold ' + (!onLocal ? 'bg-slate-900 dark:bg-slate-800 text-white' : 'text-slate-500 font-semibold');
+      localBtn.innerHTML = '<i class="fa-solid fa-building-columns mr-1"></i> Local';
+      cryptoBtn.innerHTML = '<i class="fa-brands fa-bitcoin mr-1"></i> Crypto';
+    }
+    const cur = walletCurrencies();
+    if (depositChannel === 'local') depositCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+    else depositCurrency = (cur.crypto.find((c) => c.enabled !== false) || { code: 'USDT' }).code;
+    renderDepositCurrencyGrid();
+    updateDepositRateHint();
+  };
+
+  function renderDepositCurrencyGrid() {
+    const box = document.getElementById('depositCurrencyGrid');
+    if (!box) return;
+    const cur = walletCurrencies();
+    const list = (depositChannel === 'local' ? cur.local : cur.crypto).filter((c) => c.enabled !== false);
+    if (depositChannel === 'crypto') {
+      box.innerHTML = list
+        .map(
+          (c) => `<button type="button" onclick="selectDepositCurrency('${escapeAttr(c.code)}')" class="dep-cur rounded-xl border p-3 text-center text-xs font-bold transition ${depositCurrency === c.code ? 'border-brandPrimary bg-brandPrimary/10 text-brandPrimary' : 'border-slate-200 dark:border-slate-800'}">
+          <div class="text-lg mb-1">${c.code === 'BTC' ? '₿' : c.code === 'ETH' ? 'Ξ' : '◎'}</div>${escapeHtml(c.code)}
+        </button>`
+        )
+        .join('');
+      return;
+    }
+    box.innerHTML = list
+      .map(
+        (c) => `<button type="button" onclick="selectDepositCurrency('${escapeAttr(c.code)}')" class="dep-cur rounded-xl border px-2 py-3 flex items-center justify-center gap-1.5 text-xs font-bold transition ${depositCurrency === c.code ? 'border-brandPrimary bg-brandPrimary/10 text-brandPrimary' : 'border-slate-200 dark:border-slate-800'}">
+        ${flagImg(c.flag)} ${escapeHtml(c.code)}
+      </button>`
       )
       .join('');
   }
 
-  // -------- Sell wizard --------
+  window.selectDepositCurrency = function (code) {
+    depositCurrency = code;
+    renderDepositCurrencyGrid();
+    updateDepositRateHint();
+  };
+
+  window.updateDepositRateHint = function () {
+    const el = document.getElementById('depositNairaHint');
+    const input = document.getElementById('walletAmountInput');
+    if (!el || !input) return;
+    const usd = parseFloat(input.value) || 0;
+    if (depositChannel === 'crypto') {
+      el.textContent = 'Crypto deposits are reviewed after you send funds (owner confirms).';
+      return;
+    }
+    const cur = walletCurrencies().local.find((c) => c.code === depositCurrency);
+    const rate = Number((cur && cur.rate) || (A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
+    const symbol = depositCurrency === 'NGN' ? '₦' : depositCurrency + ' ';
+    if (usd <= 0) {
+      el.textContent = `$1 ≈ ${symbol}${rate.toLocaleString()}`;
+      return;
+    }
+    el.textContent = `You will pay about ${symbol}${Math.round(usd * rate).toLocaleString()} · wallet credits $${usd.toFixed(2)}`;
+  };
+
+  function openWithdrawFlow() {
+    const cfg = A().CONFIG;
+    const bal = money((refreshUser() || {}).balance);
+    const cur = walletCurrencies();
+    withdrawMethodCard = 'bank';
+    withdrawCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="space-y-4 max-h-[75vh] overflow-y-auto">
+        <div class="flex items-center gap-3">
+          <span class="w-10 h-10 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
+          <div>
+            <h3 class="font-bold text-lg tracking-tight">Withdraw Funds</h3>
+            <p class="text-xs text-slate-500">Send funds from your wallet</p>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-bold mb-2">Enter Amount</p>
+          <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-white dark:bg-slate-900">
+            <button type="button" id="wdCurBtn" onclick="cycleWithdrawCurrency()" class="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-bold mb-2"></button>
+            <div class="relative"><span class="absolute left-0 top-1 text-slate-400 font-bold text-xl">$</span>
+            <input id="walletAmountInput" type="number" min="${cfg.minWithdraw}" step="0.01" placeholder="0" class="w-full bg-transparent pl-6 pr-2 py-1 text-2xl font-extrabold focus:outline-none"></div>
+          </div>
+          <div class="flex justify-between text-[11px] mt-2"><span class="text-brandPrimary font-semibold">Min. withdrawal is ${money(cfg.minWithdraw)}</span><span class="text-slate-400">Balance: ${bal}</span></div>
+        </div>
+        <div>
+          <p class="text-xs font-bold mb-2">Withdraw to</p>
+          <div class="space-y-2">
+            <button type="button" id="wdCardBank" onclick="setWithdrawMethodCard('bank')" class="w-full text-left rounded-2xl border-2 border-brandPrimary bg-brandPrimary/10 p-3 flex gap-3 items-center">
+              <span class="w-10 h-10 rounded-full bg-brandPrimary/20 text-brandPrimary flex items-center justify-center"><i class="fa-solid fa-building-columns"></i></span>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm">Bank Account</p>
+                <p class="text-[11px] text-slate-500">1-3 business days</p>
+                <p id="wdBankRate" class="text-[11px] text-brandPrimary font-semibold"></p>
+              </div>
+              <span class="w-6 h-6 rounded-full bg-brandPrimary text-white flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></span>
+            </button>
+            <button type="button" id="wdCardCrypto" onclick="setWithdrawMethodCard('crypto')" class="w-full text-left rounded-2xl border border-slate-200 dark:border-slate-800 p-3 flex gap-3 items-center">
+              <span class="w-10 h-10 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center"><i class="fa-brands fa-bitcoin"></i></span>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm">Crypto Address</p>
+                <p class="text-[11px] text-slate-500">Within mins · Network fee may apply</p>
+              </div>
+              <span class="w-6 h-6 rounded-full border border-slate-400"></span>
+            </button>
+          </div>
+        </div>
+        <div id="wdFieldsBank" class="space-y-2">
+          <div><label class="text-[11px] text-slate-500">Select bank</label><input id="withdrawBank" type="text" placeholder="e.g. Opay, GTBank" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+          <div><label class="text-[11px] text-slate-500">Account number <span class="text-red-500">*</span></label><input id="withdrawDest" type="text" placeholder="Enter account number" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+          <div><label class="text-[11px] text-slate-500">Account name</label><input id="withdrawName" type="text" placeholder="Account name" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+        </div>
+        <div id="wdFieldsCrypto" class="space-y-2 hidden">
+          <div>
+            <label class="text-[11px] text-slate-500 mb-1 block">Select cryptocurrency</label>
+            <div id="wdCryptoGrid" class="grid grid-cols-4 gap-2"></div>
+          </div>
+          <div><label class="text-[11px] text-slate-500">Select Network</label>
+            <select id="withdrawNetwork" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></select>
+          </div>
+          <div><label class="text-[11px] text-slate-500">Wallet address <span class="text-red-500">*</span></label><input id="withdrawCryptoDest" type="text" placeholder="Enter wallet address" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+        </div>
+        <button onclick="submitWalletAction('withdraw')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Continue to withdraw</button>
+      </div>`;
+    document.getElementById('appModal').classList.remove('hidden');
+    refreshWithdrawCurrencyBtn();
+    refreshWithdrawBankRate();
+    const firstCrypto = (cur.crypto.find((c) => c.enabled !== false) || { code: 'USDT' }).code;
+    withdrawCryptoCoin = firstCrypto;
+    renderWithdrawCryptoGrid();
+    fillWithdrawNetworks();
+  }
+
+  function renderWithdrawCryptoGrid() {
+    const box = document.getElementById('wdCryptoGrid');
+    if (!box) return;
+    const list = walletCurrencies().crypto.filter((c) => c.enabled !== false);
+    box.innerHTML = list
+      .map(
+        (c) => `<button type="button" onclick="selectWithdrawCrypto('${escapeAttr(c.code)}')" class="rounded-xl border p-2 text-center text-[10px] font-bold transition ${withdrawCryptoCoin === c.code ? 'border-brandPrimary bg-brandPrimary/10 text-brandPrimary' : 'border-slate-200 dark:border-slate-800'}">${escapeHtml(c.code)}</button>`
+      )
+      .join('');
+  }
+
+  window.selectWithdrawCrypto = function (code) {
+    withdrawCryptoCoin = code;
+    renderWithdrawCryptoGrid();
+    fillWithdrawNetworks();
+    const dest = document.getElementById('withdrawCryptoDest');
+    if (dest) dest.placeholder = 'Enter ' + code + ' address';
+  };
+
+  function refreshWithdrawCurrencyBtn() {
+    const btn = document.getElementById('wdCurBtn');
+    if (!btn) return;
+    const cur = walletCurrencies().local.find((c) => c.code === withdrawCurrency) || { code: withdrawCurrency, flag: 'ng' };
+    btn.innerHTML = `${flagImg(cur.flag)} ${escapeHtml(cur.code)} <i class="fa-solid fa-chevron-down text-[10px] opacity-60"></i>`;
+  }
+
+  function refreshWithdrawBankRate() {
+    const el = document.getElementById('wdBankRate');
+    if (!el) return;
+    const cur = walletCurrencies().local.find((c) => c.code === withdrawCurrency);
+    const rate = Number((cur && cur.rate) || (A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
+    const sym = withdrawCurrency === 'NGN' ? '₦' : withdrawCurrency + ' ';
+    el.textContent = `$1 ~ ${sym}${rate.toLocaleString()}`;
+  }
+
+  window.cycleWithdrawCurrency = function () {
+    const list = walletCurrencies().local.filter((c) => c.enabled !== false);
+    if (!list.length) return;
+    const i = list.findIndex((c) => c.code === withdrawCurrency);
+    withdrawCurrency = list[(i + 1) % list.length].code;
+    refreshWithdrawCurrencyBtn();
+    refreshWithdrawBankRate();
+  };
+
+  window.setWithdrawMethodCard = function (m) {
+    withdrawMethodCard = m === 'crypto' ? 'crypto' : 'bank';
+    const bank = document.getElementById('wdCardBank');
+    const crypto = document.getElementById('wdCardCrypto');
+    const fb = document.getElementById('wdFieldsBank');
+    const fc = document.getElementById('wdFieldsCrypto');
+    if (bank && crypto) {
+      const onBank = withdrawMethodCard === 'bank';
+      bank.className = 'w-full text-left rounded-2xl p-3 flex gap-3 items-center ' + (onBank ? 'border-2 border-brandPrimary bg-brandPrimary/10' : 'border border-slate-200 dark:border-slate-800');
+      crypto.className = 'w-full text-left rounded-2xl p-3 flex gap-3 items-center ' + (!onBank ? 'border-2 border-brandPrimary bg-brandPrimary/10' : 'border border-slate-200 dark:border-slate-800');
+      bank.querySelector('span:last-child').outerHTML = onBank
+        ? '<span class="w-6 h-6 rounded-full bg-brandPrimary text-white flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></span>'
+        : '<span class="w-6 h-6 rounded-full border border-slate-400"></span>';
+      crypto.querySelector('span:last-child').outerHTML = !onBank
+        ? '<span class="w-6 h-6 rounded-full bg-brandPrimary text-white flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></span>'
+        : '<span class="w-6 h-6 rounded-full border border-slate-400"></span>';
+    }
+    if (fb) fb.classList.toggle('hidden', withdrawMethodCard !== 'bank');
+    if (fc) fc.classList.toggle('hidden', withdrawMethodCard !== 'crypto');
+    fillWithdrawNetworks();
+  };
+
+  function fillWithdrawNetworks() {
+    const sel = document.getElementById('withdrawNetwork');
+    if (!sel) return;
+    const coin =
+      walletCurrencies().crypto.find((c) => c.code === withdrawCryptoCoin && c.enabled !== false) ||
+      walletCurrencies().crypto.find((c) => c.enabled !== false) ||
+      { networks: ['TRC20', 'BEP20'] };
+    const nets = coin.networks || ['TRC20'];
+    sel.innerHTML = nets.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join('');
+  }
+
+  window.submitWalletAction = async function (type) {
+    const u = refreshUser();
+    const amount = parseFloat(document.getElementById('walletAmountInput').value);
+    if (!amount || Number.isNaN(amount)) {
+      alert('Enter a valid amount');
+      return;
+    }
+    let res;
+    if (type === 'deposit') {
+      try {
+        if (window.AcctventaApi && (await window.AcctventaApi.isAvailable())) {
+          const apiRes = await window.AcctventaApi.deposit({
+            amount: Number(amount),
+            currency: depositCurrency,
+            channel: depositChannel,
+          });
+          if (apiRes.paymentLink) {
+            window.location.href = apiRes.paymentLink;
+            return;
+          }
+          if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
+          closeModal();
+          applyProfileChrome(refreshUser());
+          setWalletHistoryTab('deposit');
+          renderTxHistory();
+          alert(apiRes.message || (apiRes.credited != null ? 'Deposit credited: ' + money(apiRes.credited) : 'Deposit submitted.'));
+          return;
+        }
+      } catch (e) {
+        alert(e.message || 'Deposit failed. Check Flutterwave Secret key (FLWSECK-) in /owner Gateways.');
+        return;
+      }
+      alert('Live backend not connected. Log out, log in again, then retry deposit.');
+      return;
+    }
+
+    const isCrypto = withdrawMethodCard === 'crypto';
+    const dest = isCrypto
+      ? ((document.getElementById('withdrawCryptoDest') || {}).value || '').trim()
+      : ((document.getElementById('withdrawDest') || {}).value || '').trim();
+    const accountName = ((document.getElementById('withdrawName') || {}).value || '').trim();
+    const bankName = ((document.getElementById('withdrawBank') || {}).value || '').trim();
+    const network = ((document.getElementById('withdrawNetwork') || {}).value || '').trim();
+    if (!dest) {
+      alert(isCrypto ? 'Enter wallet address' : 'Enter account number');
+      return;
+    }
+    res = await Promise.resolve(
+      A().withdraw(u, amount, isCrypto ? 'crypto' : 'bank', {
+        destination: dest,
+        accountName: isCrypto ? (withdrawCryptoCoin + ' · ' + network) : accountName,
+        bankName: isCrypto ? withdrawCryptoCoin + (network ? ' / ' + network : '') : bankName || withdrawCurrency,
+      })
+    );
+    if (!res.ok) {
+      alert(res.error);
+      return;
+    }
+    closeModal();
+    applyProfileChrome(refreshUser());
+    setWalletHistoryTab('withdrawal');
+    alert(res.message || 'Withdrawal requested. Pending owner approval.');
+  };
+
   window.openSellProductWizard = function () {
     const u = requireAuth();
     if (!u) return;
@@ -595,115 +1061,6 @@
       await window.AcctventaApiSync.loadMessages(activeOrderId);
     }
     renderChat();
-  };
-
-  // -------- Wallet --------
-  window.openWalletModal = function (type) {
-    const cfg = A().CONFIG;
-    const bal = money((refreshUser() || {}).balance);
-    if (type === 'deposit') {
-      document.getElementById('modalBody').innerHTML = `
-        <div class="space-y-1">
-          <div class="w-11 h-11 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center mb-3"><i class="fa-solid fa-wallet"></i></div>
-          <h3 class="font-bold text-xl tracking-tight">Fund Wallet</h3>
-          <p class="text-xs text-slate-500">Enter USD amount. You’ll pay in Naira on Flutterwave (converted at the live rate).</p>
-          <div class="relative mt-3"><span class="absolute left-4 top-3.5 text-slate-400 font-semibold">$</span>
-          <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="${cfg.minDeposit.toFixed(2)}" oninput="updateDepositNairaHint()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-sm focus:outline-none focus:border-brandPrimary"></div>
-          <p id="depositNairaHint" class="text-xs text-brandPrimary font-semibold mt-2"></p>
-          <ul class="text-[11px] text-slate-500 space-y-1 mt-3 mb-4">
-            <li><i class="fa-solid fa-shield-halved text-brandPrimary mr-1"></i>Card, bank & more via Flutterwave (NGN)</li>
-            <li><i class="fa-solid fa-bolt text-brandPrimary mr-1"></i>Wallet balance credits in USD after payment</li>
-          </ul>
-          <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Pay in Naira</button>
-        </div>`;
-      setTimeout(updateDepositNairaHint, 0);
-    } else {
-      const feePct = (cfg.withdrawCommissionRate * 100).toFixed(0);
-      document.getElementById('modalBody').innerHTML = `
-        <div class="space-y-1">
-          <div class="w-11 h-11 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center mb-3"><i class="fa-solid fa-money-bill-transfer"></i></div>
-          <h3 class="font-bold text-xl tracking-tight">Withdraw Funds</h3>
-          <p class="text-xs text-slate-500">Available ${bal}. Minimum ${money(cfg.minWithdraw)}. Platform fee ${feePct}%.</p>
-          <div class="relative mt-3"><span class="absolute left-4 top-3.5 text-slate-400 font-semibold">$</span>
-          <input id="walletAmountInput" type="number" min="${cfg.minWithdraw}" step="0.01" placeholder="${cfg.minWithdraw.toFixed(2)}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-sm"></div>
-          <label class="block text-[11px] text-slate-500 mt-3 mb-1">Payout method</label>
-          <select id="withdrawMethod" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-2">
-            <option value="bank">Bank account</option>
-            <option value="crypto">Crypto wallet</option>
-          </select>
-          <input id="withdrawDest" type="text" placeholder="Account number or wallet address" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-2">
-          <input id="withdrawName" type="text" placeholder="Account / wallet name" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-2">
-          <input id="withdrawBank" type="text" placeholder="Bank name (optional)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-4">
-          <p class="text-[11px] text-slate-400 mb-3">You’ll receive amount − ${feePct}% fee after owner approval.</p>
-          <button onclick="submitWalletAction('withdraw')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Request withdrawal</button>
-        </div>`;
-    }
-    document.getElementById('appModal').classList.remove('hidden');
-  };
-
-  window.updateDepositNairaHint = function () {
-    const el = document.getElementById('depositNairaHint');
-    const input = document.getElementById('walletAmountInput');
-    if (!el || !input) return;
-    const usd = parseFloat(input.value) || 0;
-    const rate = Number((A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
-    if (usd <= 0) {
-      el.textContent = 'Rate ≈ ₦' + rate.toLocaleString() + ' per $1';
-      return;
-    }
-    el.textContent = 'You will pay about ₦' + Math.round(usd * rate).toLocaleString() + ' on Flutterwave';
-  };
-
-  window.submitWalletAction = async function (type) {
-    const u = refreshUser();
-    const amount = parseFloat(document.getElementById('walletAmountInput').value);
-    if (!amount || Number.isNaN(amount)) {
-      alert('Enter a valid amount');
-      return;
-    }
-    let res;
-    if (type === 'deposit') {
-      // Always use live API when available (never fake local credit)
-      try {
-        if (window.AcctventaApi && (await window.AcctventaApi.isAvailable())) {
-          const apiRes = await window.AcctventaApi.deposit({ amount: Number(amount) });
-          if (apiRes.paymentLink) {
-            window.location.href = apiRes.paymentLink;
-            return;
-          }
-          if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
-          closeModal();
-          applyProfileChrome(refreshUser());
-          renderTxHistory();
-          alert('Deposit credited: ' + money(apiRes.credited));
-          return;
-        }
-      } catch (e) {
-        alert(e.message || 'Deposit failed. Check Flutterwave Secret key (must start with FLWSECK-) in /owner Gateways.');
-        return;
-      }
-      alert('Live backend not connected. Log out, log in again, then retry deposit.');
-      return;
-    } else {
-      const dest = (document.getElementById('withdrawDest') || {}).value || '';
-      const accountName = (document.getElementById('withdrawName') || {}).value || '';
-      const bankName = (document.getElementById('withdrawBank') || {}).value || '';
-      res = await Promise.resolve(
-        A().withdraw(u, amount, (document.getElementById('withdrawMethod') || {}).value, {
-          destination: dest.trim(),
-          accountName: accountName.trim(),
-          bankName: bankName.trim(),
-        })
-      );
-    }
-    if (!res.ok) {
-      alert(res.error);
-      return;
-    }
-    closeModal();
-    applyProfileChrome(refreshUser());
-    renderTxHistory();
-    alert(res.message || ('Withdrawal requested. Payout after fee: ' + money(res.payout)));
   };
 
   window.selectPlan = function (planId) {

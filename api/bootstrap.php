@@ -269,6 +269,53 @@ function ensure_password_resets_table(): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
+function default_wallet_currencies(): array {
+    return [
+        'local' => [
+            ['code' => 'NGN', 'name' => 'Nigeria', 'flag' => 'ng', 'rate' => 1600, 'enabled' => true],
+            ['code' => 'GHS', 'name' => 'Ghana', 'flag' => 'gh', 'rate' => 15, 'enabled' => true],
+            ['code' => 'KES', 'name' => 'Kenya', 'flag' => 'ke', 'rate' => 130, 'enabled' => true],
+            ['code' => 'ZAR', 'name' => 'South Africa', 'flag' => 'za', 'rate' => 18, 'enabled' => true],
+            ['code' => 'XAF', 'name' => 'Central Africa', 'flag' => 'cm', 'rate' => 600, 'enabled' => true],
+            ['code' => 'XOF', 'name' => 'West Africa', 'flag' => 'sn', 'rate' => 600, 'enabled' => true],
+        ],
+        'crypto' => [
+            ['code' => 'USDT', 'name' => 'Tether', 'networks' => ['TRC20', 'BEP20', 'ERC20'], 'enabled' => true],
+            ['code' => 'BTC', 'name' => 'Bitcoin', 'networks' => ['BTC'], 'enabled' => true],
+            ['code' => 'ETH', 'name' => 'Ethereum', 'networks' => ['ERC20'], 'enabled' => true],
+            ['code' => 'USDC', 'name' => 'USD Coin', 'networks' => ['ERC20', 'BEP20'], 'enabled' => true],
+            ['code' => 'BNB', 'name' => 'BNB', 'networks' => ['BEP20'], 'enabled' => true],
+            ['code' => 'TRX', 'name' => 'Tron', 'networks' => ['TRC20'], 'enabled' => true],
+            ['code' => 'LTC', 'name' => 'Litecoin', 'networks' => ['LTC'], 'enabled' => true],
+            ['code' => 'SOL', 'name' => 'Solana', 'networks' => ['SOL'], 'enabled' => true],
+        ],
+    ];
+}
+
+function wallet_currencies_get(): array {
+    $raw = setting_get('wallet_currencies', '');
+    if ($raw) {
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded) && !empty($decoded['local'])) return $decoded;
+    }
+    $defaults = default_wallet_currencies();
+    // sync NGN rate with usd_ngn_rate setting
+    $rate = (float)setting_get('usd_ngn_rate', '1600');
+    foreach ($defaults['local'] as &$row) {
+        if (($row['code'] ?? '') === 'NGN') $row['rate'] = $rate > 0 ? $rate : 1600;
+    }
+    return $defaults;
+}
+
+function wallet_currencies_set(array $data): void {
+    setting_set('wallet_currencies', json_encode($data));
+    foreach (($data['local'] ?? []) as $row) {
+        if (($row['code'] ?? '') === 'NGN' && isset($row['rate'])) {
+            setting_set('usd_ngn_rate', (string)max(1, (float)$row['rate']));
+        }
+    }
+}
+
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/flutterwave.php';
 

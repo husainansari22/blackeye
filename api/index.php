@@ -31,6 +31,7 @@ try {
                     'supportEmail' => setting_get('support_email', app_config()['support_email']),
                     'paymentCurrency' => setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'),
                     'usdNgnRate' => (float)setting_get('usd_ngn_rate', app_config()['usd_ngn_rate'] ?? 1600),
+                    'walletCurrencies' => wallet_currencies_get(),
                 ],
                 'plans' => db()->query('SELECT id, name, price, daily_uploads AS dailyUploads, approval_label AS approval FROM plans WHERE is_active = 1')->fetchAll(),
             ]);
@@ -409,6 +410,27 @@ try {
             $feeRate = (float)setting_get('deposit_fee_rate', 0);
             $fee = round($amount * $feeRate, 2);
             $credited = round($amount - $fee, 2);
+            $channel = strtolower(trim((string)($body['channel'] ?? 'local')));
+            $prefer = strtoupper(trim((string)($body['currency'] ?? 'NGN')));
+
+            // Crypto deposits: create pending request for owner/admin to credit after confirming on-chain
+            if ($channel === 'crypto') {
+                ensure_tx_reference_column();
+                $txRef = 'AVC' . strtoupper(substr(uid_token(8), 0, 16));
+                $coin = $prefer !== '' ? $prefer : 'USDT';
+                $note = 'Crypto deposit pending · ' . $coin . ' · await owner credit';
+                db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'deposit\', ?, ?, \'pending\', \'crypto\', ?, ?)')
+                    ->execute([(int)$u['id'], money_f($credited), money_f($fee), $note, $txRef]);
+                notify_user((int)$u['id'], 'Crypto deposit submitted', 'Your $' . money_f($credited) . ' ' . $coin . ' deposit is pending confirmation.', 'wallet');
+                json_out([
+                    'ok' => true,
+                    'pending' => true,
+                    'reference' => $txRef,
+                    'amount' => $amount,
+                    'credited' => $credited,
+                    'message' => 'Crypto deposit submitted. Owner will credit your wallet after confirming payment.',
+                ]);
+            }
 
             if (!flw_deposit_enabled()) {
                 json_out([
@@ -420,7 +442,7 @@ try {
 
             ensure_tx_reference_column();
             $txRef = 'AVD' . strtoupper(substr(uid_token(8), 0, 16));
-            $checkout = flw_create_checkout($u, $amount, $txRef);
+            $checkout = flw_create_checkout($u, $amount, $txRef, $prefer ?: 'NGN');
             if (!$checkout['ok']) {
                 json_out(['ok' => false, 'error' => $checkout['error'] ?? 'Could not start payment'], 502);
             }
@@ -522,7 +544,7 @@ try {
                 ->execute([money_f($amount), money_f($amount), (int)$u['id']]);
             db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, payout, status, method, note, reference) VALUES (?, \'withdrawal\', ?, ?, ?, \'pending\', ?, ?, ?)')
                 ->execute([(int)$u['id'], money_f($amount), money_f($fee), money_f($payout), $method, $note, $txRef]);
-            notify_user((int)$u['id'], 'Withdrawal requested', 'Payout of $' . money_f($payout) . ' is pending review (fee $' . money_f($fee) . ').', 'wallet');
+            notify_user((int)$u['id'], 'Withdrawal requested', 'Your withdrawal of $' . money_f($amount) . ' is pending review.', 'wallet');
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
             json_out([
                 'ok' => true,
@@ -531,7 +553,7 @@ try {
                 'reference' => $txRef,
                 'status' => 'pending',
                 'user' => public_user($fresh),
-                'message' => 'Withdrawal submitted. You’ll be paid to your account after owner approval.',
+                'message' => 'Withdrawal submitted. You’ll be paid after owner approval.',
             ]);
         }
 

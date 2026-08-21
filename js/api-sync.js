@@ -168,6 +168,7 @@
             supportEmail: cfgRes.config.supportEmail,
             paymentCurrency: cfgRes.config.paymentCurrency || 'NGN',
             usdNgnRate: cfgRes.config.usdNgnRate || 1600,
+            walletCurrencies: cfgRes.config.walletCurrencies || null,
           },
         });
         if (Array.isArray(cfgRes.plans)) {

@@ -18,7 +18,7 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=2"></script>
+  <script src="/js/acctventa.js?v=20260821wallet3"></script>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
   <!-- LOGIN -->
@@ -71,6 +71,8 @@
       <!-- Tabs -->
       <div class="flex gap-2 overflow-x-auto text-sm">
         <button class="admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium" data-tab="fees" onclick="showTab('fees')">Fees & limits</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="currencies" onclick="showTab('currencies')">Currencies</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="withdrawals" onclick="showTab('withdrawals')">Withdrawals</button>
         <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="plans" onclick="showTab('plans')">Plans</button>
         <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="gateways" onclick="showTab('gateways')">Payment gateways</button>
         <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="support" onclick="showTab('support')">Support</button>
@@ -94,7 +96,7 @@
           <div>
             <label class="text-xs text-slate-500">Withdrawal commission (%)</label>
             <input id="cfg_withdrawCommission" type="number" step="0.1" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-            <p class="text-[11px] text-slate-400 mt-1">Your platform fee when sellers withdraw.</p>
+            <p class="text-[11px] text-slate-400 mt-1">Applied in the backend; not shown on the user wallet screen.</p>
           </div>
           <div>
             <label class="text-xs text-slate-500">Deposit fee (%)</label>
@@ -102,6 +104,31 @@
           </div>
         </div>
         <button onclick="saveFees()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save fees</button>
+      </section>
+
+      <!-- CURRENCIES -->
+      <section id="tab_currencies" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <h2 class="font-bold text-lg">Wallet currencies (flags & rates)</h2>
+        <p class="text-xs text-slate-500">Used on Deposit/Withdraw. Each local currency needs <code>code</code>, <code>name</code>, <code>flag</code> (e.g. <code>ng</code>), <code>rate</code>, <code>enabled</code>. For live site currencies use <strong>/owner → Currencies</strong>.</p>
+        <div>
+          <label class="text-xs font-semibold text-slate-600">Local currencies JSON</label>
+          <textarea id="cfg_localCurrencies" rows="10" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600">Crypto currencies JSON</label>
+          <textarea id="cfg_cryptoCurrencies" rows="10" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"></textarea>
+        </div>
+        <button onclick="saveCurrencies()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save currencies</button>
+      </section>
+
+      <!-- WITHDRAWALS -->
+      <section id="tab_withdrawals" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="font-bold text-lg">Pending withdrawals</h2>
+          <button onclick="loadWithdrawals()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
+        </div>
+        <p class="text-xs text-slate-500">Browser-local users only. Live approvals: use <strong>/owner → Wallet</strong>.</p>
+        <div id="withdrawalsAdminList" class="space-y-3"></div>
       </section>
 
       <!-- PLANS -->
@@ -270,6 +297,8 @@
       });
       if (name === 'ads') loadAds();
       if (name === 'users') loadUsers();
+      if (name === 'withdrawals') loadWithdrawals();
+      if (name === 'currencies') fillCurrencyForms();
     }
 
     function showLoginError(msg) {
@@ -386,6 +415,16 @@
       document.getElementById('wd_secret').value = g.withdraw.secretKey || '';
       document.getElementById('wd_webhook').value = g.withdraw.webhookUrl || '';
       document.getElementById('wd_notes').value = g.withdraw.notes || '';
+      fillCurrencyForms();
+    }
+
+    function fillCurrencyForms() {
+      const c = A().CONFIG || {};
+      const wc = c.walletCurrencies || (A().DEFAULT_CONFIG && A().DEFAULT_CONFIG.walletCurrencies) || { local: [], crypto: [] };
+      const localEl = document.getElementById('cfg_localCurrencies');
+      const cryptoEl = document.getElementById('cfg_cryptoCurrencies');
+      if (localEl) localEl.value = JSON.stringify(wc.local || [], null, 2);
+      if (cryptoEl) cryptoEl.value = JSON.stringify(wc.crypto || [], null, 2);
     }
 
     function saveFees() {
@@ -398,6 +437,64 @@
         }
       });
       alert('Fees saved. User wallet rules will use the new values.');
+    }
+
+    function saveCurrencies() {
+      let local, crypto;
+      try {
+        local = JSON.parse(document.getElementById('cfg_localCurrencies').value || '[]');
+        crypto = JSON.parse(document.getElementById('cfg_cryptoCurrencies').value || '[]');
+      } catch (e) {
+        alert('Invalid JSON. Check local/crypto currency fields.');
+        return;
+      }
+      if (!Array.isArray(local) || !Array.isArray(crypto)) {
+        alert('Both fields must be JSON arrays.');
+        return;
+      }
+      A().saveSettings({
+        config: {
+          walletCurrencies: { local, crypto }
+        }
+      });
+      alert('Currencies saved for this browser. Live site: edit in /owner → Currencies.');
+    }
+
+    function loadWithdrawals() {
+      const box = document.getElementById('withdrawalsAdminList');
+      if (!box) return;
+      if (!A().listPendingWithdrawals) {
+        box.innerHTML = '<p class="text-sm text-slate-400">Upload latest js/acctventa.js for withdrawal approval.</p>';
+        return;
+      }
+      const list = A().listPendingWithdrawals();
+      if (!list.length) {
+        box.innerHTML = '<p class="text-sm text-slate-400">No pending withdrawals in this browser.</p>';
+        return;
+      }
+      box.innerHTML = list.map((t) => `
+        <div class="border border-slate-200 rounded-xl p-4 space-y-2">
+          <div class="flex justify-between gap-3">
+            <div>
+              <p class="font-semibold text-sm">${escapeHtml(t.userName)} · ${escapeHtml(t.userEmail)}</p>
+              <p class="text-[11px] text-slate-500">${A().formatMoney(t.amount)} · ${escapeHtml(t.method || '')}</p>
+              <p class="text-[11px] text-slate-400 break-all">${escapeHtml(t.note || '')}</p>
+            </div>
+            <p class="text-[10px] text-amber-600 font-bold">Pending</p>
+          </div>
+          <textarea id="wdnote_${escapeHtml(t.id)}" rows="2" class="w-full border rounded-lg px-2 py-1.5 text-xs">${escapeHtml(t.note || '')}</textarea>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="modTx('${escapeHtml(t.userEmail)}','${escapeHtml(t.id)}','completed')" class="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-semibold">Approve / Paid</button>
+            <button onclick="modTx('${escapeHtml(t.userEmail)}','${escapeHtml(t.id)}','cancelled')" class="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg font-semibold">Reject + refund</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function modTx(email, id, status) {
+      const noteEl = document.getElementById('wdnote_' + id);
+      const note = noteEl ? noteEl.value : '';
+      const res = A().adminSetTxStatus(email, id, status, note);
+      if (!res.ok) alert(res.error); else loadWithdrawals();
     }
 
     function savePlans() {

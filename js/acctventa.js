@@ -11,13 +11,33 @@
   const DEFAULT_CONFIG = {
     minDeposit: 3,
     minWithdraw: 5,
-    withdrawCommissionRate: 0.1, // 10% platform fee on seller withdrawals
+    withdrawCommissionRate: 0.1, // platform fee on seller withdrawals (not shown in wallet UI)
     depositFeeRate: 0,
     freeDailyUploadLimit: 5,
     brandPrimary: '#0ea5e9',
     supportTelegram: 'https://t.me/acctventa',
     supportEmail: 'help@acctventa.com',
-    siteName: 'acctventa'
+    siteName: 'acctventa',
+    walletCurrencies: {
+      local: [
+        { code: 'NGN', name: 'Nigeria', flag: 'ng', rate: 1600, enabled: true },
+        { code: 'GHS', name: 'Ghana', flag: 'gh', rate: 15, enabled: true },
+        { code: 'KES', name: 'Kenya', flag: 'ke', rate: 130, enabled: true },
+        { code: 'ZAR', name: 'South Africa', flag: 'za', rate: 18, enabled: true },
+        { code: 'XAF', name: 'Central Africa', flag: 'cm', rate: 600, enabled: true },
+        { code: 'XOF', name: 'West Africa', flag: 'sn', rate: 600, enabled: true },
+      ],
+      crypto: [
+        { code: 'USDT', name: 'Tether', networks: ['TRC20', 'BEP20', 'ERC20'], enabled: true },
+        { code: 'BTC', name: 'Bitcoin', networks: ['BTC'], enabled: true },
+        { code: 'ETH', name: 'Ethereum', networks: ['ERC20'], enabled: true },
+        { code: 'USDC', name: 'USD Coin', networks: ['ERC20', 'BEP20'], enabled: true },
+        { code: 'BNB', name: 'BNB', networks: ['BEP20'], enabled: true },
+        { code: 'TRX', name: 'Tron', networks: ['TRC20'], enabled: true },
+        { code: 'LTC', name: 'Litecoin', networks: ['LTC'], enabled: true },
+        { code: 'SOL', name: 'Solana', networks: ['SOL'], enabled: true },
+      ],
+    },
   };
 
   const DEFAULT_PLANS = {
@@ -775,11 +795,11 @@
       payout,
       method: method || 'crypto',
       status: 'pending',
-      note: 'Withdrawal requested — connect payment gateway to pay out. Platform commission ' + (CONFIG.withdrawCommissionRate * 100) + '%.',
+      note: 'Withdrawal requested — pending admin approval.',
       createdAt: new Date().toISOString()
     });
     persistUser(user);
-    return { ok: true, payout, fee: feeFromAmount };
+    return { ok: true, payout, fee: feeFromAmount, message: 'Withdrawal submitted. Pending admin approval.' };
   }
 
   function setPlan(user, planId) {
@@ -825,6 +845,58 @@
     return { ok: true, ad };
   }
 
+  function listPendingWithdrawals() {
+    const users = getUsers();
+    const list = [];
+    Object.keys(users).forEach((email) => {
+      const u = normalizeUser(users[email]);
+      (u.transactions || []).forEach((t) => {
+        if (String(t.type).toLowerCase() === 'withdrawal' && String(t.status).toLowerCase() === 'pending') {
+          list.push({ ...t, userEmail: u.email, userName: u.name });
+        }
+      });
+    });
+    return list.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+  }
+
+  function adminSetTxStatus(userEmail, txId, status, noteEdit) {
+    const user = findUserByEmail(userEmail);
+    if (!user) return { ok: false, error: 'User not found' };
+    const tx = (user.transactions || []).find((t) => String(t.id) === String(txId));
+    if (!tx) return { ok: false, error: 'Transaction not found' };
+    const old = String(tx.status || '').toLowerCase();
+    const next = String(status || '').toLowerCase();
+    if (String(tx.type).toLowerCase() === 'withdrawal' && old === 'pending' && (next === 'cancelled' || next === 'failed')) {
+      user.balance = Number(((user.balance || 0) + Number(tx.amount || 0)).toFixed(2));
+      user.totalWithdrawals = Math.max(0, Number(((user.totalWithdrawals || 0) - Number(tx.amount || 0)).toFixed(2)));
+      pushNotification(user, {
+        title: 'Withdrawal declined',
+        body: 'Your withdrawal of $' + Number(tx.amount || 0).toFixed(2) + ' was declined and refunded.',
+        type: 'wallet'
+      });
+    }
+    if (String(tx.type).toLowerCase() === 'withdrawal' && old === 'pending' && next === 'completed') {
+      pushNotification(user, {
+        title: 'Withdrawal paid',
+        body: 'Your withdrawal was marked completed.',
+        type: 'wallet'
+      });
+    }
+    if (String(tx.type).toLowerCase() === 'deposit' && old === 'pending' && next === 'completed') {
+      user.balance = Number(((user.balance || 0) + Number(tx.amount || 0)).toFixed(2));
+      user.totalDeposits = Number(((user.totalDeposits || 0) + Number(tx.amount || 0)).toFixed(2));
+      pushNotification(user, {
+        title: 'Deposit credited',
+        body: 'Your deposit of $' + Number(tx.amount || 0).toFixed(2) + ' was credited.',
+        type: 'wallet'
+      });
+    }
+    tx.status = next;
+    if (noteEdit != null && String(noteEdit).trim() !== '') tx.note = String(noteEdit).trim();
+    persistUser(user);
+    return { ok: true, tx };
+  }
+
   function listPendingAds() {
     const users = getUsers();
     const list = [];
@@ -860,7 +932,9 @@
     changeAdminPassword,
     listAllUsersSummary,
     listPendingAds,
+    listPendingWithdrawals,
     adminSetAdStatus,
+    adminSetTxStatus,
     getUsers,
     saveUsers,
     getCurrentUser,

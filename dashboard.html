@@ -184,7 +184,7 @@
         </div>
 
         <!-- TAB: WALLET -->
-        <div id="tab_wallet" class="app-tab hidden space-y-5">
+        <div id="tab_wallet" class="app-tab hidden space-y-5 pb-4">
             <div class="flex items-center gap-3">
                 <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
                 <div>
@@ -192,38 +192,57 @@
                     <p class="text-xs text-slate-500">Manage your balance and transactions securely</p>
                 </div>
             </div>
-            <div class="bg-gradient-to-r from-sky-500 to-blue-700 p-6 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
-                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+
+            <div class="bg-gradient-to-br from-sky-500 via-brandPrimary to-sky-700 p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
+                <div class="absolute right-3 top-3 opacity-30 text-6xl"><i class="fa-solid fa-wallet"></i></div>
                 <div class="relative z-10">
-                    <p class="text-xs text-sky-100 font-medium tracking-wide uppercase">Account balance</p>
-                    <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold mt-1 tracking-tight">$0.00</h3>
+                    <p class="text-xs text-sky-100 font-medium">Account balance</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight">$0.00</h3>
+                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-sky-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
+                    </div>
                 </div>
-                <div class="flex gap-2 relative z-10 pt-2">
-                    <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-3 rounded-xl text-xs shadow-md">Deposit</button>
-                    <button onclick="openWalletModal('withdraw')" class="flex-1 bg-white/20 text-white font-bold py-3 rounded-xl text-xs border border-white/30">Withdraw</button>
-                </div>
-            </div>
-            <div class="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded-xl px-3 py-2.5 flex gap-2 items-start">
-                <i class="fa-solid fa-shield-halved mt-0.5"></i>
-                <span>Funds Protected — merchant earnings stay in escrow until delivery completes. Min deposit $3 · Min withdraw $5 · 10% commission on withdrawals.</span>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-3 rounded-xl">
-                    <p class="text-[10px] text-slate-500 uppercase font-semibold">Total Deposit</p>
-                    <p id="walletDepositsDisplay" class="font-extrabold text-lg mt-1">$0.00</p>
-                </div>
-                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-3 rounded-xl">
-                    <p class="text-[10px] text-slate-500 uppercase font-semibold">Total Withdrawal</p>
-                    <p id="walletWithdrawalsDisplay" class="font-extrabold text-lg mt-1">$0.00</p>
-                </div>
-                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-3 rounded-xl col-span-2">
-                    <p class="text-[10px] text-slate-500 uppercase font-semibold">Escrow Locked</p>
-                    <p id="walletEscrowDisplay" class="font-extrabold text-lg mt-1">$0.00</p>
+                <div class="flex gap-2 relative z-10">
+                    <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-2.5 rounded-full text-xs shadow-md">Deposit</button>
+                    <button onclick="openWalletModal('withdraw')" class="flex-1 bg-white/20 text-white font-bold py-2.5 rounded-full text-xs border border-white/35">Withdraw</button>
                 </div>
             </div>
+
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-arrow-down"></i></span>
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase font-semibold">Total Deposit</p>
+                            <p id="walletDepositsDisplay" class="font-extrabold text-base">$0.00</p>
+                            <p class="text-[10px] text-slate-400">All time</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 min-w-0 text-right">
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase font-semibold">Total Withdrawal</p>
+                            <p id="walletWithdrawalsDisplay" class="font-extrabold text-base">$0.00</p>
+                            <p class="text-[10px] text-slate-400">All time</p>
+                        </div>
+                        <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-solid fa-arrow-up"></i></span>
+                    </div>
+                </div>
+                <div class="border-t border-slate-200 dark:border-slate-800 pt-3 flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center"><i class="fa-solid fa-shield-halved"></i></span>
+                    <div class="flex-1">
+                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Escrow Locked</p>
+                        <p id="walletEscrowDisplay" class="font-extrabold text-sm">$0.00</p>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-semibold">Protected</span>
+                </div>
+            </div>
+
             <div>
-                <h4 class="font-bold text-sm mb-2">Transaction History</h4>
-                <div id="txHistoryList" class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl px-4"></div>
+                <div class="flex gap-4 border-b border-slate-200 dark:border-slate-800 mb-3 overflow-x-auto">
+                    <button type="button" data-wallet-hist="deposit" onclick="setWalletHistoryTab('deposit')" class="wallet-hist-tab pb-2 text-sm font-bold text-brandPrimary border-b-2 border-brandPrimary whitespace-nowrap">Deposit History</button>
+                    <button type="button" data-wallet-hist="withdrawal" onclick="setWalletHistoryTab('withdrawal')" class="wallet-hist-tab pb-2 text-sm font-semibold text-slate-400 whitespace-nowrap">Withdrawal History</button>
+                </div>
+                <div id="txHistoryList" class="space-y-2"></div>
             </div>
         </div>
 
@@ -687,10 +706,10 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260821flw2"></script>
-    <script src="/js/api-client.js?v=20260821flw2"></script>
-    <script src="/js/api-sync.js?v=20260821flw2"></script>
-    <script src="/js/dashboard-app.js?v=20260821flw2"></script>
+    <script src="/js/acctventa.js?v=20260821wallet3"></script>
+    <script src="/js/api-client.js?v=20260821wallet3"></script>
+    <script src="/js/api-sync.js?v=20260821wallet3"></script>
+    <script src="/js/dashboard-app.js?v=20260821wallet3"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         function switchTab(tabId) {

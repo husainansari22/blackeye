@@ -98,8 +98,47 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = 'Ad status updated.';
         }
         if ($form === 'tx_status') {
-            db()->prepare('UPDATE transactions SET status = ? WHERE id = ?')->execute([$_POST['status'], (int)$_POST['tx_id']]);
+            $txId = (int)$_POST['tx_id'];
+            $newStatus = (string)$_POST['status'];
+            $tx = db()->prepare('SELECT * FROM transactions WHERE id = ?');
+            $tx->execute([$txId]);
+            $row = $tx->fetch();
+            if ($row) {
+                $old = $row['status'];
+                // If cancelling/rejecting a pending withdrawal, refund the user
+                if ($row['type'] === 'withdrawal' && $old === 'pending' && in_array($newStatus, ['cancelled', 'failed'], true)) {
+                    db()->prepare('UPDATE users SET balance = balance + ?, total_withdrawals = GREATEST(0, total_withdrawals - ?) WHERE id = ?')
+                        ->execute([money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
+                    notify_user((int)$row['user_id'], 'Withdrawal declined', 'Your withdrawal of $' . money_f($row['amount']) . ' was declined and refunded to your wallet.', 'wallet');
+                }
+                if ($row['type'] === 'withdrawal' && $old === 'pending' && $newStatus === 'completed') {
+                    notify_user((int)$row['user_id'], 'Withdrawal paid', 'Your withdrawal of $' . money_f($row['payout'] ?? $row['amount']) . ' was marked completed.', 'wallet');
+                }
+                // Approving a pending deposit credits the wallet (crypto / manual)
+                if ($row['type'] === 'deposit' && $old === 'pending' && $newStatus === 'completed') {
+                    db()->prepare('UPDATE users SET balance = balance + ?, total_deposits = total_deposits + ? WHERE id = ?')
+                        ->execute([money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
+                    notify_user((int)$row['user_id'], 'Deposit credited', 'Your deposit of $' . money_f($row['amount']) . ' was credited to your wallet.', 'wallet');
+                }
+                if (!empty($_POST['note_edit'])) {
+                    db()->prepare('UPDATE transactions SET status = ?, note = ? WHERE id = ?')
+                        ->execute([$newStatus, trim((string)$_POST['note_edit']), $txId]);
+                } else {
+                    db()->prepare('UPDATE transactions SET status = ? WHERE id = ?')->execute([$newStatus, $txId]);
+                }
+            }
             $flash = 'Transaction status updated.';
+        }
+        if ($form === 'currencies') {
+            $localRaw = trim((string)($_POST['local_json'] ?? ''));
+            $cryptoRaw = trim((string)($_POST['crypto_json'] ?? ''));
+            $local = json_decode($localRaw, true);
+            $crypto = json_decode($cryptoRaw, true);
+            if (!is_array($local) || !is_array($crypto)) {
+                throw new RuntimeException('Invalid currencies JSON');
+            }
+            wallet_currencies_set(['local' => $local, 'crypto' => $crypto]);
+            $flash = 'Wallet currencies saved.';
         }
         if ($form === 'order_status') {
             db()->prepare('UPDATE orders SET status = ? WHERE id = ?')->execute([$_POST['status'], (int)$_POST['order_id']]);
@@ -170,7 +209,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php if ($error): ?><div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3"><?= h($error) ?></div><?php endif; ?>
 
     <div class="flex gap-2 overflow-x-auto text-sm">
-      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','wallet'=>'Wallet','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
+      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','wallet'=>'Wallet','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
         <a href="?tab=<?= $k ?>" class="px-3 py-2 rounded-lg <?= $tab===$k?'bg-brand text-white':'bg-white border' ?>"><?= $label ?></a>
       <?php endforeach; ?>
     </div>
@@ -286,7 +325,64 @@ $tab = $_GET['tab'] ?? 'overview';
       </div>
     <?php endif; ?>
 
-    <?php if ($tab === 'wallet'): $txs = db()->query('SELECT t.*, u.email FROM transactions t JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC LIMIT 200')->fetchAll(); ?>
+    <?php if ($tab === 'wallet'):
+      $pendingWd = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='withdrawal' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
+      $pendingDep = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='deposit' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
+      $txs = db()->query('SELECT t.*, u.email FROM transactions t JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC LIMIT 200')->fetchAll();
+    ?>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+        <h2 class="font-bold text-lg mb-1">Pending withdrawals (approve / reject)</h2>
+        <p class="text-xs text-slate-600 mb-3">Rejecting refunds the user’s wallet. Completing marks payout as paid. You can edit the note before saving.</p>
+        <?php if (!$pendingWd): ?>
+          <p class="text-sm text-slate-500">No pending withdrawals.</p>
+        <?php else: ?>
+          <div class="space-y-2">
+          <?php foreach ($pendingWd as $t): ?>
+            <div class="bg-white border rounded-xl p-3 space-y-2">
+              <div class="text-xs">
+                <p class="font-bold text-sm"><?= h($t['name']) ?> · <?= h($t['email']) ?></p>
+                <p>$<?= number_format((float)$t['amount'], 2) ?> · fee $<?= number_format((float)$t['fee'], 2) ?> · payout $<?= number_format((float)($t['payout'] ?? 0), 2) ?></p>
+                <p class="text-slate-500 mt-1"><?= h($t['method']) ?></p>
+                <p class="font-mono text-[10px] text-slate-400"><?= h($t['reference'] ?? '') ?></p>
+              </div>
+              <form method="post" class="space-y-2">
+                <input type="hidden" name="form" value="tx_status">
+                <input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>">
+                <textarea name="note_edit" rows="2" class="w-full border rounded-lg px-2 py-1.5 text-xs" placeholder="Payout note / bank details"><?= h($t['note']) ?></textarea>
+                <div class="flex flex-wrap gap-2">
+                  <button name="status" value="completed" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Approve / Paid</button>
+                  <button name="status" value="cancelled" class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Reject + refund</button>
+                </div>
+              </form>
+            </div>
+          <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+      <div class="bg-sky-50 border border-sky-200 rounded-xl p-4 mb-4">
+        <h2 class="font-bold text-lg mb-1">Pending deposits (credit / reject)</h2>
+        <p class="text-xs text-slate-600 mb-3">Approving credits the user’s USD wallet (used for crypto deposits and manual overrides).</p>
+        <?php if (!$pendingDep): ?>
+          <p class="text-sm text-slate-500">No pending deposits.</p>
+        <?php else: ?>
+          <div class="space-y-2">
+          <?php foreach ($pendingDep as $t): ?>
+            <div class="bg-white border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+              <div class="text-xs">
+                <p class="font-bold text-sm"><?= h($t['name']) ?> · <?= h($t['email']) ?></p>
+                <p>$<?= number_format((float)$t['amount'], 2) ?> · <?= h($t['method']) ?></p>
+                <p class="text-slate-500 mt-1"><?= h($t['note']) ?></p>
+                <p class="font-mono text-[10px] text-slate-400"><?= h($t['reference'] ?? '') ?></p>
+              </div>
+              <div class="flex gap-2">
+                <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="completed"><button class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Credit wallet</button></form>
+                <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="cancelled"><button class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Reject</button></form>
+              </div>
+            </div>
+          <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
       <div class="bg-white rounded-xl border overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">ID</th><th class="p-3">User</th><th class="p-3">Type</th><th class="p-3">Amount</th><th class="p-3">Fee</th><th class="p-3">Status</th><th class="p-3">Note</th><th class="p-3">Update</th></tr></thead>
@@ -317,6 +413,23 @@ $tab = $_GET['tab'] ?? 'overview';
           </tbody>
         </table>
       </div>
+    <?php endif; ?>
+
+    <?php if ($tab === 'currencies'): $wc = wallet_currencies_get(); ?>
+      <form method="post" class="bg-white rounded-xl border p-5 space-y-4">
+        <input type="hidden" name="form" value="currencies">
+        <h2 class="font-bold text-lg">Wallet currencies (flags & rates)</h2>
+        <p class="text-xs text-slate-500">Shown on Deposit/Withdraw. Edit JSON carefully. Each local currency needs <code>code</code>, <code>name</code>, <code>flag</code> (ISO country like <code>ng</code>), <code>rate</code> (units per $1), <code>enabled</code>.</p>
+        <div>
+          <label class="text-xs font-semibold text-slate-600">Local currencies (with flags)</label>
+          <textarea name="local_json" rows="12" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"><?= h(json_encode($wc['local'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600">Crypto currencies</label>
+          <textarea name="crypto_json" rows="12" class="mt-1 w-full border rounded-xl px-3 py-2 text-xs font-mono"><?= h(json_encode($wc['crypto'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></textarea>
+        </div>
+        <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save currencies</button>
+      </form>
     <?php endif; ?>
 
     <?php if ($tab === 'gateways'): ?>
