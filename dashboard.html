@@ -674,15 +674,20 @@
         </div>
     </div>
 
-    <!-- ORDER CHAT OVERLAY -->
+    <!-- ORDER / SUPPORT CHAT OVERLAY -->
     <div id="chatOverlay" class="fixed inset-0 bg-lightBg dark:bg-darkBg z-[120] hidden flex-col">
         <div class="flex items-center gap-3 px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800">
             <button type="button" onclick="closeOrderChat()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center"><i class="fa-solid fa-arrow-left text-sm"></i></button>
-            <h2 class="font-bold">Order Chat</h2>
+            <div class="min-w-0 flex-1">
+                <h2 id="chatTitle" class="font-bold text-sm">Order Chat</h2>
+                <p id="chatSubtitle" class="text-[10px] text-slate-400 truncate"></p>
+            </div>
+            <span id="chatOnlineDot" class="hidden w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
         </div>
         <div id="chatMessages" class="flex-1 overflow-y-auto px-4 py-4 space-y-2"></div>
+        <p id="chatTyping" class="px-4 text-[11px] text-slate-400 h-5"></p>
         <div class="p-3 bg-lightCard dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 flex gap-2">
-            <input id="chatInput" type="text" placeholder="Send a message" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2.5 text-sm" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
+            <input id="chatInput" type="text" placeholder="Send a message" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2.5 text-sm" oninput="onChatTyping()" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
             <button onclick="sendChatMessage()" class="w-10 h-10 rounded-full bg-brandPrimary text-white flex items-center justify-center"><i class="fa-solid fa-paper-plane text-sm"></i></button>
         </div>
     </div>
@@ -708,10 +713,10 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260821support2"></script>
-    <script src="/js/api-client.js?v=20260821support2"></script>
-    <script src="/js/api-sync.js?v=20260821support2"></script>
-    <script src="/js/dashboard-app.js?v=20260821support2"></script>
+    <script src="/js/acctventa.js?v=20260821chat1"></script>
+    <script src="/js/api-client.js?v=20260821chat1"></script>
+    <script src="/js/api-sync.js?v=20260821chat1"></script>
+    <script src="/js/dashboard-app.js?v=20260821chat1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         function switchTab(tabId) {
@@ -840,8 +845,8 @@
             const em = c.supportEmail || 'support@acctventa.com';
             const tg = c.supportTelegram || 'https://t.me/acctventa';
             const gmailLogo = `<svg viewBox="0 0 24 24" class="w-8 h-8" aria-hidden="true"><path fill="#EA4335" d="M12 12.713L1.5 5.25V18c0 .825.675 1.5 1.5 1.5h4.5V11.1L12 15.087 16.5 11.1V19.5H21c.825 0 1.5-.675 1.5-1.5V5.25L12 12.713z"/><path fill="#34A853" d="M21 4.5h-1.5L12 10.087 4.5 4.5H3c-.45 0-.862.2-1.125.525L12 12.713l10.125-7.688A1.49 1.49 0 0 0 21 4.5z"/><path fill="#4285F4" d="M3 4.5v14.25c0 .225.05.437.15.637L7.5 11.1V4.5H3z"/><path fill="#FBBC05" d="M21 4.5h-4.5v6.6l4.35 8.287c.1-.2.15-.412.15-.637V4.5z"/></svg>`;
-            const waLogo = `<span class="w-10 h-10 rounded-full bg-slate-600/40 flex items-center justify-center text-slate-500 text-xl"><i class="fa-brands fa-whatsapp"></i></span>`;
             const tgLogo = `<span class="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center text-white text-xl"><i class="fa-brands fa-telegram"></i></span>`;
+            const chatLogo = `<span class="w-10 h-10 rounded-full bg-brandPrimary flex items-center justify-center text-white text-xl"><i class="fa-solid fa-comments"></i></span>`;
             document.getElementById('modalBody').innerHTML = `
               <div class="space-y-4">
                 <div class="flex items-start justify-between gap-3">
@@ -856,7 +861,7 @@
 
                 <div class="rounded-xl border border-brandPrimary/40 bg-brandPrimary/10 px-3 py-2.5 text-[11px] text-slate-300 flex gap-2 items-start">
                   <i class="fa-solid fa-circle-info text-brandPrimary mt-0.5 shrink-0"></i>
-                  <span>Please use one channel only per issue. Do not send the same message across WhatsApp, Telegram, and email simultaneously.</span>
+                  <span>Please use one channel only per issue. Do not send the same message across Chat Support, Telegram, and email simultaneously.</span>
                 </div>
 
                 <div>
@@ -865,11 +870,11 @@
                     <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">● Fast response usually in minutes</span>
                   </div>
                   <div class="grid grid-cols-3 gap-2">
-                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 p-3 flex flex-col items-center text-center opacity-50 cursor-not-allowed">
-                      ${waLogo}
-                      <p class="text-xs font-bold mt-2 text-slate-400">WhatsApp</p>
-                      <p class="text-[10px] text-slate-500 mt-0.5">Unavailable</p>
-                    </div>
+                    <button type="button" onclick="closeModal(); openSupportChat();" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
+                      ${chatLogo}
+                      <p class="text-xs font-bold mt-2">Chat Support</p>
+                      <p class="text-[9px] text-emerald-500 mt-0.5">Available</p>
+                    </button>
                     <a href="${tg}" target="_blank" rel="noopener" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
                       ${tgLogo}
                       <p class="text-xs font-bold mt-2">Telegram</p>

@@ -18,7 +18,8 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=20260821wallet4"></script>
+  <script src="/js/acctventa.js?v=20260821chat1"></script>
+  <script src="/js/api-client.js?v=20260821chat1"></script>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
   <!-- LOGIN -->
@@ -63,181 +64,54 @@
 
     <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
       <div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl p-3">
-        <strong>Important:</strong> This admin runs in your browser. Settings you save here apply on this device/browser for the static site.
-        <strong>Secret API keys must not stay only in the browser for production</strong> — use a real backend when you go live with payments.
-        Users listed below are only those stored in this browser’s local data (same device testing).
+        <strong>Live Chat Support</strong> connects to your Hostinger MySQL backend. Use Owner credentials to open the inbox.
+        Ad reviews / Users / Security on this page still use browser data for local testing. Wallet fees & gateways are managed in <strong>/owner</strong>.
       </div>
 
       <!-- Tabs -->
       <div class="flex gap-2 overflow-x-auto text-sm">
-        <button class="admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium" data-tab="fees" onclick="showTab('fees')">Fees & limits</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="currencies" onclick="showTab('currencies')">Currencies</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="withdrawals" onclick="showTab('withdrawals')">Withdrawals</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="plans" onclick="showTab('plans')">Plans</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="gateways" onclick="showTab('gateways')">Payment gateways</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="support" onclick="showTab('support')">Support</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium" data-tab="support" onclick="showTab('support')">Support</button>
         <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
         <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="users" onclick="showTab('users')">Users</button>
         <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="security" onclick="showTab('security')">Security</button>
       </div>
 
-      <!-- FEES -->
-      <section id="tab_fees" class="admin-panel bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 class="font-bold text-lg">Fees & wallet limits</h2>
-        <div class="grid sm:grid-cols-2 gap-4">
+      <!-- SUPPORT CHAT INBOX -->
+      <section id="tab_support" class="admin-panel bg-white rounded-2xl border border-slate-200 p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <label class="text-xs text-slate-500">Minimum deposit ($)</label>
-            <input id="cfg_minDeposit" type="number" step="0.01" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+            <h2 class="font-bold text-lg">Live Chat Support</h2>
+            <p class="text-xs text-slate-500">Reply to users who contact you via Chat Support on the site.</p>
           </div>
-          <div>
-            <label class="text-xs text-slate-500">Minimum withdrawal ($)</label>
-            <input id="cfg_minWithdraw" type="number" step="0.01" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-          </div>
-          <div>
-            <label class="text-xs text-slate-500">Withdrawal commission (%)</label>
-            <input id="cfg_withdrawCommission" type="number" step="0.1" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-            <p class="text-[11px] text-slate-400 mt-1">Applied in the backend; not shown on the user wallet screen.</p>
-          </div>
-          <div>
-            <label class="text-xs text-slate-500">Deposit fee (%)</label>
-            <input id="cfg_depositFee" type="number" step="0.1" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-          </div>
+          <button onclick="enableAdminNotifications()" class="text-xs text-brandPrimary font-semibold">Enable browser notifications</button>
         </div>
-        <button onclick="saveFees()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save fees</button>
-      </section>
-
-      <!-- CURRENCIES -->
-      <section id="tab_currencies" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 class="font-bold text-lg">Deposit & withdraw rates</h2>
-        <p class="text-xs text-slate-500">Edit rates (units per $1). For the live site use <strong>/owner → Currencies</strong> — this tab only affects this browser.</p>
-        <div id="localRatesEditor" class="space-y-2"></div>
-        <h3 class="font-semibold text-sm pt-2">Crypto</h3>
-        <div id="cryptoRatesEditor" class="space-y-2"></div>
-        <button onclick="saveCurrencies()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save rates</button>
-      </section>
-
-      <!-- WITHDRAWALS -->
-      <section id="tab_withdrawals" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <div class="flex justify-between items-center">
-          <h2 class="font-bold text-lg">Pending withdrawals</h2>
-          <button onclick="loadWithdrawals()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
+        <div id="staffLoginBox" class="border border-amber-200 bg-amber-50 rounded-xl p-3 space-y-2">
+          <p class="text-xs text-amber-900">Connect to the live database with Owner credentials (same as <code>/owner</code> login).</p>
+          <div class="grid sm:grid-cols-3 gap-2">
+            <input id="staffUser" placeholder="Owner username" class="border rounded-xl px-3 py-2 text-sm" value="owner">
+            <input id="staffPass" type="password" placeholder="Owner password" class="border rounded-xl px-3 py-2 text-sm">
+            <button onclick="staffConnect()" class="bg-brandPrimary text-white font-bold rounded-xl text-sm">Connect inbox</button>
+          </div>
+          <p id="staffLoginMsg" class="text-xs text-slate-500"></p>
         </div>
-        <p class="text-xs text-slate-500">Browser-local users only. Live approvals: use <strong>/owner → Wallet</strong>.</p>
-        <div id="withdrawalsAdminList" class="space-y-3"></div>
-      </section>
-
-      <!-- PLANS -->
-      <section id="tab_plans" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 class="font-bold text-lg">Seller plans</h2>
-        <p class="text-xs text-slate-500">New users start on Free. Change daily upload limits and prices here.</p>
-        <div id="plansEditor" class="space-y-4"></div>
-        <button onclick="savePlans()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save plans</button>
-      </section>
-
-      <!-- GATEWAYS -->
-      <section id="tab_gateways" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-6">
-        <div>
-          <h2 class="font-bold text-lg">Payment gateways</h2>
-          <p class="text-xs text-slate-500 mt-1">Fill these so your site is ready. Live charging needs a backend that uses the secret key — never share secret keys publicly.</p>
-        </div>
-
-        <div class="border border-slate-200 rounded-xl p-4 space-y-3">
-          <h3 class="font-semibold">Deposit gateway</h3>
-          <div class="grid sm:grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs text-slate-500">Provider</label>
-              <select id="dep_provider" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-                <option value="none">Not connected</option>
-                <option value="paystack">Paystack</option>
-                <option value="flutterwave">Flutterwave</option>
-                <option value="stripe">Stripe</option>
-                <option value="nowpayments">NOWPayments (crypto)</option>
-              </select>
+        <div id="supportInbox" class="hidden grid md:grid-cols-5 gap-3 min-h-[420px]">
+          <div class="md:col-span-2 border rounded-xl overflow-hidden flex flex-col">
+            <div class="px-3 py-2 border-b text-xs font-semibold flex justify-between items-center bg-slate-50">
+              <span>Conversations</span>
+              <button onclick="loadSupportThreads()" class="text-brandPrimary">Refresh</button>
             </div>
-            <div class="flex items-end">
-              <label class="flex items-center gap-2 text-sm"><input id="dep_enabled" type="checkbox" class="accent-sky-500"> Enabled</label>
-            </div>
-            <div>
-              <label class="text-xs text-slate-500">Public / Publishable key</label>
-              <input id="dep_public" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="pk_...">
-            </div>
-            <div>
-              <label class="text-xs text-slate-500">Secret key (store on server later)</label>
-              <input id="dep_secret" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="sk_...">
-            </div>
-            <div class="sm:col-span-2">
-              <label class="text-xs text-slate-500">Webhook URL (for your future backend)</label>
-              <input id="dep_webhook" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="https://yourdomain.com/api/webhooks/deposit">
-            </div>
-            <div class="sm:col-span-2">
-              <label class="text-xs text-slate-500">Notes</label>
-              <textarea id="dep_notes" rows="2" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="Merchant ID, currency, etc."></textarea>
+            <div id="supportThreadList" class="flex-1 overflow-y-auto max-h-[50vh]"></div>
+          </div>
+          <div class="md:col-span-3 border rounded-xl flex flex-col min-h-[420px]">
+            <div id="supportChatHeader" class="px-3 py-2 border-b text-sm font-semibold bg-slate-50">Select a conversation</div>
+            <div id="supportChatMsgs" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[45vh] bg-slate-50/50"></div>
+            <p id="supportTyping" class="px-3 text-[11px] text-slate-400 h-5"></p>
+            <div class="p-2 border-t flex gap-2">
+              <input id="supportReplyInput" type="text" placeholder="Type a reply…" class="flex-1 border rounded-full px-3 py-2 text-sm" oninput="staffTypingSignal()" onkeydown="if(event.key==='Enter'){staffSendReply();}">
+              <button onclick="staffSendReply()" class="bg-brandPrimary text-white rounded-full px-4 text-sm font-bold">Send</button>
             </div>
           </div>
         </div>
-
-        <div class="border border-slate-200 rounded-xl p-4 space-y-3">
-          <h3 class="font-semibold">Withdrawal / payout gateway</h3>
-          <div class="grid sm:grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs text-slate-500">Provider</label>
-              <select id="wd_provider" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-                <option value="none">Not connected</option>
-                <option value="paystack">Paystack Transfer</option>
-                <option value="flutterwave">Flutterwave Payout</option>
-                <option value="stripe">Stripe Connect / Payout</option>
-                <option value="nowpayments">Crypto payout</option>
-                <option value="manual">Manual bank payout</option>
-              </select>
-            </div>
-            <div class="flex items-end">
-              <label class="flex items-center gap-2 text-sm"><input id="wd_enabled" type="checkbox" class="accent-sky-500"> Enabled</label>
-            </div>
-            <div>
-              <label class="text-xs text-slate-500">Public key</label>
-              <input id="wd_public" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-            </div>
-            <div>
-              <label class="text-xs text-slate-500">Secret key</label>
-              <input id="wd_secret" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-            </div>
-            <div class="sm:col-span-2">
-              <label class="text-xs text-slate-500">Webhook / callback URL</label>
-              <input id="wd_webhook" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
-            </div>
-            <div class="sm:col-span-2">
-              <label class="text-xs text-slate-500">Notes</label>
-              <textarea id="wd_notes" rows="2" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-2">
-          <p class="font-semibold text-slate-800">How to finish payments yourself</p>
-          <ol class="list-decimal pl-4 space-y-1">
-            <li>Create an account on Paystack, Flutterwave, Stripe, or a crypto processor.</li>
-            <li>Copy public + secret keys into the fields above and Save.</li>
-            <li>Add a small backend (Hostinger PHP, Node, or serverless) that creates checkouts and verifies webhooks.</li>
-            <li>Point deposit/withdraw in the app to that backend (developer step once).</li>
-          </ol>
-        </div>
-        <button onclick="saveGateways()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save gateways</button>
-      </section>
-
-      <!-- SUPPORT -->
-      <section id="tab_support" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 class="font-bold text-lg">Support contacts</h2>
-        <div class="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label class="text-xs text-slate-500">Telegram link</label>
-            <input id="cfg_telegram" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="https://t.me/yourname">
-          </div>
-          <div>
-            <label class="text-xs text-slate-500">Support email</label>
-            <input id="cfg_email" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="support@acctventa.com">
-          </div>
-        </div>
-        <button onclick="saveSupport()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save support</button>
       </section>
 
       <!-- ADS -->
@@ -283,7 +157,8 @@
 
     function showTab(name) {
       document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
-      document.getElementById('tab_' + name).classList.remove('hidden');
+      const panel = document.getElementById('tab_' + name);
+      if (panel) panel.classList.remove('hidden');
       document.querySelectorAll('.admin-tab').forEach(b => {
         const on = b.dataset.tab === name;
         b.className = on
@@ -292,8 +167,7 @@
       });
       if (name === 'ads') loadAds();
       if (name === 'users') loadUsers();
-      if (name === 'withdrawals') loadWithdrawals();
-      if (name === 'currencies') fillCurrencyForms();
+      if (name === 'support') initSupportInbox();
     }
 
     function showLoginError(msg) {
@@ -366,205 +240,141 @@
     function enterDash() {
       document.getElementById('loginView').classList.add('hidden');
       document.getElementById('dashView').classList.remove('hidden');
-      fillForms();
+      showTab('support');
     }
 
     function fillForms() {
-      A().applySettings();
-      const c = A().CONFIG;
-      document.getElementById('cfg_minDeposit').value = c.minDeposit;
-      document.getElementById('cfg_minWithdraw').value = c.minWithdraw;
-      document.getElementById('cfg_withdrawCommission').value = (c.withdrawCommissionRate * 100).toFixed(1);
-      document.getElementById('cfg_depositFee').value = ((c.depositFeeRate || 0) * 100).toFixed(1);
-      document.getElementById('cfg_telegram').value = c.supportTelegram || '';
-      document.getElementById('cfg_email').value = c.supportEmail || '';
-
-      const plans = A().PLANS;
-      document.getElementById('plansEditor').innerHTML = Object.values(plans).map(p => `
-        <div class="border border-slate-200 rounded-xl p-4 grid sm:grid-cols-4 gap-3 items-end" data-plan="${p.id}">
-          <div class="sm:col-span-1"><p class="font-semibold">${p.name}</p><p class="text-[11px] text-slate-400">${p.id}</p></div>
-          <div>
-            <label class="text-xs text-slate-500">Price ($/mo)</label>
-            <input data-field="price" type="number" step="0.01" value="${p.price}" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm" ${p.id==='free'?'readonly':''}>
-          </div>
-          <div>
-            <label class="text-xs text-slate-500">Daily uploads</label>
-            <input data-field="dailyUploads" type="number" value="${p.dailyUploads}" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm">
-          </div>
-          <div>
-            <label class="text-xs text-slate-500">Approval label</label>
-            <input data-field="approval" type="text" value="${(p.approval||'').replace(/"/g,'&quot;')}" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm">
-          </div>
-        </div>`).join('');
-
-      const g = A().GATEWAYS;
-      document.getElementById('dep_provider').value = g.deposit.provider || 'none';
-      document.getElementById('dep_enabled').checked = !!g.deposit.enabled;
-      document.getElementById('dep_public').value = g.deposit.publicKey || '';
-      document.getElementById('dep_secret').value = g.deposit.secretKey || '';
-      document.getElementById('dep_webhook').value = g.deposit.webhookUrl || '';
-      document.getElementById('dep_notes').value = g.deposit.notes || '';
-      document.getElementById('wd_provider').value = g.withdraw.provider || 'none';
-      document.getElementById('wd_enabled').checked = !!g.withdraw.enabled;
-      document.getElementById('wd_public').value = g.withdraw.publicKey || '';
-      document.getElementById('wd_secret').value = g.withdraw.secretKey || '';
-      document.getElementById('wd_webhook').value = g.withdraw.webhookUrl || '';
-      document.getElementById('wd_notes').value = g.withdraw.notes || '';
-      fillCurrencyForms();
+      // retained for compatibility — live fees/gateways live in /owner
     }
 
-    function fillCurrencyForms() {
-      const c = A().CONFIG || {};
-      const wc = c.walletCurrencies || (A().DEFAULT_CONFIG && A().DEFAULT_CONFIG.walletCurrencies) || { local: [], crypto: [] };
-      const localBox = document.getElementById('localRatesEditor');
-      const cryptoBox = document.getElementById('cryptoRatesEditor');
-      if (localBox) {
-        localBox.innerHTML = (wc.local || []).map((row, i) => `
-          <div class="grid grid-cols-12 gap-2 items-center border border-slate-100 rounded-xl p-2" data-local-i="${i}">
-            <div class="col-span-1">${row.flag ? `<img src="https://flagcdn.com/w40/${row.flag}.png" class="w-6 h-6 rounded-full" alt="">` : ''}</div>
-            <div class="col-span-3 text-xs font-bold">${escapeHtml(row.code)}</div>
-            <div class="col-span-4"><input data-field="name" value="${escapeHtml(row.name || '')}" class="w-full border rounded-lg px-2 py-1.5 text-xs"></div>
-            <div class="col-span-3"><input data-field="rate" type="number" step="0.01" value="${Number(row.rate) || 1}" class="w-full border rounded-lg px-2 py-1.5 text-xs font-semibold"></div>
-            <div class="col-span-1 text-center"><input data-field="enabled" type="checkbox" class="accent-sky-500" ${row.enabled !== false ? 'checked' : ''}></div>
-            <input type="hidden" data-field="code" value="${escapeHtml(row.code)}">
-            <input type="hidden" data-field="flag" value="${escapeHtml(row.flag || '')}">
-          </div>`).join('');
-      }
-      if (cryptoBox) {
-        cryptoBox.innerHTML = (wc.crypto || []).map((row, i) => `
-          <div class="grid grid-cols-12 gap-2 items-center border border-slate-100 rounded-xl p-2" data-crypto-i="${i}">
-            <div class="col-span-2 text-xs font-bold">${escapeHtml(row.code)}</div>
-            <div class="col-span-3"><input data-field="name" value="${escapeHtml(row.name || '')}" class="w-full border rounded-lg px-2 py-1.5 text-xs"></div>
-            <div class="col-span-6"><input data-field="networks" value="${escapeHtml((row.networks || []).join(', '))}" class="w-full border rounded-lg px-2 py-1.5 text-xs"></div>
-            <div class="col-span-1 text-center"><input data-field="enabled" type="checkbox" class="accent-sky-500" ${row.enabled !== false ? 'checked' : ''}></div>
-            <input type="hidden" data-field="code" value="${escapeHtml(row.code)}">
-          </div>`).join('');
-      }
+
+    let activeSupportThread = null;
+    let supportPoll = null;
+    let lastStaffMsgFingerprint = '';
+    let staffTypingTimer = null;
+
+    function enableAdminNotifications() {
+      if (!('Notification' in window)) { alert('Notifications not supported in this browser'); return; }
+      Notification.requestPermission().then((p) => alert(p === 'granted' ? 'Notifications enabled' : 'Permission: ' + p));
     }
 
-    function saveFees() {
-      A().saveSettings({
-        config: {
-          minDeposit: parseFloat(document.getElementById('cfg_minDeposit').value) || 3,
-          minWithdraw: parseFloat(document.getElementById('cfg_minWithdraw').value) || 5,
-          withdrawCommissionRate: (parseFloat(document.getElementById('cfg_withdrawCommission').value) || 0) / 100,
-          depositFeeRate: (parseFloat(document.getElementById('cfg_depositFee').value) || 0) / 100
+    function staffNotify(title, body) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (document.visibilityState === 'visible') return;
+      try { new Notification(title, { body: String(body||'').slice(0,120) }); } catch(e) {}
+    }
+
+    async function staffConnect() {
+      const msg = document.getElementById('staffLoginMsg');
+      try {
+        if (!window.AcctventaApi || !(await window.AcctventaApi.isAvailable())) {
+          msg.textContent = 'Live API not available. Deploy /api on Hostinger first.';
+          return;
         }
-      });
-      alert('Fees saved. User wallet rules will use the new values.');
+        const user = document.getElementById('staffUser').value.trim();
+        const pass = document.getElementById('staffPass').value;
+        await window.AcctventaApi.staffLogin({ username: user, password: pass });
+        msg.textContent = 'Connected.';
+        document.getElementById('staffLoginBox').classList.add('hidden');
+        document.getElementById('supportInbox').classList.remove('hidden');
+        enableAdminNotifications();
+        loadSupportThreads();
+        if (supportPoll) clearInterval(supportPoll);
+        supportPoll = setInterval(() => {
+          loadSupportThreads(true);
+          if (activeSupportThread) openSupportThread(activeSupportThread, true);
+        }, 3000);
+      } catch (e) {
+        msg.textContent = e.message || 'Login failed';
+      }
     }
 
-    function saveCurrencies() {
-      const local = [];
-      document.querySelectorAll('#localRatesEditor [data-local-i]').forEach((row) => {
-        local.push({
-          code: row.querySelector('[data-field="code"]').value,
-          flag: row.querySelector('[data-field="flag"]').value,
-          name: row.querySelector('[data-field="name"]').value,
-          rate: parseFloat(row.querySelector('[data-field="rate"]').value) || 1,
-          enabled: row.querySelector('[data-field="enabled"]').checked,
-        });
-      });
-      const crypto = [];
-      document.querySelectorAll('#cryptoRatesEditor [data-crypto-i]').forEach((row) => {
-        crypto.push({
-          code: row.querySelector('[data-field="code"]').value,
-          name: row.querySelector('[data-field="name"]').value,
-          networks: (row.querySelector('[data-field="networks"]').value || '').split(/[,|]+/).map((s) => s.trim()).filter(Boolean),
-          enabled: row.querySelector('[data-field="enabled"]').checked,
-        });
-      });
-      A().saveSettings({
-        config: {
-          walletCurrencies: { local, crypto }
+    function initSupportInbox() {
+      if (window.AcctventaApi && window.AcctventaApi.getStaffToken && window.AcctventaApi.getStaffToken()) {
+        document.getElementById('staffLoginBox').classList.add('hidden');
+        document.getElementById('supportInbox').classList.remove('hidden');
+        loadSupportThreads();
+        if (!supportPoll) {
+          supportPoll = setInterval(() => {
+            loadSupportThreads(true);
+            if (activeSupportThread) openSupportThread(activeSupportThread, true);
+          }, 3000);
         }
-      });
-      alert('Rates saved for this browser. Live site: edit in /owner → Currencies.');
+      }
     }
 
-    function loadWithdrawals() {
-      const box = document.getElementById('withdrawalsAdminList');
-      if (!box) return;
-      if (!A().listPendingWithdrawals) {
-        box.innerHTML = '<p class="text-sm text-slate-400">Upload latest js/acctventa.js for withdrawal approval.</p>';
-        return;
-      }
-      const list = A().listPendingWithdrawals();
-      if (!list.length) {
-        box.innerHTML = '<p class="text-sm text-slate-400">No pending withdrawals in this browser.</p>';
-        return;
-      }
-      box.innerHTML = list.map((t) => `
-        <div class="border border-slate-200 rounded-xl p-4 space-y-2">
-          <div class="flex justify-between gap-3">
-            <div>
-              <p class="font-semibold text-sm">${escapeHtml(t.userName)} · ${escapeHtml(t.userEmail)}</p>
-              <p class="text-[11px] text-slate-500">${A().formatMoney(t.amount)} · ${escapeHtml(t.method || '')}</p>
-              <p class="text-[11px] text-slate-400 break-all">${escapeHtml(t.note || '')}</p>
+    async function loadSupportThreads(silent) {
+      const box = document.getElementById('supportThreadList');
+      if (!box || !window.AcctventaApi) return;
+      try {
+        const res = await window.AcctventaApi.staffSupportThreads();
+        const threads = res.threads || [];
+        const fp = threads.map(t => t.id + ':' + (t.lastMessageAt||'') + ':' + (t.lastBody||'')).join('|');
+        if (fp !== lastStaffMsgFingerprint && lastStaffMsgFingerprint && threads[0] && threads[0].lastBody) {
+          staffNotify('New support message', (threads[0].userName || 'User') + ': ' + threads[0].lastBody);
+        }
+        lastStaffMsgFingerprint = fp;
+        if (!threads.length) {
+          box.innerHTML = '<p class="p-3 text-xs text-slate-400">No conversations yet.</p>';
+          return;
+        }
+        box.innerHTML = threads.map(t => `
+          <button type="button" onclick="openSupportThread(${t.id})" class="w-full text-left px-3 py-2.5 border-b hover:bg-sky-50 ${activeSupportThread===t.id?'bg-sky-50':''}">
+            <div class="flex justify-between gap-2">
+              <p class="text-xs font-bold truncate">${escapeHtml(t.userName||'User')}</p>
+              ${t.userOnline?'<span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1"></span>':''}
             </div>
-            <p class="text-[10px] text-amber-600 font-bold">Pending</p>
-          </div>
-          <textarea id="wdnote_${escapeHtml(t.id)}" rows="2" class="w-full border rounded-lg px-2 py-1.5 text-xs">${escapeHtml(t.note || '')}</textarea>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="modTx('${escapeHtml(t.userEmail)}','${escapeHtml(t.id)}','completed')" class="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-semibold">Approve / Paid</button>
-            <button onclick="modTx('${escapeHtml(t.userEmail)}','${escapeHtml(t.id)}','cancelled')" class="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg font-semibold">Reject + refund</button>
-          </div>
-        </div>`).join('');
+            <p class="text-[10px] text-slate-500 truncate">${escapeHtml(t.userEmail||'')}</p>
+            <p class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(t.lastBody||'No messages')}</p>
+          </button>`).join('');
+      } catch (e) {
+        if (!silent) box.innerHTML = '<p class="p-3 text-xs text-red-500">' + escapeHtml(e.message||'Failed') + '</p>';
+      }
     }
 
-    function modTx(email, id, status) {
-      const noteEl = document.getElementById('wdnote_' + id);
-      const note = noteEl ? noteEl.value : '';
-      const res = A().adminSetTxStatus(email, id, status, note);
-      if (!res.ok) alert(res.error); else loadWithdrawals();
+    async function openSupportThread(id, silent) {
+      activeSupportThread = id;
+      try {
+        const res = await window.AcctventaApi.staffSupportMessages(id);
+        const t = res.thread || {};
+        document.getElementById('supportChatHeader').innerHTML =
+          escapeHtml(t.userName||'User') + ' <span class="text-xs font-normal text-slate-400">' + escapeHtml(t.userEmail||'') +
+          (t.userOnline ? ' · <span class="text-emerald-500">Online</span>' : '') + '</span>';
+        document.getElementById('supportTyping').textContent = t.userTyping ? 'User is typing…' : '';
+        const box = document.getElementById('supportChatMsgs');
+        const msgs = res.messages || [];
+        box.innerHTML = msgs.length ? msgs.map(m => {
+          const mine = m.role === 'staff';
+          const name = mine ? (m.staffName||'Support') : (t.userName||'User');
+          return `<div class="flex ${mine?'justify-end':'justify-start'}"><div class="max-w-[85%] rounded-2xl px-3 py-2 text-sm ${mine?'bg-brandPrimary text-white':'bg-white border'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(name)}</p>${escapeHtml(m.body)}</div></div>`;
+        }).join('') : '<p class="text-center text-xs text-slate-400 py-6">No messages yet.</p>';
+        if (!silent) box.scrollTop = box.scrollHeight;
+        loadSupportThreads(true);
+      } catch (e) {
+        if (!silent) alert(e.message || 'Could not open thread');
+      }
     }
 
-    function savePlans() {
-      const plans = {};
-      document.querySelectorAll('#plansEditor [data-plan]').forEach(row => {
-        const id = row.dataset.plan;
-        plans[id] = {
-          price: parseFloat(row.querySelector('[data-field="price"]').value) || 0,
-          dailyUploads: parseInt(row.querySelector('[data-field="dailyUploads"]').value, 10) || 0,
-          approval: row.querySelector('[data-field="approval"]').value || ''
-        };
-      });
-      A().saveSettings({ plans });
-      alert('Plans saved.');
+    function staffTypingSignal() {
+      if (!activeSupportThread || !window.AcctventaApi) return;
+      clearTimeout(staffTypingTimer);
+      window.AcctventaApi.staffSupportTyping({ threadId: activeSupportThread, typing: true }).catch(()=>{});
+      staffTypingTimer = setTimeout(() => {
+        window.AcctventaApi.staffSupportTyping({ threadId: activeSupportThread, typing: false }).catch(()=>{});
+      }, 1500);
     }
 
-    function saveGateways() {
-      A().saveSettings({
-        gateways: {
-          deposit: {
-            provider: document.getElementById('dep_provider').value,
-            enabled: document.getElementById('dep_enabled').checked,
-            publicKey: document.getElementById('dep_public').value.trim(),
-            secretKey: document.getElementById('dep_secret').value.trim(),
-            webhookUrl: document.getElementById('dep_webhook').value.trim(),
-            notes: document.getElementById('dep_notes').value.trim()
-          },
-          withdraw: {
-            provider: document.getElementById('wd_provider').value,
-            enabled: document.getElementById('wd_enabled').checked,
-            publicKey: document.getElementById('wd_public').value.trim(),
-            secretKey: document.getElementById('wd_secret').value.trim(),
-            webhookUrl: document.getElementById('wd_webhook').value.trim(),
-            notes: document.getElementById('wd_notes').value.trim()
-          }
-        }
-      });
-      alert('Gateway settings saved. Connect a backend before taking real payments.');
-    }
-
-    function saveSupport() {
-      A().saveSettings({
-        config: {
-          supportTelegram: document.getElementById('cfg_telegram').value.trim(),
-          supportEmail: document.getElementById('cfg_email').value.trim()
-        }
-      });
-      alert('Support contacts saved.');
+    async function staffSendReply() {
+      const input = document.getElementById('supportReplyInput');
+      const text = (input.value || '').trim();
+      if (!text || !activeSupportThread) return;
+      try {
+        await window.AcctventaApi.staffSupportSend({ threadId: activeSupportThread, text });
+        input.value = '';
+        openSupportThread(activeSupportThread);
+      } catch (e) {
+        alert(e.message || 'Send failed');
+      }
     }
 
     function loadAds() {

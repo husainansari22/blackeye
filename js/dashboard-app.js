@@ -1116,7 +1116,14 @@
 
   window.openOrderChat = async function (orderId) {
     activeOrderId = orderId;
+    chatMode = 'order';
+    supportThreadId = null;
+    stopChatPoll();
     closeModal();
+    document.getElementById('chatTitle').textContent = 'Order Chat';
+    document.getElementById('chatSubtitle').textContent = '';
+    document.getElementById('chatOnlineDot').classList.add('hidden');
+    document.getElementById('chatTyping').textContent = '';
     document.getElementById('chatOverlay').classList.remove('hidden');
     document.getElementById('chatOverlay').classList.add('flex');
     if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi()) {
@@ -1125,16 +1132,142 @@
     renderChat();
   };
 
+  window.openSupportChat = async function () {
+    const u = requireAuth();
+    if (!u) return;
+    chatMode = 'support';
+    activeOrderId = null;
+    stopChatPoll();
+    closeModal();
+    document.getElementById('chatTitle').textContent = 'Chat Support';
+    document.getElementById('chatSubtitle').textContent = 'Acctventa Support';
+    document.getElementById('chatOverlay').classList.remove('hidden');
+    document.getElementById('chatOverlay').classList.add('flex');
+    try {
+      if (window.AcctventaApi && (await window.AcctventaApi.isAvailable())) {
+        const res = await window.AcctventaApi.supportOpen();
+        supportThreadId = res.thread && res.thread.id;
+        supportMessagesCache = res.messages || [];
+        updateSupportPresence(res.thread);
+        renderChat();
+        startChatPoll();
+        ensureBrowserNotifications();
+        return;
+      }
+    } catch (e) {
+      alert(e.message || 'Could not open chat support. Check your login.');
+    }
+    document.getElementById('chatMessages').innerHTML =
+      '<p class="text-center text-xs text-slate-400 py-8">Live chat needs the online backend. Log out and log in again, then retry.</p>';
+  };
+
+  function updateSupportPresence(thread) {
+    const dot = document.getElementById('chatOnlineDot');
+    const sub = document.getElementById('chatSubtitle');
+    const typing = document.getElementById('chatTyping');
+    if (!thread) return;
+    if (dot) {
+      dot.classList.toggle('hidden', !thread.staffOnline);
+      dot.title = thread.staffOnline ? 'Support online' : '';
+    }
+    if (sub) sub.textContent = thread.staffOnline ? 'Support · Online' : 'Support · Typically replies in minutes';
+    if (typing) typing.textContent = thread.staffTyping ? 'Support is typing…' : '';
+  }
+
+  let chatPollTimer = null;
+  let supportThreadId = null;
+  let supportMessagesCache = [];
+  let chatMode = 'order'; // order | support
+  let lastSupportMsgId = 0;
+  let typingTimer = null;
+
+  function stopChatPoll() {
+    if (chatPollTimer) {
+      clearInterval(chatPollTimer);
+      chatPollTimer = null;
+    }
+  }
+
+  function startChatPoll() {
+    stopChatPoll();
+    chatPollTimer = setInterval(async () => {
+      if (chatMode !== 'support' || !window.AcctventaApi) return;
+      try {
+        const res = await window.AcctventaApi.supportMessages(supportThreadId);
+        supportThreadId = res.thread && res.thread.id;
+        const msgs = res.messages || [];
+        const newest = msgs.length ? msgs[msgs.length - 1].id : 0;
+        if (newest && newest !== lastSupportMsgId) {
+          const last = msgs[msgs.length - 1];
+          if (last && last.role === 'staff' && last.id !== lastSupportMsgId && lastSupportMsgId > 0) {
+            fireBrowserNotification('Support reply', last.body || 'New message from support');
+          }
+          lastSupportMsgId = newest;
+          supportMessagesCache = msgs;
+          renderChat();
+        } else {
+          supportMessagesCache = msgs;
+        }
+        updateSupportPresence(res.thread);
+      } catch (e) {}
+    }, 2500);
+  }
+
+  function ensureBrowserNotifications() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }
+
+  function fireBrowserNotification(title, body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (document.visibilityState === 'visible' && chatMode === 'support') return;
+    try {
+      new Notification(title, { body: String(body || '').slice(0, 120), icon: '/img/logo.png' });
+    } catch (e) {}
+  }
+
+  window.onChatTyping = function () {
+    if (chatMode !== 'support' || !window.AcctventaApi) return;
+    clearTimeout(typingTimer);
+    window.AcctventaApi.supportTyping({ typing: true }).catch(() => {});
+    typingTimer = setTimeout(() => {
+      window.AcctventaApi.supportTyping({ typing: false }).catch(() => {});
+    }, 1500);
+  };
+
   window.closeOrderChat = function () {
+    stopChatPoll();
+    if (chatMode === 'support' && window.AcctventaApi) {
+      window.AcctventaApi.supportTyping({ typing: false }).catch(() => {});
+    }
+    chatMode = 'order';
     document.getElementById('chatOverlay').classList.add('hidden');
     document.getElementById('chatOverlay').classList.remove('flex');
   };
 
   function renderChat() {
     const box = document.getElementById('chatMessages');
-    if (!box || !activeOrderId) return;
-    const msgs = A().getMessages(activeOrderId);
+    if (!box) return;
     const u = refreshUser();
+    if (chatMode === 'support') {
+      const msgs = supportMessagesCache || [];
+      box.innerHTML = msgs.length
+        ? msgs
+            .map((m) => {
+              const mine = m.role === 'user';
+              const name = mine ? (u && u.name) || 'You' : m.staffName || 'Support';
+              return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-brandPrimary text-white' : 'bg-slate-100 dark:bg-slate-800'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(name)}</p>${escapeHtml(m.body)}</div></div>`;
+            })
+            .join('')
+        : '<p class="text-center text-xs text-slate-400 py-8">No messages yet. Ask support anything.</p>';
+      if (msgs.length) lastSupportMsgId = msgs[msgs.length - 1].id;
+      box.scrollTop = box.scrollHeight;
+      return;
+    }
+    if (!activeOrderId) return;
+    const msgs = A().getMessages(activeOrderId);
     box.innerHTML = msgs.length
       ? msgs
           .map((m) => {
@@ -1149,7 +1282,20 @@
   window.sendChatMessage = async function () {
     const input = document.getElementById('chatInput');
     const text = (input.value || '').trim();
-    if (!text || !activeOrderId) return;
+    if (!text) return;
+    if (chatMode === 'support') {
+      try {
+        const res = await window.AcctventaApi.supportSend({ text, threadId: supportThreadId });
+        supportMessagesCache = res.messages || [];
+        if (res.thread) updateSupportPresence(res.thread);
+        input.value = '';
+        renderChat();
+      } catch (e) {
+        alert(e.message || 'Send failed');
+      }
+      return;
+    }
+    if (!activeOrderId) return;
     const u = refreshUser();
     await Promise.resolve(A().sendMessage(u, activeOrderId, text));
     input.value = '';
@@ -1158,6 +1304,13 @@
     }
     renderChat();
   };
+
+  // Presence heartbeat while logged in
+  setInterval(() => {
+    if (window.AcctventaApi && window.AcctventaApi.getToken && window.AcctventaApi.getToken()) {
+      window.AcctventaApi.presencePing().catch(() => {});
+    }
+  }, 60000);
 
   window.selectPlan = function (planId) {
     const u = refreshUser();

@@ -382,6 +382,7 @@ function migrate_legacy_support_email(): void {
 
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/flutterwave.php';
+require_once __DIR__ . '/support.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     json_out(['ok' => true]);

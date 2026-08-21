@@ -253,7 +253,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php if ($error): ?><div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3"><?= h($error) ?></div><?php endif; ?>
 
     <div class="flex gap-2 overflow-x-auto text-sm">
-      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','wallet'=>'Wallet','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
+      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','wallet'=>'Wallet','support'=>'Support','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
         <a href="?tab=<?= $k ?>" class="px-3 py-2 rounded-lg <?= $tab===$k?'bg-brand text-white':'bg-white border' ?>"><?= $label ?></a>
       <?php endforeach; ?>
     </div>
@@ -269,6 +269,97 @@ $tab = $_GET['tab'] ?? 'overview';
       <div class="bg-sky-50 border border-sky-200 text-sky-900 text-sm rounded-xl p-4">
         This is your real Owner control panel (MySQL). Use it to manage every user, listing, order, withdrawal, fee, and payment gateway.
       </div>
+    <?php endif; ?>
+
+    <?php if ($tab === 'support'):
+      ensure_support_tables();
+      $staffToken = create_staff_session('owner', 'Owner Support');
+    ?>
+      <div class="bg-white rounded-xl border p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="font-bold text-lg">Live Chat Support</h2>
+            <p class="text-xs text-slate-500">Reply to users who opened Chat Support on the website.</p>
+          </div>
+          <button type="button" onclick="ownerEnableNotif()" class="text-xs text-brand font-semibold">Enable browser notifications</button>
+        </div>
+        <div class="grid md:grid-cols-5 gap-3 min-h-[460px]">
+          <div class="md:col-span-2 border rounded-xl overflow-hidden flex flex-col">
+            <div class="px-3 py-2 border-b text-xs font-semibold flex justify-between bg-slate-50">
+              <span>Conversations</span>
+              <button type="button" onclick="ownerLoadThreads()" class="text-brand">Refresh</button>
+            </div>
+            <div id="ownerThreadList" class="flex-1 overflow-y-auto max-h-[55vh]"></div>
+          </div>
+          <div class="md:col-span-3 border rounded-xl flex flex-col">
+            <div id="ownerChatHeader" class="px-3 py-2 border-b text-sm font-semibold bg-slate-50">Select a conversation</div>
+            <div id="ownerChatMsgs" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[48vh] bg-slate-50/40"></div>
+            <p id="ownerTyping" class="px-3 text-[11px] text-slate-400 h-5"></p>
+            <div class="p-2 border-t flex gap-2">
+              <input id="ownerReply" type="text" placeholder="Type a reply…" class="flex-1 border rounded-full px-3 py-2 text-sm" oninput="ownerTyping()" onkeydown="if(event.key==='Enter'){ownerSend();}">
+              <button type="button" onclick="ownerSend()" class="bg-brand text-white rounded-full px-4 text-sm font-bold">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
+        localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);
+        let ownerActive = null;
+        let ownerFp = '';
+        function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+        function ownerEnableNotif(){ if(!('Notification' in window)) return alert('Not supported'); Notification.requestPermission(); }
+        function ownerNotify(t,b){ if(!('Notification' in window)||Notification.permission!=='granted')return; if(document.visibilityState==='visible')return; try{new Notification(t,{body:String(b||'').slice(0,120)});}catch(e){} }
+        async function apiStaff(action, opts={}){
+          const url = new URL('/api/index.php', location.origin);
+          url.searchParams.set('action', action);
+          if(opts.query) Object.entries(opts.query).forEach(([k,v])=>url.searchParams.set(k,v));
+          const res = await fetch(url, {
+            method: opts.method||'GET',
+            headers: { 'Authorization':'Bearer '+OWNER_STAFF_TOKEN, 'X-Staff-Token': OWNER_STAFF_TOKEN, ...(opts.body?{'Content-Type':'application/json'}:{}) },
+            body: opts.body?JSON.stringify(opts.body):undefined
+          });
+          const data = await res.json();
+          if(!res.ok||data.ok===false) throw new Error(data.error||'Request failed');
+          return data;
+        }
+        async function ownerLoadThreads(){
+          try{
+            const res = await apiStaff('support.threads');
+            const threads = res.threads||[];
+            const fp = threads.map(t=>t.id+':'+(t.lastMessageAt||'')+':'+(t.lastBody||'')).join('|');
+            if(fp!==ownerFp && ownerFp && threads[0]) ownerNotify('New support message', (threads[0].userName||'User')+': '+(threads[0].lastBody||''));
+            ownerFp = fp;
+            const box = document.getElementById('ownerThreadList');
+            if(!threads.length){ box.innerHTML='<p class="p-3 text-xs text-slate-400">No conversations yet.</p>'; return; }
+            box.innerHTML = threads.map(t=>`<button type="button" onclick="ownerOpen(${t.id})" class="w-full text-left px-3 py-2.5 border-b hover:bg-sky-50 ${ownerActive===t.id?'bg-sky-50':''}">
+              <div class="flex justify-between"><p class="text-xs font-bold truncate">${esc(t.userName)}</p>${t.userOnline?'<span class="w-2 h-2 rounded-full bg-emerald-500 mt-1"></span>':''}</div>
+              <p class="text-[10px] text-slate-500 truncate">${esc(t.userEmail)}</p>
+              <p class="text-[10px] text-slate-400 truncate">${esc(t.lastBody||'No messages')}</p>
+            </button>`).join('');
+          }catch(e){ document.getElementById('ownerThreadList').innerHTML='<p class="p-3 text-xs text-red-500">'+esc(e.message)+'</p>'; }
+        }
+        async function ownerOpen(id){
+          ownerActive=id;
+          try{
+            const res = await apiStaff('support.messages',{query:{threadId:id}});
+            const t=res.thread||{};
+            document.getElementById('ownerChatHeader').innerHTML=esc(t.userName||'User')+' <span class="text-xs font-normal text-slate-400">'+esc(t.userEmail||'')+(t.userOnline?' · <span class="text-emerald-500">Online</span>':'')+'</span>';
+            document.getElementById('ownerTyping').textContent=t.userTyping?'User is typing…':'';
+            const box=document.getElementById('ownerChatMsgs');
+            const msgs=res.messages||[];
+            box.innerHTML=msgs.length?msgs.map(m=>{const mine=m.role==='staff';return `<div class="flex ${mine?'justify-end':'justify-start'}"><div class="max-w-[85%] rounded-2xl px-3 py-2 text-sm ${mine?'bg-brand text-white':'bg-white border'}"><p class="text-[10px] opacity-70 mb-0.5">${esc(mine?(m.staffName||'Support'):(t.userName||'User'))}</p>${esc(m.body)}</div></div>`;}).join(''):'<p class="text-center text-xs text-slate-400 py-6">No messages yet.</p>';
+            box.scrollTop=box.scrollHeight;
+            ownerLoadThreads();
+          }catch(e){alert(e.message);}
+        }
+        let ot;
+        function ownerTyping(){ if(!ownerActive)return; clearTimeout(ot); apiStaff('support.typing',{method:'POST',body:{threadId:ownerActive,typing:true}}).catch(()=>{}); ot=setTimeout(()=>apiStaff('support.typing',{method:'POST',body:{threadId:ownerActive,typing:false}}).catch(()=>{}),1500); }
+        async function ownerSend(){ const input=document.getElementById('ownerReply'); const text=(input.value||'').trim(); if(!text||!ownerActive)return; try{ await apiStaff('support.send',{method:'POST',body:{threadId:ownerActive,text}}); input.value=''; ownerOpen(ownerActive);}catch(e){alert(e.message);} }
+        ownerLoadThreads();
+        setInterval(()=>{ ownerLoadThreads(); if(ownerActive) ownerOpen(ownerActive); }, 3000);
+        ownerEnableNotif();
+      </script>
     <?php endif; ?>
 
     <?php if ($tab === 'users'): $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>

@@ -596,6 +596,141 @@ try {
             json_out(['ok' => true, 'notifications' => $stmt->fetchAll()]);
         }
 
+        case 'presence.ping': {
+            $u = require_user();
+            touch_user_presence((int)$u['id']);
+            json_out(['ok' => true, 'serverTime' => date('c')]);
+        }
+
+        case 'staff.login': {
+            ensure_support_tables();
+            $user = trim((string)($body['username'] ?? ''));
+            $pass = (string)($body['password'] ?? '');
+            $cfg = app_config();
+            $okOwner = ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? ''));
+            $okAdmin = ($user === 'admin' && ($pass === 'admin123' || $pass === (string)setting_get('admin_api_password', 'admin123')));
+            if (!$okOwner && !$okAdmin) {
+                json_out(['ok' => false, 'error' => 'Invalid staff credentials'], 401);
+            }
+            $role = $okOwner ? 'owner' : 'admin';
+            $name = $okOwner ? 'Owner Support' : 'Acctventa Support';
+            $token = create_staff_session($role, $name);
+            json_out(['ok' => true, 'token' => $token, 'role' => $role, 'name' => $name]);
+        }
+
+        case 'support.open': {
+            $u = require_user();
+            touch_user_presence((int)$u['id']);
+            $thread = support_get_or_create_thread((int)$u['id']);
+            db()->prepare('UPDATE support_threads SET user_last_seen_at = NOW() WHERE id = ?')->execute([(int)$thread['id']]);
+            $msgs = array_map('support_map_message', support_list_messages((int)$thread['id']));
+            json_out(['ok' => true, 'thread' => support_public_thread($thread, $u), 'messages' => $msgs]);
+        }
+
+        case 'support.messages': {
+            // user or staff
+            $staff = staff_from_token();
+            $threadId = (int)($body['threadId'] ?? $_GET['threadId'] ?? 0);
+            if ($staff) {
+                if ($threadId < 1) json_out(['ok' => false, 'error' => 'threadId required'], 422);
+                $t = db()->prepare('SELECT t.*, u.name AS user_name, u.email AS user_email, u.last_seen_at FROM support_threads t JOIN users u ON u.id = t.user_id WHERE t.id = ?');
+                $t->execute([$threadId]);
+                $thread = $t->fetch();
+                if (!$thread) json_out(['ok' => false, 'error' => 'Thread not found'], 404);
+                db()->prepare('UPDATE support_threads SET staff_last_seen_at = NOW() WHERE id = ?')->execute([$threadId]);
+                $msgs = array_map('support_map_message', support_list_messages($threadId));
+                json_out([
+                    'ok' => true,
+                    'thread' => array_merge(support_public_thread($thread, ['last_seen_at' => $thread['last_seen_at'] ?? null]), [
+                        'userName' => $thread['user_name'],
+                        'userEmail' => $thread['user_email'],
+                    ]),
+                    'messages' => $msgs,
+                ]);
+            }
+            $u = require_user();
+            touch_user_presence((int)$u['id']);
+            $thread = support_get_or_create_thread((int)$u['id']);
+            db()->prepare('UPDATE support_threads SET user_last_seen_at = NOW() WHERE id = ?')->execute([(int)$thread['id']]);
+            $msgs = array_map('support_map_message', support_list_messages((int)$thread['id']));
+            json_out(['ok' => true, 'thread' => support_public_thread($thread, $u), 'messages' => $msgs]);
+        }
+
+        case 'support.send': {
+            $staff = staff_from_token();
+            $text = trim((string)($body['text'] ?? $body['body'] ?? ''));
+            if ($text === '') json_out(['ok' => false, 'error' => 'Empty message'], 422);
+            if ($staff) {
+                $threadId = (int)($body['threadId'] ?? 0);
+                if ($threadId < 1) json_out(['ok' => false, 'error' => 'threadId required'], 422);
+                $t = db()->prepare('SELECT * FROM support_threads WHERE id = ?');
+                $t->execute([$threadId]);
+                $thread = $t->fetch();
+                if (!$thread) json_out(['ok' => false, 'error' => 'Thread not found'], 404);
+                db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body) VALUES (?, \'staff\', NULL, ?, ?)')
+                    ->execute([$threadId, $staff['staff_name'], $text]);
+                db()->prepare("UPDATE support_threads SET status = 'open', staff_typing_at = NULL, staff_last_seen_at = NOW(), last_message_at = NOW() WHERE id = ?")
+                    ->execute([$threadId]);
+                notify_user((int)$thread['user_id'], 'Support reply', mb_substr($text, 0, 100), 'support');
+                $msgs = array_map('support_map_message', support_list_messages($threadId));
+                json_out(['ok' => true, 'messages' => $msgs]);
+            }
+            $u = require_user();
+            touch_user_presence((int)$u['id']);
+            $thread = support_get_or_create_thread((int)$u['id']);
+            $threadId = (int)$thread['id'];
+            db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body) VALUES (?, \'user\', ?, NULL, ?)')
+                ->execute([$threadId, (int)$u['id'], $text]);
+            db()->prepare("UPDATE support_threads SET status = 'open', user_typing_at = NULL, user_last_seen_at = NOW(), last_message_at = NOW() WHERE id = ?")
+                ->execute([$threadId]);
+            // notify staff via a lightweight settings flag / no user id — staff poll inbox
+            $msgs = array_map('support_map_message', support_list_messages($threadId));
+            json_out(['ok' => true, 'thread' => support_public_thread($thread, $u), 'messages' => $msgs]);
+        }
+
+        case 'support.typing': {
+            $staff = staff_from_token();
+            $typing = !empty($body['typing']);
+            if ($staff) {
+                $threadId = (int)($body['threadId'] ?? 0);
+                if ($threadId < 1) json_out(['ok' => false, 'error' => 'threadId required'], 422);
+                if ($typing) {
+                    db()->prepare('UPDATE support_threads SET staff_typing_at = NOW(), staff_last_seen_at = NOW() WHERE id = ?')->execute([$threadId]);
+                } else {
+                    db()->prepare('UPDATE support_threads SET staff_typing_at = NULL WHERE id = ?')->execute([$threadId]);
+                }
+                json_out(['ok' => true]);
+            }
+            $u = require_user();
+            $thread = support_get_or_create_thread((int)$u['id']);
+            if ($typing) {
+                db()->prepare('UPDATE support_threads SET user_typing_at = NOW(), user_last_seen_at = NOW() WHERE id = ?')->execute([(int)$thread['id']]);
+            } else {
+                db()->prepare('UPDATE support_threads SET user_typing_at = NULL WHERE id = ?')->execute([(int)$thread['id']]);
+            }
+            json_out(['ok' => true]);
+        }
+
+        case 'support.threads': {
+            $staff = require_staff();
+            ensure_support_tables();
+            $rows = db()->query("SELECT t.*, u.name AS user_name, u.email AS user_email, u.last_seen_at,
+                (SELECT body FROM support_messages sm WHERE sm.thread_id = t.id ORDER BY sm.id DESC LIMIT 1) AS last_body
+              FROM support_threads t
+              JOIN users u ON u.id = t.user_id
+              ORDER BY COALESCE(t.last_message_at, t.created_at) DESC
+              LIMIT 100")->fetchAll();
+            $list = [];
+            foreach ($rows as $r) {
+                $list[] = array_merge(support_public_thread($r, ['last_seen_at' => $r['last_seen_at'] ?? null]), [
+                    'userName' => $r['user_name'],
+                    'userEmail' => $r['user_email'],
+                    'lastBody' => $r['last_body'] ?? '',
+                ]);
+            }
+            json_out(['ok' => true, 'threads' => $list, 'staff' => ['name' => $staff['staff_name'], 'role' => $staff['role']]]);
+        }
+
         default:
             json_out(['ok' => false, 'error' => 'Unknown action', 'action' => $action], 404);
     }

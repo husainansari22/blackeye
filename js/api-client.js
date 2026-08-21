@@ -5,6 +5,7 @@
 (function (global) {
   const API_URL = '/api/index.php';
   const TOKEN_KEY = 'acctventa_api_token';
+  const STAFF_TOKEN_KEY = 'acctventa_staff_token';
 
   function getToken() {
     try {
@@ -21,7 +22,22 @@
     } catch (e) {}
   }
 
-  async function request(action, { method = 'GET', body, query } = {}) {
+  function getStaffToken() {
+    try {
+      return localStorage.getItem(STAFF_TOKEN_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function setStaffToken(token) {
+    try {
+      if (token) localStorage.setItem(STAFF_TOKEN_KEY, token);
+      else localStorage.removeItem(STAFF_TOKEN_KEY);
+    } catch (e) {}
+  }
+
+  async function request(action, { method = 'GET', body, query, asStaff = false } = {}) {
     const url = new URL(API_URL, window.location.origin);
     url.searchParams.set('action', action);
     if (query) {
@@ -34,10 +50,11 @@
       credentials: 'include',
       headers: {},
     };
-    const token = getToken();
+    const token = asStaff ? getStaffToken() : getToken();
     if (token) {
       opts.headers['Authorization'] = 'Bearer ' + token;
-      opts.headers['X-Auth-Token'] = token;
+      if (asStaff) opts.headers['X-Staff-Token'] = token;
+      else opts.headers['X-Auth-Token'] = token;
     }
     if (body !== undefined) {
       opts.headers['Content-Type'] = 'application/json';
@@ -52,7 +69,7 @@
       err.code = data.code || '';
       throw err;
     }
-    if (data.token) setToken(data.token);
+    if (data.token && !asStaff) setToken(data.token);
     return data;
   }
 
@@ -175,6 +192,41 @@
     },
     publicConfig() {
       return request('config.public');
+    },
+    presencePing() {
+      return request('presence.ping', { method: 'POST', body: {} });
+    },
+    staffLogin(payload) {
+      return request('staff.login', { method: 'POST', body: payload }).then((data) => {
+        if (data.token) setStaffToken(data.token);
+        return data;
+      });
+    },
+    getStaffToken,
+    setStaffToken,
+    supportOpen() {
+      return request('support.open', { method: 'POST', body: {} });
+    },
+    supportMessages(threadId) {
+      return request('support.messages', { query: threadId ? { threadId } : {} });
+    },
+    supportSend(payload) {
+      return request('support.send', { method: 'POST', body: payload });
+    },
+    supportTyping(payload) {
+      return request('support.typing', { method: 'POST', body: payload });
+    },
+    staffSupportThreads() {
+      return request('support.threads', { asStaff: true });
+    },
+    staffSupportMessages(threadId) {
+      return request('support.messages', { asStaff: true, query: { threadId } });
+    },
+    staffSupportSend(payload) {
+      return request('support.send', { method: 'POST', body: payload, asStaff: true });
+    },
+    staffSupportTyping(payload) {
+      return request('support.typing', { method: 'POST', body: payload, asStaff: true });
     },
   };
 

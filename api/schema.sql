@@ -134,6 +134,45 @@ CREATE TABLE IF NOT EXISTS notifications (
   CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS support_threads (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'open',
+  user_typing_at DATETIME NULL,
+  staff_typing_at DATETIME NULL,
+  user_last_seen_at DATETIME NULL,
+  staff_last_seen_at DATETIME NULL,
+  last_message_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_support_user (user_id),
+  INDEX (status),
+  INDEX (last_message_at),
+  CONSTRAINT fk_st_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS support_messages (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  thread_id INT UNSIGNED NOT NULL,
+  sender_role ENUM('user','staff') NOT NULL,
+  sender_id INT UNSIGNED NULL,
+  staff_name VARCHAR(80) NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (thread_id),
+  CONSTRAINT fk_sm_thread FOREIGN KEY (thread_id) REFERENCES support_threads(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS staff_sessions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  token_hash CHAR(64) NOT NULL,
+  role VARCHAR(40) NOT NULL DEFAULT 'staff',
+  staff_name VARCHAR(80) NOT NULL DEFAULT 'Support',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  INDEX (token_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS gateway_settings (
   id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
   deposit_provider VARCHAR(40) DEFAULT 'none',
