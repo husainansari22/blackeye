@@ -92,6 +92,17 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             db()->prepare('UPDATE users SET is_verified = ? WHERE id = ?')->execute([(int)$_POST['verified'], (int)$_POST['user_id']]);
             $flash = 'Verification updated.';
         }
+        if ($form === 'login_as_user') {
+            $uid = (int)$_POST['user_id'];
+            $stmt = db()->prepare('SELECT id, email, name, is_banned FROM users WHERE id = ? LIMIT 1');
+            $stmt->execute([$uid]);
+            $row = $stmt->fetch();
+            if (!$row) throw new RuntimeException('User not found');
+            if ((int)$row['is_banned'] === 1) throw new RuntimeException('User is banned — unban first');
+            $token = create_session($uid);
+            header('Location: /owner-login-as.html?token=' . rawurlencode($token) . '&email=' . rawurlencode((string)$row['email']) . '&name=' . rawurlencode((string)$row['name']));
+            exit;
+        }
         if ($form === 'adjust_balance') {
             ensure_wallet_ledger_columns();
             $uid = (int)$_POST['user_id'];
@@ -199,11 +210,27 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $code = strtoupper(trim((string)($row['code'] ?? '')));
                 if ($code === '') continue;
                 $netsRaw = trim((string)($row['networks'] ?? ''));
-                $nets = array_values(array_filter(array_map('trim', preg_split('/[,|]+/', $netsRaw) ?: [])));
+                $nets = array_values(array_filter(array_map(static function ($n) {
+                    return strtoupper(trim((string)$n));
+                }, preg_split('/[,|]+/', $netsRaw) ?: [])));
+                $addrIn = $row['addr'] ?? [];
+                $addresses = [];
+                if (is_array($addrIn)) {
+                    foreach ($addrIn as $netKey => $addrVal) {
+                        $nk = strtoupper(trim((string)$netKey));
+                        if ($nk === '') continue;
+                        $addresses[$nk] = trim((string)$addrVal);
+                    }
+                }
+                // Ensure every listed network has an address key
+                foreach ($nets as $n) {
+                    if (!isset($addresses[$n])) $addresses[$n] = '';
+                }
                 $crypto[] = [
                     'code' => $code,
                     'name' => trim((string)($row['name'] ?? $code)),
                     'networks' => $nets ?: ['TRC20'],
+                    'addresses' => $addresses,
                     'enabled' => !empty($row['enabled']),
                 ];
             }
@@ -293,6 +320,7 @@ $tab = $_GET['tab'] ?? 'overview';
     'ads_pending' => (int)db()->query("SELECT COUNT(*) c FROM ads WHERE status='pending'")->fetch()['c'],
     'orders' => (int)db()->query('SELECT COUNT(*) c FROM orders')->fetch()['c'],
     'withdraw_pending' => (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='withdrawal' AND status='pending'")->fetch()['c'],
+    'deposit_pending' => (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='deposit' AND status='pending'")->fetch()['c'],
     'volume' => (float)db()->query("SELECT COALESCE(SUM(price),0) s FROM orders WHERE status='completed'")->fetch()['s'],
   ];
   $gw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
@@ -324,10 +352,12 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="av-stat"><p class="label">Pending ads</p><p class="value"><?= $stats['ads_pending'] ?></p></div>
         <div class="av-stat"><p class="label">Orders</p><p class="value"><?= $stats['orders'] ?></p></div>
         <div class="av-stat"><p class="label">Pending withdrawals</p><p class="value"><?= $stats['withdraw_pending'] ?></p></div>
+        <div class="av-stat"><p class="label">Pending deposits</p><p class="value"><?= $stats['deposit_pending'] ?></p></div>
         <div class="av-stat"><p class="label">Completed volume</p><p class="value">$<?= number_format($stats['volume'], 2) ?></p></div>
       </div>
-      <div class="av-info text-sm p-4">
-        This is your real Owner control panel (MySQL). Use it to manage every user, listing, order, withdrawal, fee, and payment gateway.
+      <div class="av-info text-sm p-4 space-y-2">
+        <p>This is your real Owner control panel (MySQL). Use it to manage every user, listing, order, withdrawal, fee, and payment gateway.</p>
+        <p class="text-xs"><a class="text-brand font-semibold underline" href="?tab=currencies">Currencies</a> — paste crypto deposit addresses · <a class="text-brand font-semibold underline" href="?tab=wallet">Wallet</a> — see who deposited · <a class="text-brand font-semibold underline" href="?tab=users">Users</a> — Login as user</p>
       </div>
     <?php endif; ?>
 
@@ -482,6 +512,11 @@ $tab = $_GET['tab'] ?? 'overview';
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
                   <input type="hidden" name="verified" value="<?= (int)$u['is_verified']?0:1 ?>">
                   <button class="px-2 py-1 rounded bg-emerald-600 text-white"><?= (int)$u['is_verified']?'Unverify':'Verify' ?></button>
+                </form>
+                <form method="post" target="_blank" class="inline">
+                  <input type="hidden" name="form" value="login_as_user">
+                  <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                  <button class="px-2 py-1 rounded bg-sky-600 text-white" title="Open this user’s dashboard in a new tab">Login as user</button>
                 </form>
                 <form method="post" class="flex gap-1 items-center">
                   <input type="hidden" name="form" value="adjust_balance">
@@ -747,23 +782,30 @@ $tab = $_GET['tab'] ?? 'overview';
         <?php endif; ?>
       </div>
       <div class="av-info p-4 mb-4">
-        <h2 class="font-bold text-lg mb-1">Pending deposits (credit / reject)</h2>
-        <p class="text-xs mb-3">Approving credits the user’s USD wallet (used for crypto deposits and manual overrides).</p>
+        <h2 class="font-bold text-lg mb-1">Pending deposits (who paid / credit / reject)</h2>
+        <p class="text-xs mb-3">Crypto deposits appear here with the user’s name, email, coin, network, and the address they were told to send to. Approve only after you confirm the on-chain payment.</p>
         <?php if (!$pendingDep): ?>
           <p class="text-sm">No pending deposits.</p>
         <?php else: ?>
           <div class="space-y-2">
-          <?php foreach ($pendingDep as $t): ?>
-            <div class="av-card  p-3 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
-              <div class="text-xs">
-                <p class="font-bold text-sm"><?= h($t['name']) ?> · <?= h($t['email']) ?></p>
-                <p>$<?= number_format((float)$t['amount'], 2) ?> · <?= h($t['method']) ?></p>
-                <p class="text-slate-500 mt-1"><?= h($t['note']) ?></p>
-                <p class="font-mono text-[10px] text-slate-400"><?= h($t['reference'] ?? '') ?></p>
+          <?php foreach ($pendingDep as $t):
+            $isCrypto = strtolower((string)($t['method'] ?? '')) === 'crypto';
+          ?>
+            <div class="av-card p-3 space-y-2 <?= $isCrypto ? 'border border-amber-400/50' : '' ?>">
+              <div class="text-xs space-y-1">
+                <p class="font-bold text-sm"><?= h($t['name']) ?> · <a class="text-brand underline" href="mailto:<?= h($t['email']) ?>"><?= h($t['email']) ?></a></p>
+                <p class="text-base font-extrabold text-brand">$<?= number_format((float)$t['amount'], 2) ?> <span class="text-[10px] font-semibold uppercase tracking-wide <?= $isCrypto ? 'text-amber-600' : 'text-slate-500' ?>"><?= h($t['method'] ?: 'deposit') ?></span></p>
+                <p class="text-slate-600 dark:text-slate-300 break-all"><?= h($t['note']) ?></p>
+                <p class="font-mono text-[10px] text-slate-400">Ref <?= h($t['reference'] ?? '') ?> · <?= h($t['created_at'] ?? '') ?></p>
               </div>
-              <div class="flex gap-2">
+              <div class="flex flex-wrap gap-2">
                 <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="completed"><button class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Credit wallet</button></form>
                 <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="cancelled"><button class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Reject</button></form>
+                <form method="post" target="_blank" class="inline">
+                  <input type="hidden" name="form" value="login_as_user">
+                  <input type="hidden" name="user_id" value="<?= (int)$t['user_id'] ?>">
+                  <button class="bg-sky-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Open user account</button>
+                </form>
               </div>
             </div>
           <?php endforeach; ?>
@@ -846,38 +888,54 @@ $tab = $_GET['tab'] ?? 'overview';
         </div>
 
         <div class="av-card  p-5 space-y-3">
-          <h2 class="font-bold text-lg">Crypto options</h2>
-          <p class="text-xs text-slate-500">Networks are comma-separated (e.g. TRC20, BEP20, ERC20).</p>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead class="text-xs text-slate-500 border-b">
-                <tr>
-                  <th class="py-2 pr-2">Coin</th>
-                  <th class="py-2 pr-2">Name</th>
-                  <th class="py-2 pr-2">Networks</th>
-                  <th class="py-2 pr-2 text-center">On</th>
-                </tr>
-              </thead>
-              <tbody>
-              <?php foreach (($wc['crypto'] ?? []) as $i => $c): ?>
-                <tr class="border-b border-slate-100">
-                  <td class="py-3 pr-2 font-mono font-bold text-xs">
-                    <?= h($c['code'] ?? '') ?>
-                    <input type="hidden" name="crypto[<?= $i ?>][code]" value="<?= h($c['code'] ?? '') ?>">
-                  </td>
-                  <td class="py-3 pr-2">
-                    <input name="crypto[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>" class="border rounded-lg px-2 py-1.5 text-sm w-32">
-                  </td>
-                  <td class="py-3 pr-2">
-                    <input name="crypto[<?= $i ?>][networks]" value="<?= h(implode(', ', $c['networks'] ?? [])) ?>" class="border rounded-lg px-2 py-1.5 text-sm w-48 sm:w-64">
-                  </td>
-                  <td class="py-3 pr-2 text-center">
-                    <input type="checkbox" name="crypto[<?= $i ?>][enabled]" value="1" class="accent-sky-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
-                  </td>
-                </tr>
+          <h2 class="font-bold text-lg">Crypto options + deposit addresses</h2>
+          <p class="text-xs text-slate-500">Add your receiving wallet address for each network. Users only see coins/networks that have an address filled in. Networks are comma-separated (e.g. TRC20, BEP20, ERC20) — save once to refresh address fields for new networks.</p>
+          <div class="space-y-4">
+              <?php foreach (($wc['crypto'] ?? []) as $i => $c):
+                $nets = $c['networks'] ?? [];
+                if (!is_array($nets)) $nets = [];
+                $addrs = is_array($c['addresses'] ?? null) ? $c['addresses'] : [];
+              ?>
+                <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
+                  <div class="flex flex-wrap gap-3 items-end">
+                    <div>
+                      <p class="text-[10px] uppercase text-slate-500 font-semibold">Coin</p>
+                      <p class="font-mono font-bold text-sm"><?= h($c['code'] ?? '') ?></p>
+                      <input type="hidden" name="crypto[<?= $i ?>][code]" value="<?= h($c['code'] ?? '') ?>">
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase text-slate-500 font-semibold">Name</label>
+                      <input name="crypto[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>" class="block border rounded-lg px-2 py-1.5 text-sm w-32">
+                    </div>
+                    <div class="flex-1 min-w-[180px]">
+                      <label class="text-[10px] uppercase text-slate-500 font-semibold">Networks</label>
+                      <input name="crypto[<?= $i ?>][networks]" value="<?= h(implode(', ', $nets)) ?>" class="block border rounded-lg px-2 py-1.5 text-sm w-full" placeholder="TRC20, BEP20, ERC20">
+                    </div>
+                    <label class="text-xs flex items-center gap-1 pb-2">
+                      <input type="checkbox" name="crypto[<?= $i ?>][enabled]" value="1" class="accent-sky-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
+                      Enabled
+                    </label>
+                  </div>
+                  <div class="grid sm:grid-cols-2 gap-2">
+                    <?php if (!$nets): ?>
+                      <p class="text-[11px] text-amber-600">Add at least one network, then Save rates to enter addresses.</p>
+                    <?php endif; ?>
+                    <?php foreach ($nets as $net):
+                      $nk = strtoupper(trim((string)$net));
+                      if ($nk === '') continue;
+                      $addrVal = (string)($addrs[$nk] ?? '');
+                    ?>
+                      <div>
+                        <label class="text-[10px] font-semibold text-slate-500"><?= h($nk) ?> deposit address</label>
+                        <input name="crypto[<?= $i ?>][addr][<?= h($nk) ?>]" value="<?= h($addrVal) ?>" placeholder="Paste your <?= h($nk) ?> wallet address" class="mt-0.5 w-full border rounded-lg px-2 py-1.5 text-xs font-mono <?= $addrVal === '' ? 'border-amber-400' : '' ?>">
+                        <?php if ($addrVal === ''): ?>
+                          <p class="text-[10px] text-amber-600 mt-0.5">Empty — users cannot deposit this network until you add an address.</p>
+                        <?php endif; ?>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
               <?php endforeach; ?>
-              </tbody>
-            </table>
           </div>
         </div>
 

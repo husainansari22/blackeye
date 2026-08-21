@@ -471,22 +471,53 @@ try {
             $channel = strtolower(trim((string)($body['channel'] ?? 'local')));
             $prefer = strtoupper(trim((string)($body['currency'] ?? 'NGN')));
 
-            // Crypto deposits: create pending request for owner/admin to credit after confirming on-chain
+            // Crypto deposits: require configured address, show it to user, then create pending for owner review
             if ($channel === 'crypto') {
                 ensure_tx_reference_column();
-                $txRef = 'AVC' . strtoupper(substr(uid_token(8), 0, 16));
                 $coin = $prefer !== '' ? $prefer : 'USDT';
-                $note = 'Crypto deposit pending · ' . $coin . ' · await owner credit';
+                $network = strtoupper(trim((string)($body['network'] ?? '')));
+                $txHash = trim((string)($body['txHash'] ?? $body['txid'] ?? ''));
+                $coinCfg = crypto_coin_config($coin);
+                if (!$coinCfg) {
+                    json_out(['ok' => false, 'error' => 'This cryptocurrency is not available for deposits.'], 422);
+                }
+                $nets = array_map(static function ($n) {
+                    return strtoupper(trim((string)$n));
+                }, $coinCfg['networks'] ?? []);
+                $nets = array_values(array_filter($nets));
+                if ($network === '' && count($nets) === 1) {
+                    $network = $nets[0];
+                }
+                if ($network === '' || !in_array($network, $nets, true)) {
+                    json_out(['ok' => false, 'error' => 'Select a valid network for ' . $coin], 422);
+                }
+                $address = crypto_deposit_address($coin, $network);
+                if ($address === '') {
+                    json_out([
+                        'ok' => false,
+                        'error' => 'Deposit address not set for ' . $coin . ' (' . $network . '). Owner must add it under Admin → Currencies.',
+                        'code' => 'crypto_address_missing',
+                    ], 503);
+                }
+                $txRef = 'AVC' . strtoupper(substr(uid_token(8), 0, 16));
+                $note = 'Crypto deposit pending · ' . $coin . ' · ' . $network . ' · to=' . $address;
+                if ($txHash !== '') {
+                    $note .= ' · user_txid=' . preg_replace('/\s+/', '', $txHash);
+                }
+                $note .= ' · await owner credit';
                 db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'deposit\', ?, ?, \'pending\', \'crypto\', ?, ?)')
                     ->execute([(int)$u['id'], money_f($credited), money_f($fee), $note, $txRef]);
-                notify_user((int)$u['id'], 'Crypto deposit submitted', 'Your $' . money_f($credited) . ' ' . $coin . ' deposit is pending confirmation.', 'wallet');
+                notify_user((int)$u['id'], 'Crypto deposit submitted', 'Your $' . money_f($credited) . ' ' . $coin . ' (' . $network . ') deposit is pending owner confirmation.', 'wallet');
                 json_out([
                     'ok' => true,
                     'pending' => true,
                     'reference' => $txRef,
                     'amount' => $amount,
                     'credited' => $credited,
-                    'message' => 'Crypto deposit submitted. Owner will credit your wallet after confirming payment.',
+                    'coin' => $coin,
+                    'network' => $network,
+                    'address' => $address,
+                    'message' => 'Submitted for review. Send exactly $' . money_f($credited) . ' worth of ' . $coin . ' on ' . $network . ' to the address shown, then wait for owner credit. Your wallet will NOT update until the owner confirms.',
                 ]);
             }
 

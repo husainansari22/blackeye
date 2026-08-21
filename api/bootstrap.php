@@ -384,30 +384,57 @@ function default_wallet_currencies(): array {
             ['code' => 'XOF', 'name' => 'West Africa', 'flag' => 'sn', 'rate' => 600, 'enabled' => true],
         ],
         'crypto' => [
-            ['code' => 'USDT', 'name' => 'Tether', 'networks' => ['TRC20', 'BEP20', 'ERC20'], 'enabled' => true],
-            ['code' => 'BTC', 'name' => 'Bitcoin', 'networks' => ['BTC'], 'enabled' => true],
-            ['code' => 'ETH', 'name' => 'Ethereum', 'networks' => ['ERC20'], 'enabled' => true],
-            ['code' => 'USDC', 'name' => 'USD Coin', 'networks' => ['ERC20', 'BEP20'], 'enabled' => true],
-            ['code' => 'BNB', 'name' => 'BNB', 'networks' => ['BEP20'], 'enabled' => true],
-            ['code' => 'TRX', 'name' => 'Tron', 'networks' => ['TRC20'], 'enabled' => true],
-            ['code' => 'LTC', 'name' => 'Litecoin', 'networks' => ['LTC'], 'enabled' => true],
-            ['code' => 'SOL', 'name' => 'Solana', 'networks' => ['SOL'], 'enabled' => true],
+            ['code' => 'USDT', 'name' => 'Tether', 'networks' => ['TRC20', 'BEP20', 'ERC20'], 'addresses' => ['TRC20' => '', 'BEP20' => '', 'ERC20' => ''], 'enabled' => true],
+            ['code' => 'BTC', 'name' => 'Bitcoin', 'networks' => ['BTC'], 'addresses' => ['BTC' => ''], 'enabled' => true],
+            ['code' => 'ETH', 'name' => 'Ethereum', 'networks' => ['ERC20'], 'addresses' => ['ERC20' => ''], 'enabled' => true],
+            ['code' => 'USDC', 'name' => 'USD Coin', 'networks' => ['ERC20', 'BEP20'], 'addresses' => ['ERC20' => '', 'BEP20' => ''], 'enabled' => true],
+            ['code' => 'BNB', 'name' => 'BNB', 'networks' => ['BEP20'], 'addresses' => ['BEP20' => ''], 'enabled' => true],
+            ['code' => 'TRX', 'name' => 'Tron', 'networks' => ['TRC20'], 'addresses' => ['TRC20' => ''], 'enabled' => true],
+            ['code' => 'LTC', 'name' => 'Litecoin', 'networks' => ['LTC'], 'addresses' => ['LTC' => ''], 'enabled' => true],
+            ['code' => 'SOL', 'name' => 'Solana', 'networks' => ['SOL'], 'addresses' => ['SOL' => ''], 'enabled' => true],
         ],
     ];
 }
 
 function wallet_currencies_get(): array {
     $raw = setting_get('wallet_currencies', '');
+    $defaults = default_wallet_currencies();
     if ($raw) {
         $decoded = json_decode($raw, true);
-        if (is_array($decoded) && !empty($decoded['local'])) return $decoded;
+        if (is_array($decoded) && !empty($decoded['local'])) {
+            // Ensure crypto rows always expose an addresses map
+            if (!empty($decoded['crypto']) && is_array($decoded['crypto'])) {
+                foreach ($decoded['crypto'] as &$c) {
+                    if (!is_array($c)) continue;
+                    $nets = $c['networks'] ?? [];
+                    if (!is_array($nets)) $nets = [];
+                    $addrs = is_array($c['addresses'] ?? null) ? $c['addresses'] : [];
+                    $normalized = [];
+                    foreach ($nets as $n) {
+                        $nk = strtoupper(trim((string)$n));
+                        if ($nk === '') continue;
+                        $normalized[$nk] = trim((string)($addrs[$nk] ?? $addrs[$n] ?? ''));
+                    }
+                    // Keep any extra address keys owner saved
+                    foreach ($addrs as $k => $v) {
+                        $nk = strtoupper(trim((string)$k));
+                        if ($nk !== '' && !isset($normalized[$nk])) {
+                            $normalized[$nk] = trim((string)$v);
+                        }
+                    }
+                    $c['addresses'] = $normalized;
+                }
+                unset($c);
+            }
+            return $decoded;
+        }
     }
-    $defaults = default_wallet_currencies();
     // sync NGN rate with usd_ngn_rate setting
     $rate = (float)setting_get('usd_ngn_rate', '1600');
     foreach ($defaults['local'] as &$row) {
         if (($row['code'] ?? '') === 'NGN') $row['rate'] = $rate > 0 ? $rate : 1600;
     }
+    unset($row);
     return $defaults;
 }
 
@@ -418,6 +445,32 @@ function wallet_currencies_set(array $data): void {
             setting_set('usd_ngn_rate', (string)max(1, (float)$row['rate']));
         }
     }
+}
+
+/** Find enabled crypto coin config by code. */
+function crypto_coin_config(string $coinCode): ?array {
+    $code = strtoupper(trim($coinCode));
+    foreach ((wallet_currencies_get()['crypto'] ?? []) as $c) {
+        if (!is_array($c)) continue;
+        if (strtoupper((string)($c['code'] ?? '')) !== $code) continue;
+        if (isset($c['enabled']) && !$c['enabled']) return null;
+        return $c;
+    }
+    return null;
+}
+
+/** Deposit address for coin + network (empty string if not configured). */
+function crypto_deposit_address(string $coinCode, string $network): string {
+    $c = crypto_coin_config($coinCode);
+    if (!$c) return '';
+    $net = strtoupper(trim($network));
+    $addrs = is_array($c['addresses'] ?? null) ? $c['addresses'] : [];
+    foreach ($addrs as $k => $v) {
+        if (strtoupper(trim((string)$k)) === $net) {
+            return trim((string)$v);
+        }
+    }
+    return '';
 }
 
 /** One-time: rename legacy help@ mailbox to support@ */

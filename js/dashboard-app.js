@@ -347,6 +347,7 @@
   let walletBalanceHidden = false;
   let depositChannel = 'local'; // local | crypto
   let depositCurrency = 'NGN';
+  let depositNetwork = '';
   let withdrawMethodCard = 'bank'; // bank | crypto
   let withdrawCurrency = 'NGN';
   let withdrawCryptoCoin = 'USDT';
@@ -363,14 +364,14 @@
         { code: 'XOF', name: 'West Africa', flag: 'sn', rate: 600, enabled: true },
       ],
       crypto: [
-        { code: 'USDT', name: 'Tether', networks: ['TRC20', 'BEP20', 'ERC20'], enabled: true },
-        { code: 'BTC', name: 'Bitcoin', networks: ['BTC'], enabled: true },
-        { code: 'ETH', name: 'Ethereum', networks: ['ERC20'], enabled: true },
-        { code: 'USDC', name: 'USD Coin', networks: ['ERC20', 'BEP20'], enabled: true },
-        { code: 'BNB', name: 'BNB', networks: ['BEP20'], enabled: true },
-        { code: 'TRX', name: 'Tron', networks: ['TRC20'], enabled: true },
-        { code: 'LTC', name: 'Litecoin', networks: ['LTC'], enabled: true },
-        { code: 'SOL', name: 'Solana', networks: ['SOL'], enabled: true },
+        { code: 'USDT', name: 'Tether', networks: ['TRC20', 'BEP20', 'ERC20'], addresses: {}, enabled: true },
+        { code: 'BTC', name: 'Bitcoin', networks: ['BTC'], addresses: {}, enabled: true },
+        { code: 'ETH', name: 'Ethereum', networks: ['ERC20'], addresses: {}, enabled: true },
+        { code: 'USDC', name: 'USD Coin', networks: ['ERC20', 'BEP20'], addresses: {}, enabled: true },
+        { code: 'BNB', name: 'BNB', networks: ['BEP20'], addresses: {}, enabled: true },
+        { code: 'TRX', name: 'Tron', networks: ['TRC20'], addresses: {}, enabled: true },
+        { code: 'LTC', name: 'Litecoin', networks: ['LTC'], addresses: {}, enabled: true },
+        { code: 'SOL', name: 'Solana', networks: ['SOL'], addresses: {}, enabled: true },
       ],
     };
   }
@@ -382,6 +383,27 @@
       local: Array.isArray(c.local) && c.local.length ? c.local : d.local,
       crypto: Array.isArray(c.crypto) && c.crypto.length ? c.crypto : d.crypto,
     };
+  }
+
+  function cryptoCoinByCode(code) {
+    return walletCurrencies().crypto.find((c) => c.code === code && c.enabled !== false) || null;
+  }
+
+  function cryptoNetworksWithAddress(coin) {
+    if (!coin) return [];
+    const addrs = coin.addresses || {};
+    const nets = Array.isArray(coin.networks) ? coin.networks : Object.keys(addrs);
+    return nets
+      .map((n) => String(n || '').toUpperCase())
+      .filter((n) => n && String(addrs[n] || '').trim());
+  }
+
+  function cryptoAddressFor(coinCode, network) {
+    const coin = cryptoCoinByCode(coinCode);
+    if (!coin) return '';
+    const addrs = coin.addresses || {};
+    const net = String(network || '').toUpperCase();
+    return String(addrs[net] || '').trim();
   }
 
   function flagImg(code) {
@@ -583,6 +605,7 @@
     const cur = walletCurrencies();
     const u = refreshUser() || {};
     depositChannel = 'local';
+    depositNetwork = '';
     depositCurrency = preferredLocalCurrency(u);
     if (!cur.local.find((c) => c.code === depositCurrency && c.enabled !== false)) {
       depositCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
@@ -607,8 +630,24 @@
           <div class="flex justify-between text-[11px] text-slate-500 mb-2"><span>Select currency</span><span>One currency per deposit</span></div>
           <div id="depositCurrencyGrid" class="grid grid-cols-3 gap-2"></div>
         </div>
+        <div id="depositCryptoPanel" class="hidden space-y-3">
+          <div>
+            <label class="text-[11px] text-slate-500 mb-1 block">Network</label>
+            <select id="depositNetworkSelect" onchange="onDepositNetworkChange()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></select>
+          </div>
+          <div id="depositAddressBox" class="rounded-xl border border-brandPrimary/40 bg-brandPrimary/5 p-3 space-y-2 hidden">
+            <p class="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Send only to this address</p>
+            <p id="depositAddressText" class="font-mono text-xs break-all text-slate-800 dark:text-slate-100"></p>
+            <button type="button" onclick="copyDepositAddress()" class="text-[11px] font-bold text-brandPrimary"><i class="fa-regular fa-copy mr-1"></i>Copy address</button>
+            <p id="depositAddressWarn" class="text-[10px] text-amber-600 hidden">No deposit address configured for this network. Contact support / owner.</p>
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-500 mb-1 block">Transaction hash (optional)</label>
+            <input id="depositTxHash" type="text" placeholder="Paste txid after you send" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-mono">
+          </div>
+        </div>
         <div>
-          <label class="text-xs font-semibold mb-1 block">Amount</label>
+          <label class="text-xs font-semibold mb-1 block">Amount (USD credit)</label>
           <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-white dark:bg-slate-900">
             <div class="relative"><span class="absolute left-0 top-1 text-slate-400 font-bold text-xl">$</span>
             <input id="walletAmountInput" type="number" min="${cfg.minDeposit}" step="0.01" placeholder="0" oninput="updateDepositRateHint()" class="w-full bg-transparent pl-6 pr-2 py-1 text-2xl font-extrabold focus:outline-none"></div>
@@ -619,14 +658,15 @@
         </div>
         <div class="border border-brandPrimary/40 rounded-xl p-3 text-[11px] text-slate-500 flex gap-2 items-start">
           <i class="fa-solid fa-shield-halved text-brandPrimary mt-0.5"></i>
-          <span>Secured and Trusted: Your funds are protected and processed through a licensed payment partner.</span>
+          <span id="depositTrustCopy">Secured and Trusted: Your funds are protected and processed through a licensed payment partner.</span>
         </div>
-        <button onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Continue to payment</button>
-        <p class="text-[10px] text-center text-slate-400"><i class="fa-solid fa-lock mr-1"></i>You will be redirected to a secure service provider</p>
+        <button id="depositSubmitBtn" onclick="submitWalletAction('deposit')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Continue to payment</button>
+        <p id="depositRedirectHint" class="text-[10px] text-center text-slate-400"><i class="fa-solid fa-lock mr-1"></i>You will be redirected to a secure service provider</p>
       </div>`
     );
     renderDepositCurrencyGrid();
     updateDepositRateHint();
+    refreshDepositCryptoPanel();
   }
 
   window.setDepositChannel = function (ch) {
@@ -642,9 +682,17 @@
     }
     const cur = walletCurrencies();
     const u = refreshUser() || {};
-    if (depositChannel === 'local') depositCurrency = preferredLocalCurrency(u);
-    else depositCurrency = (cur.crypto.find((c) => c.enabled !== false) || { code: 'USDT' }).code;
+    if (depositChannel === 'local') {
+      depositCurrency = preferredLocalCurrency(u);
+      depositNetwork = '';
+    } else {
+      const cryptoReady = cur.crypto.filter((c) => c.enabled !== false && cryptoNetworksWithAddress(c).length);
+      depositCurrency = (cryptoReady[0] || cur.crypto.find((c) => c.enabled !== false) || { code: 'USDT' }).code;
+      const nets = cryptoNetworksWithAddress(cryptoCoinByCode(depositCurrency));
+      depositNetwork = nets[0] || '';
+    }
     renderDepositCurrencyGrid();
+    refreshDepositCryptoPanel();
     updateDepositRateHint();
   };
 
@@ -652,17 +700,20 @@
     const box = document.getElementById('depositCurrencyGrid');
     if (!box) return;
     const cur = walletCurrencies();
-    const list = (depositChannel === 'local' ? cur.local : cur.crypto).filter((c) => c.enabled !== false);
     if (depositChannel === 'crypto') {
+      const list = cur.crypto.filter((c) => c.enabled !== false);
       box.innerHTML = list
-        .map(
-          (c) => `<button type="button" onclick="selectDepositCurrency('${escapeAttr(c.code)}')" class="dep-cur rounded-xl border p-3 text-center text-xs font-bold transition ${depositCurrency === c.code ? 'border-brandPrimary bg-brandPrimary/10 text-brandPrimary' : 'border-slate-200 dark:border-slate-800'}">
+        .map((c) => {
+          const ready = cryptoNetworksWithAddress(c).length > 0;
+          return `<button type="button" onclick="selectDepositCurrency('${escapeAttr(c.code)}')" class="dep-cur rounded-xl border p-3 text-center text-xs font-bold transition ${depositCurrency === c.code ? 'border-brandPrimary bg-brandPrimary/10 text-brandPrimary' : 'border-slate-200 dark:border-slate-800'} ${ready ? '' : 'opacity-50'}">
           <div class="text-lg mb-1">${c.code === 'BTC' ? '₿' : c.code === 'ETH' ? 'Ξ' : '◎'}</div>${escapeHtml(c.code)}
-        </button>`
-        )
+          ${ready ? '' : '<p class="text-[9px] font-normal text-amber-500 mt-1">No address</p>'}
+        </button>`;
+        })
         .join('');
       return;
     }
+    const list = cur.local.filter((c) => c.enabled !== false);
     box.innerHTML = list
       .map(
         (c) => `<button type="button" onclick="selectDepositCurrency('${escapeAttr(c.code)}')" class="dep-cur rounded-xl border px-2 py-3 flex items-center justify-center gap-1.5 text-xs font-bold transition ${depositCurrency === c.code ? 'border-brandPrimary bg-brandPrimary/10 text-brandPrimary' : 'border-slate-200 dark:border-slate-800'}">
@@ -672,9 +723,81 @@
       .join('');
   }
 
+  function refreshDepositCryptoPanel() {
+    const panel = document.getElementById('depositCryptoPanel');
+    const btn = document.getElementById('depositSubmitBtn');
+    const hint = document.getElementById('depositRedirectHint');
+    const trust = document.getElementById('depositTrustCopy');
+    const isCrypto = depositChannel === 'crypto';
+    if (panel) panel.classList.toggle('hidden', !isCrypto);
+    if (btn) btn.textContent = isCrypto ? "I've sent payment — submit for review" : 'Continue to payment';
+    if (hint) {
+      hint.innerHTML = isCrypto
+        ? '<i class="fa-solid fa-clock mr-1"></i>Wallet credits only after owner confirms your on-chain payment'
+        : '<i class="fa-solid fa-lock mr-1"></i>You will be redirected to a secure service provider';
+    }
+    if (trust) {
+      trust.textContent = isCrypto
+        ? 'Copy the address below, send the correct coin/network, then submit. Do not send to any other address.'
+        : 'Secured and Trusted: Your funds are protected and processed through a licensed payment partner.';
+    }
+    if (!isCrypto) return;
+    const sel = document.getElementById('depositNetworkSelect');
+    const coin = cryptoCoinByCode(depositCurrency);
+    const nets = cryptoNetworksWithAddress(coin);
+    const allNets = ((coin && coin.networks) || []).map((n) => String(n).toUpperCase());
+    if (sel) {
+      const options = (nets.length ? nets : allNets).map(
+        (n) => `<option value="${escapeAttr(n)}" ${depositNetwork === n ? 'selected' : ''}>${escapeHtml(n)}${nets.indexOf(n) === -1 ? ' (no address)' : ''}</option>`
+      );
+      sel.innerHTML = options.length
+        ? options.join('')
+        : '<option value="">No networks configured</option>';
+      if (!depositNetwork && nets[0]) depositNetwork = nets[0];
+      if (depositNetwork) sel.value = depositNetwork;
+    }
+    updateDepositAddressBox();
+  }
+
+  function updateDepositAddressBox() {
+    const box = document.getElementById('depositAddressBox');
+    const text = document.getElementById('depositAddressText');
+    const warn = document.getElementById('depositAddressWarn');
+    if (!box) return;
+    box.classList.remove('hidden');
+    const addr = cryptoAddressFor(depositCurrency, depositNetwork);
+    if (text) text.textContent = addr || '—';
+    if (warn) warn.classList.toggle('hidden', !!addr);
+  }
+
+  window.onDepositNetworkChange = function () {
+    const sel = document.getElementById('depositNetworkSelect');
+    depositNetwork = sel ? String(sel.value || '').toUpperCase() : '';
+    updateDepositAddressBox();
+  };
+
+  window.copyDepositAddress = async function () {
+    const addr = cryptoAddressFor(depositCurrency, depositNetwork);
+    if (!addr) {
+      alert('No deposit address configured for this network.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(addr);
+      alert('Address copied');
+    } catch (e) {
+      prompt('Copy this address:', addr);
+    }
+  };
+
   window.selectDepositCurrency = function (code) {
     depositCurrency = code;
+    if (depositChannel === 'crypto') {
+      const nets = cryptoNetworksWithAddress(cryptoCoinByCode(code));
+      depositNetwork = nets[0] || '';
+    }
     renderDepositCurrencyGrid();
+    refreshDepositCryptoPanel();
     updateDepositRateHint();
   };
 
@@ -685,8 +808,13 @@
     if (!input) return;
     const usd = parseFloat(input.value) || 0;
     if (depositChannel === 'crypto') {
-      if (el) el.textContent = 'Crypto deposits are reviewed after you send funds (owner confirms).';
-      if (convertEl) convertEl.textContent = '';
+      const addr = cryptoAddressFor(depositCurrency, depositNetwork);
+      if (el) {
+        el.textContent = addr
+          ? 'Send ' + depositCurrency + ' on ' + (depositNetwork || 'selected network') + ' to the address above, then submit for owner review. Min $' + money(A().CONFIG.minDeposit).replace('$', '')
+          : 'Owner has not set a deposit address for this coin/network yet.';
+      }
+      if (convertEl) convertEl.textContent = usd > 0 ? 'Requesting $' + usd.toFixed(2) + ' wallet credit' : '';
       return;
     }
     const cur = walletCurrencies().local.find((c) => c.code === depositCurrency);
@@ -904,11 +1032,27 @@
     if (type === 'deposit') {
       try {
         if (window.AcctventaApi && (await window.AcctventaApi.isAvailable())) {
-          const apiRes = await window.AcctventaApi.deposit({
+          if (depositChannel === 'crypto') {
+            const addr = cryptoAddressFor(depositCurrency, depositNetwork);
+            if (!addr) {
+              alert('No deposit address is set for ' + depositCurrency + ' / ' + (depositNetwork || 'network') + '. Ask the owner to add it under Admin → Currencies.');
+              return;
+            }
+            if (!confirm('Confirm you will send (or already sent) $' + amount.toFixed(2) + ' in ' + depositCurrency + ' on ' + depositNetwork + ' to:\n\n' + addr + '\n\nYour wallet will NOT credit until the owner confirms.')) {
+              return;
+            }
+          }
+          const payload = {
             amount: Number(amount),
             currency: depositCurrency,
             channel: depositChannel,
-          });
+          };
+          if (depositChannel === 'crypto') {
+            payload.network = depositNetwork;
+            const txEl = document.getElementById('depositTxHash');
+            if (txEl && txEl.value.trim()) payload.txHash = txEl.value.trim();
+          }
+          const apiRes = await window.AcctventaApi.deposit(payload);
           if (apiRes.paymentLink) {
             window.location.href = apiRes.paymentLink;
             return;
@@ -918,7 +1062,15 @@
           applyProfileChrome(refreshUser());
           setWalletHistoryTab('deposit');
           renderTxHistory();
-          alert(apiRes.message || (apiRes.credited != null ? 'Deposit credited: ' + money(apiRes.credited) : 'Deposit submitted.'));
+          if (apiRes.pending && depositChannel === 'crypto') {
+            alert(
+              (apiRes.message || 'Crypto deposit submitted for review.') +
+                (apiRes.address ? '\n\nAddress: ' + apiRes.address : '') +
+                (apiRes.reference ? '\nRef: ' + apiRes.reference : '')
+            );
+          } else {
+            alert(apiRes.message || (apiRes.credited != null ? 'Deposit credited: ' + money(apiRes.credited) : 'Deposit submitted.'));
+          }
           return;
         }
       } catch (e) {

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Opening user account · Acctventa Owner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { skyBrand: '#0ea5e9', skyHover: '#0284c7', darkBg: '#070a0f', darkCard: '#111827' }
+        }
+      }
+    }
+  </script>
+  <script src="/js/acctventa.js?v=20260821crypto1"></script>
+  <script src="/js/api-client.js?v=20260821crypto1"></script>
+  <script src="/js/api-sync.js?v=20260821crypto1"></script>
+</head>
+<body class="bg-darkBg min-h-screen text-white flex items-center justify-center p-6">
+  <div class="w-full max-w-sm bg-darkCard border border-slate-800 rounded-2xl p-6 text-center space-y-3">
+    <div class="mx-auto w-12 h-12 rounded-full border-2 border-skyBrand border-t-transparent animate-spin" id="spin"></div>
+    <h1 class="text-lg font-bold" id="title">Signing in as user…</h1>
+    <p class="text-xs text-slate-400" id="msg">Preparing dashboard session from Owner Admin.</p>
+    <a id="go" href="/dashboard.html" class="hidden inline-block w-full bg-skyBrand hover:bg-skyHover font-bold py-3 rounded-xl">Open dashboard</a>
+  </div>
+  <script>
+    (async function () {
+      const params = new URLSearchParams(location.search);
+      const token = params.get('token') || '';
+      const email = params.get('email') || '';
+      const name = params.get('name') || '';
+      const title = document.getElementById('title');
+      const msg = document.getElementById('msg');
+      const spin = document.getElementById('spin');
+      const go = document.getElementById('go');
+
+      if (!token || !window.AcctventaApi) {
+        spin.classList.add('hidden');
+        title.textContent = 'Could not open account';
+        msg.textContent = 'Missing login token. Go back to Owner → Users and try again.';
+        go.classList.remove('hidden');
+        go.href = '/owner/?tab=users';
+        go.textContent = 'Back to Owner';
+        return;
+      }
+
+      try {
+        window.AcctventaApi.setToken(token);
+        localStorage.setItem('acctventa_backend', 'api');
+        localStorage.setItem('isLoggedIn', 'true');
+        if (email) {
+          localStorage.setItem('acctventa_session', String(email).toLowerCase());
+          localStorage.setItem('userEmail', email);
+        }
+        if (name) localStorage.setItem('userName', name);
+
+        if (window.AcctventaApiSync && typeof window.AcctventaApiSync.hydrateFromApi === 'function') {
+          await window.AcctventaApiSync.hydrateFromApi();
+        } else if (window.AcctventaApi.me) {
+          await window.AcctventaApi.me();
+        }
+
+        spin.classList.add('hidden');
+        title.textContent = 'Signed in as ' + (name || email || 'user');
+        msg.textContent = 'You are viewing this account from Owner Admin. Log out when finished.';
+        go.classList.remove('hidden');
+        go.href = '/dashboard.html#home';
+        setTimeout(function () {
+          location.replace('/dashboard.html#home');
+        }, 500);
+      } catch (e) {
+        spin.classList.add('hidden');
+        title.textContent = 'Login failed';
+        msg.textContent = (e && e.message) ? e.message : 'Could not open user dashboard.';
+        go.classList.remove('hidden');
+        go.href = '/owner/?tab=users';
+        go.textContent = 'Back to Owner';
+      }
+    })();
+  </script>
+</body>
+</html>
