@@ -319,7 +319,7 @@
         } else if (!price) {
           actions = `<button onclick="selectPlan('${p.id}')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Use Free plan</button>`;
         } else {
-          actions = `<button onclick="selectPlan('${p.id}','flutterwave')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Pay ${money(price)} with Flutterwave</button>`;
+          actions = `<button onclick="selectPlan('${p.id}','flutterwave')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Pay now</button>`;
           if (canWallet) {
             actions += `<button onclick="selectPlan('${p.id}','wallet')" class="w-full mt-2 py-2.5 rounded-xl text-xs font-bold border border-brandPrimary text-brandPrimary hover:bg-brandPrimary/10">Pay from wallet (${money(bal)} available)</button>`;
           } else {
