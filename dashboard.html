@@ -684,7 +684,14 @@
             el.classList.add('text-brandPrimary');
         }
 
-        function toggleLeftMenu() { document.getElementById('leftMenu').classList.toggle('hidden'); }
+        function toggleLeftMenu() {
+            const menu = document.getElementById('leftMenu');
+            const nav = document.querySelector('nav.fixed.bottom-0');
+            menu.classList.toggle('hidden');
+            if (nav) {
+                nav.classList.toggle('hidden', !menu.classList.contains('hidden'));
+            }
+        }
         function toggleRightMenu() { document.getElementById('rightMenu').classList.toggle('hidden'); }
         function toggleNotificationDrawer() { document.getElementById('notificationDrawer').classList.toggle('hidden'); }
         function toggleFilterDrawer() { document.getElementById('filterDrawer').classList.toggle('hidden'); }
