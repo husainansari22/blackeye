@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE TABLE IF NOT EXISTS transactions (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
-  type ENUM('deposit','withdrawal','sale','purchase','refund','commission') NOT NULL,
+  type ENUM('deposit','withdrawal','sale','purchase','refund','commission','plan') NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
   fee DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   payout DECIMAL(12,2) NULL,

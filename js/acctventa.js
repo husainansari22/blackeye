@@ -881,11 +881,37 @@
     return { ok: true, payout, fee: feeFromAmount, message: 'Withdrawal submitted. Pending admin approval.' };
   }
 
-  function setPlan(user, planId) {
+  function setPlan(user, planId, opts) {
     if (!PLANS[planId]) return { ok: false, error: 'Unknown plan' };
+    const plan = PLANS[planId];
+    const price = Number(plan.price) || 0;
+    const method = (opts && opts.method) || (price > 0 ? 'wallet' : 'free');
+    if (price > 0 && method === 'wallet') {
+      if ((user.balance || 0) < price) {
+        return { ok: false, error: 'Insufficient wallet balance. Deposit funds or use Flutterwave.' };
+      }
+      const prevBal = Number(user.balance || 0);
+      const buyerWd = Number(user.withdrawableBalance || 0);
+      user.balance = Number((prevBal - price).toFixed(2));
+      const depositPortion = Math.max(0, prevBal - buyerWd);
+      const fromDeposit = Math.min(price, depositPortion);
+      const fromWd = Number((price - fromDeposit).toFixed(2));
+      user.withdrawableBalance = Number(Math.max(0, buyerWd - fromWd).toFixed(2));
+      user.transactions = user.transactions || [];
+      user.transactions.unshift({
+        id: uid(),
+        type: 'plan',
+        amount: price,
+        status: 'completed',
+        note: 'Plan upgrade · ' + planId,
+        createdAt: new Date().toISOString(),
+      });
+    } else if (price > 0 && method === 'flutterwave') {
+      return { ok: false, error: 'Live backend required for Flutterwave plan checkout. Log in with API enabled.' };
+    }
     user.plan = planId;
     persistUser(user);
-    return { ok: true };
+    return { ok: true, plan: planId, dailyUploads: plan.dailyUploads, message: 'Plan updated to ' + plan.name };
   }
 
   function listAllUsersSummary() {

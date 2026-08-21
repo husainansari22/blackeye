@@ -549,12 +549,120 @@ try {
             $chk = db()->prepare('SELECT * FROM transactions WHERE reference = ? AND user_id = ? LIMIT 1');
             $chk->execute([$ref, (int)$u['id']]);
             if (!$chk->fetch()) {
-                json_out(['ok' => false, 'error' => 'Deposit not found for this account'], 404);
+                json_out(['ok' => false, 'error' => 'Payment not found for this account'], 404);
             }
-            $credit = credit_deposit_from_gateway($ref, $paid, $flwId, $paidCurrency);
+            $credit = settle_flutterwave_payment($ref, $paid, $flwId, $paidCurrency);
             if (!$credit['ok']) json_out($credit, 400);
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
-            json_out(['ok' => true, 'credited' => $credit['credited'] ?? null, 'already' => !empty($credit['already']), 'user' => public_user($fresh)]);
+            json_out([
+                'ok' => true,
+                'kind' => $credit['kind'] ?? 'deposit',
+                'credited' => $credit['credited'] ?? null,
+                'plan' => $credit['plan'] ?? null,
+                'planName' => $credit['planName'] ?? null,
+                'dailyUploads' => $credit['dailyUploads'] ?? null,
+                'already' => !empty($credit['already']),
+                'user' => public_user($fresh),
+            ]);
+        }
+
+        case 'plans.upgrade': {
+            $u = require_user();
+            ensure_plan_tx_type();
+            ensure_wallet_ledger_columns();
+            $planId = preg_replace('/[^a-z0-9_]/', '', strtolower(trim((string)($body['planId'] ?? $body['plan'] ?? ''))));
+            if ($planId === '') json_out(['ok' => false, 'error' => 'Choose a plan'], 422);
+            $plan = plan_limits($planId);
+            if (($plan['id'] ?? '') !== $planId) json_out(['ok' => false, 'error' => 'Unknown plan'], 404);
+
+            // Downgrade / switch to free — no payment
+            if ((float)($plan['price'] ?? 0) <= 0) {
+                db()->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute(['free', (int)$u['id']]);
+                $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
+                notify_user((int)$u['id'], 'Plan updated', 'You are now on the Free plan (' . (int)$plan['daily_uploads'] . ' uploads / day).', 'plan');
+                json_out(['ok' => true, 'plan' => 'free', 'user' => public_user($fresh), 'message' => 'Switched to Free plan.']);
+            }
+
+            if (($u['plan'] ?? '') === $planId) {
+                json_out(['ok' => false, 'error' => 'You are already on this plan'], 400);
+            }
+
+            $price = (float)$plan['price'];
+            $method = strtolower(trim((string)($body['method'] ?? 'flutterwave')));
+            $prefer = strtoupper(trim((string)($body['currency'] ?? country_to_currency((string)($u['country_code'] ?? 'ng')))));
+
+            // Pay from wallet balance (spend-only deposits preferred)
+            if ($method === 'wallet') {
+                if ((float)$u['balance'] < $price) {
+                    json_out(['ok' => false, 'error' => 'Insufficient wallet balance. Deposit funds or pay with Flutterwave.'], 400);
+                }
+                $pdo = db();
+                $pdo->beginTransaction();
+                try {
+                    debit_user_for_purchase($pdo, (int)$u['id'], $price);
+                    $pdo->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute([$planId, (int)$u['id']]);
+                    $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, method, note) VALUES (?, \'plan\', ?, \'completed\', \'wallet\', ?)')
+                        ->execute([(int)$u['id'], money_f($price), 'Plan upgrade · plan=' . $planId . ' · paid from wallet']);
+                    $pdo->commit();
+                } catch (Throwable $e) {
+                    $pdo->rollBack();
+                    throw $e;
+                }
+                $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
+                notify_user((int)$u['id'], 'Plan upgraded', ($plan['name'] ?? $planId) . ' is active — ' . (int)$plan['daily_uploads'] . ' uploads / day.', 'plan');
+                json_out([
+                    'ok' => true,
+                    'plan' => $planId,
+                    'dailyUploads' => (int)$plan['daily_uploads'],
+                    'paidFrom' => 'wallet',
+                    'user' => public_user($fresh),
+                    'message' => 'Plan upgraded using wallet balance.',
+                ]);
+            }
+
+            if (!flw_deposit_enabled()) {
+                json_out([
+                    'ok' => false,
+                    'error' => 'Flutterwave is not enabled. In Owner Admin → Gateways, enable Flutterwave deposits (same keys are used for plan upgrades).',
+                    'code' => 'gateway_disabled',
+                ], 503);
+            }
+
+            ensure_tx_reference_column();
+            $txRef = 'AVP' . strtoupper(substr(uid_token(8), 0, 16));
+            $checkout = flw_create_checkout($u, $price, $txRef, $prefer ?: 'NGN', [
+                'purpose' => 'plan_upgrade',
+                'title' => (app_config()['app_name'] ?? 'Acctventa') . ' Plan',
+                'description' => 'Upgrade to ' . ($plan['name'] ?? $planId) . ' — ' . (int)$plan['daily_uploads'] . ' uploads/day',
+                'redirect_url' => rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/') . '/wallet-return.html?purpose=plan',
+                'meta' => ['plan_id' => $planId, 'daily_uploads' => (int)$plan['daily_uploads']],
+            ]);
+            if (!$checkout['ok']) {
+                json_out(['ok' => false, 'error' => $checkout['error'] ?? 'Could not start payment'], 502);
+            }
+            $charge = $checkout['charge'];
+            $note = sprintf(
+                'Awaiting Flutterwave plan upgrade · plan=%s · charge=%s%s|usd=%s|rate=%s',
+                $planId,
+                $charge['amount'],
+                $charge['currency'],
+                money_f($price),
+                $charge['rate']
+            );
+            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'plan\', ?, 0, \'pending\', \'flutterwave\', ?, ?)')
+                ->execute([(int)$u['id'], money_f($price), $note, $txRef]);
+
+            json_out([
+                'ok' => true,
+                'checkout' => true,
+                'paymentLink' => $checkout['link'],
+                'reference' => $txRef,
+                'plan' => $planId,
+                'amount' => $price,
+                'payAmount' => $charge['amount'],
+                'payCurrency' => $charge['currency'],
+                'dailyUploads' => (int)$plan['daily_uploads'],
+            ]);
         }
 
         case 'webhook.flutterwave': {
@@ -568,7 +676,7 @@ try {
                 $paidCurrency = strtoupper((string)($data['currency'] ?? ''));
                 if ($ref !== '') {
                     try {
-                        credit_deposit_from_gateway($ref, $paid, $flwId, $paidCurrency);
+                        settle_flutterwave_payment($ref, $paid, $flwId, $paidCurrency);
                     } catch (Throwable $e) {
                         json_out(['ok' => false, 'error' => $e->getMessage()], 500);
                     }

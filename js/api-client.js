@@ -184,6 +184,12 @@
     confirmDeposit(payload) {
       return request('wallet.deposit.confirm', { method: 'POST', body: payload });
     },
+    confirmPayment(payload) {
+      return request('wallet.deposit.confirm', { method: 'POST', body: payload });
+    },
+    upgradePlan(payload) {
+      return request('plans.upgrade', { method: 'POST', body: payload });
+    },
     withdraw(payload) {
       return request('wallet.withdraw', { method: 'POST', body: payload });
     },

@@ -984,6 +984,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php endif; ?>
 
     <?php if ($tab === 'plans'): $plans = db()->query('SELECT * FROM plans ORDER BY price ASC')->fetchAll(); ?>
+      <p class="text-xs av-muted mb-3">Daily upload limits shown on Packages &amp; Pricing come from here. Paid plan upgrades charge via <strong>Flutterwave</strong> (same keys as Gateways → deposits) or from the user’s wallet balance.</p>
       <div class="space-y-3">
         <?php foreach ($plans as $p): ?>
           <form method="post" class="bg-white border rounded-xl p-4 grid sm:grid-cols-5 gap-3 items-end">

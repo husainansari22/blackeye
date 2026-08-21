@@ -309,6 +309,26 @@
       }
     };
 
+    A.setPlan = async function (_user, planId, opts) {
+      try {
+        const method = (opts && opts.method) || 'flutterwave';
+        const res = await Api.upgradePlan({ planId: String(planId), method });
+        if (res.paymentLink) {
+          window.location.href = res.paymentLink;
+          return { ok: true, checkout: true, paymentLink: res.paymentLink };
+        }
+        await hydrateFromApi();
+        return {
+          ok: true,
+          plan: res.plan,
+          dailyUploads: res.dailyUploads,
+          message: res.message || 'Plan updated.',
+        };
+      } catch (e) {
+        return { ok: false, error: e.message || 'Plan upgrade failed' };
+      }
+    };
+
     A.getMessages = function (orderId) {
       return global.__acctventaApiMessages && global.__acctventaApiMessages[orderId]
         ? global.__acctventaApiMessages[orderId]

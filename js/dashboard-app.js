@@ -298,25 +298,46 @@
     const box = document.getElementById('plansListContainer');
     if (!box || !u) return;
     const plans = A().PLANS;
+    const freePlan = plans.free || Object.values(plans).find((p) => !p.price);
+    const sub = document.getElementById('plansPageSubtitle');
+    if (sub && freePlan) {
+      sub.textContent =
+        'New accounts start on Free — ' +
+        freePlan.dailyUploads +
+        ' uploads per day. Paid plans unlock higher daily upload limits via Flutterwave.';
+    }
+    const bal = Number(u.balance) || 0;
     box.innerHTML = Object.values(plans)
       .map((p) => {
         const active = u.plan === p.id;
+        const price = Number(p.price) || 0;
+        const canWallet = price > 0 && bal + 0.0001 >= price;
+        let actions = '';
+        if (active) {
+          actions =
+            '<button disabled class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-400">Active plan</button>';
+        } else if (!price) {
+          actions = `<button onclick="selectPlan('${p.id}')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Use Free plan</button>`;
+        } else {
+          actions = `<button onclick="selectPlan('${p.id}','flutterwave')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Pay ${money(price)} with Flutterwave</button>`;
+          if (canWallet) {
+            actions += `<button onclick="selectPlan('${p.id}','wallet')" class="w-full mt-2 py-2.5 rounded-xl text-xs font-bold border border-brandPrimary text-brandPrimary hover:bg-brandPrimary/10">Pay from wallet (${money(bal)} available)</button>`;
+          } else {
+            actions += `<p class="text-[10px] text-slate-400 text-center mt-2">Or deposit to wallet, then upgrade from balance.</p>`;
+          }
+        }
         return `<div class="bg-lightCard dark:bg-darkCard border ${active ? 'border-brandPrimary' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-4 shadow-sm space-y-3">
         <div class="flex justify-between items-center">
           <h3 class="font-bold">${escapeHtml(p.name)}</h3>
           ${active ? '<span class="text-[10px] bg-brandPrimary/15 text-brandPrimary px-2 py-0.5 rounded-full font-bold">CURRENT</span>' : ''}
         </div>
-        <p class="text-2xl font-extrabold text-brandPrimary">${p.price ? money(p.price) + '<span class="text-xs text-slate-400 font-medium">/mo</span>' : 'Free'}</p>
+        <p class="text-2xl font-extrabold text-brandPrimary">${price ? money(price) + '<span class="text-xs text-slate-400 font-medium">/mo</span>' : 'Free'}</p>
         <ul class="text-xs text-slate-500 space-y-1">
-          <li><i class="fa-solid fa-check text-emerald-500 mr-1"></i>${p.dailyUploads} uploads / day</li>
+          <li><i class="fa-solid fa-check text-emerald-500 mr-1"></i><strong class="text-slate-700 dark:text-slate-200">${p.dailyUploads} uploads / day</strong></li>
           <li><i class="fa-solid fa-check text-emerald-500 mr-1"></i>${escapeHtml(p.approval)}</li>
           <li><i class="fa-solid fa-check text-emerald-500 mr-1"></i>AI link & credential review</li>
         </ul>
-        ${
-          active
-            ? '<button disabled class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-400">Active plan</button>'
-            : `<button onclick="selectPlan('${p.id}')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">${p.price ? 'Upgrade (pay later via gateway)' : 'Use Free plan'}</button>`
-        }
+        ${actions}
       </div>`;
       })
       .join('');
@@ -1531,13 +1552,32 @@
     }
   }, 60000);
 
-  window.selectPlan = function (planId) {
+  window.selectPlan = async function (planId, method) {
     const u = refreshUser();
-    if (planId !== 'free' && !confirm('Paid plans need a payment gateway. For now this will activate the plan in-app so you can test upload limits. Continue?')) return;
-    A().setPlan(u, planId);
-    applyProfileChrome(refreshUser());
-    renderPlans();
-    alert('Plan updated to ' + A().getPlan(refreshUser()).name);
+    if (!u) return;
+    const plan = (A().PLANS && A().PLANS[planId]) || null;
+    const price = plan ? Number(plan.price) || 0 : 0;
+    const payMethod = method || (price > 0 ? 'flutterwave' : 'free');
+    if (price > 0 && payMethod === 'flutterwave') {
+      if (!confirm('Continue to Flutterwave to pay ' + money(price) + ' for ' + (plan.name || planId) + ' (' + plan.dailyUploads + ' uploads / day)?')) return;
+    } else if (price > 0 && payMethod === 'wallet') {
+      if (!confirm('Pay ' + money(price) + ' from your wallet balance to activate ' + (plan.name || planId) + '?')) return;
+    }
+    try {
+      const res = await Promise.resolve(A().setPlan(u, planId, { method: payMethod === 'wallet' ? 'wallet' : 'flutterwave' }));
+      if (!res || !res.ok) {
+        alert((res && res.error) || 'Could not update plan');
+        return;
+      }
+      if (res.checkout) return; // redirected to Flutterwave
+      if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
+      applyProfileChrome(refreshUser());
+      renderPlans();
+      const active = A().getPlan(refreshUser());
+      alert(res.message || ('Plan updated to ' + active.name + ' — ' + active.dailyUploads + ' uploads / day.'));
+    } catch (e) {
+      alert(e.message || 'Plan upgrade failed');
+    }
   };
 
   window.setAdsFilter = function (f) {

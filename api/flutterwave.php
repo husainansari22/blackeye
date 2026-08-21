@@ -115,8 +115,9 @@ function flw_charge_amount(float $usdAmount, string $preferCode = 'NGN'): array 
 
 /**
  * Create hosted checkout link (Flutterwave Standard v3).
+ * $opts: redirect_url, title, description, purpose, meta (array)
  */
-function flw_create_checkout(array $user, float $usdAmount, string $txRef, string $preferCode = 'NGN'): array {
+function flw_create_checkout(array $user, float $usdAmount, string $txRef, string $preferCode = 'NGN', array $opts = []): array {
     $secret = flw_secret();
     if ($secret === '') {
         return ['ok' => false, 'error' => 'Flutterwave secret key missing in Owner Admin → Gateways'];
@@ -124,29 +125,35 @@ function flw_create_checkout(array $user, float $usdAmount, string $txRef, strin
 
     $charge = flw_charge_amount($usdAmount, $preferCode);
     $appUrl = rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/');
+    $purpose = (string)($opts['purpose'] ?? 'wallet_deposit');
+    $title = (string)($opts['title'] ?? ((app_config()['app_name'] ?? 'Acctventa') . ' Wallet'));
+    $description = (string)($opts['description'] ?? ('Fund wallet $' . number_format($usdAmount, 2) . ($charge['currency'] === 'NGN' ? ' (₦' . number_format((float)$charge['amount'], 0) . ')' : '')));
+    $redirect = (string)($opts['redirect_url'] ?? ($appUrl . '/wallet-return.html'));
+    $meta = array_merge([
+        'user_id' => (int)$user['id'],
+        'purpose' => $purpose,
+        'usd_amount' => $usdAmount,
+        'charge_amount' => $charge['amount'],
+        'charge_currency' => $charge['currency'],
+        'usd_ngn_rate' => $charge['rate'],
+    ], is_array($opts['meta'] ?? null) ? $opts['meta'] : []);
+
     $payload = [
         'tx_ref' => $txRef,
         'amount' => (string)$charge['amount'],
         'currency' => $charge['currency'],
-        'redirect_url' => $appUrl . '/wallet-return.html',
+        'redirect_url' => $redirect,
         'customer' => [
             'email' => $user['email'],
             'name' => $user['name'],
             'phonenumber' => $user['phone'] ?: '0000000000',
         ],
         'customizations' => [
-            'title' => (app_config()['app_name'] ?? 'Acctventa') . ' Wallet',
-            'description' => 'Fund wallet $' . number_format($usdAmount, 2) . ($charge['currency'] === 'NGN' ? ' (₦' . number_format((float)$charge['amount'], 0) . ')' : ''),
+            'title' => $title,
+            'description' => $description,
             'logo' => $appUrl . '/img/logo.png',
         ],
-        'meta' => [
-            'user_id' => (int)$user['id'],
-            'purpose' => 'wallet_deposit',
-            'usd_amount' => $usdAmount,
-            'charge_amount' => $charge['amount'],
-            'charge_currency' => $charge['currency'],
-            'usd_ngn_rate' => $charge['rate'],
-        ],
+        'meta' => $meta,
     ];
 
     $res = flw_http('POST', 'https://api.flutterwave.com/v3/payments', $payload, $secret);
@@ -249,5 +256,119 @@ function credit_deposit_from_gateway(string $txRef, float $amountPaid, string $f
     try {
         maybe_credit_referral_reward((int)$tx['user_id']);
     } catch (Throwable $e) {}
-    return ['ok' => true, 'credited' => $credited, 'user_id' => (int)$tx['user_id']];
+    return ['ok' => true, 'credited' => $credited, 'user_id' => (int)$tx['user_id'], 'kind' => 'deposit'];
+}
+
+function ensure_plan_tx_type(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->exec("ALTER TABLE transactions MODIFY COLUMN type ENUM('deposit','withdrawal','sale','purchase','refund','commission','plan') NOT NULL");
+    } catch (Throwable $e) {
+        // ignore if already compatible / no permission
+    }
+}
+
+/**
+ * Activate a paid plan after Flutterwave confirms payment (idempotent by reference).
+ */
+function activate_plan_from_gateway(string $txRef, float $amountPaid, string $flwId = '', string $paidCurrency = ''): array {
+    ensure_tx_reference_column();
+    ensure_plan_tx_type();
+    $pdo = db();
+    $stmt = $pdo->prepare('SELECT * FROM transactions WHERE reference = ? LIMIT 1');
+    $stmt->execute([$txRef]);
+    $tx = $stmt->fetch();
+    if (!$tx) {
+        return ['ok' => false, 'error' => 'Plan payment reference not found'];
+    }
+    if ($tx['status'] === 'completed') {
+        $u = $pdo->query('SELECT plan FROM users WHERE id=' . (int)$tx['user_id'])->fetch();
+        return ['ok' => true, 'already' => true, 'user_id' => (int)$tx['user_id'], 'plan' => $u['plan'] ?? null, 'kind' => 'plan'];
+    }
+    if (($tx['type'] ?? '') !== 'plan') {
+        return ['ok' => false, 'error' => 'Invalid plan transaction type'];
+    }
+
+    $planId = '';
+    if (preg_match('/plan=([a-z0-9_]+)/i', (string)$tx['note'], $m)) {
+        $planId = strtolower($m[1]);
+    }
+    if ($planId === '' || $planId === 'free') {
+        return ['ok' => false, 'error' => 'Plan id missing on payment'];
+    }
+    $plan = plan_limits($planId);
+    if (($plan['id'] ?? '') !== $planId) {
+        return ['ok' => false, 'error' => 'Unknown plan'];
+    }
+
+    $expectedCharge = null;
+    if (preg_match('/charge=([0-9.]+)([A-Z]{3})/i', (string)$tx['note'], $m)) {
+        $expectedCharge = (float)$m[1];
+        if ($paidCurrency === '') $paidCurrency = strtoupper($m[2]);
+    }
+    if ($expectedCharge !== null) {
+        if ($amountPaid + 1 < $expectedCharge) {
+            return ['ok' => false, 'error' => 'Paid amount mismatch'];
+        }
+    } else {
+        $expected = (float)$tx['amount'];
+        if ($amountPaid + 0.01 < $expected && $paidCurrency === 'USD') {
+            return ['ok' => false, 'error' => 'Paid amount mismatch'];
+        }
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $upd = $pdo->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ? AND status = \'pending\'');
+        $upd->execute([
+            'Plan upgrade confirmed · plan=' . $planId . ($flwId !== '' ? ' · Flutterwave #' . $flwId : '') . ($paidCurrency !== '' ? ' · ' . $paidCurrency . ' ' . $amountPaid : ''),
+            'flutterwave',
+            (int)$tx['id'],
+        ]);
+        if ($upd->rowCount() < 1) {
+            $pdo->commit();
+            $u = $pdo->query('SELECT plan FROM users WHERE id=' . (int)$tx['user_id'])->fetch();
+            return ['ok' => true, 'already' => true, 'user_id' => (int)$tx['user_id'], 'plan' => $u['plan'] ?? $planId, 'kind' => 'plan'];
+        }
+        $pdo->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute([$planId, (int)$tx['user_id']]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+    $uploads = (int)($plan['daily_uploads'] ?? 0);
+    notify_user(
+        (int)$tx['user_id'],
+        'Plan upgraded',
+        'Your ' . ($plan['name'] ?? $planId) . ' plan is active — ' . $uploads . ' uploads / day.',
+        'plan'
+    );
+    return [
+        'ok' => true,
+        'user_id' => (int)$tx['user_id'],
+        'plan' => $planId,
+        'planName' => $plan['name'] ?? $planId,
+        'dailyUploads' => $uploads,
+        'kind' => 'plan',
+    ];
+}
+
+/**
+ * Route a verified Flutterwave payment to deposit credit or plan activation.
+ */
+function settle_flutterwave_payment(string $txRef, float $amountPaid, string $flwId = '', string $paidCurrency = ''): array {
+    ensure_tx_reference_column();
+    $stmt = db()->prepare('SELECT type FROM transactions WHERE reference = ? LIMIT 1');
+    $stmt->execute([$txRef]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return ['ok' => false, 'error' => 'Payment reference not found'];
+    }
+    $type = (string)($row['type'] ?? '');
+    if ($type === 'plan') {
+        return activate_plan_from_gateway($txRef, $amountPaid, $flwId, $paidCurrency);
+    }
+    return credit_deposit_from_gateway($txRef, $amountPaid, $flwId, $paidCurrency);
 }
