@@ -271,7 +271,7 @@
         <!-- TAB: ACCOUNT DASHBOARD -->
         <div id="tab_account_dashboard" class="app-tab hidden space-y-5">
             <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <button onclick="switchTab('home')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-brandPrimary transition"><i class="fa-solid fa-arrow-left"></i></button>
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 dark:text-white">Dashboard</h2>
                     <p class="text-xs text-slate-500 mt-0.5">Overview of your account performance</p>
@@ -312,9 +312,14 @@
 
         <!-- TAB: REFERRAL -->
         <div id="tab_referral" class="app-tab hidden space-y-5">
-            <div class="">
-                <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral</h2>
-                <p class="text-xs text-slate-500 mt-0.5">Earn more when you invite friends to A cctventa</p>
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Earn more when you invite friends to A cctventa</p>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -389,8 +394,8 @@
         <!-- TAB: PLANS PAGE -->
         <div id="tab_plans" class="app-tab hidden space-y-5">
             <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <button onclick="switchTab('home')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-brandPrimary transition">
-                    <i class="fa-solid fa-arrow-left"></i>
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 dark:text-white">Packages & Pricing</h2>
@@ -472,9 +477,11 @@
     <!-- NOTIFICATION DRAWER -->
     <div id="notificationDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex justify-end transition-opacity">
         <div class="w-[85%] max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+                <button type="button" onclick="toggleNotificationDrawer()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notifications</h3>
-                <i class="fa-solid fa-xmark text-xl cursor-pointer text-slate-400 hover:text-brandPrimary transition" onclick="toggleNotificationDrawer()"></i>
             </div>
             <div class="flex-1 overflow-y-auto px-4 py-4 space-y-1">
                 <div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5">
@@ -511,9 +518,11 @@
     <!-- FILTER DRAWER -->
     <div id="filterDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] hidden flex justify-end transition-opacity">
         <div class="w-full max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-5 overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <button type="button" onclick="toggleFilterDrawer()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
                 <h3 class="font-bold text-lg">Filter Products</h3>
-                <i class="fa-solid fa-xmark text-xl cursor-pointer text-slate-400 hover:text-brandPrimary transition" onclick="toggleFilterDrawer()"></i>
             </div>
             <div class="space-y-3 text-sm">
                 <div>
@@ -541,64 +550,64 @@
     <div id="leftMenu" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
         <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
             <!-- Back navigation (same place as acctbazaar) -->
-            <div class="flex items-center px-4 pt-4 pb-2">
+            <div class="flex items-center px-4 pt-3 pb-1">
                 <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
                     <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
             </div>
 
             <!-- Profile -->
-            <div class="px-5 pb-4 space-y-3 border-b border-slate-200 dark:border-slate-800">
+            <div class="px-5 pb-2 space-y-2 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-start gap-3">
-                    <div class="w-12 h-12 rounded-md bg-sky-600 flex items-center justify-center text-white shrink-0">
-                        <i class="fa-solid fa-question text-xl"></i>
+                    <div class="w-11 h-11 rounded-md bg-sky-600 flex items-center justify-center text-white shrink-0">
+                        <i class="fa-solid fa-question text-lg"></i>
                     </div>
                     <div class="min-w-0 pt-0.5">
                         <h3 class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug">ODUWA ELVIS OSAZEMWINDE</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">elvissmith5544@gmail.com</p>
                     </div>
                 </div>
-                <button onclick="openBecomeVerified(); toggleLeftMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-2 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
+                <button onclick="openBecomeVerified(); toggleLeftMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-1.5 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
                     Become Verified
                 </button>
             </div>
 
-            <!-- Nav list -->
-            <nav class="flex-1 px-2 pb-2 pt-2">
-                <a href="#" onclick="switchTab('account_dashboard'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+            <!-- Nav list (tight spacing so Sell Product stays on screen) -->
+            <nav class="px-2 pt-1">
+                <a href="#" onclick="switchTab('account_dashboard'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-border-all w-5 text-center"></i> Account Dashboard
                 </a>
-                <a href="#" onclick="switchTab('referral'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="switchTab('referral'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-users w-5 text-center"></i> Referral
                 </a>
-                <a href="#" onclick="switchTab('plans'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="switchTab('plans'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-award w-5 text-center"></i> Plans
                 </a>
-                <a href="#" onclick="switchTab('orders'); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="switchTab('orders'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Purchase
                 </a>
-                <a href="#" onclick="openAccountSettings(); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="openAccountSettings(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
                 </a>
-                <a href="#" onclick="openSupportCenter(); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="openSupportCenter(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-headset w-5 text-center"></i> Support
                 </a>
-                <a href="#" onclick="openMyStories(); toggleLeftMenu(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="openMyStories(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-camera w-5 text-center"></i> My Stories
                 </a>
-                <div class="flex items-center justify-between px-3 py-3.5 text-[15px] text-slate-800 dark:text-white">
-                    <span class="flex items-center gap-4"><i class="fa-solid fa-moon w-5 text-center" id="themeIcon"></i> <span id="themeText">Dark Mode</span></span>
+                <div class="flex items-center justify-between px-3 py-2 text-[14px] text-slate-800 dark:text-white">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-moon w-5 text-center" id="themeIcon"></i> <span id="themeText">Dark Mode</span></span>
                     <div id="themeToggleSwitch" onclick="toggleDarkMode()" class="w-10 h-6 bg-slate-300 dark:bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner">
                         <div class="w-4 h-4 bg-white rounded-full absolute left-1 dark:translate-x-4 top-1 transition-transform shadow" id="themeThumb"></div>
                     </div>
                 </div>
-                <a href="#" onclick="handleLogout(); return false;" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="handleLogout(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
                 </a>
             </nav>
 
-            <div class="px-5 pb-8 pt-2 mt-auto">
-                <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3.5 rounded-xl shadow-lg transition text-sm">
+            <div class="px-5 pt-3 pb-6">
+                <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
                     Sell Product
                 </button>
             </div>
@@ -608,9 +617,11 @@
     <!-- RIGHT MENU DRAWER (QUICK NAVIGATION) -->
     <div id="rightMenu" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex justify-end transition-opacity">
         <div class="w-3/4 max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
                 <span class="font-bold text-lg text-brandPrimary dark:text-white">Quick Menu</span>
-                <i class="fa-solid fa-xmark text-xl cursor-pointer text-slate-400 hover:text-brandPrimary transition" onclick="toggleRightMenu()"></i>
             </div>
             <div class="space-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
                 <a href="#" onclick="switchTab('home'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-house w-5 text-slate-400"></i> Home Feed</a>
@@ -635,7 +646,9 @@
     <!-- GENERAL MODAL CONTAINER -->
     <div id="appModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
         <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-brandPrimary transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <button onclick="closeModal()" class="absolute top-4 left-4 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+            </button>
             <div id="modalBody"></div>
         </div>
     </div>
@@ -645,7 +658,9 @@
         <!-- Header with Back Button -->
         <div class="flex items-center justify-between px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800">
             <div class="flex items-center gap-3">
-                <i class="fa-solid fa-arrow-left text-lg cursor-pointer text-slate-500 hover:text-brandPrimary transition" onclick="closeSellProductWizard()"></i>
+                <button type="button" onclick="closeSellProductWizard()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
                 <h2 class="text-lg font-bold text-slate-800 dark:text-white">Sell Your Account</h2>
             </div>
             <span class="text-xs text-emerald-500 font-medium" id="sellWizardStepText">Step 1 of 2</span>
