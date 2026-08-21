@@ -708,10 +708,10 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260821wallet4"></script>
-    <script src="/js/api-client.js?v=20260821wallet4"></script>
-    <script src="/js/api-sync.js?v=20260821wallet4"></script>
-    <script src="/js/dashboard-app.js?v=20260821wallet4"></script>
+    <script src="/js/acctventa.js?v=20260821support1"></script>
+    <script src="/js/api-client.js?v=20260821support1"></script>
+    <script src="/js/api-sync.js?v=20260821support1"></script>
+    <script src="/js/dashboard-app.js?v=20260821support1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         function switchTab(tabId) {
@@ -839,8 +839,8 @@
             const c = (window.Acctventa && window.Acctventa.CONFIG) || {};
             const em = c.supportEmail || 'support@acctventa.com';
             const gmailLogo = `<svg viewBox="0 0 24 24" class="w-8 h-8" aria-hidden="true"><path fill="#EA4335" d="M12 12.713L1.5 5.25V18c0 .825.675 1.5 1.5 1.5h4.5V11.1L12 15.087 16.5 11.1V19.5H21c.825 0 1.5-.675 1.5-1.5V5.25L12 12.713z"/><path fill="#34A853" d="M21 4.5h-1.5L12 10.087 4.5 4.5H3c-.45 0-.862.2-1.125.525L12 12.713l10.125-7.688A1.49 1.49 0 0 0 21 4.5z"/><path fill="#4285F4" d="M3 4.5v14.25c0 .225.05.437.15.637L7.5 11.1V4.5H3z"/><path fill="#FBBC05" d="M21 4.5h-4.5v6.6l4.35 8.287c.1-.2.15-.412.15-.637V4.5z"/></svg>`;
-            const tgLogo = `<span class="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center text-white text-xl"><i class="fa-brands fa-telegram"></i></span>`;
             const waLogo = `<span class="w-10 h-10 rounded-full bg-slate-600/40 flex items-center justify-center text-slate-500 text-xl"><i class="fa-brands fa-whatsapp"></i></span>`;
+            const tgLogoOff = `<span class="w-10 h-10 rounded-full bg-slate-600/40 flex items-center justify-center text-slate-500 text-xl"><i class="fa-brands fa-telegram"></i></span>`;
             document.getElementById('modalBody').innerHTML = `
               <div class="space-y-4">
                 <div class="flex items-start justify-between gap-3">
@@ -870,12 +870,12 @@
                       <p class="text-[10px] text-slate-500 mt-0.5">Unavailable</p>
                     </div>
                     <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 p-3 flex flex-col items-center text-center opacity-50 cursor-not-allowed">
-                      <span class="w-10 h-10 rounded-full bg-slate-600/40 flex items-center justify-center text-slate-500 text-xl"><i class="fa-brands fa-telegram"></i></span>
+                      ${tgLogoOff}
                       <p class="text-xs font-bold mt-2 text-slate-400">Telegram</p>
                       <p class="text-[10px] text-slate-500 mt-0.5">Unavailable</p>
                     </div>
                     <a href="mailto:${em}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
-                      <span class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">${gmailLogo}</span>
+                      <span class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden">${gmailLogo}</span>
                       <p class="text-xs font-bold mt-2">Email</p>
                       <p class="text-[9px] text-slate-400 mt-0.5 truncate max-w-full px-0.5">${em}</p>
                     </a>
