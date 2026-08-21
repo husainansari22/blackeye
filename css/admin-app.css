@@ -1,0 +1,467 @@
+/**
+ * Acctventa Admin / Owner app shell
+ * Theme tokens fix dark-mode contrast (no light text on light cards).
+ */
+:root {
+  --av-bg: #eef2f7;
+  --av-surface: #ffffff;
+  --av-surface-2: #f8fafc;
+  --av-text: #0f172a;
+  --av-muted: #64748b;
+  --av-border: #e2e8f0;
+  --av-chat: #e8eef5;
+  --av-bubble-in: #ffffff;
+  --av-bubble-in-text: #0f172a;
+  --av-bubble-out: #0ea5e9;
+  --av-bubble-out-text: #ffffff;
+  --av-warn-bg: #fffbeb;
+  --av-warn-border: #fde68a;
+  --av-warn-text: #92400e;
+  --av-info-bg: #f0f9ff;
+  --av-info-border: #bae6fd;
+  --av-info-text: #0c4a6e;
+  --av-ok-bg: #ecfdf5;
+  --av-ok-border: #a7f3d0;
+  --av-ok-text: #065f46;
+  --av-danger: #ef4444;
+  --av-brand: #0ea5e9;
+  --av-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+}
+
+html.dark {
+  color-scheme: dark;
+  --av-bg: #020617;
+  --av-surface: #0f172a;
+  --av-surface-2: #1e293b;
+  --av-text: #f8fafc;
+  --av-muted: #94a3b8;
+  --av-border: #334155;
+  --av-chat: #020617;
+  --av-bubble-in: #1e293b;
+  --av-bubble-in-text: #f8fafc;
+  --av-bubble-out: #0ea5e9;
+  --av-bubble-out-text: #ffffff;
+  --av-warn-bg: #422006;
+  --av-warn-border: #854d0e;
+  --av-warn-text: #fde68a;
+  --av-info-bg: #0c4a6e;
+  --av-info-border: #0369a1;
+  --av-info-text: #e0f2fe;
+  --av-ok-bg: #064e3b;
+  --av-ok-border: #047857;
+  --av-ok-text: #a7f3d0;
+  --av-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+html, body.av-app {
+  background: var(--av-bg) !important;
+  color: var(--av-text) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.av-app a:not(.av-btn):not(.av-tab-active) {
+  color: inherit;
+}
+
+.av-shell {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+}
+
+.av-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--av-surface);
+  border-bottom: 1px solid var(--av-border);
+  backdrop-filter: blur(10px);
+}
+
+.av-topbar-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  height: 3.5rem;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.av-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  color: var(--av-text);
+  min-width: 0;
+}
+
+.av-brand-mark {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  background: var(--av-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.av-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.av-icon-btn,
+.av-link-btn {
+  border: 1px solid var(--av-border);
+  background: var(--av-surface-2);
+  color: var(--av-text);
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none !important;
+}
+
+.av-link-btn.danger {
+  color: #ef4444;
+  border-color: transparent;
+  background: transparent;
+}
+
+.av-tabs {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding: 0.85rem 0 0.25rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.av-tabs::-webkit-scrollbar { display: none; }
+
+.av-tab {
+  flex-shrink: 0;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--av-border);
+  background: var(--av-surface);
+  color: var(--av-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+.av-tab-active,
+.av-tab.is-active {
+  background: var(--av-brand) !important;
+  border-color: var(--av-brand) !important;
+  color: #fff !important;
+}
+
+.av-card {
+  background: var(--av-surface);
+  color: var(--av-text);
+  border: 1px solid var(--av-border);
+  border-radius: 1rem;
+  box-shadow: var(--av-shadow);
+}
+
+.av-muted { color: var(--av-muted) !important; }
+.av-text { color: var(--av-text) !important; }
+
+.av-warn {
+  background: var(--av-warn-bg) !important;
+  border: 1px solid var(--av-warn-border) !important;
+  color: var(--av-warn-text) !important;
+  border-radius: 1rem;
+}
+.av-warn h2, .av-warn h3, .av-warn strong, .av-warn p, .av-warn label {
+  color: var(--av-warn-text) !important;
+}
+
+.av-info {
+  background: var(--av-info-bg) !important;
+  border: 1px solid var(--av-info-border) !important;
+  color: var(--av-info-text) !important;
+  border-radius: 1rem;
+}
+.av-info h2, .av-info h3, .av-info strong, .av-info p, .av-info label {
+  color: var(--av-info-text) !important;
+}
+
+.av-ok {
+  background: var(--av-ok-bg) !important;
+  border: 1px solid var(--av-ok-border) !important;
+  color: var(--av-ok-text) !important;
+  border-radius: 1rem;
+}
+
+.av-input,
+.av-app input:not([type="checkbox"]):not([type="radio"]),
+.av-app select,
+.av-app textarea {
+  background: var(--av-surface-2) !important;
+  color: var(--av-text) !important;
+  border: 1px solid var(--av-border) !important;
+  border-radius: 0.85rem;
+}
+
+.av-app input::placeholder,
+.av-app textarea::placeholder {
+  color: var(--av-muted) !important;
+  opacity: 1;
+}
+
+.av-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 1rem;
+  border: 1px solid var(--av-border);
+  background: var(--av-surface);
+}
+.av-table-wrap table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  color: var(--av-text);
+}
+.av-table-wrap th {
+  background: var(--av-surface-2);
+  color: var(--av-muted);
+  font-weight: 700;
+  text-align: left;
+  padding: 0.75rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.av-table-wrap td {
+  padding: 0.75rem;
+  border-top: 1px solid var(--av-border);
+  color: var(--av-text);
+  font-size: 0.75rem;
+  vertical-align: top;
+}
+
+/* Chat app layout */
+.av-chat-shell {
+  display: grid;
+  gap: 0.75rem;
+  min-height: 70vh;
+}
+@media (min-width: 900px) {
+  .av-chat-shell {
+    grid-template-columns: 17rem 1fr;
+    gap: 0;
+    border: 1px solid var(--av-border);
+    border-radius: 1rem;
+    overflow: hidden;
+    background: var(--av-surface);
+    min-height: 560px;
+  }
+  .av-chat-list, .av-chat-pane {
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+  .av-chat-list { border-right: 1px solid var(--av-border) !important; }
+}
+
+.av-chat-list,
+.av-chat-pane {
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.av-chat-list-head,
+.av-chat-pane-head {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--av-border);
+  background: var(--av-surface-2);
+  color: var(--av-text);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.av-thread {
+  width: 100%;
+  text-align: left;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--av-border);
+  background: transparent;
+  color: var(--av-text);
+  cursor: pointer;
+}
+.av-thread:hover,
+.av-thread.is-active {
+  background: color-mix(in srgb, var(--av-brand) 12%, transparent);
+}
+.av-thread .name { font-size: 0.8rem; font-weight: 800; color: var(--av-text); }
+.av-thread .meta { font-size: 0.65rem; color: var(--av-muted); }
+.av-thread .preview { font-size: 0.65rem; color: var(--av-muted); margin-top: 0.15rem; }
+
+.av-chat-msgs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background: var(--av-chat);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: 55vh;
+}
+@media (min-width: 900px) {
+  .av-chat-msgs { max-height: none; }
+}
+
+.av-bubble {
+  max-width: 88%;
+  border-radius: 1.1rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.av-bubble-in {
+  background: var(--av-bubble-in);
+  color: var(--av-bubble-in-text);
+  border: 1px solid var(--av-border);
+  align-self: flex-start;
+}
+.av-bubble-out {
+  background: var(--av-bubble-out);
+  color: var(--av-bubble-out-text);
+  align-self: flex-end;
+  border: 0;
+}
+.av-bubble .who {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  margin-bottom: 0.2rem;
+  font-weight: 600;
+}
+.av-bubble .body {
+  white-space: pre-wrap;
+  color: inherit;
+}
+.av-bubble img.av-attach {
+  display: block;
+  margin-top: 0.45rem;
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 0.7rem;
+  object-fit: cover;
+  background: #000;
+}
+.av-bubble a.av-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: underline;
+  color: inherit;
+}
+
+.av-composer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--av-border);
+  background: var(--av-surface);
+  align-items: center;
+}
+.av-composer input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 999px !important;
+  padding: 0.7rem 1rem !important;
+  font-size: 16px !important;
+}
+.av-send {
+  background: var(--av-brand);
+  color: #fff !important;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1.1rem;
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.av-stat {
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: var(--av-shadow);
+}
+.av-stat .label { font-size: 0.7rem; color: var(--av-muted); }
+.av-stat .value { font-size: 1.5rem; font-weight: 900; color: var(--av-text); }
+
+/* Remap leftover Tailwind light surfaces so dark mode never shows white-on-white */
+html.dark .av-app .bg-white,
+html.dark .av-app .bg-slate-50,
+html.dark .av-app .bg-slate-50\/40,
+html.dark .av-app .bg-slate-50\/50 {
+  background: var(--av-surface) !important;
+  color: var(--av-text) !important;
+  border-color: var(--av-border) !important;
+}
+html.dark .av-app .bg-amber-50,
+html.dark .av-app .bg-amber-50\/30 {
+  background: var(--av-warn-bg) !important;
+  color: var(--av-warn-text) !important;
+  border-color: var(--av-warn-border) !important;
+}
+html.dark .av-app .bg-sky-50 {
+  background: var(--av-info-bg) !important;
+  color: var(--av-info-text) !important;
+  border-color: var(--av-info-border) !important;
+}
+html.dark .av-app .bg-emerald-50 {
+  background: var(--av-ok-bg) !important;
+  color: var(--av-ok-text) !important;
+}
+html.dark .av-app .text-slate-900,
+html.dark .av-app .text-slate-800,
+html.dark .av-app .text-slate-700 {
+  color: var(--av-text) !important;
+}
+html.dark .av-app .text-slate-600,
+html.dark .av-app .text-slate-500,
+html.dark .av-app .text-slate-400 {
+  color: var(--av-muted) !important;
+}
+html.dark .av-app .border-slate-200,
+html.dark .av-app .border-slate-100,
+html.dark .av-app .border {
+  border-color: var(--av-border);
+}
+html.dark .av-app thead {
+  background: var(--av-surface-2) !important;
+}
+
+@media screen and (max-width: 768px) {
+  .av-app input, .av-app select, .av-app textarea, .av-app button {
+    font-size: 16px !important;
+  }
+  .av-topbar-inner { height: 3.25rem; }
+  .av-brand span.title { font-size: 0.95rem; }
+}

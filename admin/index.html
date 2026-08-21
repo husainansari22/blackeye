@@ -20,14 +20,16 @@
     (function(){try{var t=localStorage.getItem('acctventa_admin_theme')||'light';if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');}}catch(e){}})();
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=20260821adv1"></script>
-  <script src="/js/api-client.js?v=20260821adv1"></script>
+  <script src="/js/acctventa.js?v=20260821adv2"></script>
+  <script src="/js/api-client.js?v=20260821adv2"></script>
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260821adv2">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
     html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   </style>
 </head>
-<body class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen">
+<body class="av-app min-h-screen font-['Plus_Jakarta_Sans',system-ui,sans-serif]">
   <!-- LOGIN -->
   <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 space-y-4">
@@ -55,99 +57,98 @@
 
   <!-- DASHBOARD -->
   <div id="dashView" class="hidden">
-    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
-      <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div class="flex items-center gap-2 font-bold">
-          <span class="w-8 h-8 rounded-lg bg-brandPrimary text-white flex items-center justify-center text-sm">A</span>
-          Acctventa Admin
-        </div>
-        <div class="flex items-center gap-3 text-sm">
-          <button type="button" id="adminThemeBtn" onclick="toggleAdminTheme()" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold">Theme</button>
-          <a href="/dashboard.html" class="text-slate-500 hover:text-brandPrimary">User app</a>
-          <button onclick="doLogout()" class="text-red-500 font-medium">Log out</button>
+    <header class="av-topbar">
+      <div class="av-topbar-inner">
+        <div class="av-brand"><span class="av-brand-mark">A</span><span class="title truncate">Acctventa Admin</span></div>
+        <div class="av-top-actions">
+          <button type="button" id="adminThemeBtn" onclick="toggleAdminTheme()" class="av-icon-btn" aria-label="Toggle theme">Dark</button>
+          <a href="/dashboard.html" class="av-link-btn">App</a>
+          <button onclick="doLogout()" class="av-link-btn danger">Log out</button>
         </div>
       </div>
     </header>
 
-    <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs rounded-xl p-3">
-        <strong>Live Chat Support</strong> connects to your Hostinger MySQL backend. Use Owner credentials to open the inbox.
-        Order chats & reports also need a connected staff token. Wallet fees & gateways are managed in <strong>/owner</strong>.
+    <div class="av-shell space-y-4 py-4">
+      <div class="av-info text-xs p-3">
+        <strong>Live inbox</strong> — connect with Owner credentials. Fees & gateways live in <strong>/owner</strong>.
       </div>
 
-      <!-- Tabs -->
-      <div class="flex gap-2 overflow-x-auto text-sm">
-        <button class="admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium" data-tab="support" onclick="showTab('support')">Support</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="chats" onclick="showTab('chats')">Order chats</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="users" onclick="showTab('users')">Users</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="security" onclick="showTab('security')">Security</button>
+      <div class="av-tabs">
+        <button class="av-tab admin-tab av-tab-active" data-tab="support" onclick="showTab('support')">Support</button>
+        <button class="av-tab admin-tab" data-tab="chats" onclick="showTab('chats')">Order chats</button>
+        <button class="av-tab admin-tab" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
+        <button class="av-tab admin-tab" data-tab="users" onclick="showTab('users')">Users</button>
+        <button class="av-tab admin-tab" data-tab="security" onclick="showTab('security')">Security</button>
       </div>
 
       <!-- SUPPORT CHAT INBOX -->
-      <section id="tab_support" class="admin-panel bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+      <section id="tab_support" class="admin-panel av-card p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="font-bold text-lg">Live Chat Support</h2>
-            <p class="text-xs text-slate-500">Reply to users who contact you via Chat Support on the site.</p>
+            <h2 class="font-bold text-lg av-text">Live Chat Support</h2>
+            <p class="text-xs av-muted">Reply like a messaging app — messages, photos, and files stay readable in light & dark.</p>
           </div>
-          <button onclick="enableAdminNotifications()" class="text-xs text-brandPrimary font-semibold">Enable browser notifications</button>
+          <button onclick="enableAdminNotifications()" class="av-icon-btn">Notifications</button>
         </div>
-        <div id="staffLoginBox" class="border border-amber-200 bg-amber-50 rounded-xl p-3 space-y-2">
-          <p class="text-xs text-amber-900">Connect to the live database with Owner credentials (same as <code>/owner</code> login).</p>
+        <div id="staffLoginBox" class="av-warn p-3 space-y-2">
+          <p class="text-xs">Connect with Owner credentials (same as <code>/owner</code>).</p>
           <div class="grid sm:grid-cols-3 gap-2">
-            <input id="staffUser" placeholder="Owner username" class="border rounded-xl px-3 py-2 text-sm" value="owner">
-            <input id="staffPass" type="password" placeholder="Owner password" class="border rounded-xl px-3 py-2 text-sm">
-            <button onclick="staffConnect()" class="bg-brandPrimary text-white font-bold rounded-xl text-sm">Connect inbox</button>
+            <input id="staffUser" placeholder="Owner username" class="av-input px-3 py-2 text-sm" value="owner">
+            <input id="staffPass" type="password" placeholder="Owner password" class="av-input px-3 py-2 text-sm">
+            <button onclick="staffConnect()" class="av-send">Connect inbox</button>
           </div>
-          <p id="staffLoginMsg" class="text-xs text-slate-500"></p>
+          <p id="staffLoginMsg" class="text-xs"></p>
         </div>
-        <div id="supportInbox" class="hidden grid md:grid-cols-5 gap-3 min-h-[420px]">
-          <div class="md:col-span-2 border rounded-xl overflow-hidden flex flex-col">
-            <div class="px-3 py-2 border-b text-xs font-semibold flex justify-between items-center bg-slate-50">
+        <div id="supportInbox" class="hidden av-chat-shell">
+          <div class="av-chat-list">
+            <div class="av-chat-list-head flex justify-between items-center">
               <span>Conversations</span>
-              <button onclick="loadSupportThreads()" class="text-brandPrimary">Refresh</button>
+              <button onclick="loadSupportThreads()" class="av-icon-btn" type="button">Refresh</button>
             </div>
-            <div id="supportThreadList" class="flex-1 overflow-y-auto max-h-[50vh]"></div>
+            <div id="supportThreadList" class="flex-1 overflow-y-auto" style="max-height:55vh"></div>
           </div>
-          <div class="md:col-span-3 border rounded-xl flex flex-col min-h-[420px]">
-            <div id="supportChatHeader" class="px-3 py-2 border-b text-sm font-semibold bg-slate-50">Select a conversation</div>
-            <div id="supportChatMsgs" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[45vh] bg-slate-50/50"></div>
-            <p id="supportTyping" class="px-3 text-[11px] text-slate-400 h-5"></p>
-            <div class="p-2 border-t flex gap-2">
-              <input id="supportReplyInput" type="text" placeholder="Type a reply…" class="flex-1 border rounded-full px-3 py-2 text-sm" oninput="staffTypingSignal()" onkeydown="if(event.key==='Enter'){staffSendReply();}">
-              <button onclick="staffSendReply()" class="bg-brandPrimary text-white rounded-full px-4 text-sm font-bold">Send</button>
+          <div class="av-chat-pane">
+            <div id="supportChatHeader" class="av-chat-pane-head">Select a conversation</div>
+            <div id="supportChatMsgs" class="av-chat-msgs"></div>
+            <p id="supportTyping" class="px-3 text-[11px] av-muted h-5"></p>
+            <div class="av-composer">
+              <input type="file" id="adminSupportFile" class="hidden" accept="image/*,.pdf,.txt,.doc,.docx,.zip" onchange="onAdminSupportFile(event)">
+              <button type="button" onclick="document.getElementById('adminSupportFile').click()" class="av-icon-btn" title="Attach">📎</button>
+              <input id="supportReplyInput" type="text" placeholder="Type a reply…" oninput="staffTypingSignal()" onkeydown="if(event.key==='Enter'){staffSendReply();}">
+              <button onclick="staffSendReply()" class="av-send" type="button">Send</button>
             </div>
+            <p id="adminSupportAttachHint" class="hidden px-3 pb-2 text-[10px] av-muted"></p>
           </div>
         </div>
       </section>
 
       <!-- ORDER CHATS -->
-      <section id="tab_chats" class="admin-panel hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
-        <h2 class="font-bold text-lg">Buyer ↔ seller chats</h2>
-        <p class="text-xs text-slate-500">Connect Support inbox first (Owner credentials), then search by TXID or browse threads.</p>
+      <section id="tab_chats" class="admin-panel hidden av-card p-4 space-y-3">
+        <h2 class="font-bold text-lg av-text">Buyer ↔ seller chats</h2>
+        <p class="text-xs av-muted">Connect Support inbox first (Owner credentials), then search by TXID or browse threads.</p>
         <div class="flex flex-wrap gap-2">
-          <input id="adminTxSearch" placeholder="TXID / email…" class="border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2 text-base flex-1 min-w-[180px]">
-          <button onclick="adminSearchTx()" class="bg-brandPrimary text-white font-bold px-4 py-2 rounded-xl text-sm">Search</button>
-          <button onclick="loadAdminOrderChats()" class="border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-sm">Refresh list</button>
+          <input id="adminTxSearch" placeholder="TXID / email…" class="av-input px-3 py-2 text-base flex-1 min-w-[180px]">
+          <button onclick="adminSearchTx()" class="av-send">Search</button>
+          <button onclick="loadAdminOrderChats()" class="av-icon-btn">Refresh list</button>
         </div>
         <div id="adminTxResult" class="text-xs space-y-2"></div>
-        <div class="grid md:grid-cols-5 gap-3 min-h-[360px]">
-          <div class="md:col-span-2 border dark:border-slate-700 rounded-xl overflow-hidden">
-            <div id="adminOrderChatList" class="max-h-[50vh] overflow-y-auto"></div>
+        <div class="av-chat-shell">
+          <div class="av-chat-list">
+            <div class="av-chat-list-head">Threads</div>
+            <div id="adminOrderChatList" class="overflow-y-auto" style="max-height:50vh"></div>
           </div>
-          <div class="md:col-span-3 border dark:border-slate-700 rounded-xl flex flex-col">
-            <div id="adminOrderChatHeader" class="px-3 py-2 border-b dark:border-slate-700 text-sm font-semibold">Select a chat</div>
-            <div id="adminOrderChatMsgs" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[45vh]"></div>
-            <div class="p-2 border-t dark:border-slate-700">
-              <button id="adminOrderRefundBtn" class="hidden bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Refund buyer</button>
+          <div class="av-chat-pane">
+            <div id="adminOrderChatHeader" class="av-chat-pane-head">Select a chat</div>
+            <div id="adminOrderChatMsgs" class="av-chat-msgs"></div>
+            <div class="p-2" style="border-top:1px solid var(--av-border)">
+              <button id="adminOrderRefundBtn" class="hidden av-send" style="background:#ef4444">Refund buyer</button>
             </div>
           </div>
         </div>
       </section>
 
       <!-- ADS -->
-      <section id="tab_ads" class="admin-panel hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <section id="tab_ads" class="admin-panel hidden av-card p-5 space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="font-bold text-lg">Ad reviews</h2>
           <button onclick="loadAds()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
@@ -157,7 +158,7 @@
       </section>
 
       <!-- USERS -->
-      <section id="tab_users" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+      <section id="tab_users" class="admin-panel hidden av-card p-5 space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="font-bold text-lg">Users (this browser)</h2>
           <button onclick="loadUsers()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
@@ -166,7 +167,7 @@
       </section>
 
       <!-- SECURITY -->
-      <section id="tab_security" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+      <section id="tab_security" class="admin-panel hidden av-card p-5 space-y-4">
         <h2 class="font-bold text-lg">Admin password</h2>
         <div class="grid sm:grid-cols-2 gap-4 max-w-xl">
           <div>
@@ -193,9 +194,7 @@
       if (panel) panel.classList.remove('hidden');
       document.querySelectorAll('.admin-tab').forEach(b => {
         const on = b.dataset.tab === name;
-        b.className = on
-          ? 'admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium'
-          : 'admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700';
+        b.className = on ? 'av-tab admin-tab av-tab-active' : 'av-tab admin-tab';
       });
       if (name === 'ads') loadAds();
       if (name === 'users') loadUsers();
@@ -209,12 +208,12 @@
       html.classList.toggle('light', !dark);
       try { localStorage.setItem('acctventa_admin_theme', dark ? 'dark' : 'light'); } catch (e) {}
       const btn = document.getElementById('adminThemeBtn');
-      if (btn) btn.textContent = dark ? 'Light mode' : 'Dark mode';
+      if (btn) btn.textContent = dark ? 'Light' : 'Dark';
     }
     (function () {
       const dark = document.documentElement.classList.contains('dark');
       const btn = document.getElementById('adminThemeBtn');
-      if (btn) btn.textContent = dark ? 'Light mode' : 'Dark mode';
+      if (btn) btn.textContent = dark ? 'Light' : 'Dark';
     })();
 
     let adminActiveOrder = null;
@@ -232,9 +231,9 @@
           box.innerHTML = '<p class="p-3 text-xs text-slate-400">No order chats yet.</p>';
           return;
         }
-        box.innerHTML = chats.map(c => `<button type="button" onclick="openAdminOrderChat(${c.id})" class="w-full text-left px-3 py-2.5 border-b dark:border-slate-800 text-xs">
-          <p class="font-mono font-bold">${escHtml(c.public_id)}</p>
-          <p class="text-slate-500 truncate">${escHtml(c.buyer_name)} ↔ ${escHtml(c.seller_name)}</p>
+        box.innerHTML = chats.map(c => `<button type="button" onclick="openAdminOrderChat(${c.id})" class="av-thread ${adminActiveOrder===c.id?'is-active':''}">
+          <p class="name font-mono">${escHtml(c.public_id)}</p>
+          <p class="meta truncate">${escHtml(c.buyer_name)} ↔ ${escHtml(c.seller_name)}</p>
         </button>`).join('');
       } catch (e) {
         document.getElementById('adminOrderChatList').innerHTML = '<p class="p-3 text-xs text-red-500">' + escHtml(e.message) + '</p>';
@@ -248,8 +247,8 @@
       document.getElementById('adminOrderChatHeader').innerHTML = `<span class="font-mono">${escHtml(o.public_id)}</span> · ${escHtml(o.title)} · ${escHtml(o.status)}`;
       const msgs = res.messages || [];
       document.getElementById('adminOrderChatMsgs').innerHTML = msgs.length
-        ? msgs.map(m => `<div class="border dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs"><p class="text-slate-400">${escHtml(m.fromName)}</p><p>${escHtml(m.text || m.body)}</p>${m.attachmentUrl ? `<a class="text-brandPrimary underline" href="${escHtml(m.attachmentUrl)}" target="_blank">Attachment</a>` : ''}</div>`).join('')
-        : '<p class="text-xs text-slate-400">No messages</p>';
+        ? msgs.map(m => `<div class="av-bubble av-bubble-in"><p class="who">${escHtml(m.fromName)}</p><p class="body">${escHtml(m.text || m.body || '')}</p>${renderAttachHtml(m)}</div>`).join('')
+        : '<p class="text-xs av-muted">No messages</p>';
       const btn = document.getElementById('adminOrderRefundBtn');
       btn.classList.toggle('hidden', o.status === 'cancelled');
       btn.onclick = async () => {
@@ -280,6 +279,30 @@
     function escHtml(s) {
       return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+
+    function renderAttachHtml(m) {
+      if (!m || !m.attachmentUrl) return '';
+      const url = escHtml(m.attachmentUrl);
+      const mime = String(m.attachmentMime || '');
+      const isImg = mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|heic)$/i.test(m.attachmentUrl);
+      if (isImg) return `<a href="${url}" target="_blank" rel="noopener"><img class="av-attach" src="${url}" alt="${escHtml(m.attachmentName || 'image')}"></a>`;
+      return `<a class="av-file" href="${url}" target="_blank" rel="noopener">📎 ${escHtml(m.attachmentName || 'Download file')}</a>`;
+    }
+    let adminSupportAttach = null;
+    function onAdminSupportFile(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) { alert('Max 8MB'); ev.target.value=''; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        adminSupportAttach = { dataUrl: reader.result, name: file.name };
+        const hint = document.getElementById('adminSupportAttachHint');
+        if (hint) { hint.classList.remove('hidden'); hint.textContent = 'Attached: ' + file.name; }
+      };
+      reader.readAsDataURL(file);
+      ev.target.value = '';
+    }
+
 
     function showLoginError(msg) {
       const err = document.getElementById('loginError');
@@ -430,13 +453,13 @@
           return;
         }
         box.innerHTML = threads.map(t => `
-          <button type="button" onclick="openSupportThread(${t.id})" class="w-full text-left px-3 py-2.5 border-b hover:bg-sky-50 ${activeSupportThread===t.id?'bg-sky-50':''}">
+          <button type="button" onclick="openSupportThread(${t.id})" class="av-thread ${activeSupportThread===t.id?'is-active':''}">
             <div class="flex justify-between gap-2">
-              <p class="text-xs font-bold truncate">${escapeHtml(t.userName||'User')}</p>
+              <p class="name truncate">${escapeHtml(t.userName||'User')}</p>
               ${t.userOnline?'<span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1"></span>':''}
             </div>
-            <p class="text-[10px] text-slate-500 truncate">${escapeHtml(t.userEmail||'')}</p>
-            <p class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(t.lastBody||'No messages')}</p>
+            <p class="meta truncate">${escapeHtml(t.userEmail||'')}</p>
+            <p class="preview truncate">${escapeHtml(t.lastBody||'No messages')}</p>
           </button>`).join('');
       } catch (e) {
         if (!silent) box.innerHTML = '<p class="p-3 text-xs text-red-500">' + escapeHtml(e.message||'Failed') + '</p>';
@@ -449,7 +472,7 @@
         const res = await window.AcctventaApi.staffSupportMessages(id);
         const t = res.thread || {};
         document.getElementById('supportChatHeader').innerHTML =
-          escapeHtml(t.userName||'User') + ' <span class="text-xs font-normal text-slate-400">' + escapeHtml(t.userEmail||'') +
+          escapeHtml(t.userName||'User') + ' <span class="text-xs font-normal av-muted">' + escapeHtml(t.userEmail||'') +
           (t.userOnline ? ' · <span class="text-emerald-500">Online</span>' : '') + '</span>';
         document.getElementById('supportTyping').textContent = t.userTyping ? 'User is typing…' : '';
         const box = document.getElementById('supportChatMsgs');
@@ -457,8 +480,8 @@
         box.innerHTML = msgs.length ? msgs.map(m => {
           const mine = m.role === 'staff';
           const name = mine ? (m.staffName||'Support') : (t.userName||'User');
-          return `<div class="flex ${mine?'justify-end':'justify-start'}"><div class="max-w-[85%] rounded-2xl px-3 py-2 text-sm ${mine?'bg-brandPrimary text-white':'bg-white border'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(name)}</p>${escapeHtml(m.body)}</div></div>`;
-        }).join('') : '<p class="text-center text-xs text-slate-400 py-6">No messages yet.</p>';
+          return `<div class="av-bubble ${mine?'av-bubble-out':'av-bubble-in'}"><p class="who">${escapeHtml(name)}</p><p class="body">${escapeHtml(m.body||'')}</p>${renderAttachHtml(m)}</div>`;
+        }).join('') : '<p class="text-center text-xs av-muted py-6">No messages yet.</p>';
         if (!silent) box.scrollTop = box.scrollHeight;
         loadSupportThreads(true);
       } catch (e) {
@@ -478,10 +501,18 @@
     async function staffSendReply() {
       const input = document.getElementById('supportReplyInput');
       const text = (input.value || '').trim();
-      if (!text || !activeSupportThread) return;
+      if ((!text && !adminSupportAttach) || !activeSupportThread) return;
       try {
-        await window.AcctventaApi.staffSupportSend({ threadId: activeSupportThread, text });
+        const payload = { threadId: activeSupportThread, text: text || '' };
+        if (adminSupportAttach) {
+          payload.attachment = adminSupportAttach.dataUrl;
+          payload.fileName = adminSupportAttach.name;
+        }
+        await window.AcctventaApi.staffSupportSend(payload);
         input.value = '';
+        adminSupportAttach = null;
+        const hint = document.getElementById('adminSupportAttachHint');
+        if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
         openSupportThread(activeSupportThread);
       } catch (e) {
         alert(e.message || 'Send failed');
