@@ -6,6 +6,7 @@
 return [
     'db_host' => 'localhost',
     'db_name' => 'u343769360_acctventa',
+    // Copy exact username from Hostinger → MySQL Databases (may match DB name)
     'db_user' => 'u343769360_acctventa',
     'db_pass' => 'CHANGE_ME',
     'db_charset' => 'utf8mb4',
