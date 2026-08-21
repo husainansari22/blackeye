@@ -27,6 +27,9 @@ if (($_POST['form'] ?? '') === 'login') {
 }
 
 $authed = !empty($_SESSION['owner_ok']);
+if ($authed) {
+    try { migrate_legacy_support_email(); } catch (Throwable $e) {}
+}
 
 if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $form = $_POST['form'] ?? '';
