@@ -5,17 +5,22 @@
 (function (global) {
   const USERS_KEY = 'acctventa_users';
   const SESSION_KEY = 'acctventa_session';
+  const SETTINGS_KEY = 'acctventa_settings';
+  const ADMIN_KEY = 'acctventa_admin';
 
-  const CONFIG = {
+  const DEFAULT_CONFIG = {
     minDeposit: 3,
     minWithdraw: 5,
     withdrawCommissionRate: 0.1, // 10% platform fee on seller withdrawals
-    depositFeeRate: 0, // set later when gateway live
+    depositFeeRate: 0,
     freeDailyUploadLimit: 5,
-    brandPrimary: '#0ea5e9'
+    brandPrimary: '#0ea5e9',
+    supportTelegram: 'https://t.me/acctventa',
+    supportEmail: 'help@acctventa.com',
+    siteName: 'acctventa'
   };
 
-  const PLANS = {
+  const DEFAULT_PLANS = {
     free: {
       id: 'free',
       name: 'Free (Default)',
@@ -45,6 +50,158 @@
       approval: 'Fast upload approval'
     }
   };
+
+  const DEFAULT_GATEWAYS = {
+    deposit: {
+      provider: 'none', // none | paystack | flutterwave | stripe | nowpayments
+      enabled: false,
+      publicKey: '',
+      secretKey: '', // WARNING: browser storage is not safe for production secrets
+      webhookUrl: '',
+      notes: ''
+    },
+    withdraw: {
+      provider: 'none',
+      enabled: false,
+      publicKey: '',
+      secretKey: '',
+      webhookUrl: '',
+      notes: ''
+    }
+  };
+
+  let CONFIG = { ...DEFAULT_CONFIG };
+  let PLANS = JSON.parse(JSON.stringify(DEFAULT_PLANS));
+  let GATEWAYS = JSON.parse(JSON.stringify(DEFAULT_GATEWAYS));
+
+  function getSettings() {
+    try {
+      return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function applySettings(settings) {
+    const s = settings || getSettings();
+    CONFIG = { ...DEFAULT_CONFIG, ...(s.config || {}) };
+    PLANS = JSON.parse(JSON.stringify(DEFAULT_PLANS));
+    if (s.plans) {
+      Object.keys(s.plans).forEach((id) => {
+        if (PLANS[id]) PLANS[id] = { ...PLANS[id], ...s.plans[id], id };
+      });
+    }
+    // keep free daily limit aligned with free plan
+    if (PLANS.free && PLANS.free.dailyUploads != null) {
+      CONFIG.freeDailyUploadLimit = Number(PLANS.free.dailyUploads) || CONFIG.freeDailyUploadLimit;
+    }
+    GATEWAYS = {
+      deposit: { ...DEFAULT_GATEWAYS.deposit, ...((s.gateways && s.gateways.deposit) || {}) },
+      withdraw: { ...DEFAULT_GATEWAYS.withdraw, ...((s.gateways && s.gateways.withdraw) || {}) }
+    };
+    // expose live objects
+    if (global.Acctventa) {
+      global.Acctventa.CONFIG = CONFIG;
+      global.Acctventa.PLANS = PLANS;
+      global.Acctventa.GATEWAYS = GATEWAYS;
+    }
+    return { CONFIG, PLANS, GATEWAYS };
+  }
+
+  function saveSettings(partial) {
+    const current = getSettings();
+    const next = {
+      config: { ...(current.config || {}), ...((partial && partial.config) || {}) },
+      plans: { ...(current.plans || {}), ...((partial && partial.plans) || {}) },
+      gateways: {
+        deposit: {
+          ...DEFAULT_GATEWAYS.deposit,
+          ...((current.gateways && current.gateways.deposit) || {}),
+          ...((partial && partial.gateways && partial.gateways.deposit) || {})
+        },
+        withdraw: {
+          ...DEFAULT_GATEWAYS.withdraw,
+          ...((current.gateways && current.gateways.withdraw) || {}),
+          ...((partial && partial.gateways && partial.gateways.withdraw) || {})
+        }
+      },
+      updatedAt: new Date().toISOString()
+    };
+    // deep-merge plan objects properly
+    if (partial && partial.plans) {
+      next.plans = { ...(current.plans || {}) };
+      Object.keys(partial.plans).forEach((id) => {
+        next.plans[id] = { ...((current.plans && current.plans[id]) || {}), ...partial.plans[id] };
+      });
+    }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    applySettings(next);
+    return next;
+  }
+
+  function getAdminRecord() {
+    try {
+      return JSON.parse(localStorage.getItem(ADMIN_KEY) || 'null');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveAdminRecord(rec) {
+    localStorage.setItem(ADMIN_KEY, JSON.stringify(rec));
+  }
+
+  /** First-time setup: default password admin123 — change immediately in Admin */
+  function ensureAdminInitialized() {
+    let admin = getAdminRecord();
+    if (!admin) {
+      admin = {
+        username: 'admin',
+        password: 'admin123',
+        createdAt: new Date().toISOString(),
+        mustChangePassword: true
+      };
+      saveAdminRecord(admin);
+    }
+    return admin;
+  }
+
+  function adminLogin(username, password) {
+    const admin = ensureAdminInitialized();
+    if (String(username || '').trim() !== admin.username || String(password || '') !== admin.password) {
+      return { ok: false, error: 'Invalid admin username or password.' };
+    }
+    sessionStorage.setItem('acctventa_admin_session', JSON.stringify({ at: Date.now(), user: admin.username }));
+    return { ok: true, admin: { username: admin.username, mustChangePassword: !!admin.mustChangePassword } };
+  }
+
+  function adminLogout() {
+    sessionStorage.removeItem('acctventa_admin_session');
+  }
+
+  function isAdminLoggedIn() {
+    try {
+      const s = JSON.parse(sessionStorage.getItem('acctventa_admin_session') || 'null');
+      return !!(s && s.user);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function changeAdminPassword(currentPass, newPass) {
+    const admin = ensureAdminInitialized();
+    if (currentPass !== admin.password) return { ok: false, error: 'Current password is wrong.' };
+    if (!newPass || String(newPass).length < 6) return { ok: false, error: 'New password must be at least 6 characters.' };
+    admin.password = String(newPass);
+    admin.mustChangePassword = false;
+    admin.passwordChangedAt = new Date().toISOString();
+    saveAdminRecord(admin);
+    return { ok: true };
+  }
+
+  // load saved settings on boot
+  applySettings(getSettings());
+  ensureAdminInitialized();
 
   const CATEGORY_LINK_RULES = {
     'Social Media': ['facebook.com', 'fb.com', 'fb.me', 'instagram.com', 'tiktok.com', 'twitter.com', 'x.com', 'linkedin.com', 'snapchat.com', 'pinterest.com', 'threads.net'],
@@ -607,9 +764,78 @@
     return { ok: true };
   }
 
+  function listAllUsersSummary() {
+    const users = getUsers();
+    return Object.keys(users).map((email) => {
+      const u = normalizeUser(users[email]);
+      return {
+        email: u.email,
+        name: u.name,
+        phone: u.phone || '',
+        balance: u.balance || 0,
+        plan: u.plan || 'free',
+        ads: (u.ads || []).length,
+        orders: (u.orders || []).length,
+        pendingAds: (u.ads || []).filter((a) => a.status === 'pending').length,
+        createdAt: u.createdAt || ''
+      };
+    });
+  }
+
+  function adminSetAdStatus(sellerEmail, adId, status, reason) {
+    const user = findUserByEmail(sellerEmail);
+    if (!user) return { ok: false, error: 'User not found' };
+    const ad = (user.ads || []).find((a) => a.id === adId);
+    if (!ad) return { ok: false, error: 'Ad not found' };
+    ad.status = status;
+    ad.denyReason = reason || '';
+    ad.reviewedAt = new Date().toISOString();
+    ad.reviewedBy = 'Admin';
+    pushNotification(user, {
+      title: status === 'active' ? 'Ad Approved by Admin' : status === 'denied' ? 'Ad Denied by Admin' : 'Ad updated',
+      body: status === 'denied' ? reason || 'Your listing was denied.' : `Your listing "${ad.title}" is now ${status}.`,
+      type: 'ad_review'
+    });
+    persistUser(user);
+    return { ok: true, ad };
+  }
+
+  function listPendingAds() {
+    const users = getUsers();
+    const list = [];
+    Object.keys(users).forEach((email) => {
+      const u = normalizeUser(users[email]);
+      (u.ads || []).forEach((ad) => {
+        if (ad.status === 'pending' || ad.status === 'denied') {
+          list.push({
+            ...ad,
+            sellerEmail: u.email,
+            sellerName: u.name
+          });
+        }
+      });
+    });
+    return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  }
+
   global.Acctventa = {
     CONFIG,
     PLANS,
+    GATEWAYS,
+    DEFAULT_CONFIG,
+    DEFAULT_PLANS,
+    getSettings,
+    saveSettings,
+    applySettings,
+    getAdminRecord,
+    ensureAdminInitialized,
+    adminLogin,
+    adminLogout,
+    isAdminLoggedIn,
+    changeAdminPassword,
+    listAllUsersSummary,
+    listPendingAds,
+    adminSetAdStatus,
     getUsers,
     saveUsers,
     getCurrentUser,
@@ -638,4 +864,7 @@
     uid,
     todayKey
   };
+
+  // refresh exported refs after settings apply
+  applySettings(getSettings());
 })(window);

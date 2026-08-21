@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acctventa Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandPrimary: '#0ea5e9',
+            brandHover: '#0284c7'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="/js/acctventa.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+  <!-- LOGIN -->
+  <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white rounded-2xl shadow-lg border border-slate-200 p-6 space-y-4">
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-brandPrimary text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
+        <h1 class="text-xl font-bold">Admin Login</h1>
+        <p class="text-xs text-slate-500 mt-1">Manage fees, plans, gateways & reviews</p>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Username</label>
+        <input id="adminUser" value="admin" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Password</label>
+        <input id="adminPass" type="password" placeholder="••••••••" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+      </div>
+      <p id="loginError" class="text-xs text-red-500 hidden"></p>
+      <button onclick="doLogin()" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
+      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code> — change it after login.</p>
+      <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashView" class="hidden">
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
+      <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-2 font-bold">
+          <span class="w-8 h-8 rounded-lg bg-brandPrimary text-white flex items-center justify-center text-sm">A</span>
+          Acctventa Admin
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <a href="/dashboard.html" class="text-slate-500 hover:text-brandPrimary">User app</a>
+          <button onclick="doLogout()" class="text-red-500 font-medium">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl p-3">
+        <strong>Important:</strong> This admin runs in your browser. Settings you save here apply on this device/browser for the static site.
+        <strong>Secret API keys must not stay only in the browser for production</strong> — use a real backend when you go live with payments.
+        Users listed below are only those stored in this browser’s local data (same device testing).
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 overflow-x-auto text-sm">
+        <button class="admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium" data-tab="fees" onclick="showTab('fees')">Fees & limits</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="plans" onclick="showTab('plans')">Plans</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="gateways" onclick="showTab('gateways')">Payment gateways</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="support" onclick="showTab('support')">Support</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="users" onclick="showTab('users')">Users</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="security" onclick="showTab('security')">Security</button>
+      </div>
+
+      <!-- FEES -->
+      <section id="tab_fees" class="admin-panel bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <h2 class="font-bold text-lg">Fees & wallet limits</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-slate-500">Minimum deposit ($)</label>
+            <input id="cfg_minDeposit" type="number" step="0.01" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Minimum withdrawal ($)</label>
+            <input id="cfg_minWithdraw" type="number" step="0.01" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Withdrawal commission (%)</label>
+            <input id="cfg_withdrawCommission" type="number" step="0.1" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+            <p class="text-[11px] text-slate-400 mt-1">Your platform fee when sellers withdraw.</p>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Deposit fee (%)</label>
+            <input id="cfg_depositFee" type="number" step="0.1" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+          </div>
+        </div>
+        <button onclick="saveFees()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save fees</button>
+      </section>
+
+      <!-- PLANS -->
+      <section id="tab_plans" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <h2 class="font-bold text-lg">Seller plans</h2>
+        <p class="text-xs text-slate-500">New users start on Free. Change daily upload limits and prices here.</p>
+        <div id="plansEditor" class="space-y-4"></div>
+        <button onclick="savePlans()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save plans</button>
+      </section>
+
+      <!-- GATEWAYS -->
+      <section id="tab_gateways" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-6">
+        <div>
+          <h2 class="font-bold text-lg">Payment gateways</h2>
+          <p class="text-xs text-slate-500 mt-1">Fill these so your site is ready. Live charging needs a backend that uses the secret key — never share secret keys publicly.</p>
+        </div>
+
+        <div class="border border-slate-200 rounded-xl p-4 space-y-3">
+          <h3 class="font-semibold">Deposit gateway</h3>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-500">Provider</label>
+              <select id="dep_provider" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+                <option value="none">Not connected</option>
+                <option value="paystack">Paystack</option>
+                <option value="flutterwave">Flutterwave</option>
+                <option value="stripe">Stripe</option>
+                <option value="nowpayments">NOWPayments (crypto)</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <label class="flex items-center gap-2 text-sm"><input id="dep_enabled" type="checkbox" class="accent-sky-500"> Enabled</label>
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">Public / Publishable key</label>
+              <input id="dep_public" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="pk_...">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">Secret key (store on server later)</label>
+              <input id="dep_secret" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="sk_...">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-xs text-slate-500">Webhook URL (for your future backend)</label>
+              <input id="dep_webhook" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="https://yourdomain.com/api/webhooks/deposit">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-xs text-slate-500">Notes</label>
+              <textarea id="dep_notes" rows="2" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="Merchant ID, currency, etc."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="border border-slate-200 rounded-xl p-4 space-y-3">
+          <h3 class="font-semibold">Withdrawal / payout gateway</h3>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-500">Provider</label>
+              <select id="wd_provider" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+                <option value="none">Not connected</option>
+                <option value="paystack">Paystack Transfer</option>
+                <option value="flutterwave">Flutterwave Payout</option>
+                <option value="stripe">Stripe Connect / Payout</option>
+                <option value="nowpayments">Crypto payout</option>
+                <option value="manual">Manual bank payout</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <label class="flex items-center gap-2 text-sm"><input id="wd_enabled" type="checkbox" class="accent-sky-500"> Enabled</label>
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">Public key</label>
+              <input id="wd_public" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">Secret key</label>
+              <input id="wd_secret" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-xs text-slate-500">Webhook / callback URL</label>
+              <input id="wd_webhook" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-xs text-slate-500">Notes</label>
+              <textarea id="wd_notes" rows="2" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-2">
+          <p class="font-semibold text-slate-800">How to finish payments yourself</p>
+          <ol class="list-decimal pl-4 space-y-1">
+            <li>Create an account on Paystack, Flutterwave, Stripe, or a crypto processor.</li>
+            <li>Copy public + secret keys into the fields above and Save.</li>
+            <li>Add a small backend (Hostinger PHP, Node, or serverless) that creates checkouts and verifies webhooks.</li>
+            <li>Point deposit/withdraw in the app to that backend (developer step once).</li>
+          </ol>
+        </div>
+        <button onclick="saveGateways()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save gateways</button>
+      </section>
+
+      <!-- SUPPORT -->
+      <section id="tab_support" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <h2 class="font-bold text-lg">Support contacts</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-slate-500">Telegram link</label>
+            <input id="cfg_telegram" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="https://t.me/yourname">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Support email</label>
+            <input id="cfg_email" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="help@acctventa.com">
+          </div>
+        </div>
+        <button onclick="saveSupport()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save support</button>
+      </section>
+
+      <!-- ADS -->
+      <section id="tab_ads" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="font-bold text-lg">Ad reviews</h2>
+          <button onclick="loadAds()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
+        </div>
+        <p class="text-xs text-slate-500">Override AI: approve or deny listings manually.</p>
+        <div id="adsAdminList" class="space-y-3"></div>
+      </section>
+
+      <!-- USERS -->
+      <section id="tab_users" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="font-bold text-lg">Users (this browser)</h2>
+          <button onclick="loadUsers()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
+        </div>
+        <div id="usersAdminList" class="overflow-x-auto"></div>
+      </section>
+
+      <!-- SECURITY -->
+      <section id="tab_security" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <h2 class="font-bold text-lg">Admin password</h2>
+        <div class="grid sm:grid-cols-2 gap-4 max-w-xl">
+          <div>
+            <label class="text-xs text-slate-500">Current password</label>
+            <input id="pw_current" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">New password</label>
+            <input id="pw_new" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+          </div>
+        </div>
+        <button onclick="changePassword()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Update password</button>
+        <p id="pwMsg" class="text-xs text-slate-500"></p>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const A = () => window.Acctventa;
+
+    function showTab(name) {
+      document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('tab_' + name).classList.remove('hidden');
+      document.querySelectorAll('.admin-tab').forEach(b => {
+        const on = b.dataset.tab === name;
+        b.className = on
+          ? 'admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium'
+          : 'admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200';
+      });
+      if (name === 'ads') loadAds();
+      if (name === 'users') loadUsers();
+    }
+
+    function doLogin() {
+      const res = A().adminLogin(document.getElementById('adminUser').value, document.getElementById('adminPass').value);
+      const err = document.getElementById('loginError');
+      if (!res.ok) {
+        err.textContent = res.error;
+        err.classList.remove('hidden');
+        return;
+      }
+      enterDash();
+      if (res.admin.mustChangePassword) {
+        showTab('security');
+        document.getElementById('pwMsg').textContent = 'Please change the default password now.';
+      }
+    }
+
+    function doLogout() {
+      A().adminLogout();
+      document.getElementById('dashView').classList.add('hidden');
+      document.getElementById('loginView').classList.remove('hidden');
+    }
+
+    function enterDash() {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('dashView').classList.remove('hidden');
+      fillForms();
+    }
+
+    function fillForms() {
+      A().applySettings();
+      const c = A().CONFIG;
+      document.getElementById('cfg_minDeposit').value = c.minDeposit;
+      document.getElementById('cfg_minWithdraw').value = c.minWithdraw;
+      document.getElementById('cfg_withdrawCommission').value = (c.withdrawCommissionRate * 100).toFixed(1);
+      document.getElementById('cfg_depositFee').value = ((c.depositFeeRate || 0) * 100).toFixed(1);
+      document.getElementById('cfg_telegram').value = c.supportTelegram || '';
+      document.getElementById('cfg_email').value = c.supportEmail || '';
+
+      const plans = A().PLANS;
+      document.getElementById('plansEditor').innerHTML = Object.values(plans).map(p => `
+        <div class="border border-slate-200 rounded-xl p-4 grid sm:grid-cols-4 gap-3 items-end" data-plan="${p.id}">
+          <div class="sm:col-span-1"><p class="font-semibold">${p.name}</p><p class="text-[11px] text-slate-400">${p.id}</p></div>
+          <div>
+            <label class="text-xs text-slate-500">Price ($/mo)</label>
+            <input data-field="price" type="number" step="0.01" value="${p.price}" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm" ${p.id==='free'?'readonly':''}>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Daily uploads</label>
+            <input data-field="dailyUploads" type="number" value="${p.dailyUploads}" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Approval label</label>
+            <input data-field="approval" type="text" value="${(p.approval||'').replace(/"/g,'&quot;')}" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm">
+          </div>
+        </div>`).join('');
+
+      const g = A().GATEWAYS;
+      document.getElementById('dep_provider').value = g.deposit.provider || 'none';
+      document.getElementById('dep_enabled').checked = !!g.deposit.enabled;
+      document.getElementById('dep_public').value = g.deposit.publicKey || '';
+      document.getElementById('dep_secret').value = g.deposit.secretKey || '';
+      document.getElementById('dep_webhook').value = g.deposit.webhookUrl || '';
+      document.getElementById('dep_notes').value = g.deposit.notes || '';
+      document.getElementById('wd_provider').value = g.withdraw.provider || 'none';
+      document.getElementById('wd_enabled').checked = !!g.withdraw.enabled;
+      document.getElementById('wd_public').value = g.withdraw.publicKey || '';
+      document.getElementById('wd_secret').value = g.withdraw.secretKey || '';
+      document.getElementById('wd_webhook').value = g.withdraw.webhookUrl || '';
+      document.getElementById('wd_notes').value = g.withdraw.notes || '';
+    }
+
+    function saveFees() {
+      A().saveSettings({
+        config: {
+          minDeposit: parseFloat(document.getElementById('cfg_minDeposit').value) || 3,
+          minWithdraw: parseFloat(document.getElementById('cfg_minWithdraw').value) || 5,
+          withdrawCommissionRate: (parseFloat(document.getElementById('cfg_withdrawCommission').value) || 0) / 100,
+          depositFeeRate: (parseFloat(document.getElementById('cfg_depositFee').value) || 0) / 100
+        }
+      });
+      alert('Fees saved. User wallet rules will use the new values.');
+    }
+
+    function savePlans() {
+      const plans = {};
+      document.querySelectorAll('#plansEditor [data-plan]').forEach(row => {
+        const id = row.dataset.plan;
+        plans[id] = {
+          price: parseFloat(row.querySelector('[data-field="price"]').value) || 0,
+          dailyUploads: parseInt(row.querySelector('[data-field="dailyUploads"]').value, 10) || 0,
+          approval: row.querySelector('[data-field="approval"]').value || ''
+        };
+      });
+      A().saveSettings({ plans });
+      alert('Plans saved.');
+    }
+
+    function saveGateways() {
+      A().saveSettings({
+        gateways: {
+          deposit: {
+            provider: document.getElementById('dep_provider').value,
+            enabled: document.getElementById('dep_enabled').checked,
+            publicKey: document.getElementById('dep_public').value.trim(),
+            secretKey: document.getElementById('dep_secret').value.trim(),
+            webhookUrl: document.getElementById('dep_webhook').value.trim(),
+            notes: document.getElementById('dep_notes').value.trim()
+          },
+          withdraw: {
+            provider: document.getElementById('wd_provider').value,
+            enabled: document.getElementById('wd_enabled').checked,
+            publicKey: document.getElementById('wd_public').value.trim(),
+            secretKey: document.getElementById('wd_secret').value.trim(),
+            webhookUrl: document.getElementById('wd_webhook').value.trim(),
+            notes: document.getElementById('wd_notes').value.trim()
+          }
+        }
+      });
+      alert('Gateway settings saved. Connect a backend before taking real payments.');
+    }
+
+    function saveSupport() {
+      A().saveSettings({
+        config: {
+          supportTelegram: document.getElementById('cfg_telegram').value.trim(),
+          supportEmail: document.getElementById('cfg_email').value.trim()
+        }
+      });
+      alert('Support contacts saved.');
+    }
+
+    function loadAds() {
+      const list = A().listPendingAds();
+      const box = document.getElementById('adsAdminList');
+      if (!list.length) {
+        box.innerHTML = '<p class="text-sm text-slate-400">No pending/denied ads in this browser.</p>';
+        return;
+      }
+      box.innerHTML = list.map(a => `
+        <div class="border border-slate-200 rounded-xl p-4 space-y-2">
+          <div class="flex justify-between gap-3">
+            <div>
+              <p class="font-semibold text-sm">${escapeHtml(a.title)}</p>
+              <p class="text-[11px] text-slate-500">${escapeHtml(a.sellerName)} · ${escapeHtml(a.sellerEmail)} · ${escapeHtml(a.status)}</p>
+              <p class="text-[11px] text-slate-400 break-all">${escapeHtml(a.previewLink || 'No preview link')}</p>
+              ${a.denyReason ? `<p class="text-[11px] text-red-500">${escapeHtml(a.denyReason)}</p>` : ''}
+            </div>
+            <p class="font-bold text-brandPrimary">${A().formatMoney(a.price)}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="modAd('${escapeHtml(a.sellerEmail)}','${a.id}','active')" class="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-semibold">Approve</button>
+            <button onclick="denyAd('${escapeHtml(a.sellerEmail)}','${a.id}')" class="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg font-semibold">Deny</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function modAd(email, id, status) {
+      const res = A().adminSetAdStatus(email, id, status, '');
+      if (!res.ok) alert(res.error); else loadAds();
+    }
+    function denyAd(email, id) {
+      const reason = prompt('Reason for denied:') || 'Denied by admin';
+      const res = A().adminSetAdStatus(email, id, 'denied', reason);
+      if (!res.ok) alert(res.error); else loadAds();
+    }
+
+    function loadUsers() {
+      const users = A().listAllUsersSummary();
+      const box = document.getElementById('usersAdminList');
+      if (!users.length) {
+        box.innerHTML = '<p class="text-sm text-slate-400">No users in this browser yet. Sign up on the main site first.</p>';
+        return;
+      }
+      box.innerHTML = `<table class="w-full text-left text-xs">
+        <thead><tr class="text-slate-500 border-b"><th class="py-2 pr-2">Name</th><th class="py-2 pr-2">Email</th><th class="py-2 pr-2">Plan</th><th class="py-2 pr-2">Balance</th><th class="py-2">Ads</th></tr></thead>
+        <tbody>${users.map(u => `<tr class="border-b border-slate-100">
+          <td class="py-2 pr-2 font-medium">${escapeHtml(u.name)}</td>
+          <td class="py-2 pr-2">${escapeHtml(u.email)}</td>
+          <td class="py-2 pr-2">${escapeHtml(u.plan)}</td>
+          <td class="py-2 pr-2">${A().formatMoney(u.balance)}</td>
+          <td class="py-2">${u.ads} (${u.pendingAds} pending)</td>
+        </tr>`).join('')}</tbody></table>`;
+    }
+
+    function changePassword() {
+      const res = A().changeAdminPassword(
+        document.getElementById('pw_current').value,
+        document.getElementById('pw_new').value
+      );
+      document.getElementById('pwMsg').textContent = res.ok ? 'Password updated.' : res.error;
+      document.getElementById('pwMsg').className = 'text-xs ' + (res.ok ? 'text-emerald-600' : 'text-red-500');
+      if (res.ok) {
+        document.getElementById('pw_current').value = '';
+        document.getElementById('pw_new').value = '';
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      A().ensureAdminInitialized();
+      if (A().isAdminLoggedIn()) enterDash();
+      document.getElementById('adminPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    });
+  </script>
+</body>
+</html>

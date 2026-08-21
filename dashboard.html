@@ -781,11 +781,14 @@
             closeModal();
         }
         function openSupportCenter() {
+            const c = (window.Acctventa && window.Acctventa.CONFIG) || {};
+            const tg = c.supportTelegram || 'https://t.me/acctventa';
+            const em = c.supportEmail || 'help@acctventa.com';
             document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-2">Support Center</h3>
             <p class="text-xs text-slate-500 mb-3">Need help? Use one channel only per issue.</p>
             <div class="space-y-2 text-sm mb-4">
-              <a class="block p-3 rounded-xl border border-slate-200 dark:border-slate-800" href="https://t.me/acctventa" target="_blank" rel="noopener">Telegram · @acctventa</a>
-              <a class="block p-3 rounded-xl border border-slate-200 dark:border-slate-800" href="mailto:help@acctventa.com">Email · help@acctventa.com</a>
+              <a class="block p-3 rounded-xl border border-slate-200 dark:border-slate-800" href="${tg}" target="_blank" rel="noopener">Telegram</a>
+              <a class="block p-3 rounded-xl border border-slate-200 dark:border-slate-800" href="mailto:${em}">Email · ${em}</a>
             </div>
             <p class="text-[11px] text-slate-400 mb-3"><i class="fa-solid fa-shield-halved text-brandPrimary mr-1"></i>Never share your password with support.</p>
             <button onclick="closeModal()" class="w-full bg-brandPrimary py-3 rounded-xl text-white font-bold">Close</button>`;
