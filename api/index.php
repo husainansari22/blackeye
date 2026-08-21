@@ -29,6 +29,8 @@ try {
                     'depositFeeRate' => (float)setting_get('deposit_fee_rate', app_config()['deposit_fee_rate']),
                     'supportTelegram' => setting_get('support_telegram', app_config()['support_telegram']),
                     'supportEmail' => setting_get('support_email', app_config()['support_email']),
+                    'paymentCurrency' => setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'),
+                    'usdNgnRate' => (float)setting_get('usd_ngn_rate', app_config()['usd_ngn_rate'] ?? 1600),
                 ],
                 'plans' => db()->query('SELECT id, name, price, daily_uploads AS dailyUploads, approval_label AS approval FROM plans WHERE is_active = 1')->fetchAll(),
             ]);
@@ -418,15 +420,15 @@ try {
 
             ensure_tx_reference_column();
             $txRef = 'AVD' . strtoupper(substr(uid_token(8), 0, 16));
-            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'deposit\', ?, ?, \'pending\', \'flutterwave\', ?, ?)')
-                ->execute([(int)$u['id'], money_f($credited), money_f($fee), 'Awaiting Flutterwave payment', $txRef]);
-
             $checkout = flw_create_checkout($u, $amount, $txRef);
             if (!$checkout['ok']) {
-                db()->prepare('UPDATE transactions SET status = \'failed\', note = ? WHERE reference = ?')
-                    ->execute([$checkout['error'] ?? 'Checkout failed', $txRef]);
                 json_out(['ok' => false, 'error' => $checkout['error'] ?? 'Could not start payment'], 502);
             }
+            $charge = $checkout['charge'];
+            $note = sprintf('Awaiting Flutterwave · charge=%s%s|usd=%s|rate=%s', $charge['amount'], $charge['currency'], money_f($amount), $charge['rate']);
+            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'deposit\', ?, ?, \'pending\', \'flutterwave\', ?, ?)')
+                ->execute([(int)$u['id'], money_f($credited), money_f($fee), $note, $txRef]);
+
             json_out([
                 'ok' => true,
                 'checkout' => true,
@@ -434,6 +436,9 @@ try {
                 'reference' => $txRef,
                 'amount' => $amount,
                 'credited' => $credited,
+                'payAmount' => $charge['amount'],
+                'payCurrency' => $charge['currency'],
+                'rate' => $charge['rate'],
             ]);
         }
 
@@ -458,6 +463,7 @@ try {
             $ref = (string)($data['tx_ref'] ?? $txRef);
             $paid = (float)($data['amount'] ?? 0);
             $flwId = (string)($data['id'] ?? $transactionId ?? '');
+            $paidCurrency = strtoupper((string)($data['currency'] ?? ''));
             // Ensure this pending deposit belongs to current user
             ensure_tx_reference_column();
             $chk = db()->prepare('SELECT * FROM transactions WHERE reference = ? AND user_id = ? LIMIT 1');
@@ -465,7 +471,7 @@ try {
             if (!$chk->fetch()) {
                 json_out(['ok' => false, 'error' => 'Deposit not found for this account'], 404);
             }
-            $credit = credit_deposit_from_gateway($ref, $paid, $flwId);
+            $credit = credit_deposit_from_gateway($ref, $paid, $flwId, $paidCurrency);
             if (!$credit['ok']) json_out($credit, 400);
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
             json_out(['ok' => true, 'credited' => $credit['credited'] ?? null, 'already' => !empty($credit['already']), 'user' => public_user($fresh)]);
@@ -479,9 +485,10 @@ try {
                 $ref = (string)($data['tx_ref'] ?? '');
                 $paid = (float)($data['amount'] ?? 0);
                 $flwId = (string)($data['id'] ?? '');
+                $paidCurrency = strtoupper((string)($data['currency'] ?? ''));
                 if ($ref !== '') {
                     try {
-                        credit_deposit_from_gateway($ref, $paid, $flwId);
+                        credit_deposit_from_gateway($ref, $paid, $flwId, $paidCurrency);
                     } catch (Throwable $e) {
                         json_out(['ok' => false, 'error' => $e->getMessage()], 500);
                     }

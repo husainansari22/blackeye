@@ -84,27 +84,40 @@ function flw_withdraw_enabled(): bool {
 }
 
 function flw_currency(): string {
-    return strtoupper((string)(app_config()['currency'] ?? setting_get('currency', 'USD')));
+    return strtoupper((string)setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'));
+}
+
+function usd_ngn_rate(): float {
+    $rate = (float)setting_get('usd_ngn_rate', app_config()['usd_ngn_rate'] ?? 1600);
+    return $rate > 0 ? $rate : 1600.0;
+}
+
+/** Site wallet is USD; Flutterwave charge may be NGN. */
+function flw_charge_amount(float $usdAmount): array {
+    $currency = flw_currency();
+    if ($currency === 'NGN') {
+        $ngn = (int)round($usdAmount * usd_ngn_rate());
+        if ($ngn < 100) $ngn = 100; // Flutterwave practical minimum
+        return ['amount' => $ngn, 'currency' => 'NGN', 'usd' => $usdAmount, 'rate' => usd_ngn_rate()];
+    }
+    return ['amount' => round($usdAmount, 2), 'currency' => $currency, 'usd' => $usdAmount, 'rate' => 1];
 }
 
 /**
  * Create hosted checkout link (Flutterwave Standard v3).
  */
-function flw_create_checkout(array $user, float $amount, string $txRef): array {
+function flw_create_checkout(array $user, float $usdAmount, string $txRef): array {
     $secret = flw_secret();
     if ($secret === '') {
         return ['ok' => false, 'error' => 'Flutterwave secret key missing in Owner Admin → Gateways'];
     }
-    if (strpos($secret, 'FLWSECK') !== 0 && strpos($secret, 'FLWSECK_TEST') !== 0) {
-        // Still try — some keys work; warn if clearly a V4 client secret without FLW prefix
-        // V4 client secrets often work only with OAuth, not v3 Bearer
-    }
 
+    $charge = flw_charge_amount($usdAmount);
     $appUrl = rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/');
     $payload = [
         'tx_ref' => $txRef,
-        'amount' => number_format($amount, 2, '.', ''),
-        'currency' => flw_currency(),
+        'amount' => (string)$charge['amount'],
+        'currency' => $charge['currency'],
         'redirect_url' => $appUrl . '/wallet-return.html',
         'customer' => [
             'email' => $user['email'],
@@ -113,18 +126,27 @@ function flw_create_checkout(array $user, float $amount, string $txRef): array {
         ],
         'customizations' => [
             'title' => (app_config()['app_name'] ?? 'Acctventa') . ' Wallet',
-            'description' => 'Fund your Acctventa wallet',
+            'description' => 'Fund wallet $' . number_format($usdAmount, 2) . ($charge['currency'] === 'NGN' ? ' (₦' . number_format((float)$charge['amount'], 0) . ')' : ''),
             'logo' => $appUrl . '/img/logo.png',
         ],
         'meta' => [
             'user_id' => (int)$user['id'],
             'purpose' => 'wallet_deposit',
+            'usd_amount' => $usdAmount,
+            'charge_amount' => $charge['amount'],
+            'charge_currency' => $charge['currency'],
+            'usd_ngn_rate' => $charge['rate'],
         ],
     ];
 
     $res = flw_http('POST', 'https://api.flutterwave.com/v3/payments', $payload, $secret);
     if (($res['status'] ?? '') === 'success' && !empty($res['data']['link'])) {
-        return ['ok' => true, 'link' => $res['data']['link'], 'tx_ref' => $txRef];
+        return [
+            'ok' => true,
+            'link' => $res['data']['link'],
+            'tx_ref' => $txRef,
+            'charge' => $charge,
+        ];
     }
 
     $msg = $res['message'] ?? ($res['error'] ?? 'Could not start Flutterwave checkout');
@@ -157,8 +179,9 @@ function flw_verify_by_tx_ref(string $txRef): array {
 
 /**
  * Credit wallet once for a successful Flutterwave deposit (idempotent by reference).
+ * $amountPaid is what Flutterwave charged (often NGN). Wallet credit stays in USD from the pending tx.
  */
-function credit_deposit_from_gateway(string $txRef, float $amountPaid, string $flwId = ''): array {
+function credit_deposit_from_gateway(string $txRef, float $amountPaid, string $flwId = '', string $paidCurrency = ''): array {
     ensure_tx_reference_column();
     $pdo = db();
     $stmt = $pdo->prepare('SELECT * FROM transactions WHERE reference = ? LIMIT 1');
@@ -174,17 +197,29 @@ function credit_deposit_from_gateway(string $txRef, float $amountPaid, string $f
         return ['ok' => false, 'error' => 'Invalid transaction type'];
     }
 
-    $expected = (float)$tx['amount'] + (float)$tx['fee'];
-    // Allow tiny float drift
-    if ($amountPaid + 0.01 < $expected) {
-        return ['ok' => false, 'error' => 'Paid amount mismatch'];
+    // Parse expected charge from note: charge=4800NGN|usd=3.00
+    $expectedCharge = null;
+    if (preg_match('/charge=([0-9.]+)([A-Z]{3})/i', (string)$tx['note'], $m)) {
+        $expectedCharge = (float)$m[1];
+        if ($paidCurrency === '') $paidCurrency = strtoupper($m[2]);
+    }
+    if ($expectedCharge !== null) {
+        if ($amountPaid + 1 < $expectedCharge) { // allow ₦1 drift
+            return ['ok' => false, 'error' => 'Paid amount mismatch'];
+        }
+    } else {
+        // Legacy USD checkout path
+        $expected = (float)$tx['amount'] + (float)$tx['fee'];
+        if ($amountPaid + 0.01 < $expected) {
+            return ['ok' => false, 'error' => 'Paid amount mismatch'];
+        }
     }
 
     $pdo->beginTransaction();
     try {
         $pdo->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ? AND status = \'pending\'')
             ->execute([
-                'Flutterwave payment confirmed' . ($flwId !== '' ? ' #' . $flwId : ''),
+                'Flutterwave confirmed' . ($flwId !== '' ? ' #' . $flwId : '') . ($paidCurrency !== '' ? ' ' . $paidCurrency . ' ' . $amountPaid : ''),
                 'flutterwave',
                 (int)$tx['id'],
             ]);
