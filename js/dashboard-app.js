@@ -657,15 +657,33 @@
   window.submitWalletAction = async function (type) {
     const u = refreshUser();
     const amount = parseFloat(document.getElementById('walletAmountInput').value);
+    if (!amount || Number.isNaN(amount)) {
+      alert('Enter a valid amount');
+      return;
+    }
     let res;
     if (type === 'deposit') {
-      const btn = event && event.target;
-      if (btn && btn.tagName === 'BUTTON') {
-        btn.disabled = true;
-        btn.textContent = 'Opening Flutterwave…';
+      // Always use live API when available (never fake local credit)
+      try {
+        if (window.AcctventaApi && (await window.AcctventaApi.isAvailable())) {
+          const apiRes = await window.AcctventaApi.deposit({ amount: Number(amount) });
+          if (apiRes.paymentLink) {
+            window.location.href = apiRes.paymentLink;
+            return;
+          }
+          if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
+          closeModal();
+          applyProfileChrome(refreshUser());
+          renderTxHistory();
+          alert('Deposit credited: ' + money(apiRes.credited));
+          return;
+        }
+      } catch (e) {
+        alert(e.message || 'Deposit failed. Check Flutterwave Secret key (must start with FLWSECK-) in /owner Gateways.');
+        return;
       }
-      res = await Promise.resolve(A().deposit(u, amount));
-      if (res.ok && res.checkout) return; // redirected
+      alert('Live backend not connected. Log out, log in again, then retry deposit.');
+      return;
     } else {
       const dest = (document.getElementById('withdrawDest') || {}).value || '';
       const accountName = (document.getElementById('withdrawName') || {}).value || '';
@@ -680,14 +698,12 @@
     }
     if (!res.ok) {
       alert(res.error);
-      if (type === 'deposit') openWalletModal('deposit');
       return;
     }
     closeModal();
     applyProfileChrome(refreshUser());
     renderTxHistory();
-    if (type === 'deposit') alert('Deposit credited: ' + money(res.credited));
-    else alert(res.message || ('Withdrawal requested. Payout after fee: ' + money(res.payout)));
+    alert(res.message || ('Withdrawal requested. Payout after fee: ' + money(res.payout)));
   };
 
   window.selectPlan = function (planId) {

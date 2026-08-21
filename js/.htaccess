@@ -1,0 +1,6 @@
+# Reduce browser caching of app JS so Hostinger deploys show up immediately
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
