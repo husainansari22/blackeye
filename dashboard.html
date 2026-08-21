@@ -2,7 +2,7 @@
 <html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>A cctventa — Marketplace Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +34,12 @@
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
         .modal-scroll::-webkit-scrollbar { display: none; }
         .modal-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Prevent iOS Safari auto-zoom on focus */
+        @media screen and (max-width: 768px) {
+          input, select, textarea, button { font-size: 16px !important; }
+        }
+        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+        input, textarea, select { touch-action: manipulation; }
     </style>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-28 transition-colors duration-200" data-theme="light">
@@ -682,14 +688,18 @@
                 <h2 id="chatTitle" class="font-bold text-sm">Order Chat</h2>
                 <p id="chatSubtitle" class="text-[10px] text-slate-400 truncate"></p>
             </div>
+            <button type="button" id="chatReportBtn" onclick="reportSellerFromChat()" class="hidden text-[11px] font-bold text-red-500 border border-red-300 dark:border-red-800 px-2.5 py-1.5 rounded-lg shrink-0">Report</button>
             <span id="chatOnlineDot" class="hidden w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
         </div>
         <div id="chatMessages" class="flex-1 overflow-y-auto px-4 py-4 space-y-2"></div>
         <p id="chatTyping" class="px-4 text-[11px] text-slate-400 h-5"></p>
-        <div class="p-3 bg-lightCard dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 flex gap-2">
-            <input id="chatInput" type="text" placeholder="Send a message" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2.5 text-sm" oninput="onChatTyping()" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
-            <button onclick="sendChatMessage()" class="w-10 h-10 rounded-full bg-brandPrimary text-white flex items-center justify-center"><i class="fa-solid fa-paper-plane text-sm"></i></button>
+        <div class="p-3 bg-lightCard dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center">
+            <input type="file" id="chatFileInput" class="hidden" accept="image/*,.pdf,.txt,.doc,.docx,.zip" onchange="onChatFileSelected(event)">
+            <button type="button" onclick="document.getElementById('chatFileInput').click()" class="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 shrink-0" title="Upload photo or file" aria-label="Upload"><i class="fa-solid fa-paperclip text-sm"></i></button>
+            <input id="chatInput" type="text" placeholder="Send a message" autocomplete="off" class="flex-1 min-w-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2.5 text-base" oninput="onChatTyping()" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
+            <button onclick="sendChatMessage()" class="w-10 h-10 rounded-full bg-brandPrimary text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-paper-plane text-sm"></i></button>
         </div>
+        <p id="chatAttachHint" class="hidden px-4 pb-2 text-[10px] text-slate-400 truncate"></p>
     </div>
 
     <!-- BOTTOM NAVIGATION (acctbazaar-style) -->
@@ -713,10 +723,10 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260821chat1"></script>
-    <script src="/js/api-client.js?v=20260821chat1"></script>
-    <script src="/js/api-sync.js?v=20260821chat1"></script>
-    <script src="/js/dashboard-app.js?v=20260821chat1"></script>
+    <script src="/js/acctventa.js?v=20260821adv1"></script>
+    <script src="/js/api-client.js?v=20260821adv1"></script>
+    <script src="/js/api-sync.js?v=20260821adv1"></script>
+    <script src="/js/dashboard-app.js?v=20260821adv1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         function switchTab(tabId) {

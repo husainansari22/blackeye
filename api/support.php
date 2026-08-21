@@ -150,6 +150,9 @@ function support_map_message(array $m): array {
         'senderId' => $m['sender_id'] !== null ? (int)$m['sender_id'] : null,
         'staffName' => $m['staff_name'] ?: 'Support',
         'body' => $m['body'],
+        'attachmentUrl' => $m['attachment_url'] ?? null,
+        'attachmentName' => $m['attachment_name'] ?? null,
+        'attachmentMime' => $m['attachment_mime'] ?? null,
         'createdAt' => $m['created_at'],
     ];
 }

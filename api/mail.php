@@ -160,19 +160,32 @@ function email_password_changed(string $name): array {
     return ['subject' => 'Your Acctventa password was changed', 'html' => $html, 'text' => "Hi {$name}, your password was changed. If this wasn't you, contact support."];
 }
 
-function email_order_notice(string $name, string $title, string $role, string $amount): array {
+function email_order_notice(string $name, string $title, string $role, string $amount, string $txid = '', string $releaseNote = ''): array {
     $safeName = htmlspecialchars($name !== '' ? $name : 'there', ENT_QUOTES, 'UTF-8');
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
     $safeAmount = htmlspecialchars($amount, ENT_QUOTES, 'UTF-8');
-    $headline = $role === 'seller' ? 'You made a sale' : 'Purchase confirmed';
-    $body = $role === 'seller'
-        ? 'Someone just bought <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>.'
-        : 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>) is confirmed. Open Orders to view credentials.';
+    $safeTx = htmlspecialchars($txid, ENT_QUOTES, 'UTF-8');
+    $txLine = $safeTx !== ''
+        ? '<p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#94a3b8;">Transaction ID: <strong style="color:#fff;font-family:monospace;">' . $safeTx . '</strong></p>'
+        : '';
+    if ($role === 'seller') {
+        $headline = 'Congratulations — you made a sale!';
+        $body = 'Great news! Someone just bought <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>.';
+        if ($releaseNote !== '') {
+            $body .= ' ' . htmlspecialchars($releaseNote, ENT_QUOTES, 'UTF-8');
+        }
+        $subject = 'Congratulations! Sale confirmed · ' . $title;
+    } else {
+        $headline = 'Purchase confirmed';
+        $body = 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>) is confirmed. Open Orders to view credentials or chat with the seller.';
+        $subject = $headline . ' · ' . $title;
+    }
     $dash = mail_cfg()['app_url'] . '/dashboard.html';
     $inner = '
       <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">' . $headline . '</h1>
       <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', ' . $body . '</p>
+      ' . $txLine . '
       <div style="text-align:center;margin:24px 0;">' . email_button('View in dashboard', $dash) . '</div>';
     $html = email_layout($headline, $inner, $headline . ' on Acctventa');
-    return ['subject' => $headline . ' · ' . $title, 'html' => $html, 'text' => strip_tags($body)];
+    return ['subject' => $subject, 'html' => $html, 'text' => strip_tags($body) . ($txid !== '' ? ' TXID: ' . $txid : '')];
 }

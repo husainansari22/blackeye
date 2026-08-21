@@ -38,7 +38,8 @@
   function mapOrder(row) {
     return {
       id: String(row.id),
-      publicId: row.public_id || row.publicId,
+      publicId: row.public_id || row.publicId || row.txid || '',
+      txid: row.txid || row.public_id || row.publicId || '',
       listingId: row.listing_id != null ? String(row.listing_id) : '',
       title: row.title,
       category: row.category || '',
@@ -47,7 +48,12 @@
       role: row.role === 'seller' ? 'seller' : 'buyer',
       buyerName: row.buyerName || '',
       sellerName: row.sellerName || '',
+      sellerEmail: row.sellerEmail || '',
+      sellerId: row.sellerId != null ? String(row.sellerId) : (row.seller_id != null ? String(row.seller_id) : ''),
+      buyerEmail: row.buyerEmail || '',
       credentials: row.credentials || null,
+      canReview: !!row.canReview,
+      reviewed: !!row.reviewed,
       createdAt: row.created_at || row.createdAt,
     };
   }
@@ -64,9 +70,12 @@
       price: Number(row.price) || 0,
       previewLink: row.previewLink || row.preview_link || '',
       releaseType: row.releaseType || row.release_type || 'auto',
+      sellerId: row.sellerId != null ? String(row.sellerId) : '',
       sellerName: name,
       sellerEmail: row.sellerEmail || '',
       sellerVerified: !!(row.sellerVerified || row.seller_verified),
+      sellerRating: Number(row.sellerRating) || 0,
+      sellerReviews: Number(row.sellerReviews) || 0,
       sellerInitials: initials,
       stock: row.stock != null ? Number(row.stock) : 1,
     };
@@ -135,6 +144,7 @@
         phone: user.phone || '',
         countryCode: user.countryCode || '',
         balance: user.balance,
+        owing: user.owing || (Number(user.balance) < 0 ? Math.abs(Number(user.balance)) : 0),
         escrowBalance: user.escrowBalance,
         totalDeposits: user.totalDeposits,
         totalWithdrawals: user.totalWithdrawals,
@@ -247,9 +257,9 @@
 
     A.refundOrder = async function (_user, orderId) {
       try {
-        await Api.orderRefund({ orderId: Number(orderId) });
+        const res = await Api.orderRefund({ orderId: Number(orderId) });
         await hydrateFromApi();
-        return { ok: true };
+        return { ok: true, owing: res.owing || 0, sellerBalance: res.sellerBalance };
       } catch (e) {
         return { ok: false, error: e.message || 'Refund failed' };
       }
@@ -303,11 +313,19 @@
         : [];
     };
 
-    A.sendMessage = async function (_user, orderId, text) {
+    A.sendMessage = async function (_user, orderId, text, extra) {
       try {
-        await Api.sendMessage({ orderId: Number(orderId), text });
+        const payload = { orderId: Number(orderId), text };
+        if (extra && extra.attachment) {
+          payload.attachment = extra.attachment;
+          payload.fileName = extra.fileName || 'attachment';
+        }
+        const res = await Api.sendMessage(payload);
         await loadMessages(orderId);
-        return { ok: true };
+        if (res && res.fundsReleased) {
+          await hydrateFromApi();
+        }
+        return { ok: true, fundsReleased: !!(res && res.fundsReleased), ai: res && res.ai };
       } catch (e) {
         return { ok: false, error: e.message || 'Send failed' };
       }
@@ -328,6 +346,9 @@
         fromName: m.fromName || '',
         fromEmail: m.fromEmail || '',
         text: m.body || m.text || '',
+        attachmentUrl: m.attachmentUrl || m.attachment_url || null,
+        attachmentName: m.attachmentName || m.attachment_name || null,
+        attachmentMime: m.attachmentMime || m.attachment_mime || null,
         createdAt: m.created_at || m.createdAt,
       }));
       global.__acctventaApiMessages = global.__acctventaApiMessages || {};

@@ -185,8 +185,28 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = 'Currency rates saved. Deposit & withdraw will use the new rates.';
         }
         if ($form === 'order_status') {
-            db()->prepare('UPDATE orders SET status = ? WHERE id = ?')->execute([$_POST['status'], (int)$_POST['order_id']]);
-            $flash = 'Order status updated.';
+            $oid = (int)$_POST['order_id'];
+            $newStatus = (string)$_POST['status'];
+            $order = db()->prepare('SELECT * FROM orders WHERE id = ?');
+            $order->execute([$oid]);
+            $o = $order->fetch();
+            if (!$o) throw new RuntimeException('Order not found');
+            if ($newStatus === 'cancelled' && ($o['status'] ?? '') !== 'cancelled') {
+                refund_order_with_debt($o, 'Owner admin');
+                $flash = 'Order refunded: buyer credited, seller deducted (balance may go negative / owing).';
+            } else {
+                db()->prepare('UPDATE orders SET status = ? WHERE id = ?')->execute([$newStatus, $oid]);
+                $flash = 'Order status updated.';
+            }
+        }
+        if ($form === 'owner_refund') {
+            $oid = (int)$_POST['order_id'];
+            $order = db()->prepare('SELECT * FROM orders WHERE id = ?');
+            $order->execute([$oid]);
+            $o = $order->fetch();
+            if (!$o) throw new RuntimeException('Order not found');
+            refund_order_with_debt($o, 'Owner refund');
+            $flash = 'Refunded via owner. Seller debt allowed if balance was too low.';
         }
     } catch (Throwable $e) {
         $error = $e->getMessage();
@@ -196,18 +216,25 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 $tab = $_GET['tab'] ?? 'overview';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="ownerHtml">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Owner Admin — Acctventa</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{brand:'#0ea5e9'}}}}</script>
+  <script>
+    tailwind.config={darkMode:'class',theme:{extend:{colors:{brand:'#0ea5e9'}}}};
+    (function(){try{var t=localStorage.getItem('acctventa_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
+  </script>
+  <style>
+    @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
+    html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-900 min-h-screen">
+<body class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen">
 <?php if (!$authed): ?>
   <div class="min-h-screen flex items-center justify-center p-4">
-    <form method="post" class="w-full max-w-sm bg-white rounded-2xl border p-6 space-y-4 shadow">
+    <form method="post" class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-700 p-6 space-y-4 shadow">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
         <div class="w-12 h-12 mx-auto rounded-xl bg-brand text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
@@ -217,11 +244,11 @@ $tab = $_GET['tab'] ?? 'overview';
       <?php if ($error): ?><p class="text-xs text-red-600"><?= h($error) ?></p><?php endif; ?>
       <div>
         <label class="text-xs text-slate-500">Username</label>
-        <input name="username" value="owner" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" required>
+        <input name="username" value="owner" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
       <div>
         <label class="text-xs text-slate-500">Password</label>
-        <input name="password" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm" required>
+        <input name="password" type="password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
       <button class="w-full bg-brand text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
       <a href="/" class="block text-center text-xs text-brand">← Back to website</a>
@@ -238,10 +265,11 @@ $tab = $_GET['tab'] ?? 'overview';
   ];
   $gw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
 ?>
-  <header class="bg-white border-b sticky top-0 z-10">
+  <header class="bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-10">
     <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
       <div class="font-bold flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center text-sm">A</span> Owner Admin</div>
-      <div class="flex gap-3 text-sm">
+      <div class="flex gap-3 text-sm items-center">
+        <button type="button" id="ownerThemeBtn" onclick="toggleOwnerTheme()" class="px-2.5 py-1.5 rounded-lg border dark:border-slate-700 text-xs font-semibold">Theme</button>
         <a href="/dashboard.html" class="text-slate-500">User app</a>
         <a href="?logout=1" class="text-red-500 font-medium">Log out</a>
       </div>
@@ -249,12 +277,12 @@ $tab = $_GET['tab'] ?? 'overview';
   </header>
 
   <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
-    <?php if ($flash): ?><div class="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-xl px-4 py-3"><?= h($flash) ?></div><?php endif; ?>
-    <?php if ($error): ?><div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3"><?= h($error) ?></div><?php endif; ?>
+    <?php if ($flash): ?><div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-sm rounded-xl px-4 py-3"><?= h($flash) ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm rounded-xl px-4 py-3"><?= h($error) ?></div><?php endif; ?>
 
     <div class="flex gap-2 overflow-x-auto text-sm">
-      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','wallet'=>'Wallet','support'=>'Support','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
-        <a href="?tab=<?= $k ?>" class="px-3 py-2 rounded-lg <?= $tab===$k?'bg-brand text-white':'bg-white border' ?>"><?= $label ?></a>
+      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats','reports'=>'Reports','wallet'=>'Wallet','support'=>'Support','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
+        <a href="?tab=<?= $k ?>" class="px-3 py-2 rounded-lg <?= $tab===$k?'bg-brand text-white':'bg-white dark:bg-slate-900 border dark:border-slate-700' ?>"><?= $label ?></a>
       <?php endforeach; ?>
     </div>
 
@@ -374,7 +402,7 @@ $tab = $_GET['tab'] ?? 'overview';
               <td class="p-3"><?= (int)$u['id'] ?></td>
               <td class="p-3 font-medium"><?= h($u['name']) ?></td>
               <td class="p-3"><?= h($u['email']) ?></td>
-              <td class="p-3">$<?= number_format((float)$u['balance'], 2) ?></td>
+              <td class="p-3 <?= (float)$u['balance'] < 0 ? 'text-red-600 font-bold' : '' ?>">$<?= number_format((float)$u['balance'], 2) ?><?php if ((float)$u['balance'] < 0): ?> <span class="text-[10px]">(owing)</span><?php endif; ?></td>
               <td class="p-3"><?= h($u['plan']) ?></td>
               <td class="p-3"><?= (int)$u['is_banned']?'Banned ':'' ?><?= (int)$u['is_verified']?'Verified':'' ?></td>
               <td class="p-3 space-y-1 min-w-[220px]">
@@ -428,31 +456,186 @@ $tab = $_GET['tab'] ?? 'overview';
       </div>
     <?php endif; ?>
 
-    <?php if ($tab === 'orders'): $orders = db()->query('SELECT o.*, b.name buyer_name, s.name seller_name FROM orders o JOIN users b ON b.id=o.buyer_id JOIN users s ON s.id=o.seller_id ORDER BY o.created_at DESC LIMIT 200')->fetchAll(); ?>
-      <div class="bg-white rounded-xl border overflow-x-auto">
+    <?php if ($tab === 'orders'): $orders = db()->query('SELECT o.*, b.name buyer_name, s.name seller_name, s.balance seller_balance FROM orders o JOIN users b ON b.id=o.buyer_id JOIN users s ON s.id=o.seller_id ORDER BY o.created_at DESC LIMIT 200')->fetchAll(); ?>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-700 p-4 mb-3 space-y-2">
+        <h2 class="font-bold">Find sale by Transaction ID</h2>
+        <p class="text-xs text-slate-500">Search TXID / email / name, open buyer↔seller chat, then refund if needed (seller can go negative).</p>
+        <div class="flex flex-wrap gap-2">
+          <input id="ownerTxSearch" type="text" placeholder="TXID or email…" class="border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2 text-base flex-1 min-w-[200px]">
+          <button type="button" onclick="ownerSearchOrder()" class="bg-brand text-white font-bold px-4 py-2 rounded-xl text-sm">Search</button>
+        </div>
+        <div id="ownerTxResult" class="text-xs space-y-2"></div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-700 overflow-x-auto">
         <table class="w-full text-left text-xs">
-          <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">ID</th><th class="p-3">Item</th><th class="p-3">Buyer</th><th class="p-3">Seller</th><th class="p-3">Price</th><th class="p-3">Status</th><th class="p-3">Set</th></tr></thead>
+          <thead class="bg-slate-50 dark:bg-slate-800 text-slate-500"><tr><th class="p-3">TXID</th><th class="p-3">Item</th><th class="p-3">Buyer</th><th class="p-3">Seller</th><th class="p-3">Price</th><th class="p-3">Status</th><th class="p-3">Actions</th></tr></thead>
           <tbody>
           <?php foreach ($orders as $o): ?>
-            <tr class="border-t">
-              <td class="p-3"><?= h($o['public_id']) ?></td>
+            <tr class="border-t dark:border-slate-800">
+              <td class="p-3 font-mono"><?= h($o['public_id']) ?></td>
               <td class="p-3"><?= h($o['title']) ?></td>
               <td class="p-3"><?= h($o['buyer_name']) ?></td>
-              <td class="p-3"><?= h($o['seller_name']) ?></td>
+              <td class="p-3"><?= h($o['seller_name']) ?><?php if ((float)$o['seller_balance'] < 0): ?><br><span class="text-red-500">bal -$<?= number_format(abs((float)$o['seller_balance']), 2) ?></span><?php endif; ?></td>
               <td class="p-3">$<?= number_format((float)$o['price'], 2) ?></td>
               <td class="p-3"><?= h($o['status']) ?></td>
-              <td class="p-3">
+              <td class="p-3 space-y-1 min-w-[200px]">
                 <form method="post" class="flex gap-1">
                   <input type="hidden" name="form" value="order_status">
                   <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-                  <select name="status" class="border rounded px-1">
+                  <select name="status" class="border dark:border-slate-700 dark:bg-slate-950 rounded px-1">
                     <?php foreach (['pending','completed','cancelled','disputed'] as $st): ?>
                       <option <?= $o['status']===$st?'selected':'' ?>><?= $st ?></option>
                     <?php endforeach; ?>
                   </select>
                   <button class="bg-brand text-white px-2 rounded">Save</button>
                 </form>
+                <?php if ($o['status'] !== 'cancelled'): ?>
+                <form method="post" onsubmit="return confirm('Refund buyer and deduct seller (allows negative / owing)?')">
+                  <input type="hidden" name="form" value="owner_refund">
+                  <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
+                  <button class="bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold">Refund buyer</button>
+                </form>
+                <?php endif; ?>
+                <a class="text-brand underline text-[10px]" href="?tab=chats&order_id=<?= (int)$o['id'] ?>">View chat</a>
               </td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <script>
+        async function ownerSearchOrder(){
+          const q=(document.getElementById('ownerTxSearch').value||'').trim();
+          const box=document.getElementById('ownerTxResult');
+          if(!q){box.innerHTML='';return;}
+          try{
+            const token=localStorage.getItem('acctventa_staff_token')||'';
+            if(!token){
+              // create via support tab once — fallback fetch staff login not needed; use server-rendered link hint
+            }
+            const url=new URL('/api/index.php',location.origin);
+            url.searchParams.set('action','staff.orders.search');
+            url.searchParams.set('q',q);
+            const res=await fetch(url,{headers:{'Authorization':'Bearer '+(localStorage.getItem('acctventa_staff_token')||''),'X-Staff-Token':(localStorage.getItem('acctventa_staff_token')||'')}});
+            const data=await res.json();
+            if(!res.ok||data.ok===false) throw new Error(data.error||'Search failed — open Support tab once to mint staff token, then retry');
+            const rows=data.orders||[];
+            if(!rows.length){box.innerHTML='<p class="text-slate-500">No matches.</p>';return;}
+            box.innerHTML=rows.map(o=>`<div class="border dark:border-slate-700 rounded-lg p-2">
+              <p class="font-mono font-bold">${esc(o.public_id)}</p>
+              <p>${esc(o.title)} · ${esc(o.status)} · $${Number(o.price).toFixed(2)}</p>
+              <p>Buyer: ${esc(o.buyer_name)} (${esc(o.buyer_email)}) · bal $${Number(o.buyer_balance).toFixed(2)}</p>
+              <p>Seller: ${esc(o.seller_name)} (${esc(o.seller_email)}) · bal <span class="${Number(o.seller_balance)<0?'text-red-500 font-bold':''}">$${Number(o.seller_balance).toFixed(2)}</span></p>
+              <a class="text-brand underline" href="?tab=chats&order_id=${o.id}">Open buyer/seller chat</a>
+            </div>`).join('');
+          }catch(e){box.innerHTML='<p class="text-red-500">'+esc(e.message)+'</p>';}
+        }
+        function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+      </script>
+    <?php endif; ?>
+
+    <?php if ($tab === 'chats'):
+      ensure_marketplace_extras();
+      $staffToken = create_staff_session('owner', 'Owner Support');
+      $focusOrder = (int)($_GET['order_id'] ?? 0);
+    ?>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-700 p-4 space-y-3">
+        <h2 class="font-bold text-lg">All buyer ↔ seller chats</h2>
+        <p class="text-xs text-slate-500">View any order thread by TXID to resolve disputes, then refund from Orders.</p>
+        <div class="grid md:grid-cols-5 gap-3 min-h-[420px]">
+          <div class="md:col-span-2 border dark:border-slate-700 rounded-xl overflow-hidden">
+            <div class="px-3 py-2 border-b dark:border-slate-700 text-xs font-semibold bg-slate-50 dark:bg-slate-800 flex justify-between">
+              <span>Threads</span>
+              <button type="button" onclick="loadOrderChats()" class="text-brand">Refresh</button>
+            </div>
+            <div id="orderChatList" class="max-h-[55vh] overflow-y-auto"></div>
+          </div>
+          <div class="md:col-span-3 border dark:border-slate-700 rounded-xl flex flex-col">
+            <div id="orderChatHeader" class="px-3 py-2 border-b dark:border-slate-700 text-sm font-semibold bg-slate-50 dark:bg-slate-800">Select a chat</div>
+            <div id="orderChatMsgs" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[50vh]"></div>
+            <div id="orderChatActions" class="p-2 border-t dark:border-slate-700 hidden">
+              <button type="button" id="orderChatRefundBtn" class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Refund buyer (allows seller debt)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        localStorage.setItem('acctventa_staff_token', <?= json_encode($staffToken) ?>);
+        const FOCUS_ORDER = <?= (int)$focusOrder ?>;
+        let activeOrderChat = null;
+        function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+        async function apiStaff(action, opts={}){
+          const url=new URL('/api/index.php',location.origin);
+          url.searchParams.set('action',action);
+          if(opts.query) Object.entries(opts.query).forEach(([k,v])=>url.searchParams.set(k,v));
+          const tok=localStorage.getItem('acctventa_staff_token')||'';
+          const res=await fetch(url,{method:opts.method||'GET',headers:{'Authorization':'Bearer '+tok,'X-Staff-Token':tok,...(opts.body?{'Content-Type':'application/json'}:{})},body:opts.body?JSON.stringify(opts.body):undefined});
+          const data=await res.json();
+          if(!res.ok||data.ok===false) throw new Error(data.error||'Failed');
+          return data;
+        }
+        async function loadOrderChats(){
+          const res=await apiStaff('staff.orders.chats');
+          const box=document.getElementById('orderChatList');
+          const chats=res.chats||[];
+          if(!chats.length){box.innerHTML='<p class="p-3 text-xs text-slate-400">No order chats yet.</p>';return;}
+          box.innerHTML=chats.map(c=>`<button type="button" onclick="openOrderChat(${c.id})" class="w-full text-left px-3 py-2.5 border-b dark:border-slate-800 hover:bg-sky-50 dark:hover:bg-slate-800 ${activeOrderChat===c.id?'bg-sky-50 dark:bg-slate-800':''}">
+            <p class="text-xs font-bold font-mono">${esc(c.public_id)}</p>
+            <p class="text-[10px] truncate">${esc(c.title)} · ${esc(c.status)}</p>
+            <p class="text-[10px] text-slate-500">${esc(c.buyer_name)} ↔ ${esc(c.seller_name)} · ${c.message_count} msgs</p>
+            <p class="text-[10px] text-slate-400 truncate">${esc(c.last_body||'')}</p>
+          </button>`).join('');
+        }
+        async function openOrderChat(id){
+          activeOrderChat=id;
+          const res=await apiStaff('staff.orders.get',{query:{orderId:id}});
+          const o=res.order||{};
+          document.getElementById('orderChatHeader').innerHTML=`<span class="font-mono">${esc(o.public_id)}</span> · ${esc(o.title)} · ${esc(o.status)}<br><span class="text-xs font-normal text-slate-500">${esc(o.buyer_name)} ↔ ${esc(o.seller_name)} · seller bal $${Number(o.seller_balance).toFixed(2)}</span>`;
+          const msgs=res.messages||[];
+          const box=document.getElementById('orderChatMsgs');
+          box.innerHTML=msgs.length?msgs.map(m=>{
+            const att=m.attachmentUrl?((m.attachmentMime||'').startsWith('image/')?`<img src="${esc(m.attachmentUrl)}" class="mt-1 max-h-32 rounded">`:`<a class="underline text-[11px]" href="${esc(m.attachmentUrl)}" target="_blank">${esc(m.attachmentName||'file')}</a>`):'';
+            return `<div class="rounded-xl border dark:border-slate-700 px-3 py-2 text-sm"><p class="text-[10px] text-slate-400">${esc(m.fromName)} · ${esc(m.fromEmail)}</p><p class="whitespace-pre-wrap">${esc(m.text||m.body)}</p>${att}</div>`;
+          }).join(''):'<p class="text-xs text-slate-400 text-center py-6">No messages</p>';
+          const actions=document.getElementById('orderChatActions');
+          actions.classList.toggle('hidden', o.status==='cancelled');
+          document.getElementById('orderChatRefundBtn').onclick=async()=>{
+            if(!confirm('Refund buyer and deduct seller (negative OK)?'))return;
+            try{const r=await apiStaff('staff.orders.refund',{method:'POST',body:{orderId:id}});alert('Refunded. Seller balance: $'+Number(r.sellerBalance).toFixed(2)+(r.owing?' (owing $'+Number(r.owing).toFixed(2)+')':''));openOrderChat(id);}catch(e){alert(e.message);}
+          };
+          loadOrderChats();
+        }
+        loadOrderChats().then(()=>{ if(FOCUS_ORDER) openOrderChat(FOCUS_ORDER); }).catch(e=>alert(e.message));
+      </script>
+    <?php endif; ?>
+
+    <?php if ($tab === 'reports'):
+      ensure_marketplace_extras();
+      $reports = [];
+      try {
+        $reports = db()->query("SELECT r.*, o.public_id, o.title, b.name AS buyer_name, s.name AS seller_name
+          FROM seller_reports r
+          JOIN orders o ON o.id = r.order_id
+          JOIN users b ON b.id = r.reporter_id
+          JOIN users s ON s.id = r.seller_id
+          ORDER BY r.created_at DESC LIMIT 100")->fetchAll();
+      } catch (Throwable $e) {}
+    ?>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-700 overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 dark:bg-slate-800 text-slate-500"><tr><th class="p-3">When</th><th class="p-3">TXID</th><th class="p-3">Buyer</th><th class="p-3">Seller</th><th class="p-3">Reason</th><th class="p-3">Open</th></tr></thead>
+          <tbody>
+          <?php if (!$reports): ?>
+            <tr><td colspan="6" class="p-4 text-slate-400">No seller reports yet.</td></tr>
+          <?php endif; ?>
+          <?php foreach ($reports as $r): ?>
+            <tr class="border-t dark:border-slate-800">
+              <td class="p-3"><?= h($r['created_at']) ?></td>
+              <td class="p-3 font-mono"><?= h($r['public_id']) ?></td>
+              <td class="p-3"><?= h($r['buyer_name']) ?></td>
+              <td class="p-3"><?= h($r['seller_name']) ?></td>
+              <td class="p-3"><?= h($r['reason']) ?></td>
+              <td class="p-3"><a class="text-brand underline" href="?tab=chats&order_id=<?= (int)$r['order_id'] ?>">Chat</a></td>
             </tr>
           <?php endforeach; ?>
           </tbody>
@@ -745,5 +928,19 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php endif; ?>
   </main>
 <?php endif; ?>
+<script>
+function toggleOwnerTheme(){
+  const html=document.documentElement;
+  const dark=html.classList.toggle('dark');
+  try{localStorage.setItem('acctventa_owner_theme', dark?'dark':'light');}catch(e){}
+  const btn=document.getElementById('ownerThemeBtn');
+  if(btn) btn.textContent=dark?'Light mode':'Dark mode';
+}
+(function(){
+  const dark=document.documentElement.classList.contains('dark');
+  const btn=document.getElementById('ownerThemeBtn');
+  if(btn) btn.textContent=dark?'Light mode':'Dark mode';
+})();
+</script>
 </body>
 </html>

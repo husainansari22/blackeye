@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en" class="light" id="adminHtml">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Acctventa Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -15,16 +16,21 @@
           }
         }
       }
-    }
+    };
+    (function(){try{var t=localStorage.getItem('acctventa_admin_theme')||'light';if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');}}catch(e){}})();
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=20260821chat1"></script>
-  <script src="/js/api-client.js?v=20260821chat1"></script>
+  <script src="/js/acctventa.js?v=20260821adv1"></script>
+  <script src="/js/api-client.js?v=20260821adv1"></script>
+  <style>
+    @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
+    html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-900 min-h-screen">
+<body class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen">
   <!-- LOGIN -->
   <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-sm bg-white rounded-2xl shadow-lg border border-slate-200 p-6 space-y-4">
+    <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 space-y-4">
       <div class="text-center">
         <div class="w-12 h-12 mx-auto rounded-xl bg-brandPrimary text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
         <h1 class="text-xl font-bold">Admin Login</h1>
@@ -33,11 +39,11 @@
       <form id="adminLoginForm" action="#" method="post" class="space-y-4">
         <div>
           <label class="text-xs text-slate-500" for="adminUser">Username</label>
-          <input id="adminUser" name="username" autocomplete="username" value="admin" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+          <input id="adminUser" name="username" autocomplete="username" value="admin" class="mt-1 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
         </div>
         <div>
           <label class="text-xs text-slate-500" for="adminPass">Password</label>
-          <input id="adminPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+          <input id="adminPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" class="mt-1 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
         </div>
         <p id="loginError" class="text-xs text-red-500 hidden"></p>
         <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
@@ -49,13 +55,14 @@
 
   <!-- DASHBOARD -->
   <div id="dashView" class="hidden">
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
       <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <div class="flex items-center gap-2 font-bold">
           <span class="w-8 h-8 rounded-lg bg-brandPrimary text-white flex items-center justify-center text-sm">A</span>
           Acctventa Admin
         </div>
         <div class="flex items-center gap-3 text-sm">
+          <button type="button" id="adminThemeBtn" onclick="toggleAdminTheme()" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold">Theme</button>
           <a href="/dashboard.html" class="text-slate-500 hover:text-brandPrimary">User app</a>
           <button onclick="doLogout()" class="text-red-500 font-medium">Log out</button>
         </div>
@@ -63,21 +70,22 @@
     </header>
 
     <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      <div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl p-3">
+      <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs rounded-xl p-3">
         <strong>Live Chat Support</strong> connects to your Hostinger MySQL backend. Use Owner credentials to open the inbox.
-        Ad reviews / Users / Security on this page still use browser data for local testing. Wallet fees & gateways are managed in <strong>/owner</strong>.
+        Order chats & reports also need a connected staff token. Wallet fees & gateways are managed in <strong>/owner</strong>.
       </div>
 
       <!-- Tabs -->
       <div class="flex gap-2 overflow-x-auto text-sm">
         <button class="admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium" data-tab="support" onclick="showTab('support')">Support</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="users" onclick="showTab('users')">Users</button>
-        <button class="admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200" data-tab="security" onclick="showTab('security')">Security</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="chats" onclick="showTab('chats')">Order chats</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="users" onclick="showTab('users')">Users</button>
+        <button class="admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" data-tab="security" onclick="showTab('security')">Security</button>
       </div>
 
       <!-- SUPPORT CHAT INBOX -->
-      <section id="tab_support" class="admin-panel bg-white rounded-2xl border border-slate-200 p-4 space-y-3">
+      <section id="tab_support" class="admin-panel bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 class="font-bold text-lg">Live Chat Support</h2>
@@ -114,8 +122,32 @@
         </div>
       </section>
 
+      <!-- ORDER CHATS -->
+      <section id="tab_chats" class="admin-panel hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+        <h2 class="font-bold text-lg">Buyer ↔ seller chats</h2>
+        <p class="text-xs text-slate-500">Connect Support inbox first (Owner credentials), then search by TXID or browse threads.</p>
+        <div class="flex flex-wrap gap-2">
+          <input id="adminTxSearch" placeholder="TXID / email…" class="border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2 text-base flex-1 min-w-[180px]">
+          <button onclick="adminSearchTx()" class="bg-brandPrimary text-white font-bold px-4 py-2 rounded-xl text-sm">Search</button>
+          <button onclick="loadAdminOrderChats()" class="border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-sm">Refresh list</button>
+        </div>
+        <div id="adminTxResult" class="text-xs space-y-2"></div>
+        <div class="grid md:grid-cols-5 gap-3 min-h-[360px]">
+          <div class="md:col-span-2 border dark:border-slate-700 rounded-xl overflow-hidden">
+            <div id="adminOrderChatList" class="max-h-[50vh] overflow-y-auto"></div>
+          </div>
+          <div class="md:col-span-3 border dark:border-slate-700 rounded-xl flex flex-col">
+            <div id="adminOrderChatHeader" class="px-3 py-2 border-b dark:border-slate-700 text-sm font-semibold">Select a chat</div>
+            <div id="adminOrderChatMsgs" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[45vh]"></div>
+            <div class="p-2 border-t dark:border-slate-700">
+              <button id="adminOrderRefundBtn" class="hidden bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Refund buyer</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ADS -->
-      <section id="tab_ads" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+      <section id="tab_ads" class="admin-panel hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="font-bold text-lg">Ad reviews</h2>
           <button onclick="loadAds()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
@@ -163,11 +195,90 @@
         const on = b.dataset.tab === name;
         b.className = on
           ? 'admin-tab px-3 py-2 rounded-lg bg-brandPrimary text-white font-medium'
-          : 'admin-tab px-3 py-2 rounded-lg bg-white border border-slate-200';
+          : 'admin-tab px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700';
       });
       if (name === 'ads') loadAds();
       if (name === 'users') loadUsers();
       if (name === 'support') initSupportInbox();
+      if (name === 'chats') loadAdminOrderChats();
+    }
+
+    function toggleAdminTheme() {
+      const html = document.documentElement;
+      const dark = html.classList.toggle('dark');
+      html.classList.toggle('light', !dark);
+      try { localStorage.setItem('acctventa_admin_theme', dark ? 'dark' : 'light'); } catch (e) {}
+      const btn = document.getElementById('adminThemeBtn');
+      if (btn) btn.textContent = dark ? 'Light mode' : 'Dark mode';
+    }
+    (function () {
+      const dark = document.documentElement.classList.contains('dark');
+      const btn = document.getElementById('adminThemeBtn');
+      if (btn) btn.textContent = dark ? 'Light mode' : 'Dark mode';
+    })();
+
+    let adminActiveOrder = null;
+    async function loadAdminOrderChats() {
+      const Api = window.AcctventaApi;
+      if (!Api || !Api.getStaffToken()) {
+        document.getElementById('adminOrderChatList').innerHTML = '<p class="p-3 text-xs text-amber-600">Connect Support inbox with Owner credentials first.</p>';
+        return;
+      }
+      try {
+        const res = await Api.staffOrderChats();
+        const chats = res.chats || [];
+        const box = document.getElementById('adminOrderChatList');
+        if (!chats.length) {
+          box.innerHTML = '<p class="p-3 text-xs text-slate-400">No order chats yet.</p>';
+          return;
+        }
+        box.innerHTML = chats.map(c => `<button type="button" onclick="openAdminOrderChat(${c.id})" class="w-full text-left px-3 py-2.5 border-b dark:border-slate-800 text-xs">
+          <p class="font-mono font-bold">${escHtml(c.public_id)}</p>
+          <p class="text-slate-500 truncate">${escHtml(c.buyer_name)} ↔ ${escHtml(c.seller_name)}</p>
+        </button>`).join('');
+      } catch (e) {
+        document.getElementById('adminOrderChatList').innerHTML = '<p class="p-3 text-xs text-red-500">' + escHtml(e.message) + '</p>';
+      }
+    }
+    async function openAdminOrderChat(id) {
+      adminActiveOrder = id;
+      const Api = window.AcctventaApi;
+      const res = await Api.staffOrderGet({ orderId: id });
+      const o = res.order || {};
+      document.getElementById('adminOrderChatHeader').innerHTML = `<span class="font-mono">${escHtml(o.public_id)}</span> · ${escHtml(o.title)} · ${escHtml(o.status)}`;
+      const msgs = res.messages || [];
+      document.getElementById('adminOrderChatMsgs').innerHTML = msgs.length
+        ? msgs.map(m => `<div class="border dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs"><p class="text-slate-400">${escHtml(m.fromName)}</p><p>${escHtml(m.text || m.body)}</p>${m.attachmentUrl ? `<a class="text-brandPrimary underline" href="${escHtml(m.attachmentUrl)}" target="_blank">Attachment</a>` : ''}</div>`).join('')
+        : '<p class="text-xs text-slate-400">No messages</p>';
+      const btn = document.getElementById('adminOrderRefundBtn');
+      btn.classList.toggle('hidden', o.status === 'cancelled');
+      btn.onclick = async () => {
+        if (!confirm('Refund buyer and deduct seller (negative OK)?')) return;
+        try {
+          const r = await Api.staffOrderRefund({ orderId: id });
+          alert('Refunded. Seller balance $' + Number(r.sellerBalance).toFixed(2));
+          openAdminOrderChat(id);
+        } catch (e) { alert(e.message); }
+      };
+    }
+    async function adminSearchTx() {
+      const q = (document.getElementById('adminTxSearch').value || '').trim();
+      const box = document.getElementById('adminTxResult');
+      if (!q) return;
+      try {
+        const res = await window.AcctventaApi.staffOrdersSearch(q);
+        const rows = res.orders || [];
+        box.innerHTML = rows.length
+          ? rows.map(o => `<button type="button" onclick="openAdminOrderChat(${o.id})" class="block w-full text-left border dark:border-slate-700 rounded-lg p-2">
+              <span class="font-mono font-bold">${escHtml(o.public_id)}</span> · ${escHtml(o.title)} · ${escHtml(o.status)}
+            </button>`).join('')
+          : '<p class="text-slate-500">No matches</p>';
+      } catch (e) {
+        box.innerHTML = '<p class="text-red-500">' + escHtml(e.message) + '</p>';
+      }
+    }
+    function escHtml(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function showLoginError(msg) {

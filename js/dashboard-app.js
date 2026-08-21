@@ -69,6 +69,29 @@
     set('currentPlanLabel', plan.name);
     set('uploadLimitBannerText', `You are on ${plan.name}. Uploads left today: ${A().getRemainingUploads(u)} of ${plan.dailyUploads}.`);
 
+    // Seller debt / owing banner
+    let owingEl = document.getElementById('sellerOwingBanner');
+    if (!owingEl) {
+      const walletTab = document.getElementById('tab_wallet');
+      if (walletTab) {
+        owingEl = document.createElement('div');
+        owingEl.id = 'sellerOwingBanner';
+        owingEl.className = 'hidden text-xs rounded-xl px-3 py-2 border';
+        walletTab.insertBefore(owingEl, walletTab.firstChild);
+      }
+    }
+    if (owingEl) {
+      const owing = Number(u.owing) || (Number(u.balance) < 0 ? Math.abs(Number(u.balance)) : 0);
+      if (owing > 0) {
+        owingEl.classList.remove('hidden');
+        owingEl.className = 'text-xs rounded-xl px-3 py-2 border border-red-300 bg-red-50 text-red-700 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300';
+        owingEl.textContent = 'Balance owing: -$' + owing.toFixed(2) + ' — future sales repay this automatically.';
+      } else {
+        owingEl.classList.add('hidden');
+        owingEl.textContent = '';
+      }
+    }
+
     const refLink = 'acctventa.com/auth/sign-up?ref=' + encodeURIComponent(u.referralCode || 'user');
     const refEl = document.getElementById('referralLinkText');
     if (refEl) {
@@ -159,11 +182,11 @@
       } else {
         merchants.innerHTML = arr
           .map(
-            (m) => `<div class="flex flex-col items-center shrink-0 text-center w-16">
+            (m) => `<button type="button" onclick="openSellerProfile('${escapeAttr(m.email)}')" class="flex flex-col items-center shrink-0 text-center w-16">
           <div class="w-14 h-14 rounded-full border-2 border-brandPrimary mb-1 bg-brandPrimary/20 text-brandPrimary flex items-center justify-center font-bold">${escapeHtml(m.initials)}</div>
           <span class="text-xs font-bold truncate w-full">${escapeHtml(m.name)}</span>
           <span class="text-[10px] text-slate-500">${m.sales} live</span>
-        </div>`
+        </button>`
           )
           .join('');
       }
@@ -233,10 +256,12 @@
     box.innerHTML = orders
       .map((o) => {
         const role = o.role === 'seller' ? 'Sold' : 'Bought';
+        const tx = o.txid || o.publicId || o.id;
         return `<button type="button" onclick="openOrderDetail('${o.id}')" class="w-full text-left bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm hover:border-brandPrimary transition">
         <div class="min-w-0">
           <h4 class="font-bold text-sm truncate">${escapeHtml(o.title)}</h4>
-          <p class="text-[10px] text-slate-500 mt-0.5">${role} · ${escapeHtml(o.status)} · ${escapeHtml(o.id)}</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">${role} · ${escapeHtml(o.status)}</p>
+          <p class="text-[10px] font-mono text-slate-400 mt-0.5">TXID: ${escapeHtml(tx)}</p>
         </div>
         <span class="font-bold text-sm text-brandPrimary">${money(o.price)}</span>
       </button>`;
@@ -1022,14 +1047,14 @@
       : `<p class="text-xs text-slate-500">No public preview link for this listing.</p>`;
     document.getElementById('modalBody').innerHTML = `
       <h3 class="font-bold text-xl mb-1">${escapeHtml(item.title)}</h3>
-      <p class="text-xs text-slate-500 mb-3">By ${escapeHtml(item.sellerName)} · ${escapeHtml(item.category || '')}</p>
+      <p class="text-xs text-slate-500 mb-1">By <button type="button" class="text-brandPrimary font-semibold underline" onclick="openSellerProfile('${escapeAttr(item.sellerEmail || item.sellerId || '')}')">${escapeHtml(item.sellerName)}</button> · ${escapeHtml(item.category || '')}${item.sellerRating ? ` · ★ ${Number(item.sellerRating).toFixed(1)}` : ''}</p>
       <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">${escapeHtml(item.description || 'No description.')}</p>
       <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4">
         <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">Review product link</p>
         ${preview}
       </div>
       <div class="flex justify-between items-center mb-4"><span class="text-slate-500 text-sm">Price</span><span class="text-2xl font-extrabold text-brandPrimary">${money(item.price)}</span></div>
-      <p class="text-[11px] text-emerald-600 mb-3"><i class="fa-solid fa-shield-halved mr-1"></i>Escrow protected — funds release after delivery.</p>
+      <p class="text-[11px] text-emerald-600 mb-3"><i class="fa-solid fa-shield-halved mr-1"></i>${item.releaseType === 'manual' ? 'Manual delivery — seller funds stay in escrow until login details are sent (AI release).' : 'Auto delivery — credentials unlock instantly after purchase.'}</p>
       <button onclick="buyListing('${item.id}')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Buy now · ${money(item.price)}</button>`;
     document.getElementById('appModal').classList.remove('hidden');
   };
@@ -1059,19 +1084,26 @@
     const cred = order.credentials || {};
     const isSeller = order.role === 'seller';
     const other = isSeller ? order.buyerName : order.sellerName;
+    const tx = order.txid || order.publicId || order.id;
     document.getElementById('modalBody').innerHTML = `
       <h3 class="font-bold text-lg mb-1">Order details</h3>
       <p class="text-xs text-slate-500 mb-3">${escapeHtml(order.title)} · <span class="capitalize">${escapeHtml(order.status)}</span></p>
       <div class="text-sm space-y-2 mb-4">
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Transaction ID</span><span class="font-mono text-[11px] text-right break-all">${escapeHtml(tx)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">${isSeller ? 'Buyer' : 'Seller'}</span><span class="font-medium">${escapeHtml(other)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Price</span><span class="font-bold text-brandPrimary">${money(order.price)}</span></div>
       </div>
       ${
+        order.status === 'pending' && isSeller
+          ? `<p class="text-[11px] text-amber-600 mb-3">Manual sale: funds are on hold until you send login details in chat. AI releases escrow when credentials are detected.</p>`
+          : ''
+      }
+      ${
         order.status !== 'cancelled'
           ? `<div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-mono space-y-1 mb-4">
         <p class="text-[10px] uppercase text-slate-400 font-sans font-bold mb-1">Account credentials</p>
-        <p><span class="text-slate-500">User:</span> ${escapeHtml(cred.username || '—')}</p>
-        <p><span class="text-slate-500">Pass:</span> ${escapeHtml(cred.password || '—')}</p>
+        <p><span class="text-slate-500">User:</span> ${escapeHtml(cred.username || (order.status === 'pending' && !isSeller ? 'Awaiting seller…' : '—'))}</p>
+        <p><span class="text-slate-500">Pass:</span> ${escapeHtml(cred.password || (order.status === 'pending' && !isSeller ? 'Awaiting seller…' : '—'))}</p>
         ${cred.previewLink ? `<p class="break-all"><span class="text-slate-500">Link:</span> ${escapeHtml(cred.previewLink)}</p>` : ''}
         ${cred.twoFA ? `<p><span class="text-slate-500">2FA:</span> ${escapeHtml(cred.twoFA)}</p>` : ''}
         ${cred.attachedEmail ? `<p><span class="text-slate-500">Email:</span> ${escapeHtml(cred.attachedEmail)}</p>` : ''}
@@ -1082,13 +1114,76 @@
       <div class="grid grid-cols-2 gap-2">
         <button onclick="openOrderChat('${orderId}')" class="bg-brandPrimary text-white py-2.5 rounded-xl text-xs font-bold">Chat ${isSeller ? 'Buyer' : 'Seller'}</button>
         ${isSeller && order.status !== 'cancelled' ? `<button onclick="confirmRefund('${orderId}')" class="bg-red-500 text-white py-2.5 rounded-xl text-xs font-bold">Refund Buyer</button>` : '<div></div>'}
-        ${isSeller && order.status === 'pending' ? `<button onclick="releaseOrder('${orderId}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">Release / Complete Order</button>` : ''}
+        ${!isSeller && order.canReview ? `<button onclick="leaveSellerReview('${orderId}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">Leave a review</button>` : ''}
+        ${!isSeller && order.sellerEmail ? `<button onclick="openSellerProfile('${escapeAttr(order.sellerEmail)}')" class="col-span-2 text-xs text-slate-500 underline py-1">View seller profile</button>` : ''}
+        ${isSeller && order.status === 'pending' ? `<button onclick="releaseOrder('${orderId}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">I sent login details — release funds</button>` : ''}
       </div>`;
     document.getElementById('appModal').classList.remove('hidden');
   };
 
+  window.leaveSellerReview = async function (orderId) {
+    const rating = parseInt(prompt('Rate this seller (1–5 stars):', '5') || '', 10);
+    if (!(rating >= 1 && rating <= 5)) return;
+    const comment = prompt('Optional comment:', '') || '';
+    try {
+      if (!window.AcctventaApi) throw new Error('API unavailable');
+      await window.AcctventaApi.createReview({ orderId: Number(orderId), rating, comment });
+      if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
+      closeModal();
+      renderOrders();
+      alert('Thanks for your review!');
+    } catch (e) {
+      alert(e.message || 'Could not submit review');
+    }
+  };
+
+  window.openSellerProfile = async function (sellerEmailOrId) {
+    try {
+      if (!window.AcctventaApi) throw new Error('API unavailable');
+      const q = String(sellerEmailOrId || '').includes('@')
+        ? { sellerEmail: sellerEmailOrId }
+        : { sellerId: sellerEmailOrId };
+      const res = await window.AcctventaApi.sellerProfile(q);
+      const s = res.seller || {};
+      const reviews = res.reviews || [];
+      const listings = res.listings || [];
+      const stars = s.rating && s.rating.average ? s.rating.average.toFixed(1) : '—';
+      document.getElementById('modalBody').innerHTML = `
+        <h3 class="font-bold text-lg mb-1">${escapeHtml(s.name || 'Seller')}</h3>
+        <p class="text-xs text-slate-500 mb-3">${s.isVerified ? 'Verified · ' : ''}${s.completedSales || 0} completed sales · ★ ${stars} (${(s.rating && s.rating.count) || 0})</p>
+        <h4 class="font-bold text-sm mb-2">Reviews</h4>
+        <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
+          ${
+            reviews.length
+              ? reviews
+                  .map(
+                    (r) => `<div class="text-xs border border-slate-200 dark:border-slate-800 rounded-lg p-2">
+            <p class="font-semibold">${'★'.repeat(Number(r.rating) || 0)} <span class="text-slate-400 font-normal">· ${escapeHtml(r.buyer_name || '')}</span></p>
+            <p class="text-slate-500 mt-0.5">${escapeHtml(r.comment || 'No comment')}</p>
+          </div>`
+                  )
+                  .join('')
+              : '<p class="text-xs text-slate-400">No reviews yet.</p>'
+          }
+        </div>
+        <h4 class="font-bold text-sm mb-2">Live listings</h4>
+        <div class="space-y-1">
+          ${
+            listings.length
+              ? listings
+                  .map((l) => `<p class="text-xs flex justify-between gap-2"><span class="truncate">${escapeHtml(l.title)}</span><span class="text-brandPrimary font-bold">${money(l.price)}</span></p>`)
+                  .join('')
+              : '<p class="text-xs text-slate-400">No live listings.</p>'
+          }
+        </div>`;
+      document.getElementById('appModal').classList.remove('hidden');
+    } catch (e) {
+      alert(e.message || 'Could not load seller profile');
+    }
+  };
+
   window.confirmRefund = async function (orderId) {
-    if (!confirm('Refund this order to the buyer? This will cancel the order and cannot be undone.')) return;
+    if (!confirm('Refund this order to the buyer? Seller balance can go negative (owing) if funds are insufficient. Future sales repay the debt automatically.')) return;
     const u = refreshUser();
     const res = await Promise.resolve(A().refundOrder(u, orderId));
     if (!res.ok) {
@@ -1098,7 +1193,7 @@
     closeModal();
     applyProfileChrome(refreshUser());
     renderOrders();
-    alert('Buyer refunded.');
+    alert('Buyer refunded.' + (res.owing ? ' You now owe $' + Number(res.owing).toFixed(2) + '.' : ''));
   };
 
   window.releaseOrder = async function (orderId) {
@@ -1118,12 +1213,21 @@
     activeOrderId = orderId;
     chatMode = 'order';
     supportThreadId = null;
+    pendingChatAttachment = null;
     stopChatPoll();
     closeModal();
+    const u = refreshUser();
+    const order = (u.orders || []).find((o) => String(o.id) === String(orderId));
+    const tx = order ? order.txid || order.publicId || orderId : orderId;
     document.getElementById('chatTitle').textContent = 'Order Chat';
-    document.getElementById('chatSubtitle').textContent = '';
+    document.getElementById('chatSubtitle').textContent = 'TXID: ' + tx;
     document.getElementById('chatOnlineDot').classList.add('hidden');
     document.getElementById('chatTyping').textContent = '';
+    const reportBtn = document.getElementById('chatReportBtn');
+    if (reportBtn) {
+      const isBuyer = order && order.role === 'buyer';
+      reportBtn.classList.toggle('hidden', !isBuyer);
+    }
     document.getElementById('chatOverlay').classList.remove('hidden');
     document.getElementById('chatOverlay').classList.add('flex');
     if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi()) {
@@ -1137,10 +1241,13 @@
     if (!u) return;
     chatMode = 'support';
     activeOrderId = null;
+    pendingChatAttachment = null;
     stopChatPoll();
     closeModal();
     document.getElementById('chatTitle').textContent = 'Chat Support';
     document.getElementById('chatSubtitle').textContent = 'Acctventa Support';
+    const reportBtn = document.getElementById('chatReportBtn');
+    if (reportBtn) reportBtn.classList.add('hidden');
     document.getElementById('chatOverlay').classList.remove('hidden');
     document.getElementById('chatOverlay').classList.add('flex');
     try {
@@ -1160,6 +1267,50 @@
     document.getElementById('chatMessages').innerHTML =
       '<p class="text-center text-xs text-slate-400 py-8">Live chat needs the online backend. Log out and log in again, then retry.</p>';
   };
+
+  window.reportSellerFromChat = async function () {
+    if (chatMode !== 'order' || !activeOrderId) return;
+    const reason = prompt('Why are you reporting this seller? Describe the problem:');
+    if (!reason || !String(reason).trim()) return;
+    try {
+      await window.AcctventaApi.reportSeller({ orderId: Number(activeOrderId), reason: String(reason).trim() });
+      alert('Report submitted. Support can review the order chat using the Transaction ID.');
+    } catch (e) {
+      alert(e.message || 'Could not submit report');
+    }
+  };
+
+  let pendingChatAttachment = null;
+
+  window.onChatFileSelected = function (ev) {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert('File too large (max 8MB)');
+      ev.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingChatAttachment = { dataUrl: reader.result, name: file.name, mime: file.type };
+      const hint = document.getElementById('chatAttachHint');
+      if (hint) {
+        hint.classList.remove('hidden');
+        hint.textContent = 'Attached: ' + file.name + ' — send to upload';
+      }
+    };
+    reader.readAsDataURL(file);
+    ev.target.value = '';
+  };
+
+  function attachmentHtml(m, mine) {
+    if (!m.attachmentUrl) return '';
+    const isImg = (m.attachmentMime || '').startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(m.attachmentUrl);
+    if (isImg) {
+      return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="block mt-1"><img src="${escapeAttr(m.attachmentUrl)}" alt="" class="max-w-full rounded-lg max-h-40 object-cover"></a>`;
+    }
+    return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-1 text-[11px] underline ${mine ? 'text-white/90' : 'text-brandPrimary'}"><i class="fa-solid fa-file"></i> ${escapeHtml(m.attachmentName || 'Download file')}</a>`;
+  }
 
   function updateSupportPresence(thread) {
     const dot = document.getElementById('chatOnlineDot');
@@ -1258,10 +1409,10 @@
             .map((m) => {
               const mine = m.role === 'user';
               const name = mine ? (u && u.name) || 'You' : m.staffName || 'Support';
-              return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-brandPrimary text-white' : 'bg-slate-100 dark:bg-slate-800'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(name)}</p>${escapeHtml(m.body)}</div></div>`;
+              return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-brandPrimary text-white' : 'bg-slate-100 dark:bg-slate-800'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(name)}</p><p class="whitespace-pre-wrap break-words">${escapeHtml(m.body)}</p>${attachmentHtml(m, mine)}</div></div>`;
             })
             .join('')
-        : '<p class="text-center text-xs text-slate-400 py-8">No messages yet. Ask support anything.</p>';
+        : '<p class="text-center text-xs text-slate-400 py-8">No messages yet. Ask support anything — you can also attach screenshots.</p>';
       if (msgs.length) lastSupportMsgId = msgs[msgs.length - 1].id;
       box.scrollTop = box.scrollHeight;
       return;
@@ -1272,23 +1423,35 @@
       ? msgs
           .map((m) => {
             const mine = m.fromEmail === u.email;
-            return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-brandPrimary text-white' : 'bg-slate-100 dark:bg-slate-800'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(m.fromName)}</p>${escapeHtml(m.text)}</div></div>`;
+            return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-brandPrimary text-white' : 'bg-slate-100 dark:bg-slate-800'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(m.fromName)}</p><p class="whitespace-pre-wrap break-words">${escapeHtml(m.text)}</p>${attachmentHtml(m, mine)}</div></div>`;
           })
           .join('')
-      : '<p class="text-center text-xs text-slate-400 py-8">No messages yet. Say hello.</p>';
+      : '<p class="text-center text-xs text-slate-400 py-8">No messages yet. Say hello — attach screenshots with the paperclip.</p>';
     box.scrollTop = box.scrollHeight;
   }
 
   window.sendChatMessage = async function () {
     const input = document.getElementById('chatInput');
     const text = (input.value || '').trim();
-    if (!text) return;
+    const attach = pendingChatAttachment;
+    if (!text && !attach) return;
     if (chatMode === 'support') {
       try {
-        const res = await window.AcctventaApi.supportSend({ text, threadId: supportThreadId });
+        const payload = { text: text || '', threadId: supportThreadId };
+        if (attach) {
+          payload.attachment = attach.dataUrl;
+          payload.fileName = attach.name;
+        }
+        const res = await window.AcctventaApi.supportSend(payload);
         supportMessagesCache = res.messages || [];
         if (res.thread) updateSupportPresence(res.thread);
         input.value = '';
+        pendingChatAttachment = null;
+        const hint = document.getElementById('chatAttachHint');
+        if (hint) {
+          hint.classList.add('hidden');
+          hint.textContent = '';
+        }
         renderChat();
       } catch (e) {
         alert(e.message || 'Send failed');
@@ -1297,10 +1460,26 @@
     }
     if (!activeOrderId) return;
     const u = refreshUser();
-    await Promise.resolve(A().sendMessage(u, activeOrderId, text));
+    const extra = attach ? { attachment: attach.dataUrl, fileName: attach.name } : null;
+    const res = await Promise.resolve(A().sendMessage(u, activeOrderId, text || '', extra));
+    if (res && res.ok === false) {
+      alert(res.error || 'Send failed');
+      return;
+    }
     input.value = '';
+    pendingChatAttachment = null;
+    const hint = document.getElementById('chatAttachHint');
+    if (hint) {
+      hint.classList.add('hidden');
+      hint.textContent = '';
+    }
     if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi()) {
       await window.AcctventaApiSync.loadMessages(activeOrderId);
+      if (res && res.fundsReleased) {
+        await window.AcctventaApiSync.hydrateFromApi();
+        applyProfileChrome(refreshUser());
+        alert('AI confirmed login details were sent. Escrow funds released to the seller.');
+      }
     }
     renderChat();
   };

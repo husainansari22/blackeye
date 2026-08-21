@@ -335,7 +335,9 @@
   }
 
   function formatMoney(n) {
-    return '$' + (Number(n) || 0).toFixed(2);
+    const v = Number(n) || 0;
+    if (v < 0) return '-$' + Math.abs(v).toFixed(2);
+    return '$' + v.toFixed(2);
   }
 
   function getInitials(name) {

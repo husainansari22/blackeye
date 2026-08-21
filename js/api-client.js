@@ -228,6 +228,33 @@
     staffSupportTyping(payload) {
       return request('support.typing', { method: 'POST', body: payload, asStaff: true });
     },
+    createReview(payload) {
+      return request('reviews.create', { method: 'POST', body: payload });
+    },
+    sellerReviews(query) {
+      return request('reviews.seller', { query });
+    },
+    reportSeller(payload) {
+      return request('reports.create', { method: 'POST', body: payload });
+    },
+    sellerProfile(query) {
+      return request('sellers.profile', { query });
+    },
+    staffOrdersSearch(q) {
+      return request('staff.orders.search', { asStaff: true, query: { q } });
+    },
+    staffOrderGet(payload) {
+      return request('staff.orders.get', { asStaff: true, query: payload });
+    },
+    staffOrderRefund(payload) {
+      return request('staff.orders.refund', { method: 'POST', body: payload, asStaff: true });
+    },
+    staffOrderChats() {
+      return request('staff.orders.chats', { asStaff: true });
+    },
+    staffReports() {
+      return request('staff.reports', { asStaff: true });
+    },
   };
 
   global.AcctventaApi = Api;
