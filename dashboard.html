@@ -175,7 +175,12 @@
 
         <!-- TAB: MARKETPLACE -->
         <div id="tab_market" class="app-tab hidden space-y-4">
-            <h2 class="text-xl font-bold">Marketplace</h2>
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <h2 class="text-xl font-bold">Marketplace</h2>
+            </div>
             <div class="relative flex items-center gap-2">
                 <input type="text" id="marketSearch" placeholder="Search marketplace..." oninput="handleMarketSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
@@ -222,7 +227,12 @@
 
         <!-- TAB: ORDERS -->
         <div id="tab_orders" class="app-tab hidden space-y-4">
-            <h2 class="text-xl font-bold">My Purchases</h2>
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <h2 class="text-xl font-bold">My Purchases</h2>
+            </div>
             <div class="space-y-3" id="ordersListContainer">
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
                     <div>
@@ -240,7 +250,12 @@
         <!-- TAB: ADS -->
         <div id="tab_ads" class="app-tab hidden space-y-4">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold">My Ads</h2>
+                <div class="flex items-center gap-3">
+                    <button onclick="switchTab('home')" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                    <h2 class="text-xl font-bold">My Ads</h2>
+                </div>
                 <button onclick="openSellProductWizard()" class="w-10 h-10 rounded-xl bg-brandPrimary hover:bg-brandHover text-white flex items-center justify-center font-bold text-lg shadow-md transition"><i class="fa-solid fa-plus"></i></button>
             </div>
             <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
@@ -254,7 +269,12 @@
 
         <!-- TAB: WALLET -->
         <div id="tab_wallet" class="app-tab hidden space-y-5">
-            <h2 class="text-xl font-bold">Wallet</h2>
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <h2 class="text-xl font-bold">Wallet</h2>
+            </div>
             <div class="bg-gradient-to-r from-sky-500 to-blue-700 p-6 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
                 <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
                 <div class="relative z-10">
@@ -271,7 +291,9 @@
         <!-- TAB: ACCOUNT DASHBOARD -->
         <div id="tab_account_dashboard" class="app-tab hidden space-y-5">
             <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                <button onclick="switchTab('home')" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 dark:text-white">Dashboard</h2>
                     <p class="text-xs text-slate-500 mt-0.5">Overview of your account performance</p>
@@ -313,8 +335,8 @@
         <!-- TAB: REFERRAL -->
         <div id="tab_referral" class="app-tab hidden space-y-5">
             <div class="flex items-center gap-3">
-                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                <button onclick="switchTab('home')" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral</h2>
@@ -394,8 +416,8 @@
         <!-- TAB: PLANS PAGE -->
         <div id="tab_plans" class="app-tab hidden space-y-5">
             <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                <button onclick="switchTab('home')" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 dark:text-white">Packages & Pricing</h2>
@@ -475,11 +497,11 @@
     </main>
 
     <!-- NOTIFICATION DRAWER -->
-    <div id="notificationDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex justify-end transition-opacity">
+    <div id="notificationDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] hidden flex justify-end transition-opacity">
         <div class="w-[85%] max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl">
             <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-                <button type="button" onclick="toggleNotificationDrawer()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                <button type="button" onclick="toggleNotificationDrawer()" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notifications</h3>
             </div>
@@ -516,11 +538,11 @@
     </div>
 
     <!-- FILTER DRAWER -->
-    <div id="filterDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] hidden flex justify-end transition-opacity">
+    <div id="filterDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] hidden flex justify-end transition-opacity">
         <div class="w-full max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-5 overflow-y-auto shadow-2xl">
             <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <button type="button" onclick="toggleFilterDrawer()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                <button type="button" onclick="toggleFilterDrawer()" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <h3 class="font-bold text-lg">Filter Products</h3>
             </div>
@@ -551,8 +573,8 @@
         <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
             <!-- Back navigation (same place as acctbazaar) -->
             <div class="flex items-center px-4 pt-3 pb-1">
-                <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                <button type="button" onclick="toggleLeftMenu()" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
             </div>
 
@@ -615,11 +637,11 @@
     </div>
 
     <!-- RIGHT MENU DRAWER (QUICK NAVIGATION) -->
-    <div id="rightMenu" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex justify-end transition-opacity">
+    <div id="rightMenu" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] hidden flex justify-end transition-opacity">
         <div class="w-3/4 max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-4 shadow-2xl">
             <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
-                <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                <button type="button" onclick="toggleRightMenu()" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <span class="font-bold text-lg text-brandPrimary dark:text-white">Quick Menu</span>
             </div>
@@ -646,10 +668,10 @@
     <!-- GENERAL MODAL CONTAINER -->
     <div id="appModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
         <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button onclick="closeModal()" class="absolute top-4 left-4 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                <i class="fa-solid fa-arrow-left text-sm"></i>
+            <button onclick="closeModal()" class="absolute top-4 left-4 text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                <i class="fa-solid fa-bars text-lg"></i>
             </button>
-            <div id="modalBody"></div>
+            <div id="modalBody" class="pt-8"></div>
         </div>
     </div>
 
@@ -658,8 +680,8 @@
         <!-- Header with Back Button -->
         <div class="flex items-center justify-between px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800">
             <div class="flex items-center gap-3">
-                <button type="button" onclick="closeSellProductWizard()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                <button type="button" onclick="closeSellProductWizard()" class="text-slate-800 dark:text-white hover:text-brandPrimary transition" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <h2 class="text-lg font-bold text-slate-800 dark:text-white">Sell Your Account</h2>
             </div>
