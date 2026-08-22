@@ -38,9 +38,75 @@
         .modal-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         html, body { overflow-x: hidden; max-width: 100%; }
         header, main, nav, .app-tab { max-width: 100%; }
+        /* Compact density (acctbazaar-like) */
+        .app-tab { gap: 0.65rem !important; }
+        .av-compact-card { border-radius: 0.85rem; padding: 0.65rem 0.75rem; }
+        .filter-chip { padding: 0.35rem 0.7rem !important; font-size: 0.7rem !important; }
+        .av-filter-drawer {
+          width: min(86vw, 20.5rem);
+          max-width: 86vw;
+          height: calc(100dvh - 3.5rem);
+          box-shadow: 8px 0 30px rgba(0,0,0,.35);
+        }
+        .av-filter-row {
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.28rem 0;
+          font-size: 0.8rem;
+          line-height: 1.2;
+        }
+        .av-filter-row input[type="checkbox"] {
+          width: 0.95rem;
+          height: 0.95rem;
+          flex-shrink: 0;
+          accent-color: #0ea5e9;
+        }
+        .av-prod-logo {
+          width: 1.15rem;
+          height: 1.15rem;
+          border-radius: 0.28rem;
+          object-fit: cover;
+          background: #1e293b;
+          flex-shrink: 0;
+        }
+        .av-cat-head {
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.45rem 0;
+          font-size: 0.84rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .av-sell-pick-item {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          width: 100%;
+          text-align: left;
+          padding: 0.45rem 0.55rem;
+          border: 0;
+          border-bottom: 1px solid rgba(148,163,184,.2);
+          background: transparent;
+          color: inherit;
+          font-size: 0.84rem;
+        }
+        .av-sell-pick-item:hover, .av-sell-pick-item.is-active {
+          background: color-mix(in srgb, #0ea5e9 14%, transparent);
+        }
+        .av-sell-pick-list {
+          max-height: 14rem;
+          overflow-y: auto;
+          border: 1px solid var(--tw-border, #334155);
+          border-radius: 0.75rem;
+          background: #0f172a;
+        }
+        html:not(.dark) .av-sell-pick-list { background: #fff; border-color: #e2e8f0; }
     </style>
     <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
     <script src="/js/ui-toast.js?v=20260821toast2"></script>
+    <script src="/js/marketplace-catalog.js?v=20260821cat1"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-28 transition-colors duration-200" data-theme="light">
 
@@ -80,53 +146,49 @@
     <div class="h-14"></div>
 
     <!-- MAIN VIEWS -->
-    <main class="max-w-md mx-auto px-4 py-4">
+    <main class="max-w-md mx-auto px-4 py-3">
 
         <!-- TAB: HOME -->
-        <div id="tab_home" class="app-tab space-y-6">
+        <div id="tab_home" class="app-tab space-y-3">
             <!-- Top Merchants -->
             <div>
-                <div class="flex justify-between items-center mb-3">
+                <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
                     <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
-                <div id="topMerchantsRow" class="flex gap-4 overflow-x-auto pb-2 scrollbar-none"></div>
+                <div id="topMerchantsRow" class="flex gap-3 overflow-x-auto pb-1 scrollbar-none"></div>
             </div>
 
             <!-- Search Bar & Filter Button -->
             <div class="relative flex items-center gap-2">
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="Search accounts, VPN, numbers..." oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Search accounts, VPN, numbers..." oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
                 </div>
-                <button onclick="toggleFilterDrawer()" class="w-10 h-10 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-lg hover:bg-brandHover transition" title="Filters"><i class="fa-solid fa-bars-staggered"></i></button>
+                <button onclick="toggleFilterDrawer()" class="w-9 h-9 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-md hover:bg-brandHover transition" title="Filters"><i class="fa-solid fa-bars-staggered text-sm"></i></button>
             </div>
 
-            <!-- Filter Chips -->
-            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
-                <button onclick="filterCategory('Trending')" class="filter-chip bg-brandPrimary text-white px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition"><i class="fa-solid fa-fire"></i> Trending</button>
-                <button onclick="filterCategory('Social')" class="filter-chip bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition hover:border-brandPrimary hover:text-brandPrimary"><i class="fa-solid fa-users"></i> Social accounts</button>
-                <button onclick="filterCategory('VPN')" class="filter-chip bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition hover:border-brandPrimary hover:text-brandPrimary"><i class="fa-solid fa-shield-halved"></i> VPN</button>
-            </div>
+            <!-- Filter Chips (built from catalog) -->
+            <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
 
             <!-- Platform banner -->
-            <div class="bg-gradient-to-r from-sky-600 to-blue-900 rounded-xl p-4 flex justify-between items-center text-white shadow-lg relative overflow-hidden">
-                <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                <div class="relative z-10 pr-3">
-                    <span class="text-sky-100 text-xs font-bold tracking-wide">SECURE MARKETPLACE</span>
-                    <p class="font-bold text-lg mt-1">Buy & sell with escrow protection</p>
-                    <p class="text-xs text-sky-100 mt-1">Preview account links before you buy. AI reviews seller uploads.</p>
+            <div class="bg-gradient-to-r from-sky-600 to-blue-900 rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+                <div class="relative z-10 pr-2 min-w-0">
+                    <span class="text-sky-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
+                    <p class="font-bold text-sm mt-0.5 leading-snug">Buy & sell with escrow protection</p>
+                    <p class="text-[10px] text-sky-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
                 </div>
-                <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-3 py-1.5 rounded-full shrink-0">Support</button>
+                <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
 
             <!-- Trending Catalog -->
             <div>
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-fire text-brandPrimary"></i> Trending now</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
                     <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all</span>
                 </div>
-                <div id="homeListings" class="flex gap-4 overflow-x-auto pb-4 scrollbar-none"></div>
+                <div id="homeListings" class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none"></div>
             </div>
         </div>
 
@@ -395,35 +457,31 @@
         </div>
     </div>
 
-    <!-- FILTER DRAWER — same 3-line style as left menu -->
-    <div id="filterDrawer" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
-        <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto px-5 pb-6">
-            <div class="flex items-center gap-3 pt-3 pb-3">
-                <button type="button" onclick="toggleFilterDrawer()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
-                </button>
-                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Filter Products</h3>
+    <!-- FILTER DRAWER — left sidebar like acctbazaar -->
+    <div id="filterDrawer" class="fixed inset-0 z-[80] hidden">
+        <button type="button" class="absolute inset-0 bg-black/50" onclick="toggleFilterDrawer()" aria-label="Close filters"></button>
+        <aside class="av-filter-drawer absolute left-0 top-14 bottom-0 bg-lightCard dark:bg-[#0b1120] overflow-y-auto px-3 pb-6">
+            <div class="flex items-center justify-between pt-3 pb-2 sticky top-0 bg-lightCard dark:bg-[#0b1120] z-10">
+                <h3 class="font-bold text-base text-slate-800 dark:text-white">Filter</h3>
+                <button type="button" onclick="toggleFilterDrawer()" class="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-sm" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="space-y-3 text-sm border-t border-slate-200 dark:border-slate-800 pt-3">
-                <div>
-                    <div class="flex justify-between items-center cursor-pointer font-medium py-1 hover:text-brandPrimary transition" onclick="toggleAccordion('acc_social')">
-                        <span>Social Media</span> <i class="fa-solid fa-chevron-down text-xs text-slate-400" id="icon_acc_social"></i>
+            <p class="text-[11px] font-semibold text-slate-500 mb-1">Account Category</p>
+            <div id="filterCategoryTree" class="pb-2"></div>
+            <div class="pt-3 border-t border-slate-200 dark:border-slate-800 mt-2">
+                <p class="text-xs font-bold text-slate-200 mb-2">Price range</p>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-slate-500">Minimum</label>
+                        <input type="number" id="minPrice" value="0" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-xs outline-none focus:border-brandPrimary">
                     </div>
-                    <div id="acc_social" class="hidden pl-4 pt-2 space-y-2 text-xs text-slate-500 dark:text-slate-400">
-                        <label class="flex items-center gap-2 cursor-pointer hover:text-brandPrimary"><input type="checkbox" class="accent-sky-500 filter-chk" value="Facebook" onchange="applyFilters()"> Facebook</label>
-                        <label class="flex items-center gap-2 cursor-pointer hover:text-brandPrimary"><input type="checkbox" class="accent-sky-500 filter-chk" value="Instagram" onchange="applyFilters()"> Instagram</label>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-slate-500">Maximum</label>
+                        <input type="number" id="maxPrice" value="1000" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-xs outline-none focus:border-brandPrimary">
                     </div>
                 </div>
             </div>
-            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 mt-4">
-                <p class="text-xs font-bold text-slate-500 mb-2">Price range ($)</p>
-                <div class="flex gap-3">
-                    <input type="number" id="minPrice" value="0" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-center focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary outline-none">
-                    <input type="number" id="maxPrice" value="1000" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-center focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary outline-none">
-                </div>
-            </div>
-            <button onclick="resetFilters(); toggleFilterDrawer();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl mt-6 shadow-md transition">Reset filters</button>
-        </div>
+            <button onclick="resetFilters();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-2.5 rounded-xl mt-4 text-sm transition"><i class="fa-solid fa-rotate-left mr-1.5"></i>Reset filters</button>
+        </aside>
     </div>
 
     <!-- LEFT MENU DRAWER — matches acctbazaar profile menu layout, your blue accents -->
@@ -600,54 +658,45 @@
             </div>
         </div>
 
-        <div id="sellStep1" class="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        <div id="sellStep1" class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             <p class="text-xs text-slate-500">You can only select one account at a time</p>
             <div>
-                <label class="block mb-1.5 text-xs font-medium text-slate-500">Select Account Category *</label>
-                <select id="wizardCat" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
-                    <option value="">Select category...</option>
-                    <option value="Facebook">Facebook</option>
-                    <option value="Instagram">Instagram</option>
-                    <option value="TikTok">TikTok</option>
-                    <option value="Twitter">Twitter / X</option>
-                    <option value="Gmail">Gmail</option>
-                    <option value="Telegram">Telegram</option>
-                    <option value="WhatsApp">WhatsApp</option>
-                    <option value="Social Media">Social Media (other)</option>
-                    <option value="Emails & Messaging">Emails & Messaging</option>
-                    <option value="VPN & Proxies">VPN & Proxies</option>
-                    <option value="Giftcards">Giftcards</option>
-                    <option value="Gaming">Gaming</option>
-                    <option value="Subscription">Subscription</option>
-                </select>
+                <label class="block mb-1 text-xs font-medium text-slate-500">Select Account Category *</label>
+                <input type="hidden" id="wizardCat" value="">
+                <div class="relative">
+                    <input type="search" id="wizardCatSearch" autocomplete="off" placeholder="Select Account Category" oninput="renderSellCategoryPicker(this.value)" onfocus="renderSellCategoryPicker(this.value || '')" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3.5 pr-9 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400 text-xs"></i>
+                </div>
+                <div id="wizardCatSelected" class="hidden mt-1.5 av-filter-row text-xs text-slate-500"></div>
+                <div id="wizardCatPicker" class="av-sell-pick-list mt-1.5 hidden"></div>
             </div>
             <div>
-                <label class="block mb-1.5 text-xs font-medium text-slate-500">Name *</label>
-                <input type="text" id="wizardTitle" placeholder="For e.g., 4 Years Facebook Account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
+                <label class="block mb-1 text-xs font-medium text-slate-500">Name *</label>
+                <input type="text" id="wizardTitle" placeholder="For e.g., 4 Years Facebook Account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm">
             </div>
             <div>
-                <label class="block mb-1.5 text-xs font-medium text-slate-500">Description</label>
-                <textarea id="wizardDesc" rows="3" placeholder="Describe the account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm"></textarea>
+                <label class="block mb-1 text-xs font-medium text-slate-500">Description</label>
+                <textarea id="wizardDesc" rows="2" placeholder="Describe the account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm"></textarea>
             </div>
             <div>
-                <label class="block mb-1.5 text-xs font-medium text-slate-500">Enter your price</label>
-                <div class="relative"><span class="absolute left-4 top-3.5 text-slate-400">$</span>
-                <input type="number" id="wizardPrice" step="0.01" placeholder="Enter amount" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 text-sm"></div>
+                <label class="block mb-1 text-xs font-medium text-slate-500">Enter your price</label>
+                <div class="relative"><span class="absolute left-3 top-2.5 text-slate-400">$</span>
+                <input type="number" id="wizardPrice" step="0.01" placeholder="Enter amount" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-7 pr-3 py-2.5 text-sm"></div>
             </div>
-            <p class="text-xs font-bold pt-2 border-t border-slate-200 dark:border-slate-800">Release options</p>
-            <div class="space-y-3">
-                <label onclick="selectWizardRelease('auto')" id="wizardCardAuto" class="flex items-start gap-3 p-3.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer">
+            <p class="text-xs font-bold pt-1 border-t border-slate-200 dark:border-slate-800">Release options</p>
+            <div class="space-y-2">
+                <label onclick="selectWizardRelease('auto')" id="wizardCardAuto" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer">
                     <input type="radio" name="wizardRelease" value="auto" checked class="mt-0.5 accent-sky-500">
                     <div>
                         <span class="font-bold text-sm flex items-center gap-1">Auto Confirm Order <span class="text-[9px] bg-emerald-500/20 text-emerald-600 px-1.5 py-0.5 rounded">Recommended</span></span>
-                        <p class="text-[10px] text-slate-500 mt-1">Perfect for products that don't need your attention. Logins are sent and the order is confirmed automatically — no action required.</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">Logins are sent and the order is confirmed automatically.</p>
                     </div>
                 </label>
-                <label onclick="selectWizardRelease('manual')" id="wizardCardManual" class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer">
+                <label onclick="selectWizardRelease('manual')" id="wizardCardManual" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer">
                     <input type="radio" name="wizardRelease" value="manual" class="mt-0.5 accent-sky-500">
                     <div>
                         <span class="font-bold text-sm">Manual Release</span>
-                        <p class="text-[10px] text-slate-500 mt-1">Ideal for products that need your input — like those requiring a code or extra authentication.</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">For products that need a code or extra authentication.</p>
                     </div>
                 </label>
             </div>
@@ -821,22 +870,97 @@
             document.getElementById('notificationDrawer').classList.toggle('hidden');
             if (window.AcctventaUI) window.AcctventaUI.refreshAll();
         }
-        function toggleFilterDrawer() { document.getElementById('filterDrawer').classList.toggle('hidden'); }
+        function toggleFilterDrawer() {
+            const el = document.getElementById('filterDrawer');
+            const opening = el.classList.contains('hidden');
+            el.classList.toggle('hidden');
+            if (opening) buildFilterCategoryTree();
+        }
         function toggleAccordion(id) {
-            document.getElementById(id).classList.toggle('hidden');
+            const panel = document.getElementById(id);
+            if (!panel) return;
+            panel.classList.toggle('hidden');
             const icon = document.getElementById('icon_' + id);
-            if (icon) { icon.classList.toggle('fa-chevron-down'); icon.classList.toggle('fa-chevron-up'); }
+            if (icon) {
+                icon.classList.toggle('fa-chevron-down');
+                icon.classList.toggle('fa-chevron-up');
+            }
         }
         function closeModal() { document.getElementById('appModal').classList.add('hidden'); }
         function toggleWishlist(icon) { icon.classList.toggle('fa-regular'); icon.classList.toggle('fa-solid'); icon.classList.toggle('text-red-500'); }
-        function filterCategory(cat) { switchTab('market'); }
+
+        function buildHomeChips() {
+            const box = document.getElementById('homeFilterChips');
+            if (!box || !window.AcctventaCatalog) return;
+            const chips = window.AcctventaCatalog.chipGroups();
+            box.innerHTML = chips.map(function (c, i) {
+                const on = i === 0;
+                return '<button type="button" data-chip="' + c.id + '" onclick="filterCategory(\'' + c.id + '\')" class="filter-chip rounded-full font-medium shrink-0 flex items-center gap-1.5 transition ' +
+                    (on ? 'bg-brandPrimary text-white' : 'bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 hover:border-brandPrimary hover:text-brandPrimary') +
+                    '"><i class="' + c.icon + '"></i> ' + c.name + '</button>';
+            }).join('');
+        }
+
+        function buildFilterCategoryTree() {
+            const box = document.getElementById('filterCategoryTree');
+            if (!box || !window.AcctventaCatalog) return;
+            const groups = window.AcctventaCatalog.GROUPS || [];
+            box.innerHTML = groups.map(function (g) {
+                const id = 'acc_' + g.id;
+                const items = (g.products || []).map(function (p) {
+                    const logo = window.AcctventaCatalog.logoUrl(p);
+                    return '<label class="av-filter-row cursor-pointer hover:text-brandPrimary">' +
+                        '<input type="checkbox" class="filter-chk" value="' + String(p.name).replace(/"/g, '&quot;') + '" data-group="' + g.id + '" onchange="applyFilters()">' +
+                        '<img class="av-prod-logo" src="' + logo + '" alt="" loading="lazy" onerror="this.style.opacity=.3">' +
+                        '<span>' + p.name + '</span></label>';
+                }).join('');
+                return '<div class="border-b border-slate-200/60 dark:border-slate-800/80">' +
+                    '<div class="av-cat-head" onclick="toggleAccordion(\'' + id + '\')">' +
+                    '<i class="' + g.icon + ' w-4 text-center text-slate-400 text-xs"></i>' +
+                    '<span class="flex-1 text-slate-800 dark:text-white">' + g.name + '</span>' +
+                    '<i class="fa-solid fa-chevron-down text-[10px] text-slate-400" id="icon_' + id + '"></i></div>' +
+                    '<div id="' + id + '" class="hidden pl-1 pb-1">' + items + '</div></div>';
+            }).join('');
+        }
+
+        function filterCategory(cat) {
+            switchTab('market');
+            document.querySelectorAll('#homeFilterChips .filter-chip').forEach(function (b) {
+                const on = b.getAttribute('data-chip') === cat;
+                b.classList.toggle('bg-brandPrimary', on);
+                b.classList.toggle('text-white', on);
+                b.classList.toggle('bg-lightCard', !on);
+                b.classList.toggle('dark:bg-darkCard', !on);
+                b.classList.toggle('border', !on);
+                b.classList.toggle('border-slate-200', !on);
+                b.classList.toggle('dark:border-slate-800', !on);
+            });
+            if (!window.AcctventaCatalog) return;
+            const group = (window.AcctventaCatalog.GROUPS || []).find(function (g) { return g.id === cat; });
+            const names = group ? group.products.map(function (p) { return p.name.toLowerCase(); }) : null;
+            const items = document.querySelectorAll('.product-item');
+            let count = 0;
+            items.forEach(function (item) {
+                const c = (item.getAttribute('data-category') || '').toLowerCase();
+                const g = (item.getAttribute('data-group') || '').toLowerCase();
+                let show = true;
+                if (cat && cat !== 'trending') {
+                    show = g === cat || (names && names.indexOf(c) !== -1) || c.indexOf(String(cat).toLowerCase()) !== -1;
+                }
+                item.classList.toggle('hidden', !show);
+                if (show) count++;
+            });
+            const rc = document.getElementById('resultCount');
+            if (rc) rc.innerText = count + ' results found';
+        }
+
         function handleSearch(q) { handleMarketSearch(q); }
         function handleMarketSearch(query) {
             const q = (query || '').toLowerCase();
             const items = document.querySelectorAll('.product-item');
             let count = 0;
             items.forEach(item => {
-                const show = !q || item.innerText.toLowerCase().includes(q);
+                const show = !q || item.innerText.toLowerCase().includes(q) || (item.getAttribute('data-category') || '').toLowerCase().includes(q);
                 item.classList.toggle('hidden', !show);
                 if (show) count++;
             });
@@ -848,16 +972,21 @@
         function applyFilters() {
             const min = parseFloat(document.getElementById('minPrice').value) || 0;
             const max = parseFloat(document.getElementById('maxPrice').value) || 10000;
+            const checked = Array.from(document.querySelectorAll('.filter-chk:checked')).map(function (cb) { return cb.value.toLowerCase(); });
             const items = document.querySelectorAll('.product-item');
             let count = 0;
             items.forEach(item => {
                 const price = parseFloat(item.getAttribute('data-price')) || 0;
-                const show = price >= min && price <= max;
+                const cat = (item.getAttribute('data-category') || '').toLowerCase();
+                const inPrice = price >= min && price <= max;
+                const inCat = !checked.length || checked.indexOf(cat) !== -1 || checked.some(function (c) { return cat.indexOf(c) !== -1; });
+                const show = inPrice && inCat;
                 item.classList.toggle('hidden', !show);
                 if (show) count++;
             });
             const rc = document.getElementById('resultCount');
             if (rc) rc.innerText = count + ' results found';
+            switchTab('market');
         }
         function resetFilters() {
             document.querySelectorAll('.filter-chk').forEach(cb => cb.checked = false);
@@ -865,6 +994,50 @@
             document.getElementById('maxPrice').value = 1000;
             applyFilters();
         }
+
+        function renderSellCategoryPicker(q) {
+            const box = document.getElementById('wizardCatPicker');
+            if (!box || !window.AcctventaCatalog) return;
+            const list = window.AcctventaCatalog.searchProducts(q).slice(0, 80);
+            box.classList.remove('hidden');
+            if (!list.length) {
+                box.innerHTML = '<p class="p-3 text-xs text-slate-400">No matches</p>';
+                return;
+            }
+            const selected = (document.getElementById('wizardCat') || {}).value || '';
+            box.innerHTML = list.map(function (p) {
+                return '<button type="button" class="av-sell-pick-item ' + (selected === p.name ? 'is-active' : '') + '" onclick="selectSellCategory(\'' + String(p.name).replace(/'/g, "\\'") + '\')">' +
+                    '<img class="av-prod-logo" src="' + p.logo + '" alt="" loading="lazy" onerror="this.style.opacity=.3">' +
+                    '<span class="min-w-0"><span class="font-semibold block truncate">' + p.name + '</span>' +
+                    '<span class="text-[10px] text-slate-500">' + p.groupName + '</span></span></button>';
+            }).join('');
+        }
+        function selectSellCategory(name) {
+            const cat = document.getElementById('wizardCat');
+            const search = document.getElementById('wizardCatSearch');
+            const selected = document.getElementById('wizardCatSelected');
+            const picker = document.getElementById('wizardCatPicker');
+            if (cat) cat.value = name;
+            if (search) search.value = name;
+            const prod = window.AcctventaCatalog && window.AcctventaCatalog.findProduct(name);
+            if (selected && prod) {
+                selected.classList.remove('hidden');
+                selected.innerHTML = '<img class="av-prod-logo" src="' + prod.logo + '" alt=""><span class="font-semibold text-slate-800 dark:text-white">' + prod.name + '</span><span class="text-slate-500">· ' + prod.groupName + '</span>';
+            }
+            if (picker) picker.classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            buildHomeChips();
+            buildFilterCategoryTree();
+        });
+        document.addEventListener('click', function (e) {
+            const picker = document.getElementById('wizardCatPicker');
+            const search = document.getElementById('wizardCatSearch');
+            if (!picker || picker.classList.contains('hidden')) return;
+            if (picker.contains(e.target) || (search && search.contains(e.target))) return;
+            picker.classList.add('hidden');
+        });
         function openAccountSettings() {
             const u = window.Acctventa && window.Acctventa.getCurrentUser();
             if (!u) return;
