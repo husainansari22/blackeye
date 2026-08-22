@@ -820,8 +820,7 @@ try {
             ensure_support_tables();
             $user = trim((string)($body['username'] ?? ''));
             $pass = (string)($body['password'] ?? '');
-            $cfg = app_config();
-            $okOwner = ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? ''));
+            $okOwner = owner_password_verify($user, $pass);
             $okAdmin = ($user === 'admin' && admin_password_verify($pass));
             if (!$okOwner && !$okAdmin) {
                 json_out(['ok' => false, 'error' => 'Invalid staff credentials'], 401);
@@ -842,7 +841,8 @@ try {
                 json_out(['ok' => false, 'error' => 'New password must be at least 6 characters'], 422);
             }
             admin_password_set($next);
-            json_out(['ok' => true, 'message' => 'Website admin password updated']);
+            owner_password_set($next);
+            json_out(['ok' => true, 'message' => 'Admin & owner passwords updated on the server']);
         }
 
         case 'support.open': {

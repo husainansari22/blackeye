@@ -18,7 +18,7 @@ if (isset($_GET['logout'])) {
 if (($_POST['form'] ?? '') === 'login') {
     $user = trim((string)($_POST['username'] ?? ''));
     $pass = (string)($_POST['password'] ?? '');
-    if ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? '')) {
+    if (owner_password_verify($user, $pass)) {
         $_SESSION['owner_ok'] = true;
         header('Location: /owner/');
         exit;
@@ -52,6 +52,23 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
+        }
+        if ($form === 'owner_password') {
+            $current = (string)($_POST['current_password'] ?? '');
+            $next = (string)($_POST['new_password'] ?? '');
+            $confirm = (string)($_POST['confirm_password'] ?? '');
+            if (!owner_password_verify(owner_username(), $current)) {
+                throw new RuntimeException('Current password is wrong.');
+            }
+            if (strlen($next) < 6) {
+                throw new RuntimeException('New password must be at least 6 characters.');
+            }
+            if ($next !== $confirm) {
+                throw new RuntimeException('New password and confirmation do not match.');
+            }
+            owner_password_set($next);
+            admin_password_set($next);
+            $flash = 'Owner password updated. Use it for Owner Admin and Website Admin sign-in.';
         }
         if ($form === 'plan') {
             $id = preg_replace('/[^a-z0-9_]/', '', strtolower((string)$_POST['plan_id']));
@@ -333,13 +350,14 @@ $tab = $_GET['tab'] ?? 'overview';
       <?php if ($error): ?><p class="text-xs text-red-600"><?= h($error) ?></p><?php endif; ?>
       <div>
         <label class="text-xs text-slate-500">Username</label>
-        <input name="username" value="owner" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
+        <input name="username" autocomplete="username" value="<?= h($cfg['owner_username'] ?? 'owner') ?>" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
       <div>
         <label class="text-xs text-slate-500">Password</label>
-        <input name="password" type="password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
+        <input name="password" type="password" autocomplete="current-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
       <button class="w-full bg-brand text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
+      <p class="text-[11px] text-slate-400 text-center leading-relaxed">Use your Owner password from <code class="text-[10px]">api/config.php</code>, or the password you set in Website Admin → Security (username <code class="text-[10px]">admin</code> or <code class="text-[10px]">owner</code>).</p>
       <a href="/" class="block text-center text-xs text-brand">← Back to website</a>
     </form>
   </div>
@@ -1397,6 +1415,24 @@ $tab = $_GET['tab'] ?? 'overview';
         <div><label class="text-xs text-slate-500">Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div><label class="text-xs text-slate-500">Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
         <div class="sm:col-span-2"><button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save settings</button></div>
+      </form>
+      <form method="post" class="av-card p-5 mt-4 space-y-4 max-w-xl">
+        <input type="hidden" name="form" value="owner_password">
+        <h2 class="font-bold text-lg">Owner password</h2>
+        <p class="text-xs av-muted">Saved on the server — works for Owner Admin and Website Admin on any device.</p>
+        <div>
+          <label class="text-xs text-slate-500">Current password</label>
+          <input name="current_password" type="password" autocomplete="current-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-sm" required>
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">New password</label>
+          <input name="new_password" type="password" autocomplete="new-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-sm" required minlength="6">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">Confirm new password</label>
+          <input name="confirm_password" type="password" autocomplete="new-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-sm" required minlength="6">
+        </div>
+        <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Update password</button>
       </form>
     <?php endif; ?>
 

@@ -90,6 +90,38 @@ function admin_password_set(string $newPass): void {
     setting_set('admin_api_password', '');
 }
 
+function owner_username(): string {
+    $cfg = app_config();
+    return (string)($cfg['owner_username'] ?? 'owner');
+}
+
+/** Owner Admin login — DB hash first, then config.php, then Website Admin password (kept in sync). */
+function owner_password_verify(string $user, string $pass): bool {
+    if ($pass === '' || $user !== owner_username()) {
+        return false;
+    }
+    $hash = (string)setting_get('owner_password_hash', '');
+    if ($hash !== '' && password_verify($pass, $hash)) {
+        return true;
+    }
+    $cfg = app_config();
+    $configPass = (string)($cfg['owner_password'] ?? '');
+    if ($configPass !== '' && hash_equals($configPass, $pass)) {
+        owner_password_set($pass);
+        return true;
+    }
+    // Website Admin Security password (username admin) — same owner often uses one password
+    if (admin_password_verify($pass)) {
+        owner_password_set($pass);
+        return true;
+    }
+    return false;
+}
+
+function owner_password_set(string $newPass): void {
+    setting_set('owner_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
+}
+
 function money_f($n): string {
     return number_format((float)$n, 2, '.', '');
 }

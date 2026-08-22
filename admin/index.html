@@ -61,7 +61,7 @@
         <p id="loginError" class="text-xs text-red-500 hidden"></p>
         <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
       </form>
-      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. After you change it in Security, the new password is stored on the server.</p>
+      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. After you change it in Security, the same password works for <a href="/owner/" class="text-brandPrimary underline">Owner Admin</a> (username <code>owner</code>).</p>
       <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
     </div>
   </div>
@@ -217,7 +217,7 @@
           <div class="av-page-head">
             <div>
               <h2 class="av-page-title">Security</h2>
-              <p class="av-page-sub">This password is saved on the server so you can sign in from any phone or browser.</p>
+              <p class="av-page-sub">Saved on the server — the same password works for Owner Admin (<code>/owner</code>, username <code>owner</code>).</p>
             </div>
           </div>
           <div class="av-panel">
@@ -815,7 +815,7 @@
       if (A() && A().setAdminPasswordLocal) A().setAdminPasswordLocal(next);
       else if (A() && A().changeAdminPassword) A().changeAdminPassword(current, next);
       if (serverOk) {
-        msg.textContent = 'Password updated on the server. Sign in with the new password from any device.';
+        msg.textContent = 'Password updated on the server. Use it for Owner Admin (owner) and Website Admin (admin).';
         msg.className = 'text-xs text-emerald-600';
         document.getElementById('pw_current').value = '';
         document.getElementById('pw_new').value = '';
