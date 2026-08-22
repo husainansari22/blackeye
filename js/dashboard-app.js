@@ -793,7 +793,7 @@
 
   window.closeWalletFlow = function () {
     const overlay = document.getElementById('walletFlowOverlay');
-    if (!overlay || overlay.classList.contains('hidden')) return;
+    if (!overlay) return;
     overlay.classList.add('hidden');
     overlay.classList.remove('flex');
     const body = document.getElementById('walletFlowBody');
