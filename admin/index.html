@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
   <script src="/js/ui-toast.js?v=20260821toast2"></script>
-  <script src="/js/acctventa.js?v=20260821toast2"></script>
-  <script src="/js/api-client.js?v=20260821toast2"></script>
+  <script src="/js/acctventa.js?v=20260822adm1"></script>
+  <script src="/js/api-client.js?v=20260822adm1"></script>
   <script src="/js/staff-alerts.js?v=20260821toast2"></script>
   <script src="/js/staff-inbox.js?v=20260821toast2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@
         <p id="loginError" class="text-xs text-red-500 hidden"></p>
         <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
       </form>
-      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code> — change it after login.</p>
+      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. After you change it in Security, the new password is stored on the server.</p>
       <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
     </div>
   </div>
@@ -212,7 +212,7 @@
           <div class="av-page-head">
             <div>
               <h2 class="av-page-title">Security</h2>
-              <p class="av-page-sub">Update the website admin password for this panel.</p>
+              <p class="av-page-sub">This password is saved on the server so you can sign in from any phone or browser.</p>
             </div>
           </div>
           <div class="av-panel">
@@ -224,6 +224,10 @@
               <div>
                 <label class="text-xs av-muted">New password</label>
                 <input id="pw_new" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-xs av-muted">Confirm new password</label>
+                <input id="pw_confirm" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
               </div>
               <button onclick="changePassword()" class="av-btn av-btn-primary" type="button">Update password</button>
               <p id="pwMsg" class="text-xs av-muted"></p>
@@ -428,33 +432,20 @@
       err.classList.remove('hidden');
     }
 
-    function doLogin(e) {
+    async function doLogin(e) {
       if (e && e.preventDefault) e.preventDefault();
+      const user = (document.getElementById('adminUser').value || '').trim();
+      const pass = document.getElementById('adminPass').value || '';
+      const btn = document.getElementById('adminSignInBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
+      }
       try {
-        // Fallback if external script failed: still allow default admin login
         if (!window.Acctventa || typeof window.Acctventa.adminLogin !== 'function') {
-          const user = (document.getElementById('adminUser').value || '').trim();
-          const pass = document.getElementById('adminPass').value || '';
           if (user === 'admin' && pass === 'admin123') {
             window.__acctventaAdminOk = true;
             document.getElementById('loginError').classList.add('hidden');
-            // minimal stub so dashboard buttons don't instantly crash
-            window.Acctventa = window.Acctventa || {
-              CONFIG: { minDeposit: 3, minWithdraw: 5, withdrawCommissionRate: 0.1, depositFeeRate: 0, supportTelegram: '', supportEmail: '' },
-              PLANS: {},
-              GATEWAYS: { deposit: { provider: 'none' }, withdraw: { provider: 'none' } },
-              applySettings: function () {},
-              getSettings: function () { return {}; },
-              saveSettings: function () { return {}; },
-              ensureAdminInitialized: function () { return { username: 'admin', mustChangePassword: true }; },
-              adminLogout: function () { window.__acctventaAdminOk = false; },
-              isAdminLoggedIn: function () { return !!window.__acctventaAdminOk; },
-              changeAdminPassword: function () { return { ok: false, error: 'Reload after uploading js/acctventa.js' }; },
-              listPendingAds: function () { return []; },
-              listAllUsersSummary: function () { return []; },
-              formatMoney: function (n) { return '$' + (Number(n) || 0).toFixed(2); },
-              adminSetAdStatus: function () { return { ok: false, error: 'Upload js/acctventa.js' }; }
-            };
             enterDash();
             showTab('security');
             document.getElementById('pwMsg').textContent = 'Logged in with fallback. Re-upload js/acctventa.js for full Admin features.';
@@ -463,10 +454,56 @@
           showLoginError('Login script missing. Upload public_html/js/acctventa.js then hard-refresh.');
           return false;
         }
-        const res = window.Acctventa.adminLogin(
-          document.getElementById('adminUser').value,
-          document.getElementById('adminPass').value
-        );
+
+        const Api = window.AcctventaApi;
+        let serverOk = false;
+        if (Api && typeof Api.isAvailable === 'function') {
+          try {
+            if (await Api.isAvailable()) {
+              try {
+                await Api.staffLogin({ username: user, password: pass });
+                serverOk = true;
+              } catch (apiErr) {
+                const localTry = window.Acctventa.adminLogin(user, pass);
+                if (localTry.ok && pass !== 'admin123') {
+                  try {
+                    await Api.changeAdminPassword({ currentPassword: 'admin123', newPassword: pass });
+                    await Api.staffLogin({ username: user, password: pass });
+                    serverOk = true;
+                  } catch (_) {}
+                }
+                if (!serverOk && !localTry.ok) {
+                  showLoginError((apiErr && apiErr.message) || localTry.error || 'Invalid admin username or password.');
+                  return false;
+                }
+                if (!serverOk && localTry.ok) {
+                  document.getElementById('loginError').classList.add('hidden');
+                  enterDash();
+                  if (localTry.admin && localTry.admin.mustChangePassword) {
+                    showTab('security');
+                    document.getElementById('pwMsg').textContent = 'Please change the default password now — it must be saved on the server.';
+                  }
+                  return false;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (serverOk) {
+          if (window.Acctventa.setAdminPasswordLocal) window.Acctventa.setAdminPasswordLocal(pass);
+          try {
+            sessionStorage.setItem('acctventa_admin_session', JSON.stringify({ at: Date.now(), user: user || 'admin' }));
+          } catch (e) {
+            window.__acctventaAdminOk = true;
+          }
+          document.getElementById('loginError').classList.add('hidden');
+          enterDash();
+          initSupportInbox();
+          return false;
+        }
+
+        const res = window.Acctventa.adminLogin(user, pass);
         if (!res.ok) {
           showLoginError(res.error || 'Login failed.');
           return false;
@@ -479,12 +516,18 @@
         }
       } catch (err) {
         showLoginError('Sign in error: ' + (err && err.message ? err.message : 'unknown'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Sign in';
+        }
       }
       return false;
     }
 
     function doLogout() {
       if (window.Acctventa) window.Acctventa.adminLogout();
+      if (window.AcctventaApi && window.AcctventaApi.setStaffToken) window.AcctventaApi.setStaffToken('');
       document.getElementById('dashView').classList.add('hidden');
       document.getElementById('loginView').classList.remove('hidden');
     }
@@ -725,16 +768,62 @@
         </tr>`).join('')}</tbody></table>`;
     }
 
-    function changePassword() {
-      const res = A().changeAdminPassword(
-        document.getElementById('pw_current').value,
-        document.getElementById('pw_new').value
-      );
-      document.getElementById('pwMsg').textContent = res.ok ? 'Password updated.' : res.error;
-      document.getElementById('pwMsg').className = 'text-xs ' + (res.ok ? 'text-emerald-600' : 'text-red-500');
-      if (res.ok) {
+    async function changePassword() {
+      const current = document.getElementById('pw_current').value || '';
+      const next = document.getElementById('pw_new').value || '';
+      const confirm = (document.getElementById('pw_confirm') || {}).value || '';
+      const msg = document.getElementById('pwMsg');
+      msg.className = 'text-xs av-muted';
+      if (next.length < 6) {
+        msg.textContent = 'New password must be at least 6 characters.';
+        msg.className = 'text-xs text-red-500';
+        return;
+      }
+      if (confirm && confirm !== next) {
+        msg.textContent = 'New password and confirmation do not match.';
+        msg.className = 'text-xs text-red-500';
+        return;
+      }
+      msg.textContent = 'Saving on the server…';
+      const Api = window.AcctventaApi;
+      let serverOk = false;
+      let lastErr = '';
+      if (Api && typeof Api.isAvailable === 'function') {
+        try {
+          if (await Api.isAvailable()) {
+            const tries = [current];
+            if (current !== 'admin123') tries.push('admin123');
+            for (let i = 0; i < tries.length; i++) {
+              try {
+                await Api.changeAdminPassword({ currentPassword: tries[i], newPassword: next });
+                serverOk = true;
+                break;
+              } catch (e) {
+                lastErr = (e && e.message) || 'Could not save';
+              }
+            }
+          }
+        } catch (e) {
+          lastErr = (e && e.message) || 'Could not reach the server';
+        }
+      }
+      if (A() && A().setAdminPasswordLocal) A().setAdminPasswordLocal(next);
+      else if (A() && A().changeAdminPassword) A().changeAdminPassword(current, next);
+      if (serverOk) {
+        msg.textContent = 'Password updated on the server. Sign in with the new password from any device.';
+        msg.className = 'text-xs text-emerald-600';
         document.getElementById('pw_current').value = '';
         document.getElementById('pw_new').value = '';
+        const c = document.getElementById('pw_confirm');
+        if (c) c.value = '';
+        try {
+          if (Api && Api.staffLogin) await Api.staffLogin({ username: 'admin', password: next });
+        } catch (_) {}
+      } else {
+        msg.textContent = lastErr
+          ? ('Could not save on the server: ' + lastErr + ' (saved on this phone only)')
+          : 'Password updated on this device only. Check your connection and try again.';
+        msg.className = 'text-xs text-amber-600';
       }
     }
 

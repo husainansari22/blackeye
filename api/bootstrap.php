@@ -65,6 +65,31 @@ function setting_set(string $key, string $value): void {
     $stmt->execute([$key, $value]);
 }
 
+function admin_password_is_default(): bool {
+    $hash = (string)setting_get('admin_password_hash', '');
+    if ($hash !== '') return false;
+    $legacy = (string)setting_get('admin_api_password', '');
+    return $legacy === '' || $legacy === 'admin123';
+}
+
+function admin_password_verify(string $pass): bool {
+    if ($pass === '') return false;
+    $hash = (string)setting_get('admin_password_hash', '');
+    if ($hash !== '') {
+        return password_verify($pass, $hash);
+    }
+    $legacy = (string)setting_get('admin_api_password', '');
+    if ($legacy !== '') {
+        return hash_equals($legacy, $pass);
+    }
+    return hash_equals('admin123', $pass);
+}
+
+function admin_password_set(string $newPass): void {
+    setting_set('admin_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
+    setting_set('admin_api_password', '');
+}
+
 function money_f($n): string {
     return number_format((float)$n, 2, '.', '');
 }

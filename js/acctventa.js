@@ -246,6 +246,16 @@
     return { ok: true };
   }
 
+  function setAdminPasswordLocal(newPass) {
+    if (!newPass || String(newPass).length < 6) return { ok: false, error: 'New password must be at least 6 characters.' };
+    const admin = ensureAdminInitialized();
+    admin.password = String(newPass);
+    admin.mustChangePassword = false;
+    admin.passwordChangedAt = new Date().toISOString();
+    saveAdminRecord(admin);
+    return { ok: true };
+  }
+
   // Do NOT init storage yet — export API first so login never breaks if storage is blocked
   // (boot continues after Acctventa is assigned below)
 
@@ -1084,6 +1094,7 @@
     adminLogout,
     isAdminLoggedIn,
     changeAdminPassword,
+    setAdminPasswordLocal,
     listAllUsersSummary,
     listPendingAds,
     listPendingWithdrawals,

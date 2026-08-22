@@ -822,7 +822,7 @@ try {
             $pass = (string)($body['password'] ?? '');
             $cfg = app_config();
             $okOwner = ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? ''));
-            $okAdmin = ($user === 'admin' && ($pass === 'admin123' || $pass === (string)setting_get('admin_api_password', 'admin123')));
+            $okAdmin = ($user === 'admin' && admin_password_verify($pass));
             if (!$okOwner && !$okAdmin) {
                 json_out(['ok' => false, 'error' => 'Invalid staff credentials'], 401);
             }
@@ -830,6 +830,19 @@ try {
             $name = $okOwner ? 'Owner Support' : 'Acctventa Support';
             $token = create_staff_session($role, $name);
             json_out(['ok' => true, 'token' => $token, 'role' => $role, 'name' => $name]);
+        }
+
+        case 'admin.changePassword': {
+            $current = (string)($body['currentPassword'] ?? '');
+            $next = (string)($body['newPassword'] ?? '');
+            if (!admin_password_verify($current)) {
+                json_out(['ok' => false, 'error' => 'Current password is wrong', 'code' => 'bad_current'], 400);
+            }
+            if (strlen($next) < 6) {
+                json_out(['ok' => false, 'error' => 'New password must be at least 6 characters'], 422);
+            }
+            admin_password_set($next);
+            json_out(['ok' => true, 'message' => 'Website admin password updated']);
         }
 
         case 'support.open': {

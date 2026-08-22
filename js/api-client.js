@@ -203,10 +203,13 @@
       return request('presence.ping', { method: 'POST', body: {} });
     },
     staffLogin(payload) {
-      return request('staff.login', { method: 'POST', body: payload }).then((data) => {
+      return request('staff.login', { method: 'POST', body: payload, asStaff: true }).then((data) => {
         if (data.token) setStaffToken(data.token);
         return data;
       });
+    },
+    changeAdminPassword(payload) {
+      return request('admin.changePassword', { method: 'POST', body: payload });
     },
     getStaffToken,
     setStaffToken,
