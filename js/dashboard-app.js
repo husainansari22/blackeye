@@ -1334,6 +1334,14 @@
     sellDraft = { releaseType: 'auto' };
     sellStep = 1;
     showSellStep(1);
+    const cat = document.getElementById('wizardCat');
+    const search = document.getElementById('wizardCatSearch');
+    const selected = document.getElementById('wizardCatSelected');
+    const picker = document.getElementById('wizardCatPicker');
+    if (cat) cat.value = '';
+    if (search) search.value = '';
+    if (selected) { selected.classList.add('hidden'); selected.innerHTML = ''; }
+    if (picker) picker.classList.add('hidden');
     document.getElementById('sellWizardOverlay').classList.remove('hidden');
     document.getElementById('sellWizardOverlay').classList.add('flex');
     const banner = document.getElementById('uploadLimitBannerText');
