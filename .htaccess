@@ -44,3 +44,4 @@ RewriteRule ^reset/?$ /reset.html [L,QSA]
 
 # Owner control panel
 RewriteRule ^owner/?$ /owner/index.php [L,QSA]
+RewriteRule ^owner/emergency-reset/?$ /owner/emergency-reset.php [L,QSA]

@@ -17,6 +17,20 @@ function app_config(): array {
     return $cfg;
 }
 
+/** Re-read api/config.php (bypasses PHP opcache — Hostinger often caches old passwords). */
+function load_config_fresh(): array {
+    $path = __DIR__ . '/config.php';
+    if (!is_file($path)) {
+        return [];
+    }
+    if (function_exists('opcache_invalidate')) {
+        @opcache_invalidate($path, true);
+    }
+    clearstatcache(true, $path);
+    $cfg = require $path;
+    return is_array($cfg) ? $cfg : [];
+}
+
 function db(): PDO {
     static $pdo = null;
     if ($pdo instanceof PDO) return $pdo;
@@ -91,11 +105,24 @@ function admin_password_set(string $newPass): void {
 }
 
 function owner_username(): string {
-    $cfg = app_config();
+    $cfg = load_config_fresh();
     return (string)($cfg['owner_username'] ?? 'owner');
 }
 
-/** Owner Admin login — DB hash first, then config.php, then Website Admin password (kept in sync). */
+/** Safe login hints when auth fails (never exposes the password). */
+function owner_login_diagnostics(): array {
+    $cfg = load_config_fresh();
+    $configPass = (string)($cfg['owner_password'] ?? '');
+    return [
+        'username' => (string)($cfg['owner_username'] ?? 'owner'),
+        'configPassLen' => strlen($configPass),
+        'hasOwnerHash' => (string)setting_get('owner_password_hash', '') !== '',
+        'hasAdminHash' => (string)setting_get('admin_password_hash', '') !== '',
+        'authVersion' => 3,
+    ];
+}
+
+/** Owner Admin login — DB hash first, then fresh config.php, then Website Admin password. */
 function owner_password_verify(string $user, string $pass): bool {
     if ($pass === '' || $user !== owner_username()) {
         return false;
@@ -104,13 +131,11 @@ function owner_password_verify(string $user, string $pass): bool {
     if ($hash !== '' && password_verify($pass, $hash)) {
         return true;
     }
-    $cfg = app_config();
-    $configPass = (string)($cfg['owner_password'] ?? '');
+    $configPass = config_owner_password();
     if ($configPass !== '' && hash_equals($configPass, $pass)) {
         owner_password_set($pass);
         return true;
     }
-    // Website Admin Security password (username admin) — same owner often uses one password
     if (admin_password_verify($pass)) {
         owner_password_set($pass);
         return true;
@@ -123,7 +148,7 @@ function owner_password_set(string $newPass): void {
 }
 
 function config_owner_password(): string {
-    $cfg = app_config();
+    $cfg = load_config_fresh();
     return (string)($cfg['owner_password'] ?? '');
 }
 

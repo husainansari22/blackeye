@@ -23,7 +23,15 @@ if (($_POST['form'] ?? '') === 'login') {
         header('Location: /owner/');
         exit;
     }
-    $error = 'Invalid owner username or password. If you changed it in Website Admin before, upload the latest owner login fix — or use Reset below with your api/config.php password.';
+    $error = 'Invalid owner username or password.';
+    try {
+        $diag = owner_login_diagnostics();
+        $error .= ' Server expects username "' . h($diag['username']) . '" and a config password of ' . (int)$diag['configPassLen'] . ' characters'
+            . ($diag['configPassLen'] === 0 ? ' (owner_password is empty in api/config.php!)' : '')
+            . '. If that length is wrong, re-save config.php or open /owner/emergency-reset.php';
+    } catch (Throwable $e) {
+        $error .= ' (Could not read server config — check api/config.php syntax.)';
+    }
 }
 
 if (($_POST['form'] ?? '') === 'owner_recover') {
@@ -32,7 +40,8 @@ if (($_POST['form'] ?? '') === 'owner_recover') {
     $confirm = trim((string)($_POST['confirm_password'] ?? ''));
     $configPass = config_owner_password();
     if ($configPass === '' || !hash_equals($configPass, $master)) {
-        $error = 'Recovery code does not match owner_password in api/config.php on the server.';
+        $len = strlen($configPass);
+        $error = 'Recovery code does not match owner_password in api/config.php (server currently has ' . $len . ' characters). Re-save the file in Hostinger or use /owner/emergency-reset.php';
     } elseif (strlen($next) < 6) {
         $error = 'New password must be at least 6 characters.';
     } elseif ($next !== $confirm) {
