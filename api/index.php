@@ -52,7 +52,7 @@ try {
             $exists->execute([$email]);
             if ($exists->fetch()) json_out(['ok' => false, 'error' => 'Email already registered'], 409);
             ensure_user_payout_columns();
-            $code = strtolower(preg_replace('/[^a-z0-9]/', '', explode(' ', $name)[0] ?? 'user')) ?: ('user' . substr(uid_token(3), 0, 6));
+            $code = referral_code_generate();
             $stmt = db()->prepare('INSERT INTO users (name, email, phone, country_code, password_hash, referral_code, referred_by, plan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             $stmt->execute([$name, $email, $phone, $countryCode, password_hash($password, PASSWORD_DEFAULT), $code, $ref, 'free']);
             $id = (int)db()->lastInsertId();

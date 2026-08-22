@@ -73,6 +73,60 @@ function uid_token(int $bytes = 16): string {
     return bin2hex(random_bytes($bytes));
 }
 
+/**
+ * 5-char referral code with letters + numbers, e.g. a7K2m / Q4b9X.
+ * Excludes ambiguous 0/O/1/l/I for readability.
+ */
+function referral_code_generate(): string {
+    $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    $len = strlen($chars) - 1;
+    for ($attempt = 0; $attempt < 48; $attempt++) {
+        $code = '';
+        for ($i = 0; $i < 5; $i++) {
+            $code .= $chars[random_int(0, $len)];
+        }
+        if (!preg_match('/[A-Za-z]/', $code) || !preg_match('/[0-9]/', $code)) {
+            continue;
+        }
+        try {
+            $stmt = db()->prepare('SELECT id FROM users WHERE referral_code = ? LIMIT 1');
+            $stmt->execute([$code]);
+            if ($stmt->fetch()) {
+                continue;
+            }
+        } catch (Throwable $e) {
+            // table may be unavailable during early install — still return code
+        }
+        return $code;
+    }
+    return substr(str_replace(['0', 'o', 'O', '1', 'l', 'I'], 'x', bin2hex(random_bytes(4))), 0, 5);
+}
+
+function referral_code_is_valid(?string $code): bool {
+    $code = trim((string)$code);
+    return (bool)preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{5}$/', $code);
+}
+
+/** Upgrade legacy name-based codes to the random 5-char format. */
+function ensure_user_referral_code(array $u): array {
+    $code = (string)($u['referral_code'] ?? '');
+    if (referral_code_is_valid($code)) {
+        return $u;
+    }
+    if (empty($u['id'])) {
+        $u['referral_code'] = referral_code_generate();
+        return $u;
+    }
+    $new = referral_code_generate();
+    try {
+        db()->prepare('UPDATE users SET referral_code = ? WHERE id = ?')->execute([$new, (int)$u['id']]);
+        $u['referral_code'] = $new;
+    } catch (Throwable $e) {
+        $u['referral_code'] = $new;
+    }
+    return $u;
+}
+
 /** Public TXID style: 4a36412c-0c41-455a-b87d */
 function uuid_txid(): string {
     $h = bin2hex(random_bytes(10));
@@ -185,6 +239,7 @@ function require_user(): array {
 function public_user(array $u): array {
     ensure_user_payout_columns();
     ensure_wallet_ledger_columns();
+    $u = ensure_user_referral_code($u);
     $bal = (float)$u['balance'];
     $wd = array_key_exists('withdrawable_balance', $u)
         ? (float)$u['withdrawable_balance']

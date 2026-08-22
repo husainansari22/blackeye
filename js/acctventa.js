@@ -302,10 +302,8 @@
     user.payoutAccountName = user.payoutAccountName || '';
     user.payoutCurrency = user.payoutCurrency || '';
     user.payoutBankLocked = !!user.payoutBankLocked;
-    if (!user.referralCode) {
-      user.referralCode = (String(user.name || 'user').split(/\s+/)[0] || 'user')
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '') || 'user';
+    if (!isValidReferralCode(user.referralCode)) {
+      user.referralCode = randomReferralCode();
     }
     return user;
   }
@@ -318,7 +316,14 @@
     if (safeGet('isLoggedIn') !== 'true') return null;
     const email = getSessionEmail();
     const users = getUsers();
-    const user = normalizeUser(users[email]);
+    const raw = users[email];
+    if (!raw) return null;
+    const prevCode = String(raw.referralCode || '');
+    const user = normalizeUser(raw);
+    if (user && user.referralCode && user.referralCode !== prevCode) {
+      users[email] = user;
+      saveUsers(users);
+    }
     return user || null;
   }
 
@@ -502,8 +507,21 @@
     });
   }
 
-  function uid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  function randomReferralCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    for (let attempt = 0; attempt < 40; attempt++) {
+      let code = '';
+      for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      if (!/[A-Za-z]/.test(code) || !/[0-9]/.test(code)) continue;
+      const users = getUsers();
+      const taken = Object.keys(users).some((k) => String(users[k].referralCode || '') === code);
+      if (!taken) return code;
+    }
+    return ('x' + Date.now().toString(36)).slice(-5);
+  }
+
+  function isValidReferralCode(code) {
+    return /^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{5}$/.test(String(code || '').trim());
   }
 
   /** Public TXID: 4a36412c-0c41-455a-b87d */
@@ -1092,7 +1110,9 @@
     setPlan,
     pushNotification,
     uid,
-    todayKey
+    todayKey,
+    randomReferralCode,
+    isValidReferralCode
   };
 
   // refresh exported refs after settings apply (never crash boot)

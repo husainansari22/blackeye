@@ -590,7 +590,17 @@
                 return;
             }
 
-            const ownCode = name.split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, '') || ('user' + Date.now().toString(36).slice(-4));
+            let ownCode = '';
+            if (window.Acctventa && typeof window.Acctventa.randomReferralCode === 'function') {
+                ownCode = window.Acctventa.randomReferralCode();
+            } else {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+                for (let a = 0; a < 40 && (!/[A-Za-z]/.test(ownCode) || !/[0-9]/.test(ownCode)); a++) {
+                    ownCode = '';
+                    for (let i = 0; i < 5; i++) ownCode += chars[Math.floor(Math.random() * chars.length)];
+                }
+                if (!ownCode || ownCode.length !== 5) ownCode = 'a7K2m';
+            }
             const user = {
                 name: name,
                 email: email,
