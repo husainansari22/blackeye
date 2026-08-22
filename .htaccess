@@ -1,5 +1,12 @@
 RewriteEngine On
 
+# Branded 404 (replaces Hostinger default page)
+ErrorDocument 404 /404.html
+
+# Canonical host: www → acctventa.com
+RewriteCond %{HTTP_HOST} ^www\.acctventa\.com$ [NC]
+RewriteRule ^(.*)$ https://acctventa.com/$1 [L,R=301]
+
 # Never rewrite uploaded files
 RewriteRule ^uploads/ - [L]
 
@@ -31,6 +38,20 @@ RewriteRule ^register/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^app/?$ / [L,R=301]
 RewriteCond %{HTTP_HOST} ^app\.acctventa\.com$ [NC]
 RewriteRule ^(.*)$ https://acctventa.com/$1 [L,R=301]
+
+# Old Google-indexed URLs (previous site version) → current pages
+RewriteRule ^blog/?$ / [L,R=301]
+RewriteRule ^blogs/?$ / [L,R=301]
+RewriteRule ^blog-details/?$ / [L,R=301]
+RewriteRule ^blog/.+ / [L,R=301]
+RewriteRule ^social-account-details/?$ /marketplace [L,R=301]
+RewriteRule ^social-account-details/.+ /marketplace [L,R=301]
+RewriteRule ^home/?$ / [L,R=301]
+RewriteRule ^dashboard/?$ /dashboard.html [L,R=301]
+RewriteRule ^about/?$ / [L,R=301]
+RewriteRule ^features/?$ / [L,R=301]
+RewriteRule ^how-it-works/?$ / [L,R=301]
+RewriteRule ^howitworks/?$ / [L,R=301]
 
 # Public sitelink / legal pages
 RewriteRule ^marketplace/?$ /marketplace.html [L]
