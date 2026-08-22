@@ -466,10 +466,6 @@
           <h3>Business information</h3>
           <p class="kyc-lead">Tell us about the business selling on Acctventa.</p>
           ${field('businessName', 'Business name', { required: true, placeholder: 'Registered business name' })}
-          ${field('businessUsername', 'Public username', { placeholder: 'Storefront handle' })}
-          ${field('registrationNumber', 'Business registration / CAC number', { required: true, placeholder: 'RC / BN number' })}
-          ${field('businessType', 'Business type', { required: true, type: 'select', options: ['Limited Liability', 'Business Name (BN)', 'Enterprise', 'Partnership', 'Other'] })}
-          ${field('businessAddress', 'Business address', { required: true, type: 'textarea', placeholder: 'Registered address' })}
           ${field('industry', 'Industry', {
             required: true,
             type: 'select',
@@ -485,9 +481,13 @@
               'Other',
             ],
           })}
+          ${field('businessUsername', 'Public username', { placeholder: 'Storefront handle' })}
+          ${field('registrationNumber', 'Business registration / CAC number', { required: true, placeholder: 'RC / BN number' })}
+          ${field('businessType', 'Business type', { required: true, type: 'select', options: ['Limited Liability', 'Business Name (BN)', 'Enterprise', 'Partnership', 'Other'] })}
+          ${field('businessAddress', 'Business address', { required: true, type: 'textarea', placeholder: 'Registered address' })}
         </div>`;
       setFooter(`<div class="kyc-nav">${navButtons()}</div>`);
-      bindNav(['businessName', 'businessUsername', 'registrationNumber', 'businessType', 'businessAddress', 'industry']);
+      bindNav(['businessName', 'industry', 'businessUsername', 'registrationNumber', 'businessType', 'businessAddress']);
       return;
     }
 
@@ -696,7 +696,7 @@
     clearFieldErrors();
     const name = STEPS[step];
     const need = {
-      business: ['businessName', 'registrationNumber', 'businessType', 'businessAddress', 'industry'],
+      business: ['businessName', 'industry', 'registrationNumber', 'businessType', 'businessAddress'],
       contact: ['contactPerson', 'contactEmail', 'contactPhone'],
       ownership: ['ownerName', 'ownershipPct'],
       documents: [],
