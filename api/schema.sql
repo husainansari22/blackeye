@@ -73,6 +73,47 @@ CREATE TABLE IF NOT EXISTS ads (
   CONSTRAINT fk_ads_seller FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS kyc_submissions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'needs_review',
+  business_name VARCHAR(190) NOT NULL DEFAULT '',
+  business_username VARCHAR(120) NOT NULL DEFAULT '',
+  registration_number VARCHAR(120) NOT NULL DEFAULT '',
+  business_type VARCHAR(80) NOT NULL DEFAULT '',
+  industry VARCHAR(120) NOT NULL DEFAULT '',
+  business_address TEXT,
+  contact_person VARCHAR(190) NOT NULL DEFAULT '',
+  contact_title VARCHAR(120) NOT NULL DEFAULT '',
+  contact_email VARCHAR(190) NOT NULL DEFAULT '',
+  contact_phone VARCHAR(60) NOT NULL DEFAULT '',
+  owner_name VARCHAR(190) NOT NULL DEFAULT '',
+  ownership_pct DECIMAL(5,2) NOT NULL DEFAULT 100.00,
+  owner_address TEXT,
+  owner_dob VARCHAR(40) NOT NULL DEFAULT '',
+  bank_account VARCHAR(80) NOT NULL DEFAULT '',
+  bank_name VARCHAR(120) NOT NULL DEFAULT '',
+  tax_id VARCHAR(80) NOT NULL DEFAULT '',
+  doc_cac_url VARCHAR(500) NOT NULL DEFAULT '',
+  doc_cac_name VARCHAR(190) NOT NULL DEFAULT '',
+  doc_reg_url VARCHAR(500) NOT NULL DEFAULT '',
+  doc_reg_name VARCHAR(190) NOT NULL DEFAULT '',
+  doc_id_url VARCHAR(500) NOT NULL DEFAULT '',
+  doc_id_name VARCHAR(190) NOT NULL DEFAULT '',
+  doc_address_url VARCHAR(500) NOT NULL DEFAULT '',
+  doc_address_name VARCHAR(190) NOT NULL DEFAULT '',
+  ai_summary TEXT,
+  ai_json MEDIUMTEXT,
+  reject_reason VARCHAR(500) NOT NULL DEFAULT '',
+  reviewed_by VARCHAR(80) NOT NULL DEFAULT '',
+  reviewed_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (user_id),
+  INDEX (status),
+  CONSTRAINT fk_kyc_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS orders (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   public_id VARCHAR(32) NOT NULL UNIQUE,

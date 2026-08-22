@@ -1140,6 +1140,18 @@ try {
             ]);
         }
 
+        case 'kyc.status':
+            $u = require_user();
+            json_out(array_merge(['ok' => true], kyc_status_for_user($u)));
+
+        case 'kyc.submit':
+            $u = require_user();
+            $result = kyc_submit($u, $body);
+            $fresh = db()->prepare('SELECT * FROM users WHERE id = ?');
+            $fresh->execute([(int)$u['id']]);
+            $urow = $fresh->fetch() ?: $u;
+            json_out(array_merge(['ok' => true, 'user' => public_user($urow)], $result));
+
         default:
             json_out(['ok' => false, 'error' => 'Unknown action', 'action' => $action], 404);
     }

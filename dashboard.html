@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
+    <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -503,7 +504,7 @@
                         <p id="leftProfileEmail" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">—</p>
                     </div>
                 </div>
-                <button onclick="openBecomeVerified(); toggleLeftMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-1.5 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
+                <button type="button" id="leftBecomeVerifiedBtn" class="kyc-side-btn border border-brandPrimary text-brandPrimary text-xs px-4 py-1.5 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
                     Become Verified
                 </button>
             </div>
@@ -569,9 +570,6 @@
                         <p id="rightProfilePhone" class="text-xs text-slate-500 mt-1">—</p>
                     </div>
                 </div>
-                <button onclick="openBecomeVerified(); toggleRightMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-1.5 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
-                    Become Verified
-                </button>
             </div>
 
             <div class="px-5 py-4 space-y-3 border-b border-slate-200 dark:border-slate-800">
@@ -634,6 +632,20 @@
             </div>
         </div>
         <div id="walletFlowBody" class="flex-1 overflow-y-auto px-4 py-4 pb-10 modal-scroll"></div>
+    </div>
+
+    <!-- BUSINESS KYC VERIFICATION -->
+    <div id="kycOverlay" class="fixed inset-0 bg-lightBg dark:bg-darkBg hidden flex-col">
+        <div class="flex items-center gap-3 px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <button type="button" onclick="window.AcctventaKyc && window.AcctventaKyc.close()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white shrink-0" aria-label="Go back">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+            </button>
+            <div class="min-w-0">
+                <h2 class="font-bold text-base truncate">Become Verified</h2>
+                <p id="kycStepText" class="text-[10px] text-slate-400 truncate">Business KYC</p>
+            </div>
+        </div>
+        <div id="kycFlowBody" class="flex-1 overflow-y-auto px-4 py-4 pb-10 modal-scroll"></div>
     </div>
 
     <!-- FULL SCREEN SELL PRODUCT WIZARD OVERLAY -->
@@ -790,8 +802,9 @@
     </nav>
 
     <script src="/js/acctventa.js?v=20260822ref2"></script>
-    <script src="/js/api-client.js?v=20260821cat1"></script>
+    <script src="/js/api-client.js?v=20260822kyc1"></script>
     <script src="/js/api-sync.js?v=20260821cat1"></script>
+    <script src="/js/kyc-app.js?v=20260822kyc1"></script>
     <script src="/js/dashboard-app.js?v=20260821cat1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
@@ -1176,8 +1189,8 @@
             document.getElementById('appModal').classList.remove('hidden');
         }
         function openBecomeVerified() {
-            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-2">Become Verified</h3><p class="text-xs text-slate-500 mb-4">Submit KYC for trusted seller status. Verification is under processing after you apply.</p><button onclick="alert('Submitted for review!'); closeModal();" class="w-full bg-brandPrimary py-3.5 rounded-xl text-white font-bold">Apply Now</button>`;
-            document.getElementById('appModal').classList.remove('hidden');
+            if (window.AcctventaKyc) window.AcctventaKyc.open();
+            else alert('Verification is loading — try again in a moment.');
         }
         function openMerchantStore(name) { alert('Merchant store: ' + name); }
         function toggleDarkMode() {

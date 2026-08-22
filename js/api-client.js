@@ -246,6 +246,12 @@
     sellerProfile(query) {
       return request('sellers.profile', { query });
     },
+    kycStatus() {
+      return request('kyc.status');
+    },
+    kycSubmit(payload) {
+      return request('kyc.submit', { method: 'POST', body: payload });
+    },
     staffOrdersSearch(q) {
       return request('staff.orders.search', { asStaff: true, query: { q } });
     },

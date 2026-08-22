@@ -155,6 +155,8 @@
         totalWithdrawals: user.totalWithdrawals,
         plan: user.plan || 'free',
         referralCode: user.referralCode,
+        isVerified: !!user.isVerified,
+        kycStatus: user.kycStatus || (user.isVerified ? 'verified' : 'none'),
         createdAt: user.createdAt,
         payoutBank: user.payoutBank || '',
         payoutAccount: user.payoutAccount || '',

@@ -265,6 +265,15 @@ function public_user(array $u): array {
         'plan' => $u['plan'],
         'referralCode' => $u['referral_code'],
         'isVerified' => (int)$u['is_verified'] === 1,
+        'kycStatus' => (static function (array $u): string {
+            if ((int)($u['is_verified'] ?? 0) === 1) return 'verified';
+            try {
+                if (function_exists('kyc_status_for_user')) {
+                    return (string)(kyc_status_for_user($u)['kycStatus'] ?? 'none');
+                }
+            } catch (Throwable $e) {}
+            return 'none';
+        })($u),
         'createdAt' => $u['created_at'],
         'payoutBank' => (string)($u['payout_bank'] ?? ''),
         'payoutAccount' => (string)($u['payout_account'] ?? ''),
@@ -582,6 +591,7 @@ require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/flutterwave.php';
 require_once __DIR__ . '/support.php';
 require_once __DIR__ . '/marketplace_extras.php';
+require_once __DIR__ . '/kyc.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     json_out(['ok' => true]);

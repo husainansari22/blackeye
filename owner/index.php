@@ -92,6 +92,26 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             db()->prepare('UPDATE users SET is_verified = ? WHERE id = ?')->execute([(int)$_POST['verified'], (int)$_POST['user_id']]);
             $flash = 'Verification updated.';
         }
+        if ($form === 'kyc_review') {
+            ensure_kyc_tables();
+            $kid = (int)($_POST['kyc_id'] ?? 0);
+            $decision = ($_POST['decision'] ?? '') === 'approve' ? 'approved' : 'rejected';
+            $reason = trim((string)($_POST['reject_reason'] ?? ''));
+            $stmt = db()->prepare('SELECT * FROM kyc_submissions WHERE id = ? LIMIT 1');
+            $stmt->execute([$kid]);
+            $kyc = $stmt->fetch();
+            if (!$kyc) throw new RuntimeException('KYC submission not found');
+            db()->prepare('UPDATE kyc_submissions SET status = ?, reject_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+                ->execute([$decision, $decision === 'rejected' ? $reason : '', 'Owner', $kid]);
+            if ($decision === 'approve') {
+                db()->prepare('UPDATE users SET is_verified = 1 WHERE id = ?')->execute([(int)$kyc['user_id']]);
+                notify_user((int)$kyc['user_id'], 'Business verified', 'Your Business KYC was approved. You now have a verified seller badge.', 'kyc');
+                $flash = 'KYC approved — user is now verified.';
+            } else {
+                notify_user((int)$kyc['user_id'], 'KYC needs attention', $reason !== '' ? $reason : 'Your Business KYC was not approved. Please resubmit clearer camera photos of your CAC and ID.', 'kyc');
+                $flash = 'KYC rejected and user notified.';
+            }
+        }
         if ($form === 'login_as_user') {
             $uid = (int)$_POST['user_id'];
             $stmt = db()->prepare('SELECT id, email, name, is_banned FROM users WHERE id = ? LIMIT 1');
@@ -324,7 +344,12 @@ $tab = $_GET['tab'] ?? 'overview';
     'withdraw_pending' => (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='withdrawal' AND status='pending'")->fetch()['c'],
     'deposit_pending' => (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='deposit' AND status='pending'")->fetch()['c'],
     'volume' => (float)db()->query("SELECT COALESCE(SUM(price),0) s FROM orders WHERE status='completed'")->fetch()['s'],
+    'kyc_pending' => 0,
   ];
+  try {
+    ensure_kyc_tables();
+    $stats['kyc_pending'] = (int)db()->query("SELECT COUNT(*) c FROM kyc_submissions WHERE status IN ('needs_review','blurry_review','pending')")->fetch()['c'];
+  } catch (Throwable $e) {}
   $gw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
 ?>
   <header class="av-topbar">
@@ -343,7 +368,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php if ($error): ?><div class="av-warn text-sm px-4 py-3"><?= h($error) ?></div><?php endif; ?>
 
     <div class="av-tabs">
-      <?php foreach (['overview'=>'Overview','users'=>'Users','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats','reports'=>'Reports','wallet'=>'Wallet','support'=>'Inbox','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
+      <?php foreach (['overview'=>'Overview','users'=>'Users','kyc'=>'KYC','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats','reports'=>'Reports','wallet'=>'Wallet','support'=>'Inbox','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
         <a href="?tab=<?= $k ?>" class="av-tab <?= $tab===$k?'av-tab-active':'' ?>"><?= $label ?></a>
       <?php endforeach; ?>
     </div>
@@ -352,6 +377,7 @@ $tab = $_GET['tab'] ?? 'overview';
       <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div class="av-stat"><p class="label">Users</p><p class="value"><?= $stats['users'] ?></p></div>
         <div class="av-stat"><p class="label">Pending ads</p><p class="value"><?= $stats['ads_pending'] ?></p></div>
+        <div class="av-stat"><p class="label">KYC review</p><p class="value"><?= $stats['kyc_pending'] ?></p></div>
         <div class="av-stat"><p class="label">Orders</p><p class="value"><?= $stats['orders'] ?></p></div>
         <div class="av-stat"><p class="label">Pending withdrawals</p><p class="value"><?= $stats['withdraw_pending'] ?></p></div>
         <div class="av-stat"><p class="label">Pending deposits</p><p class="value"><?= $stats['deposit_pending'] ?></p></div>
@@ -535,6 +561,91 @@ $tab = $_GET['tab'] ?? 'overview';
           window.AcctventaStaffAlerts.updateButton('staffNotifBtn');
         }
       </script>
+    <?php endif; ?>
+
+    <?php if ($tab === 'kyc'):
+      ensure_kyc_tables();
+      $kycRows = db()->query("SELECT k.*, u.name AS user_name, u.email AS user_email, u.is_verified FROM kyc_submissions k JOIN users u ON u.id = k.user_id ORDER BY FIELD(k.status,'blurry_review','needs_review','pending','rejected','approved'), k.created_at DESC LIMIT 100")->fetchAll();
+    ?>
+      <div class="av-info text-sm p-4 mb-3">
+        <p class="font-semibold">Business KYC review</p>
+        <p class="text-xs mt-1 text-slate-500">DocScan AI screens camera photos vs screenshots. Blurry-but-legit uploads land here for your final decision. Approve to grant the verified badge.</p>
+      </div>
+      <?php if (!$kycRows): ?>
+        <div class="av-card p-6 text-sm text-slate-500">No KYC submissions yet.</div>
+      <?php else: ?>
+        <div class="space-y-4">
+        <?php foreach ($kycRows as $k):
+          $ai = json_decode((string)($k['ai_json'] ?? ''), true);
+          $docs = array_filter([
+            'CAC' => $k['doc_cac_url'] ?? '',
+            'Registration' => $k['doc_reg_url'] ?? '',
+            'ID card' => $k['doc_id_url'] ?? '',
+            'Proof of address' => $k['doc_address_url'] ?? '',
+          ]);
+          $badge = 'bg-sky-600';
+          if ($k['status'] === 'approved') $badge = 'bg-emerald-600';
+          elseif ($k['status'] === 'rejected') $badge = 'bg-rose-600';
+          elseif ($k['status'] === 'blurry_review') $badge = 'bg-amber-500';
+        ?>
+          <div class="av-card p-4 space-y-3">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p class="font-bold text-sm"><?= h($k['business_name']) ?></p>
+                <p class="text-xs text-slate-500"><?= h($k['user_name']) ?> · <?= h($k['user_email']) ?> · #<?= (int)$k['id'] ?></p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Submitted <?= h($k['created_at']) ?> · Reg <?= h($k['registration_number']) ?> · <?= h($k['business_type']) ?></p>
+              </div>
+              <span class="text-[10px] uppercase tracking-wide text-white px-2 py-1 rounded <?= $badge ?>"><?= h(str_replace('_', ' ', $k['status'])) ?></span>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-2 text-xs">
+              <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5 space-y-1">
+                <p><span class="text-slate-500">Contact</span> <?= h($k['contact_person']) ?> (<?= h($k['contact_title']) ?>)</p>
+                <p><?= h($k['contact_email']) ?> · <?= h($k['contact_phone']) ?></p>
+                <p><span class="text-slate-500">Owner</span> <?= h($k['owner_name']) ?> · <?= h($k['ownership_pct']) ?>%</p>
+                <p><span class="text-slate-500">Bank</span> <?= h($k['bank_name']) ?> · <?= h($k['bank_account']) ?></p>
+                <p><span class="text-slate-500">TIN</span> <?= h($k['tax_id'] ?: '—') ?></p>
+                <p class="text-slate-500 leading-snug"><?= h($k['business_address']) ?></p>
+              </div>
+              <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5">
+                <p class="font-semibold mb-1">DocScan AI</p>
+                <pre class="whitespace-pre-wrap text-[11px] text-slate-500 leading-relaxed"><?= h($k['ai_summary'] ?: 'No AI notes') ?></pre>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <?php foreach ($docs as $label => $url): if (!$url) continue; ?>
+                <a href="<?= h($url) ?>" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-sky-500 transition">
+                  <?php if (preg_match('/\.(jpe?g|png|webp|gif)$/i', $url)): ?>
+                    <img src="<?= h($url) ?>" alt="<?= h($label) ?>" class="w-16 h-16 object-cover bg-slate-100">
+                  <?php else: ?>
+                    <span class="w-16 h-16 flex items-center justify-center bg-slate-100 text-slate-500 text-lg">📄</span>
+                  <?php endif; ?>
+                  <span class="pr-3 text-xs font-medium"><?= h($label) ?></span>
+                </a>
+              <?php endforeach; ?>
+            </div>
+            <?php if (in_array($k['status'], ['needs_review', 'blurry_review', 'pending'], true)): ?>
+              <div class="flex flex-wrap gap-2 items-end pt-1 border-t border-slate-100 dark:border-slate-800">
+                <form method="post">
+                  <input type="hidden" name="form" value="kyc_review">
+                  <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
+                  <input type="hidden" name="decision" value="approve">
+                  <button class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold">Approve &amp; verify</button>
+                </form>
+                <form method="post" class="flex flex-wrap gap-2 items-end flex-1 min-w-[220px]">
+                  <input type="hidden" name="form" value="kyc_review">
+                  <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
+                  <input type="hidden" name="decision" value="reject">
+                  <input name="reject_reason" placeholder="Rejection reason (shown to user)" class="flex-1 min-w-[160px] text-xs px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent">
+                  <button class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Reject</button>
+                </form>
+              </div>
+            <?php elseif ($k['status'] === 'rejected' && ($k['reject_reason'] ?? '') !== ''): ?>
+              <p class="text-xs text-rose-500">Rejected: <?= h($k['reject_reason']) ?></p>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($tab === 'users'):
