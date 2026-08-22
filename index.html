@@ -806,9 +806,9 @@
             const params = new URLSearchParams(window.location.search);
             const page = (params.get('page') || '').toLowerCase();
             const path = window.location.pathname.toLowerCase();
-            if (page === 'signup' || path.indexOf('/auth/sign-up') !== -1 || path.indexOf('/signup') !== -1) {
+            if (page === 'signup' || path.indexOf('/auth/sign-up') !== -1 || path.indexOf('/signup') !== -1 || path.indexOf('/register') !== -1 || path.indexOf('/user/sign-up') !== -1 || path.indexOf('/user/signup') !== -1 || path.indexOf('/user/register') !== -1) {
                 switchPage('signup');
-            } else if (page === 'login' || path.indexOf('/auth/login') !== -1 || path.indexOf('/auth/sign-in') !== -1 || path.indexOf('/login') !== -1) {
+            } else if (page === 'login' || path.indexOf('/auth/login') !== -1 || path.indexOf('/auth/sign-in') !== -1 || path.indexOf('/login') !== -1 || path.indexOf('/user/login') !== -1 || path.indexOf('/user/sign-in') !== -1) {
                 switchPage('login');
             }
         })();

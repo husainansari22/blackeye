@@ -9,6 +9,18 @@ RewriteRule ^auth/sign-in/?$ /index.html?page=login [L,QSA]
 RewriteRule ^auth/login/?$ /index.html?page=login [L,QSA]
 RewriteRule ^auth/admin/?$ /admin/ [L,QSA]
 
+# Google / legacy auth URLs (must not 404)
+RewriteRule ^user/login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^user/sign-in/?$ /index.html?page=login [L,QSA]
+RewriteRule ^user/signin/?$ /index.html?page=login [L,QSA]
+RewriteRule ^user/register/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^user/sign-up/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^user/signup/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^users/login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^users/sign-up/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^account/login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^account/register/?$ /index.html?page=signup [L,QSA]
+
 # Optional: /signup and /login shortcuts (directory index pages also exist as fallback)
 RewriteRule ^signup/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^login/?$ /index.html?page=login [L,QSA]
