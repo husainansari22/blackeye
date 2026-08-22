@@ -1,7 +1,8 @@
 RewriteEngine On
+DirectoryIndex index.php index.html
 
 # Branded 404 (replaces Hostinger default page)
-ErrorDocument 404 /404.html
+ErrorDocument 404 /404.php
 
 # Canonical host: www → acctventa.com
 RewriteCond %{HTTP_HOST} ^www\.acctventa\.com$ [NC]
