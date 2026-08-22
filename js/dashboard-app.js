@@ -48,11 +48,15 @@
       el.classList.toggle('hidden', !isLoggedIn);
       const needsFlex =
         el.id === 'headerAuthIcons' ||
+        el.id === 'bottomNav' ||
         (el.tagName === 'A' && el.classList.contains('items-center'));
       if (needsFlex) el.classList.toggle('flex', !!isLoggedIn);
     });
+    const authMenuBtn = document.getElementById('headerAuthMenuBtn');
+    if (authMenuBtn) authMenuBtn.classList.toggle('hidden', !isLoggedIn);
     document.querySelectorAll('[data-guest-only]').forEach((el) => {
       el.classList.toggle('hidden', !!isLoggedIn);
+      if (el.id === 'headerGuestRight') el.classList.toggle('flex', !isLoggedIn);
     });
     const guestAuth = document.getElementById('leftGuestAuth');
     if (guestAuth) guestAuth.classList.toggle('hidden', !!isLoggedIn);
