@@ -257,12 +257,14 @@
     box.innerHTML = orders
       .map((o) => {
         const role = o.role === 'seller' ? 'Sold' : 'Bought';
-        const tx = o.txid || o.publicId || o.id;
+        const tx = o.txid || o.publicId || displayTxId({ id: o.id, reference: o.publicId });
         return `<button type="button" onclick="openOrderDetail('${o.id}')" class="w-full text-left bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm hover:border-brandPrimary transition">
         <div class="min-w-0">
           <h4 class="font-bold text-sm truncate">${escapeHtml(o.title)}</h4>
           <p class="text-[10px] text-slate-500 mt-0.5">${role} · ${escapeHtml(o.status)}</p>
-          <p class="text-[10px] font-mono text-slate-400 mt-0.5">TXID: ${escapeHtml(tx)}</p>
+          <p class="text-[10px] font-mono text-slate-400 mt-0.5 flex items-center gap-1">TXID: ${escapeHtml(truncateTxId(tx))}
+            <span role="button" tabindex="0" onclick="event.stopPropagation(); copyTxId('${escapeAttr(tx)}')" class="text-slate-500"><i class="fa-regular fa-copy"></i></span>
+          </p>
         </div>
         <span class="font-bold text-sm text-brandPrimary">${money(o.price)}</span>
       </button>`;
@@ -680,16 +682,28 @@
 
   window.openTxDetail = function (id) {
     const u = refreshUser();
-    const t = (u.transactions || []).find((x) => String(x.id) === String(id) || String(x.reference) === String(id));
+    const t = (u.transactions || []).find(
+      (x) =>
+        String(x.id) === String(id) ||
+        String(x.reference) === String(id) ||
+        String(x.publicId) === String(id) ||
+        String(x.txid) === String(id)
+    );
     if (!t) return;
-    const isDep = String(t.type).toLowerCase() === 'deposit';
+    const meta = txTypeMeta(t);
+    const txid = displayTxId(t);
     document.getElementById('modalBody').innerHTML = `
-      <h3 class="font-bold text-lg mb-3">${isDep ? 'Deposit' : 'Withdrawal'} details</h3>
+      <h3 class="font-bold text-lg mb-3">${escapeHtml(meta.title)} details</h3>
       <div class="space-y-2 text-sm mb-4">
-        <div class="flex justify-between"><span class="text-slate-500">Amount</span><span class="font-bold ${isDep ? 'text-emerald-500' : ''}">${isDep ? '+' : '-'}${money(t.amount)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Amount</span><span class="font-bold ${meta.amountCls}">${meta.sign}${money(t.amount)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Status</span><span>${statusDot(t.status)}</span></div>
-        <div class="flex justify-between gap-3"><span class="text-slate-500 shrink-0">TXID</span><span class="font-mono text-[11px] text-right break-all">${escapeHtml(t.reference || t.id || '—')}</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Method</span><span>${escapeHtml(t.method || '—')}</span></div>
+        <div class="flex justify-between gap-3"><span class="text-slate-500 shrink-0">TXID</span>
+          <span class="font-mono text-[11px] text-right break-all">${escapeHtml(txid)}
+            <button type="button" onclick="copyTxId('${escapeAttr(txid)}')" class="ml-1 text-slate-500"><i class="fa-regular fa-copy"></i></button>
+          </span>
+        </div>
+        <div class="flex justify-between"><span class="text-slate-500">Source</span><span class="text-right text-xs">${escapeHtml(meta.sub)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">When</span><span class="text-right text-xs">${escapeHtml(formatTxWhen(t.createdAt))}</span></div>
         ${t.note ? `<p class="text-xs text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-800">${escapeHtml(t.note)}</p>` : ''}
       </div>
       <button onclick="closeModal()" class="w-full bg-brandPrimary text-white py-3 rounded-xl font-bold text-sm">Close</button>`;
