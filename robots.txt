@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /owner/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /uploads/kyc/
+Disallow: /uploads/chat/
+
+Sitemap: https://acctventa.com/sitemap.xml

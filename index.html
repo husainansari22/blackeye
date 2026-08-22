@@ -3,7 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>AcctVenta - The Marketplace for Digital Products & Services</title>
+    <title>Acctventa</title>
+    <meta name="description" content="The marketplace for digital products and services. Buy and sell social media accounts, VPNs, emails, and more from trusted sellers with escrow protection.">
+    <link rel="canonical" href="https://acctventa.com/">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/img/brand/icon-48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/brand/icon-192.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Acctventa">
+    <meta property="og:title" content="Acctventa">
+    <meta property="og:description" content="The marketplace for digital products and services. Buy social media accounts, VPNs, emails, and virtual numbers from trusted sellers.">
+    <meta property="og:url" content="https://acctventa.com/">
+    <meta property="og:image" content="https://acctventa.com/img/brand/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Acctventa">
+    <meta name="twitter:description" content="Buy and sell digital accounts securely.">
+    <meta name="twitter:image" content="https://acctventa.com/img/brand/icon-512.png">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Acctventa",
+      "alternateName": "A cctventa",
+      "url": "https://acctventa.com/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://acctventa.com/marketplace?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Acctventa",
+      "url": "https://acctventa.com/",
+      "logo": "https://acctventa.com/img/brand/icon-512.png",
+      "email": "support@acctventa.com",
+      "sameAs": ["https://t.me/acctventa"]
+    }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/js/api-client.js?v=20260821flw2"></script>
     <script>
@@ -82,8 +128,11 @@
                 <a href="#features" onclick="toggleMenu()" class="hover:text-skyBrand">Features</a>
                 <a href="#howitworks" onclick="toggleMenu()" class="hover:text-skyBrand">How it Works</a>
                 <a href="#whyus" onclick="toggleMenu()" class="hover:text-skyBrand">Why Us</a>
-                <a href="#" onclick="switchPage('login'); toggleMenu();" class="text-skyBrand font-bold pt-2 border-t border-gray-100 dark:border-gray-800"><i class="fa-solid fa-right-to-bracket mr-2"></i> Login</a>
-                <a href="#" onclick="switchPage('signup'); toggleMenu();" class="bg-skyBrand text-white text-center py-2.5 rounded-xl font-bold"><i class="fa-solid fa-user-plus mr-2"></i> Sign Up</a>
+                <a href="/marketplace" class="hover:text-skyBrand">Go to Marketplace</a>
+                <a href="/sell" class="hover:text-skyBrand">Become a Merchant</a>
+                <a href="/guidelines" class="hover:text-skyBrand">Community Standards</a>
+                <a href="/login" onclick="switchPage('login'); toggleMenu(); return false;" class="text-skyBrand font-bold pt-2 border-t border-gray-100 dark:border-gray-800"><i class="fa-solid fa-right-to-bracket mr-2"></i> Login</a>
+                <a href="/signup" onclick="switchPage('signup'); toggleMenu(); return false;" class="bg-skyBrand text-white text-center py-2.5 rounded-xl font-bold"><i class="fa-solid fa-user-plus mr-2"></i> Sign Up</a>
             </div>
         </div>
     </header>
@@ -222,11 +271,12 @@
                 <div class="space-y-2">
                     <h4 class="font-bold">Quick Links</h4>
                     <div class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                        <a href="#" onclick="switchPage('home')">Home</a>
-                        <a href="#features">Features</a>
-                        <a href="#howitworks">How it Works</a>
-                        <a href="#whyus">Why Us</a>
-                        <a href="#" onclick="switchPage('signup')">Become a Merchant</a>
+                        <a href="/">Home</a>
+                        <a href="/login">Login to your account</a>
+                        <a href="/signup">Sign up</a>
+                        <a href="/marketplace">Go to Marketplace</a>
+                        <a href="/sell">Become a Merchant</a>
+                        <a href="/guidelines">Community Standards</a>
                     </div>
                 </div>
 
@@ -240,7 +290,10 @@
 
                 <div class="pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
                     <span>Copyright © 2026 Acctventa. All rights reserved</span>
-                    <a href="#">Privacy Policy</a>
+                    <span class="flex gap-3">
+                      <a href="/privacy">Privacy Policy</a>
+                      <a href="/terms">Terms</a>
+                    </span>
                 </div>
             </div>
         </footer>
@@ -297,7 +350,7 @@
 
             <div class="flex items-start gap-2.5 mt-2">
                 <input type="checkbox" id="su_terms" class="mt-1 w-4 h-4 rounded border-gray-600 bg-inputBg focus:ring-skyBrand" required>
-                <p class="text-xs text-gray-400 leading-tight">By clicking on this, I give consent to AcctVenta Privacy Policy and Terms of Use</p>
+                <p class="text-xs text-gray-400 leading-tight">By clicking on this, I give consent to Acctventa <a href="/privacy" class="text-skyBrand underline">Privacy Policy</a> and <a href="/terms" class="text-skyBrand underline">Terms of Use</a></p>
             </div>
 
             <button type="submit" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl transition mt-3">
@@ -365,6 +418,12 @@
             document.getElementById('page_login').classList.add('hidden');
             document.getElementById('page_' + pageId).classList.remove('hidden');
             window.scrollTo(0, 0);
+            const titles = {
+                home: 'Acctventa',
+                login: 'Login to your account | Acctventa',
+                signup: 'Sign up | Acctventa'
+            };
+            document.title = titles[pageId] || titles.home;
         }
 
         function togglePass(fieldId, icon) {

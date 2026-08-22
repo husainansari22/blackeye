@@ -13,6 +13,13 @@ RewriteRule ^auth/admin/?$ /admin/ [L,QSA]
 RewriteRule ^signup/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^login/?$ /index.html?page=login [L,QSA]
 
+# Public sitelink / legal pages
+RewriteRule ^marketplace/?$ /marketplace.html [L]
+RewriteRule ^sell/?$ /sell.html [L]
+RewriteRule ^privacy/?$ /privacy.html [L]
+RewriteRule ^terms/?$ /terms.html [L]
+RewriteRule ^guidelines/?$ /guidelines.html [L]
+
 # Password reset page
 RewriteRule ^reset/?$ /reset.html [L,QSA]
 

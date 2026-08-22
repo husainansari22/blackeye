@@ -1,0 +1,13 @@
+/* Shared public/legal pages */
+.av-pub { font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+.av-pub-wrap { max-width: 42rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.av-pub h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; margin: 0.5rem 0 0.75rem; }
+.av-pub h2 { font-size: 1.1rem; font-weight: 800; margin: 1.5rem 0 0.5rem; color: #0ea5e9; }
+.av-pub p, .av-pub li { font-size: 0.9rem; line-height: 1.65; color: #475569; }
+.dark .av-pub p, .dark .av-pub li { color: #94a3b8; }
+.av-pub ul { padding-left: 1.15rem; margin: 0.4rem 0 0.8rem; }
+.av-pub li { margin: 0.3rem 0; }
+.av-pub a { color: #0ea5e9; }
+.av-pub-nav { display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; font-size: 0.75rem; margin-top: 0.75rem; }
+.av-pub-cta { display: inline-flex; align-items: center; justify-content: center; background: #0ea5e9; color: #fff !important; font-weight: 700; padding: 0.8rem 1.1rem; border-radius: 0.85rem; text-decoration: none; margin-top: 0.5rem; }
+.av-pub-cta:hover { background: #0284c7; }

@@ -302,6 +302,9 @@ $tab = $_GET['tab'] ?? 'overview';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Owner Admin — Acctventa</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <meta name="robots" content="noindex,nofollow">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config={darkMode:'class',theme:{extend:{colors:{brand:'#0ea5e9'}}}};
