@@ -48,7 +48,28 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 .dark .av-cac-cert { border-color: #334155; background: #151b23; }
-.av-cac-cert img { display: block; width: 100%; height: auto; border-radius: 0.65rem; }
+.av-cac-cert__frame { min-height: 14rem; }
+.av-cac-cert__img { display: block; width: 100%; height: auto; border-radius: 0.65rem; }
+.av-cac-cert__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 14rem;
+  padding: 1.5rem 1rem;
+  border-radius: 0.65rem;
+  border: 1px dashed rgba(14, 165, 233, 0.35);
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.06), rgba(14, 165, 233, 0.02));
+  text-align: center;
+}
+.dark .av-cac-cert__placeholder { border-color: rgba(14, 165, 233, 0.45); background: rgba(14, 165, 233, 0.08); }
+.av-cac-cert__placeholder-icon { opacity: 0.9; }
+.av-cac-cert__placeholder-title { margin: 0.35rem 0 0; font-size: 0.95rem; font-weight: 800; color: #0f172a; }
+.dark .av-cac-cert__placeholder-title { color: #f8fafc; }
+.av-cac-cert__placeholder-sub { margin: 0; font-size: 0.82rem; font-weight: 700; color: #0284c7; }
+.av-cac-cert__placeholder-note { margin: 0.5rem 0 0; max-width: 18rem; font-size: 0.72rem; line-height: 1.5; color: #64748b; }
+.dark .av-cac-cert__placeholder-note { color: #94a3b8; }
 
 .av-footer-cac {
   display: flex;

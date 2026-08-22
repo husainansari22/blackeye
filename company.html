@@ -82,9 +82,47 @@
 
     <h2>Certificate of registration</h2>
     <figure class="av-cac-cert">
-      <img src="/img/trust/cac-certificate.jpg" alt="CAC Certificate of Registration for Acctventa Services, business name registration number 9796330" loading="lazy" width="800" height="1131">
+      <div class="av-cac-cert__frame">
+        <img id="cacCertImg" class="av-cac-cert__img" alt="CAC Certificate of Registration for Acctventa Services, business name registration number 9796330" width="800" height="1131" hidden>
+        <div id="cacCertPlaceholder" class="av-cac-cert__placeholder" aria-hidden="false">
+          <img src="/img/trust/cac-nigeria.svg" alt="" width="56" height="56" class="av-cac-cert__placeholder-icon">
+          <p class="av-cac-cert__placeholder-title">Certificate of Registration</p>
+          <p class="av-cac-cert__placeholder-sub">Acctventa Services · BN 9796330</p>
+          <p class="av-cac-cert__placeholder-note">Registration details are listed above. The certificate scan will appear here once the image file is uploaded to the server.</p>
+        </div>
+      </div>
       <figcaption class="text-xs text-slate-500 mt-2">Corporate Affairs Commission — Certificate of Registration</figcaption>
     </figure>
+    <script>
+    (function () {
+      var img = document.getElementById('cacCertImg');
+      var placeholder = document.getElementById('cacCertPlaceholder');
+      if (!img || !placeholder) return;
+      var paths = [
+        '/img/trust/cac-certificate.jpg',
+        '/img/trust/cac-certificate.jpeg',
+        '/img/trust/cac-certificate.png',
+        '/img/trust/cac-certificate.webp'
+      ];
+      var index = 0;
+      function showImage() {
+        placeholder.hidden = true;
+        placeholder.setAttribute('aria-hidden', 'true');
+        img.hidden = false;
+        img.loading = 'lazy';
+      }
+      function tryNext() {
+        if (index >= paths.length) return;
+        img.onload = showImage;
+        img.onerror = function () {
+          index += 1;
+          tryNext();
+        };
+        img.src = paths[index];
+      }
+      tryNext();
+    })();
+    </script>
 
     <h2>What this means for you</h2>
     <ul>
