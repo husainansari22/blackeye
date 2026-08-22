@@ -53,10 +53,17 @@ img, video, canvas, svg {
 #filterDrawer.hidden,
 #leftMenu.hidden,
 #rightMenu.hidden,
-#notificationDrawer.hidden {
+#notificationDrawer.hidden,
+#bottomNav.hidden {
   display: none !important;
   pointer-events: none !important;
   visibility: hidden !important;
+}
+
+#bottomNav:not(.hidden) {
+  display: block !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
 }
 
 #appModal:not(.hidden),

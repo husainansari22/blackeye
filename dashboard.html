@@ -35,7 +35,7 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
+    <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
     <link rel="stylesheet" href="/css/profile.css?v=20260822prof1">
@@ -111,6 +111,36 @@
           background: #0f172a;
         }
         html:not(.dark) .av-sell-pick-list { background: #fff; border-color: #e2e8f0; }
+        /* Bottom nav — full-width evenly spaced tabs (never flex on the nav root) */
+        #bottomNav:not(.hidden) { display: block !important; }
+        #bottomNav .av-bottom-nav-inner {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+            justify-content: space-around;
+        }
+        #bottomNav .nav-item {
+            flex: 1 1 0;
+            min-width: 0;
+            max-width: 5rem;
+            padding: 0.35rem 0.15rem 0.5rem;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+        #bottomNav .nav-item span {
+            display: block;
+            font-size: 0.65rem;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        #bottomNav .nav-item i { font-size: 1.15rem; line-height: 1; }
+        #bottomNav .nav-item.is-active { color: #0ea5e9; }
+        #bottomNav .nav-item.is-idle { color: #9ca3af; }
+        .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
     </style>
     <script src="/js/mobile-fix.js?v=20260822tap1"></script>
     <script src="/js/ui-toast.js?v=20260821toast2"></script>
@@ -829,22 +859,22 @@
     </div>
 
     <!-- BOTTOM NAVIGATION — signed-in only (hidden for guest browse marketplace) -->
-    <nav id="bottomNav" data-auth-only class="hidden fixed bottom-0 left-0 z-40 w-full bg-lightCard dark:bg-darkCard shadow-[0px_-2px_80.7px_0px_rgba(200,209,212,0.25)] dark:shadow-[0px_-2px_40px_0px_rgba(0,0,0,0.4)] border-t border-slate-100 dark:border-slate-800">
-        <div class="mx-auto flex max-w-[500px] items-center justify-between px-6 py-3.5">
-            <button onclick="switchTab('home')" class="nav-item flex flex-col items-center gap-1 font-medium text-brandPrimary transition">
-                <i class="fa-solid fa-house text-lg"></i><span class="text-xs">Home</span>
+    <nav id="bottomNav" data-auth-only class="hidden fixed bottom-0 inset-x-0 z-40 w-full bg-white dark:bg-black border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,0px)]">
+        <div class="av-bottom-nav-inner mx-auto w-full max-w-[500px] px-1 pt-2 pb-2">
+            <button type="button" onclick="switchTab('home')" class="nav-item is-active flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-house"></i><span>Home</span>
             </button>
-            <button onclick="switchTab('market')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
-                <i class="fa-solid fa-border-all text-lg"></i><span class="text-xs">Market</span>
+            <button type="button" onclick="switchTab('market')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-border-all"></i><span>Market</span>
             </button>
-            <button onclick="switchTab('orders')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
-                <i class="fa-regular fa-clipboard text-lg"></i><span class="text-xs">Orders</span>
+            <button type="button" onclick="switchTab('orders')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-bag-shopping"></i><span>Orders</span>
             </button>
-            <button onclick="switchTab('ads')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
-                <i class="fa-solid fa-bullhorn text-lg"></i><span class="text-xs">Ads</span>
+            <button type="button" onclick="switchTab('ads')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-bullhorn"></i><span>Ads</span>
             </button>
-            <button onclick="switchTab('wallet')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
-                <i class="fa-solid fa-wallet text-lg"></i><span class="text-xs">Wallet</span>
+            <button type="button" onclick="switchTab('wallet')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-wallet"></i><span>Wallet</span>
             </button>
         </div>
     </nav>
@@ -853,7 +883,7 @@
     <script src="/js/api-client.js?v=20260822auth1"></script>
     <script src="/js/api-sync.js?v=20260822auth1"></script>
     <script src="/js/kyc-app.js?v=20260822kyc9"></script>
-    <script src="/js/dashboard-app.js?v=20260822auth1"></script>
+    <script src="/js/dashboard-app.js?v=20260822nav1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
@@ -923,13 +953,13 @@
 
         function syncBottomNav(tabId) {
             const map = { home: 0, market: 1, orders: 2, ads: 3, wallet: 4 };
-            const items = document.querySelectorAll('nav .nav-item');
+            const items = document.querySelectorAll('#bottomNav .nav-item');
             if (!items.length) return;
             const idx = map[tabId];
             items.forEach((i, n) => {
                 const on = idx !== undefined && n === idx;
-                i.classList.toggle('text-brandPrimary', on);
-                i.classList.toggle('text-[#C7CED0]', !on);
+                i.classList.toggle('is-active', on);
+                i.classList.toggle('is-idle', !on);
             });
         }
 

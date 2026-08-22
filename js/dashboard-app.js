@@ -48,7 +48,6 @@
       el.classList.toggle('hidden', !isLoggedIn);
       const needsFlex =
         el.id === 'headerAuthIcons' ||
-        el.id === 'bottomNav' ||
         (el.tagName === 'A' && el.classList.contains('items-center'));
       if (needsFlex) el.classList.toggle('flex', !!isLoggedIn);
     });
