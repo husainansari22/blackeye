@@ -882,6 +882,69 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   gap: 0.4rem;
 }
 
+/* Slim KYC application lines */
+.av-kyc-list .av-kyc-line {
+  border-bottom: 1px solid var(--av-border);
+}
+.av-kyc-list .av-kyc-line:last-child {
+  border-bottom: 0;
+}
+.av-kyc-line-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: 0;
+  color: var(--av-text);
+  text-align: left;
+  cursor: pointer;
+}
+.av-kyc-line-btn:hover {
+  background: var(--av-surface-2);
+}
+.av-kyc-line.is-open .av-kyc-line-btn {
+  background: color-mix(in srgb, var(--av-brand) 10%, var(--av-surface));
+}
+.av-kyc-line-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+.av-kyc-line-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-kyc-line-sub {
+  font-size: 0.68rem;
+  color: var(--av-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-kyc-chevron {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--av-muted);
+  transform: rotate(0deg);
+  transition: transform 0.15s ease;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.av-kyc-line.is-open .av-kyc-chevron {
+  transform: rotate(90deg);
+  color: var(--av-brand);
+}
+.av-kyc-line-body {
+  padding: 0 1rem 1rem 1rem;
+}
+
 /* Remap leftover Tailwind light surfaces so dark mode never shows white-on-white */
 html.dark .av-app .bg-white,
 html.dark .av-app .bg-slate-50,

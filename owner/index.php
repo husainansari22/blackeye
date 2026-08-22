@@ -308,7 +308,7 @@ $tab = $_GET['tab'] ?? 'overview';
     (function(){try{var t=localStorage.getItem('acctventa_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260822admin1">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260822kyc3">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
   <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
