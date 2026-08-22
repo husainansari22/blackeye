@@ -524,6 +524,10 @@
     return /^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{5}$/.test(String(code || '').trim());
   }
 
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
   /** Public TXID: 4a36412c-0c41-455a-b87d */
   function uuidTxid() {
     const bytes = new Uint8Array(10);
