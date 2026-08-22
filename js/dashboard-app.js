@@ -46,16 +46,21 @@
   function syncGuestMenu(isLoggedIn) {
     document.querySelectorAll('[data-auth-only]').forEach((el) => {
       el.classList.toggle('hidden', !isLoggedIn);
+      const needsFlex =
+        el.id === 'headerAuthIcons' ||
+        (el.tagName === 'A' && el.classList.contains('items-center'));
+      if (needsFlex) el.classList.toggle('flex', !!isLoggedIn);
     });
     document.querySelectorAll('[data-guest-only]').forEach((el) => {
       el.classList.toggle('hidden', !!isLoggedIn);
     });
     const guestAuth = document.getElementById('leftGuestAuth');
     if (guestAuth) guestAuth.classList.toggle('hidden', !!isLoggedIn);
-    const sellWrap = document.getElementById('leftAuthSell');
-    if (sellWrap) sellWrap.classList.toggle('hidden', !isLoggedIn);
-    const verifiedBtn = document.getElementById('leftBecomeVerifiedBtn');
-    if (verifiedBtn) verifiedBtn.classList.toggle('hidden', !isLoggedIn);
+    const body = document.getElementById('dashBody') || document.body;
+    if (body) {
+      body.classList.toggle('pb-28', !!isLoggedIn);
+      body.classList.toggle('pb-4', !isLoggedIn);
+    }
   }
 
   function paintAvatar(id, u) {
