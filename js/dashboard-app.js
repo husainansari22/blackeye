@@ -121,30 +121,51 @@
     set('dashAccountsApproved', String(ads.filter((a) => a.status === 'active').length));
   }
 
+  function productLogoFor(item) {
+    const Cat = window.AcctventaCatalog;
+    if (!Cat) return '';
+    const hit = Cat.findProduct(item.platform || item.category || item.title);
+    return hit ? hit.logo : Cat.logoUrl({ domain: '' });
+  }
+
+  function productGroupFor(item) {
+    const Cat = window.AcctventaCatalog;
+    if (!Cat) return '';
+    const hit = Cat.findProduct(item.platform || item.category || '');
+    return hit ? hit.groupId : '';
+  }
+
   function listingCard(item, compact) {
+    const logo = productLogoFor(item);
+    const group = productGroupFor(item);
+    const cat = item.platform || item.category || '';
     const previewBtn = item.previewLink
-      ? `<a href="${escapeAttr(item.previewLink)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-[10px] text-brandPrimary underline">Preview link</a>`
+      ? `<a href="${escapeAttr(item.previewLink)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-[10px] text-brandPrimary underline">Preview</a>`
       : `<span class="text-[10px] text-slate-400">No preview</span>`;
     if (compact) {
-      return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 w-44 shrink-0 relative shadow-sm">
-        <h4 class="font-bold text-sm leading-tight mb-1 h-10 overflow-hidden">${escapeHtml(item.title)}</h4>
-        <p class="text-[10px] text-slate-500 mb-1">By ${escapeHtml(item.sellerName || 'Seller')}</p>
-        ${previewBtn}
-        <div class="flex justify-between items-center mt-3">
+      return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 w-40 shrink-0 relative" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
+        <div class="flex items-center gap-1.5 mb-1.5">
+          <img src="${escapeAttr(logo)}" alt="" class="av-prod-logo" loading="lazy" onerror="this.style.opacity=.3">
+          <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
+        </div>
+        <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
+        <p class="text-[10px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')}</p>
+        <div class="flex justify-between items-center mt-2">
           <span class="text-sm font-bold text-brandPrimary">${money(item.price)}</span>
-          <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-xs font-bold px-3 py-1.5 rounded-full">View</button>
+          <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Buy</button>
         </div>
       </div>`;
     }
-    return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center product-item shadow-sm" data-category="${escapeAttr(item.category || '')}" data-price="${Number(item.price) || 0}">
-      <div class="min-w-0 pr-3">
-        <h4 class="font-bold text-sm mb-0.5 truncate">${escapeHtml(item.title)}</h4>
-        <p class="text-[10px] text-slate-500">By ${escapeHtml(item.sellerName || 'Seller')} · ${escapeHtml(item.category || '')}</p>
-        <div class="mt-1">${previewBtn}</div>
+    return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
+      <img src="${escapeAttr(logo)}" alt="" class="w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0" loading="lazy" onerror="this.style.opacity=.3">
+      <div class="min-w-0 flex-1">
+        <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
+        <p class="text-[10px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')} · ${escapeHtml(cat)}</p>
+        <div class="mt-0.5">${previewBtn}</div>
       </div>
       <div class="text-right shrink-0">
         <div class="text-sm font-bold text-brandPrimary mb-1">${money(item.price)}</div>
-        <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-3 py-1 rounded-full">Buy now</button>
+        <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Buy</button>
       </div>
     </div>`;
   }

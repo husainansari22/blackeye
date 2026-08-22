@@ -398,6 +398,12 @@
   function allowedHostsForCategory(category) {
     const cat = String(category || '');
     if (CATEGORY_LINK_RULES[cat]) return CATEGORY_LINK_RULES[cat];
+    if (window.AcctventaCatalog) {
+      const hit = window.AcctventaCatalog.findProduct(cat);
+      if (hit && hit.domain) return [hit.domain];
+      const group = (window.AcctventaCatalog.GROUPS || []).find((g) => g.name === cat || g.id === cat);
+      if (group) return group.products.map((p) => p.domain).filter(Boolean);
+    }
     const lower = cat.toLowerCase();
     for (const key of Object.keys(CATEGORY_LINK_RULES)) {
       if (lower.includes(key.toLowerCase())) return CATEGORY_LINK_RULES[key];
