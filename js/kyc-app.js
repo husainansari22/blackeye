@@ -470,7 +470,21 @@
           ${field('registrationNumber', 'Business registration / CAC number', { required: true, placeholder: 'RC / BN number' })}
           ${field('businessType', 'Business type', { required: true, type: 'select', options: ['Limited Liability', 'Business Name (BN)', 'Enterprise', 'Partnership', 'Other'] })}
           ${field('businessAddress', 'Business address', { required: true, type: 'textarea', placeholder: 'Registered address' })}
-          ${field('industry', 'Industry', { required: true, placeholder: 'e.g. Digital goods / Accounts marketplace' })}
+          ${field('industry', 'Industry', {
+            required: true,
+            type: 'select',
+            options: [
+              'Digital goods / Accounts marketplace',
+              'Social media accounts',
+              'Gaming accounts',
+              'Streaming / entertainment accounts',
+              'Email & productivity accounts',
+              'E-commerce / online retail',
+              'IT & software services',
+              'Marketing & advertising',
+              'Other',
+            ],
+          })}
         </div>`;
       setFooter(`<div class="kyc-nav">${navButtons()}</div>`);
       bindNav(['businessName', 'businessUsername', 'registrationNumber', 'businessType', 'businessAddress', 'industry']);
