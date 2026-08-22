@@ -38,7 +38,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260822prof1">
+    <link rel="stylesheet" href="/css/profile.css?v=20260822dark1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -488,7 +488,7 @@
     </main>
 
     <!-- NOTIFICATION DRAWER — same 3-line style as left menu -->
-    <div id="notificationDrawer" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
+    <div id="notificationDrawer" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-darkBg">
         <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
             <div class="flex items-center gap-3 px-4 pt-3 pb-2">
                 <button type="button" onclick="toggleNotificationDrawer()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
@@ -533,7 +533,7 @@
     </div>
 
     <!-- LEFT MENU DRAWER — matches acctbazaar profile menu layout, your blue accents -->
-    <div id="leftMenu" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
+    <div id="leftMenu" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-darkBg">
         <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
             <!-- Back navigation (same place as acctbazaar) -->
             <div class="flex items-center px-4 pt-3 pb-1">
@@ -624,7 +624,7 @@
     </div>
 
     <!-- RIGHT PROFILE PANEL — signed-in user's details -->
-    <div id="rightMenu" class="profile-panel fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
+    <div id="rightMenu" class="profile-panel fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-darkBg">
         <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
             <div class="flex items-center gap-3 px-4 pt-3 pb-2">
                 <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-brandPrimary/40 text-brandPrimary flex items-center justify-center hover:bg-brandPrimary hover:text-white transition" aria-label="Go back">
@@ -859,7 +859,7 @@
     </div>
 
     <!-- BOTTOM NAVIGATION — signed-in only (hidden for guest browse marketplace) -->
-    <nav id="bottomNav" data-auth-only class="hidden fixed bottom-0 inset-x-0 z-40 w-full bg-white dark:bg-black border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,0px)]">
+    <nav id="bottomNav" data-auth-only class="hidden fixed bottom-0 inset-x-0 z-40 w-full bg-white dark:bg-darkBg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,0px)]">
         <div class="av-bottom-nav-inner mx-auto w-full max-w-[500px] px-1 pt-2 pb-2">
             <button type="button" onclick="switchTab('home')" class="nav-item is-active flex flex-col items-center gap-1 font-medium transition">
                 <i class="fa-solid fa-house"></i><span>Home</span>
@@ -981,13 +981,13 @@
         }
 
         function setActiveNav(el) {
-            document.querySelectorAll('.nav-item').forEach((i) => {
-                i.classList.remove('text-brandPrimary');
-                i.classList.add('text-[#C7CED0]');
+            document.querySelectorAll('#bottomNav .nav-item').forEach((i) => {
+                i.classList.remove('is-active');
+                i.classList.add('is-idle');
             });
             if (el) {
-                el.classList.remove('text-[#C7CED0]');
-                el.classList.add('text-brandPrimary');
+                el.classList.remove('is-idle');
+                el.classList.add('is-active');
             }
         }
         function toggleLeftMenu() { document.getElementById('leftMenu').classList.toggle('hidden'); }

@@ -41,7 +41,7 @@
 }
 
 .dark #rightMenu.profile-panel {
-  background: #020617;
+  background: #0f172a;
 }
 
 .profile-hero {
@@ -75,7 +75,7 @@
 }
 
 .dark .av-user-avatar--lg {
-  box-shadow: 0 0 0 3px #020617, 0 0 0 6px #0ea5e9;
+  box-shadow: 0 0 0 3px #0f172a, 0 0 0 6px #0ea5e9;
 }
 
 .profile-avatar-cam {
@@ -96,7 +96,7 @@
 }
 
 .dark .profile-avatar-cam {
-  box-shadow: 0 0 0 2px #020617;
+  box-shadow: 0 0 0 2px #0f172a;
 }
 
 .profile-hero-meta {
