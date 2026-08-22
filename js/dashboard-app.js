@@ -2026,6 +2026,9 @@
       await window.AcctventaApiSync.hydrateFromApi();
     }
     window.AcctventaUI.refreshAll();
+    try {
+      if (window.AcctventaKyc) await window.AcctventaKyc.refreshStatus();
+    } catch (e) {}
     // Keep the user on wallet/orders/etc after refresh (do not bounce to home)
     try {
       if (typeof window.restoreDashTab === 'function') window.restoreDashTab();
