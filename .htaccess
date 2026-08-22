@@ -38,6 +38,7 @@ RewriteRule ^sell/?$ /sell.html [L]
 RewriteRule ^privacy/?$ /privacy.html [L]
 RewriteRule ^terms/?$ /terms.html [L]
 RewriteRule ^guidelines/?$ /guidelines.html [L]
+RewriteRule ^company/?$ /company.html [L]
 
 # Password reset page
 RewriteRule ^reset/?$ /reset.html [L,QSA]

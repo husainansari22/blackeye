@@ -1,0 +1,6 @@
+Upload your CAC certificate scan to this folder as:
+
+  cac-certificate.jpg
+
+Recommended: JPG or PNG, readable scan/photo, max ~2MB.
+It displays on https://acctventa.com/company
