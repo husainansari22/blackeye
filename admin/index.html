@@ -20,15 +20,15 @@
     (function(){try{var t=localStorage.getItem('acctventa_admin_theme')||'light';if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');}}catch(e){}})();
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="/js/acctventa.js?v=20260821toast2"></script>
-  <script src="/js/api-client.js?v=20260821toast2"></script>
-  <script src="/js/ui-toast.js?v=20260821toast2"></script>
-  <script src="/js/staff-alerts.js?v=20260821toast2"></script>
-  <script src="/js/staff-inbox.js?v=20260821toast2"></script>
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260821toast2">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260822admin1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
   <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
+  <script src="/js/ui-toast.js?v=20260821toast2"></script>
+  <script src="/js/acctventa.js?v=20260821toast2"></script>
+  <script src="/js/api-client.js?v=20260821toast2"></script>
+  <script src="/js/staff-alerts.js?v=20260821toast2"></script>
+  <script src="/js/staff-inbox.js?v=20260821toast2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
@@ -75,8 +75,10 @@
     </header>
 
     <div class="av-shell space-y-4 py-4 av-shell-wide" id="adminShell">
-      <div class="av-info text-xs p-3">
-        <strong>Live inbox</strong> — connect with Owner credentials. Fees & gateways live in <strong>/owner</strong>.
+      <div class="av-panel">
+        <div class="av-panel-body">
+          <p class="text-xs av-muted m-0"><strong class="av-text">Website Admin</strong> — live inbox &amp; reviews. Fees, gateways, KYC, and wallet live in <a href="/owner/" class="underline" style="color:var(--av-brand)">Owner Admin</a>.</p>
+        </div>
       </div>
 
       <div class="av-tabs">
@@ -173,38 +175,61 @@
       </section>
 
       <!-- ADS -->
-      <section id="tab_ads" class="admin-panel hidden av-card p-5 space-y-4">
-        <div class="flex justify-between items-center">
-          <h2 class="font-bold text-lg">Ad reviews</h2>
-          <button onclick="loadAds()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
+      <section id="tab_ads" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Ad reviews</h2>
+              <p class="av-page-sub">Override AI — approve or deny listings manually.</p>
+            </div>
+            <div class="av-page-meta">
+              <button onclick="loadAds()" class="av-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <div id="adsAdminList" class="space-y-3"></div>
         </div>
-        <p class="text-xs text-slate-500">Override AI: approve or deny listings manually.</p>
-        <div id="adsAdminList" class="space-y-3"></div>
       </section>
 
       <!-- USERS -->
-      <section id="tab_users" class="admin-panel hidden av-card p-5 space-y-4">
-        <div class="flex justify-between items-center">
-          <h2 class="font-bold text-lg">Users (this browser)</h2>
-          <button onclick="loadUsers()" class="text-xs text-brandPrimary font-semibold">Refresh</button>
+      <section id="tab_users" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Users</h2>
+              <p class="av-page-sub">Local browser users (demo mode). Live accounts are in Owner Admin.</p>
+            </div>
+            <div class="av-page-meta">
+              <button onclick="loadUsers()" class="av-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <div class="av-panel"><div id="usersAdminList" class="overflow-x-auto"></div></div>
         </div>
-        <div id="usersAdminList" class="overflow-x-auto"></div>
       </section>
 
       <!-- SECURITY -->
-      <section id="tab_security" class="admin-panel hidden av-card p-5 space-y-4">
-        <h2 class="font-bold text-lg">Admin password</h2>
-        <div class="grid sm:grid-cols-2 gap-4 max-w-xl">
-          <div>
-            <label class="text-xs text-slate-500">Current password</label>
-            <input id="pw_current" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+      <section id="tab_security" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Security</h2>
+              <p class="av-page-sub">Update the website admin password for this panel.</p>
+            </div>
           </div>
-          <div>
-            <label class="text-xs text-slate-500">New password</label>
-            <input id="pw_new" type="password" class="mt-1 w-full border rounded-xl px-3 py-2.5 text-sm">
+          <div class="av-panel">
+            <div class="av-panel-body space-y-4 max-w-xl">
+              <div>
+                <label class="text-xs av-muted">Current password</label>
+                <input id="pw_current" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-xs av-muted">New password</label>
+                <input id="pw_new" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <button onclick="changePassword()" class="av-btn av-btn-primary" type="button">Update password</button>
+            </div>
           </div>
         </div>
-        <button onclick="changePassword()" class="bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Update password</button>
+      </section>
         <p id="pwMsg" class="text-xs text-slate-500"></p>
       </section>
     </div>

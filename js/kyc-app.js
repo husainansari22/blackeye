@@ -2,7 +2,7 @@
  * Acctventa Business KYC — DocScan AI + multi-step wizard.
  */
 (function (global) {
-  const STEPS = ['intro', 'business', 'contact', 'ownership', 'finance', 'documents', 'review'];
+  const STEPS = ['intro', 'business', 'contact', 'ownership', 'documents', 'review'];
   let step = 0;
   let state = emptyState();
   let statusCache = null;
@@ -23,9 +23,6 @@
       ownershipPct: '100',
       ownerAddress: '',
       ownerDob: '',
-      bankAccount: '',
-      bankName: '',
-      taxId: '',
       documents: {},
     };
   }
@@ -347,8 +344,7 @@
         business: 'Step 1 · Business',
         contact: 'Step 2 · Contact',
         ownership: 'Step 3 · Ownership',
-        finance: 'Step 4 · Banking',
-        documents: 'Step 5 · Documents',
+        documents: 'Step 4 · Documents',
         review: 'Review & submit',
       };
       stepLabel().textContent = map[name] || 'Business KYC';
@@ -387,8 +383,8 @@
           <ul class="kyc-bullets">
             <li><i class="fa-solid fa-check"></i> CAC / Certificate of Incorporation</li>
             <li><i class="fa-solid fa-check"></i> Valid government ID card</li>
-            <li><i class="fa-solid fa-check"></i> Business &amp; banking details</li>
-            <li><i class="fa-solid fa-shield-halved"></i> Blurry-but-legit docs go to manual owner review</li>
+            <li><i class="fa-solid fa-shield-halved"></i> Camera photos only — screenshots are rejected</li>
+            <li><i class="fa-solid fa-user-check"></i> Blurry-but-legit docs go to manual owner review</li>
           </ul>
           ${st.kycStatus === 'rejected' ? `<div class="kyc-alert">Previous application was declined${st.submission && st.submission.rejectReason ? ': ' + escapeHtml(st.submission.rejectReason) : ''}. Please resubmit clearer camera photos.</div>` : ''}
           <button type="button" class="kyc-btn-primary" id="kycStartBtn">Start Business KYC</button>
@@ -448,20 +444,6 @@
       return;
     }
 
-    if (name === 'finance') {
-      el.innerHTML = `
-        <div class="kyc-section">
-          <h3>Financial information</h3>
-          <p class="kyc-lead">Bank details for compliance (separate from wallet payout settings).</p>
-          ${field('bankAccount', 'Bank account number', { required: true, placeholder: 'Account number' })}
-          ${field('bankName', 'Bank name', { required: true, placeholder: 'Bank name' })}
-          ${field('taxId', 'Tax identification number', { placeholder: 'TIN (if available)' })}
-          <div class="kyc-nav">${navButtons(true)}</div>
-        </div>`;
-      bindNav(['bankAccount', 'bankName', 'taxId']);
-      return;
-    }
-
     if (name === 'documents') {
       el.innerHTML = `
         <div class="kyc-section">
@@ -469,11 +451,9 @@
           <p class="kyc-lead">Photograph physical papers with your camera. Screenshots and edited images are rejected by DocScan AI.</p>
           ${docCard('cac', 'CAC / Certificate of Incorporation', true)}
           ${docCard('idCard', 'Valid ID card (owner)', true)}
-          ${docCard('registration', 'Business registration document', false)}
-          ${docCard('proofOfAddress', 'Proof of address', false)}
           <div class="kyc-nav">${navButtons(true)}</div>
         </div>`;
-      ['cac', 'idCard', 'registration', 'proofOfAddress'].forEach(renderDocSlot);
+      ['cac', 'idCard'].forEach(renderDocSlot);
       el.querySelectorAll('[data-kyc-file]').forEach((inp) => {
         inp.addEventListener('change', () => onDocPick(inp.getAttribute('data-kyc-file'), inp.files && inp.files[0], false));
       });
@@ -485,11 +465,12 @@
     }
 
     if (name === 'review') {
-      const docsList = ['cac', 'idCard', 'registration', 'proofOfAddress']
+      const docsList = ['cac', 'idCard']
         .filter((k) => state.documents[k])
         .map((k) => {
           const d = state.documents[k];
-          return `<li><strong>${k}</strong> — ${escapeHtml(d.name || '')} · ${escapeHtml((d.ai && d.ai.message) || 'Ready')}</li>`;
+          const label = k === 'cac' ? 'CAC' : 'ID card';
+          return `<li><strong>${label}</strong> — ${escapeHtml(d.name || '')} · ${escapeHtml((d.ai && d.ai.message) || 'Ready')}</li>`;
         })
         .join('');
       el.innerHTML = `
@@ -501,7 +482,6 @@
             <p><span>CAC / Reg No.</span>${escapeHtml(state.registrationNumber)}</p>
             <p><span>Contact</span>${escapeHtml(state.contactPerson)} · ${escapeHtml(state.contactEmail)}</p>
             <p><span>Owner</span>${escapeHtml(state.ownerName)}</p>
-            <p><span>Bank</span>${escapeHtml(state.bankName)} · ${escapeHtml(state.bankAccount)}</p>
           </div>
           <ul class="kyc-doc-summary">${docsList || '<li>No documents attached</li>'}</ul>
           <div class="kyc-nav">
@@ -542,7 +522,6 @@
       business: ['businessName', 'registrationNumber', 'businessType', 'industry', 'businessAddress'],
       contact: ['contactPerson', 'contactEmail', 'contactPhone'],
       ownership: ['ownerName', 'ownershipPct'],
-      finance: ['bankAccount', 'bankName'],
       documents: [],
     }[name];
     if (need) {

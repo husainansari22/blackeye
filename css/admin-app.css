@@ -621,6 +621,267 @@ html.dark .av-chip.is-hot { color: #fde68a; }
 .av-stat .label { font-size: 0.7rem; color: var(--av-muted); }
 .av-stat .value { font-size: 1.5rem; font-weight: 900; color: var(--av-text); }
 
+/* —— Shared page chrome (match Support inbox polish) —— */
+.av-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.av-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.av-page-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--av-text);
+  margin: 0;
+}
+.av-page-sub {
+  font-size: 0.72rem;
+  color: var(--av-muted);
+  margin: 0.2rem 0 0;
+  line-height: 1.45;
+  max-width: 36rem;
+}
+.av-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.av-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--av-border);
+  background: var(--av-surface);
+  color: var(--av-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+.av-btn:hover { border-color: var(--av-brand); color: var(--av-brand); }
+.av-btn-primary {
+  background: var(--av-brand);
+  border-color: var(--av-brand);
+  color: #fff !important;
+}
+.av-btn-primary:hover { background: #0284c7; border-color: #0284c7; color: #fff !important; }
+.av-btn-success {
+  background: #059669;
+  border-color: #059669;
+  color: #fff !important;
+}
+.av-btn-danger {
+  background: #e11d48;
+  border-color: #e11d48;
+  color: #fff !important;
+}
+.av-btn-ghost {
+  background: transparent;
+  color: var(--av-muted);
+}
+.av-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--av-brand);
+}
+.av-badge-ok { background: #059669; }
+.av-badge-warn { background: #d97706; }
+.av-badge-danger { background: #e11d48; }
+.av-badge-muted { background: #64748b; }
+
+.av-panel {
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 1rem;
+  box-shadow: var(--av-shadow);
+  overflow: hidden;
+}
+.av-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--av-border);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--av-text);
+}
+.av-panel-body { padding: 0.85rem 1rem 1rem; }
+
+.av-row-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--av-border);
+  border-radius: 1rem;
+  background: var(--av-surface);
+  box-shadow: var(--av-shadow);
+}
+.av-row-card + .av-row-card { margin-top: 0.65rem; }
+.av-row-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+.av-row-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--av-text);
+  margin: 0;
+}
+.av-row-sub {
+  font-size: 0.72rem;
+  color: var(--av-muted);
+  margin: 0.2rem 0 0;
+  line-height: 1.4;
+}
+.av-row-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+@media (min-width: 640px) {
+  .av-row-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+}
+.av-soft-box {
+  border: 1px solid var(--av-border);
+  border-radius: 0.85rem;
+  background: var(--av-surface-2);
+  padding: 0.75rem 0.85rem;
+  font-size: 0.75rem;
+  color: var(--av-text);
+  line-height: 1.45;
+}
+.av-soft-box .lbl {
+  color: var(--av-muted);
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+.av-doc-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.av-doc-thumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid var(--av-border);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: var(--av-surface-2);
+  text-decoration: none !important;
+  color: var(--av-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding-right: 0.75rem;
+  transition: border-color 0.15s ease;
+}
+.av-doc-thumb:hover { border-color: var(--av-brand); }
+.av-doc-thumb img {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: cover;
+  background: var(--av-border);
+}
+.av-doc-thumb .ph {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--av-border);
+  color: var(--av-muted);
+  font-size: 1.1rem;
+}
+.av-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--av-border);
+}
+.av-actions .grow {
+  flex: 1;
+  min-width: 10rem;
+}
+.av-empty {
+  text-align: center;
+  padding: 2.5rem 1.25rem;
+  color: var(--av-muted);
+  font-size: 0.85rem;
+}
+.av-stat-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .av-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .av-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.av-stat {
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.av-stat:hover {
+  border-color: color-mix(in srgb, var(--av-brand) 45%, var(--av-border));
+}
+.av-user-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--av-border);
+}
+.av-user-card:last-child { border-bottom: 0; }
+.av-user-main {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.av-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: var(--av-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.av-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 /* Remap leftover Tailwind light surfaces so dark mode never shows white-on-white */
 html.dark .av-app .bg-white,
 html.dark .av-app .bg-slate-50,

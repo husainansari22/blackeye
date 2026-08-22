@@ -335,9 +335,7 @@ function kyc_public_row(?array $row): ?array {
         'reviewedAt' => $row['reviewed_at'],
         'docs' => [
             'cac' => $row['doc_cac_url'] ?: null,
-            'registration' => $row['doc_reg_url'] ?: null,
             'idCard' => $row['doc_id_url'] ?: null,
-            'proofOfAddress' => $row['doc_address_url'] ?: null,
         ],
     ];
 }
@@ -385,12 +383,9 @@ function kyc_submit(array $u, array $payload): array {
         'ownershipPct' => (float)($payload['ownershipPct'] ?? 100),
         'ownerAddress' => trim((string)($payload['ownerAddress'] ?? '')),
         'ownerDob' => trim((string)($payload['ownerDob'] ?? '')),
-        'bankAccount' => trim((string)($payload['bankAccount'] ?? '')),
-        'bankName' => trim((string)($payload['bankName'] ?? '')),
-        'taxId' => trim((string)($payload['taxId'] ?? '')),
     ];
 
-    foreach (['businessName', 'registrationNumber', 'businessType', 'industry', 'businessAddress', 'contactPerson', 'contactEmail', 'contactPhone', 'ownerName', 'bankAccount', 'bankName'] as $k) {
+    foreach (['businessName', 'registrationNumber', 'businessType', 'industry', 'businessAddress', 'contactPerson', 'contactEmail', 'contactPhone', 'ownerName'] as $k) {
         if ($req[$k] === '') {
             throw new RuntimeException('Please complete all required business KYC fields.');
         }
@@ -399,7 +394,6 @@ function kyc_submit(array $u, array $payload): array {
     $docsIn = $payload['documents'] ?? [];
     if (!is_array($docsIn)) $docsIn = [];
     $needed = ['cac' => 'CAC / Certificate of Incorporation', 'idCard' => 'Valid ID card'];
-    $optional = ['registration' => 'Business registration document', 'proofOfAddress' => 'Proof of address'];
     $saved = [];
     $analyses = [];
 
@@ -408,20 +402,6 @@ function kyc_submit(array $u, array $payload): array {
         if (!is_array($doc) || empty($doc['data'])) {
             throw new RuntimeException($label . ' is required. Upload a clear camera photo.');
         }
-        $file = save_kyc_document((string)$doc['data'], (string)($doc['name'] ?? $key), (string)($doc['mime'] ?? ''));
-        $hint = is_array($doc['ai'] ?? null) ? $doc['ai'] : null;
-        $analysis = kyc_analyze_document($file['bin'], $file['mime'], $label, $hint);
-        unset($file['bin'], $file['path']);
-        $saved[$key] = $file;
-        $analyses[$key] = $analysis;
-        if ($analysis['verdict'] === 'reject') {
-            throw new RuntimeException($label . ': ' . $analysis['message']);
-        }
-    }
-
-    foreach ($optional as $key => $label) {
-        $doc = $docsIn[$key] ?? null;
-        if (!is_array($doc) || empty($doc['data'])) continue;
         $file = save_kyc_document((string)$doc['data'], (string)($doc['name'] ?? $key), (string)($doc['mime'] ?? ''));
         $hint = is_array($doc['ai'] ?? null) ? $doc['ai'] : null;
         $analysis = kyc_analyze_document($file['bin'], $file['mime'], $label, $hint);
@@ -460,11 +440,11 @@ function kyc_submit(array $u, array $payload): array {
         $req['businessName'], $req['businessUsername'], $req['registrationNumber'], $req['businessType'], $req['industry'], $req['businessAddress'],
         $req['contactPerson'], $req['contactTitle'], $req['contactEmail'], $req['contactPhone'],
         $req['ownerName'], money_f($req['ownershipPct']), $req['ownerAddress'], $req['ownerDob'],
-        $req['bankAccount'], $req['bankName'], $req['taxId'],
+        '', '', '',
         $saved['cac']['url'] ?? '', $saved['cac']['name'] ?? '',
-        $saved['registration']['url'] ?? '', $saved['registration']['name'] ?? '',
+        '', '',
         $saved['idCard']['url'] ?? '', $saved['idCard']['name'] ?? '',
-        $saved['proofOfAddress']['url'] ?? '', $saved['proofOfAddress']['name'] ?? '',
+        '', '',
         $aiSummary, json_encode(['docs' => $analyses], JSON_UNESCAPED_UNICODE),
     ]);
 

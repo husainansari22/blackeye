@@ -303,7 +303,7 @@ $tab = $_GET['tab'] ?? 'overview';
     (function(){try{var t=localStorage.getItem('acctventa_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260821toast2">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260822admin1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
   <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
@@ -374,18 +374,38 @@ $tab = $_GET['tab'] ?? 'overview';
     </div>
 
     <?php if ($tab === 'overview'): ?>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        <div class="av-stat"><p class="label">Users</p><p class="value"><?= $stats['users'] ?></p></div>
-        <div class="av-stat"><p class="label">Pending ads</p><p class="value"><?= $stats['ads_pending'] ?></p></div>
-        <div class="av-stat"><p class="label">KYC review</p><p class="value"><?= $stats['kyc_pending'] ?></p></div>
-        <div class="av-stat"><p class="label">Orders</p><p class="value"><?= $stats['orders'] ?></p></div>
-        <div class="av-stat"><p class="label">Pending withdrawals</p><p class="value"><?= $stats['withdraw_pending'] ?></p></div>
-        <div class="av-stat"><p class="label">Pending deposits</p><p class="value"><?= $stats['deposit_pending'] ?></p></div>
-        <div class="av-stat"><p class="label">Completed volume</p><p class="value">$<?= number_format($stats['volume'], 2) ?></p></div>
-      </div>
-      <div class="av-info text-sm p-4 space-y-2">
-        <p>This is your real Owner control panel (MySQL). Use it to manage every user, listing, order, withdrawal, fee, and payment gateway.</p>
-        <p class="text-xs"><a class="text-brand font-semibold underline" href="?tab=currencies">Currencies</a> — paste crypto deposit addresses · <a class="text-brand font-semibold underline" href="?tab=wallet">Wallet</a> — see who deposited · <a class="text-brand font-semibold underline" href="?tab=users">Users</a> — Login as user</p>
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Overview</h2>
+            <p class="av-page-sub">Live snapshot of users, KYC, ads, wallet, and sales volume.</p>
+          </div>
+          <div class="av-page-meta">
+            <span class="av-chip"><strong><?= (int)$stats['kyc_pending'] ?></strong> KYC queue</span>
+            <span class="av-chip <?= $stats['ads_pending'] ? 'is-hot' : '' ?>"><strong><?= (int)$stats['ads_pending'] ?></strong> ads</span>
+            <span class="av-chip"><strong><?= (int)$stats['withdraw_pending'] ?></strong> withdrawals</span>
+          </div>
+        </div>
+        <div class="av-stat-grid">
+          <div class="av-stat"><p class="label">Users</p><p class="value"><?= $stats['users'] ?></p></div>
+          <div class="av-stat"><p class="label">Pending ads</p><p class="value"><?= $stats['ads_pending'] ?></p></div>
+          <div class="av-stat"><p class="label">KYC review</p><p class="value"><?= $stats['kyc_pending'] ?></p></div>
+          <div class="av-stat"><p class="label">Orders</p><p class="value"><?= $stats['orders'] ?></p></div>
+          <div class="av-stat"><p class="label">Pending withdrawals</p><p class="value"><?= $stats['withdraw_pending'] ?></p></div>
+          <div class="av-stat"><p class="label">Pending deposits</p><p class="value"><?= $stats['deposit_pending'] ?></p></div>
+          <div class="av-stat"><p class="label">Completed volume</p><p class="value">$<?= number_format($stats['volume'], 2) ?></p></div>
+        </div>
+        <div class="av-panel">
+          <div class="av-panel-head">Quick links</div>
+          <div class="av-panel-body flex flex-wrap gap-2">
+            <a class="av-btn av-btn-primary" href="?tab=kyc">Review KYC</a>
+            <a class="av-btn" href="?tab=wallet">Wallet queue</a>
+            <a class="av-btn" href="?tab=ads">Ads</a>
+            <a class="av-btn" href="?tab=support">Inbox</a>
+            <a class="av-btn" href="?tab=currencies">Crypto addresses</a>
+            <a class="av-btn" href="?tab=users">Users</a>
+          </div>
+        </div>
       </div>
     <?php endif; ?>
 
@@ -566,158 +586,208 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php if ($tab === 'kyc'):
       ensure_kyc_tables();
       $kycRows = db()->query("SELECT k.*, u.name AS user_name, u.email AS user_email, u.is_verified FROM kyc_submissions k JOIN users u ON u.id = k.user_id ORDER BY FIELD(k.status,'blurry_review','needs_review','pending','rejected','approved'), k.created_at DESC LIMIT 100")->fetchAll();
+      $pendingCount = 0;
+      foreach ($kycRows as $kr) {
+        if (in_array($kr['status'], ['needs_review', 'blurry_review', 'pending'], true)) $pendingCount++;
+      }
     ?>
-      <div class="av-info text-sm p-4 mb-3">
-        <p class="font-semibold">Business KYC review</p>
-        <p class="text-xs mt-1 text-slate-500">DocScan AI screens camera photos vs screenshots. Blurry-but-legit uploads land here for your final decision. Approve to grant the verified badge.</p>
-      </div>
-      <?php if (!$kycRows): ?>
-        <div class="av-card p-6 text-sm text-slate-500">No KYC submissions yet.</div>
-      <?php else: ?>
-        <div class="space-y-4">
-        <?php foreach ($kycRows as $k):
-          $ai = json_decode((string)($k['ai_json'] ?? ''), true);
-          $docs = array_filter([
-            'CAC' => $k['doc_cac_url'] ?? '',
-            'Registration' => $k['doc_reg_url'] ?? '',
-            'ID card' => $k['doc_id_url'] ?? '',
-            'Proof of address' => $k['doc_address_url'] ?? '',
-          ]);
-          $badge = 'bg-sky-600';
-          if ($k['status'] === 'approved') $badge = 'bg-emerald-600';
-          elseif ($k['status'] === 'rejected') $badge = 'bg-rose-600';
-          elseif ($k['status'] === 'blurry_review') $badge = 'bg-amber-500';
-        ?>
-          <div class="av-card p-4 space-y-3">
-            <div class="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p class="font-bold text-sm"><?= h($k['business_name']) ?></p>
-                <p class="text-xs text-slate-500"><?= h($k['user_name']) ?> · <?= h($k['user_email']) ?> · #<?= (int)$k['id'] ?></p>
-                <p class="text-[11px] text-slate-400 mt-0.5">Submitted <?= h($k['created_at']) ?> · Reg <?= h($k['registration_number']) ?> · <?= h($k['business_type']) ?></p>
-              </div>
-              <span class="text-[10px] uppercase tracking-wide text-white px-2 py-1 rounded <?= $badge ?>"><?= h(str_replace('_', ' ', $k['status'])) ?></span>
-            </div>
-            <div class="grid sm:grid-cols-2 gap-2 text-xs">
-              <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5 space-y-1">
-                <p><span class="text-slate-500">Contact</span> <?= h($k['contact_person']) ?> (<?= h($k['contact_title']) ?>)</p>
-                <p><?= h($k['contact_email']) ?> · <?= h($k['contact_phone']) ?></p>
-                <p><span class="text-slate-500">Owner</span> <?= h($k['owner_name']) ?> · <?= h($k['ownership_pct']) ?>%</p>
-                <p><span class="text-slate-500">Bank</span> <?= h($k['bank_name']) ?> · <?= h($k['bank_account']) ?></p>
-                <p><span class="text-slate-500">TIN</span> <?= h($k['tax_id'] ?: '—') ?></p>
-                <p class="text-slate-500 leading-snug"><?= h($k['business_address']) ?></p>
-              </div>
-              <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5">
-                <p class="font-semibold mb-1">DocScan AI</p>
-                <pre class="whitespace-pre-wrap text-[11px] text-slate-500 leading-relaxed"><?= h($k['ai_summary'] ?: 'No AI notes') ?></pre>
-              </div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <?php foreach ($docs as $label => $url): if (!$url) continue; ?>
-                <a href="<?= h($url) ?>" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-sky-500 transition">
-                  <?php if (preg_match('/\.(jpe?g|png|webp|gif)$/i', $url)): ?>
-                    <img src="<?= h($url) ?>" alt="<?= h($label) ?>" class="w-16 h-16 object-cover bg-slate-100">
-                  <?php else: ?>
-                    <span class="w-16 h-16 flex items-center justify-center bg-slate-100 text-slate-500 text-lg">📄</span>
-                  <?php endif; ?>
-                  <span class="pr-3 text-xs font-medium"><?= h($label) ?></span>
-                </a>
-              <?php endforeach; ?>
-            </div>
-            <?php if (in_array($k['status'], ['needs_review', 'blurry_review', 'pending'], true)): ?>
-              <div class="flex flex-wrap gap-2 items-end pt-1 border-t border-slate-100 dark:border-slate-800">
-                <form method="post">
-                  <input type="hidden" name="form" value="kyc_review">
-                  <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
-                  <input type="hidden" name="decision" value="approve">
-                  <button class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold">Approve &amp; verify</button>
-                </form>
-                <form method="post" class="flex flex-wrap gap-2 items-end flex-1 min-w-[220px]">
-                  <input type="hidden" name="form" value="kyc_review">
-                  <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
-                  <input type="hidden" name="decision" value="reject">
-                  <input name="reject_reason" placeholder="Rejection reason (shown to user)" class="flex-1 min-w-[160px] text-xs px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent">
-                  <button class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Reject</button>
-                </form>
-              </div>
-            <?php elseif ($k['status'] === 'rejected' && ($k['reject_reason'] ?? '') !== ''): ?>
-              <p class="text-xs text-rose-500">Rejected: <?= h($k['reject_reason']) ?></p>
-            <?php endif; ?>
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Business KYC</h2>
+            <p class="av-page-sub">Review CAC + ID uploads. DocScan flags screenshots; blurry-but-legit docs wait for your approve/reject.</p>
           </div>
-        <?php endforeach; ?>
+          <div class="av-page-meta">
+            <span class="av-chip <?= $pendingCount ? 'is-hot' : '' ?>"><strong><?= (int)$pendingCount ?></strong> pending</span>
+            <span class="av-chip"><strong><?= count($kycRows) ?></strong> total</span>
+          </div>
         </div>
-      <?php endif; ?>
+
+        <?php if (!$kycRows): ?>
+          <div class="av-panel"><div class="av-empty">No KYC submissions yet.</div></div>
+        <?php else: ?>
+          <?php foreach ($kycRows as $k):
+            $docs = array_filter([
+              'CAC' => $k['doc_cac_url'] ?? '',
+              'ID card' => $k['doc_id_url'] ?? '',
+            ]);
+            $badgeClass = 'av-badge';
+            if ($k['status'] === 'approved') $badgeClass .= ' av-badge-ok';
+            elseif ($k['status'] === 'rejected') $badgeClass .= ' av-badge-danger';
+            elseif ($k['status'] === 'blurry_review') $badgeClass .= ' av-badge-warn';
+          ?>
+            <article class="av-row-card">
+              <div class="av-row-top">
+                <div class="min-w-0">
+                  <h3 class="av-row-title"><?= h($k['business_name']) ?></h3>
+                  <p class="av-row-sub"><?= h($k['user_name']) ?> · <?= h($k['user_email']) ?> · #<?= (int)$k['id'] ?></p>
+                  <p class="av-row-sub">Submitted <?= h($k['created_at']) ?> · Reg <?= h($k['registration_number']) ?> · <?= h($k['business_type']) ?></p>
+                </div>
+                <span class="<?= $badgeClass ?>"><?= h(str_replace('_', ' ', $k['status'])) ?></span>
+              </div>
+              <div class="av-row-grid cols-2">
+                <div class="av-soft-box">
+                  <p><span class="lbl">Contact</span><?= h($k['contact_person']) ?><?= $k['contact_title'] !== '' ? ' (' . h($k['contact_title']) . ')' : '' ?></p>
+                  <p><?= h($k['contact_email']) ?> · <?= h($k['contact_phone']) ?></p>
+                  <p><span class="lbl">Owner</span><?= h($k['owner_name']) ?> · <?= h($k['ownership_pct']) ?>%</p>
+                  <p><span class="lbl">Address</span><?= h($k['business_address']) ?></p>
+                </div>
+                <div class="av-soft-box">
+                  <p style="font-weight:800;margin:0 0 0.35rem">DocScan AI</p>
+                  <pre class="whitespace-pre-wrap text-[11px] leading-relaxed" style="color:var(--av-muted);margin:0;font-family:inherit"><?= h($k['ai_summary'] ?: 'No AI notes') ?></pre>
+                </div>
+              </div>
+              <?php if ($docs): ?>
+                <div class="av-doc-thumbs">
+                  <?php foreach ($docs as $label => $url): if (!$url) continue; ?>
+                    <a href="<?= h($url) ?>" target="_blank" rel="noopener" class="av-doc-thumb">
+                      <?php if (preg_match('/\.(jpe?g|png|webp|gif)$/i', $url)): ?>
+                        <img src="<?= h($url) ?>" alt="<?= h($label) ?>">
+                      <?php else: ?>
+                        <span class="ph">📄</span>
+                      <?php endif; ?>
+                      <?= h($label) ?>
+                    </a>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
+              <?php if (in_array($k['status'], ['needs_review', 'blurry_review', 'pending'], true)): ?>
+                <div class="av-actions">
+                  <form method="post">
+                    <input type="hidden" name="form" value="kyc_review">
+                    <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
+                    <input type="hidden" name="decision" value="approve">
+                    <button class="av-btn av-btn-success">Approve &amp; verify</button>
+                  </form>
+                  <form method="post" class="grow" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+                    <input type="hidden" name="form" value="kyc_review">
+                    <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
+                    <input type="hidden" name="decision" value="reject">
+                    <input name="reject_reason" placeholder="Rejection reason (shown to user)" class="grow text-xs px-3 py-2 rounded-xl">
+                    <button class="av-btn av-btn-danger">Reject</button>
+                  </form>
+                </div>
+              <?php elseif ($k['status'] === 'rejected' && ($k['reject_reason'] ?? '') !== ''): ?>
+                <p class="text-xs" style="color:#e11d48">Rejected: <?= h($k['reject_reason']) ?></p>
+              <?php endif; ?>
+            </article>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
     <?php endif; ?>
 
     <?php if ($tab === 'users'):
       ensure_wallet_ledger_columns();
       $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>
-      <div class="av-table-wrap">
-        <table class="w-full text-left text-xs">
-          <thead><tr>
-            <th class="p-3">ID</th><th class="p-3">Name</th><th class="p-3">Email</th><th class="p-3">Balance</th><th class="p-3">Plan</th><th class="p-3">Flags</th><th class="p-3">Actions</th>
-          </tr></thead>
-          <tbody>
-          <?php foreach ($users as $u): ?>
-            <tr class="border-t">
-              <td class="p-3"><?= (int)$u['id'] ?></td>
-              <td class="p-3 font-medium"><?= h($u['name']) ?></td>
-              <td class="p-3"><?= h($u['email']) ?></td>
-              <td class="p-3 <?= (float)$u['balance'] < 0 ? 'text-red-600 font-bold' : '' ?>">$<?= number_format((float)$u['balance'], 2) ?><?php if ((float)$u['balance'] < 0): ?> <span class="text-[10px]">(owing)</span><?php endif; ?><br><span class="text-[10px] text-slate-500">WD $<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?></span></td>
-              <td class="p-3"><?= h($u['plan']) ?></td>
-              <td class="p-3"><?= (int)$u['is_banned']?'Banned ':'' ?><?= (int)$u['is_verified']?'Verified':'' ?></td>
-              <td class="p-3 space-y-1 min-w-[220px]">
-                <form method="post" class="flex gap-1 items-center">
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Users</h2>
+            <p class="av-page-sub">Ban, verify, or login as a user.</p>
+          </div>
+          <div class="av-page-meta">
+            <span class="av-chip"><strong><?= count($users) ?></strong> shown</span>
+          </div>
+        </div>
+        <div class="av-panel">
+          <div class="av-panel-head"><span>Directory</span></div>
+          <?php if (!$users): ?>
+            <div class="av-empty">No users yet.</div>
+          <?php endif; ?>
+          <?php foreach ($users as $u):
+            $parts = preg_split('/\s+/', trim((string)$u['name']));
+            $initials = '';
+            foreach ($parts as $p) { if ($p !== '') $initials .= strtoupper($p[0]); if (strlen($initials) >= 2) break; }
+            if ($initials === '') $initials = '?';
+          ?>
+            <div class="av-user-card">
+              <div class="av-user-main">
+                <div class="av-avatar"><?= h($initials) ?></div>
+                <div class="min-w-0 flex-1">
+                  <p class="av-row-title"><?= h($u['name']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$u['id'] ?></span></p>
+                  <p class="av-row-sub"><?= h($u['email']) ?></p>
+                  <p class="av-row-sub">
+                    Balance $<?= number_format((float)$u['balance'], 2) ?>
+                    · WD $<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?>
+                    · <?= h($u['plan']) ?>
+                    <?= (int)$u['is_banned'] ? ' · Banned' : '' ?>
+                    <?= (int)$u['is_verified'] ? ' · Verified' : '' ?>
+                  </p>
+                </div>
+              </div>
+              <div class="av-user-actions">
+                <form method="post">
                   <input type="hidden" name="form" value="ban_user">
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
                   <input type="hidden" name="banned" value="<?= (int)$u['is_banned']?0:1 ?>">
-                  <button class="px-2 py-1 rounded bg-slate-800 text-white"><?= (int)$u['is_banned']?'Unban':'Ban' ?></button>
+                  <button class="av-btn"><?= (int)$u['is_banned']?'Unban':'Ban' ?></button>
                 </form>
-                <form method="post" class="flex gap-1 items-center">
+                <form method="post">
                   <input type="hidden" name="form" value="verify_user">
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
                   <input type="hidden" name="verified" value="<?= (int)$u['is_verified']?0:1 ?>">
-                  <button class="px-2 py-1 rounded bg-emerald-600 text-white"><?= (int)$u['is_verified']?'Unverify':'Verify' ?></button>
+                  <button class="av-btn av-btn-success"><?= (int)$u['is_verified']?'Unverify':'Verify' ?></button>
                 </form>
-                <form method="post" target="_blank" class="inline">
+                <form method="post" target="_blank">
                   <input type="hidden" name="form" value="login_as_user">
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <button class="px-2 py-1 rounded bg-sky-600 text-white" title="Open this user’s dashboard in a new tab">Login as user</button>
+                  <button class="av-btn av-btn-primary">Login as user</button>
                 </form>
-                <form method="post" class="flex gap-1 items-center">
+                <form method="post" class="av-user-actions" style="width:100%;margin-top:0.15rem">
                   <input type="hidden" name="form" value="adjust_balance">
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <input name="amount" type="number" step="0.01" placeholder="+/- amount" class="border rounded px-2 py-1 w-24">
-                  <input name="note" placeholder="note" class="border rounded px-2 py-1 w-24">
-                  <label class="text-[10px] flex items-center gap-1 whitespace-nowrap" title="Credit as withdrawable earnings (sales/referral). Leave unchecked for spend-only deposit funds."><input type="checkbox" name="as_withdrawable" value="1"> WD</label>
-                  <button class="px-2 py-1 rounded bg-brand text-white">Adjust</button>
+                  <input name="amount" type="number" step="0.01" placeholder="+/- amount" class="text-xs px-3 py-2 rounded-xl" style="width:7rem">
+                  <input name="note" placeholder="note" class="text-xs px-3 py-2 rounded-xl" style="width:7rem">
+                  <label class="av-chip" style="cursor:pointer"><input type="checkbox" name="as_withdrawable" value="1"> WD</label>
+                  <button class="av-btn av-btn-primary">Adjust</button>
                 </form>
-              </td>
-            </tr>
+              </div>
+            </div>
           <?php endforeach; ?>
-          </tbody>
-        </table>
+        </div>
       </div>
     <?php endif; ?>
 
     <?php if ($tab === 'ads'): $ads = db()->query('SELECT a.*, u.name seller_name, u.email seller_email FROM ads a JOIN users u ON u.id=a.seller_id ORDER BY a.created_at DESC LIMIT 200')->fetchAll(); ?>
-      <div class="space-y-3">
-        <?php foreach ($ads as $a): ?>
-          <div class="av-card  p-4 text-sm space-y-2">
-            <div class="flex justify-between gap-3">
-              <div>
-                <p class="font-semibold"><?= h($a['title']) ?> <span class="text-xs text-slate-400">#<?= (int)$a['id'] ?></span></p>
-                <p class="text-xs text-slate-500"><?= h($a['seller_name']) ?> · <?= h($a['seller_email']) ?> · <?= h($a['category']) ?> · <strong><?= h($a['status']) ?></strong></p>
-                <p class="text-[11px] break-all text-slate-400"><?= h($a['preview_link']) ?></p>
-                <?php if ($a['deny_reason']): ?><p class="text-xs text-red-600"><?= h($a['deny_reason']) ?></p><?php endif; ?>
-              </div>
-              <p class="font-bold text-brand">$<?= number_format((float)$a['price'], 2) ?></p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg">Approve</button></form>
-              <form method="post" class="flex gap-1"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="deny reason" class="border rounded px-2 text-xs"><button class="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg">Deny</button></form>
-              <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="removed"><button class="text-xs bg-slate-700 text-white px-3 py-1.5 rounded-lg">Remove</button></form>
-            </div>
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Ads</h2>
+            <p class="av-page-sub">Approve, deny, or remove marketplace listings.</p>
           </div>
+          <div class="av-page-meta">
+            <span class="av-chip"><strong><?= count($ads) ?></strong> listings</span>
+          </div>
+        </div>
+        <?php if (!$ads): ?>
+          <div class="av-panel"><div class="av-empty">No ads yet.</div></div>
+        <?php endif; ?>
+        <?php foreach ($ads as $a):
+          $st = (string)$a['status'];
+          $badge = 'av-badge-muted';
+          if ($st === 'active') $badge = 'av-badge-ok';
+          elseif ($st === 'pending') $badge = 'av-badge-warn';
+          elseif ($st === 'denied') $badge = 'av-badge-danger';
+        ?>
+          <article class="av-row-card">
+            <div class="av-row-top">
+              <div class="min-w-0">
+                <h3 class="av-row-title"><?= h($a['title']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$a['id'] ?></span></h3>
+                <p class="av-row-sub"><?= h($a['seller_name']) ?> · <?= h($a['seller_email']) ?> · <?= h($a['category']) ?></p>
+                <p class="av-row-sub" style="word-break:break-all"><?= h($a['preview_link']) ?></p>
+                <?php if ($a['deny_reason']): ?><p class="av-row-sub" style="color:#e11d48"><?= h($a['deny_reason']) ?></p><?php endif; ?>
+              </div>
+              <div style="text-align:right">
+                <span class="av-badge <?= $badge ?>"><?= h($st) ?></span>
+                <p class="av-row-title" style="margin-top:0.45rem;color:var(--av-brand)">$<?= number_format((float)$a['price'], 2) ?></p>
+              </div>
+            </div>
+            <div class="av-actions">
+              <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Approve</button></form>
+              <form method="post" class="grow" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="deny reason" class="grow text-xs px-3 py-2 rounded-xl"><button class="av-btn av-btn-danger">Deny</button></form>
+              <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="removed"><button class="av-btn">Remove</button></form>
+            </div>
+          </article>
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
@@ -972,9 +1042,21 @@ $tab = $_GET['tab'] ?? 'overview';
       $pendingDep = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='deposit' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
       $txs = db()->query('SELECT t.*, u.email FROM transactions t JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC LIMIT 200')->fetchAll();
     ?>
-      <div class="av-warn p-4 mb-4">
-        <h2 class="font-bold text-lg mb-1">Pending withdrawals (approve / reject)</h2>
-        <p class="text-xs mb-3">Rejecting refunds the user’s wallet. Completing marks payout as paid. You can edit the note before saving.</p>
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Wallet</h2>
+            <p class="av-page-sub">Approve withdrawals, credit crypto deposits, and browse recent transactions.</p>
+          </div>
+          <div class="av-page-meta">
+            <span class="av-chip <?= $pendingWd ? 'is-hot' : '' ?>"><strong><?= count($pendingWd) ?></strong> withdrawals</span>
+            <span class="av-chip <?= $pendingDep ? 'is-hot' : '' ?>"><strong><?= count($pendingDep) ?></strong> deposits</span>
+          </div>
+        </div>
+      <div class="av-panel mb-3">
+        <div class="av-panel-head">Pending withdrawals</div>
+        <div class="av-panel-body">
+        <p class="text-xs av-muted mb-3">Rejecting refunds the user’s wallet. Completing marks payout as paid.</p>
         <?php if (!$pendingWd): ?>
           <p class="text-sm">No pending withdrawals.</p>
         <?php else: ?>
@@ -1000,10 +1082,12 @@ $tab = $_GET['tab'] ?? 'overview';
           <?php endforeach; ?>
           </div>
         <?php endif; ?>
+        </div>
       </div>
-      <div class="av-info p-4 mb-4">
-        <h2 class="font-bold text-lg mb-1">Pending deposits (who paid / credit / reject)</h2>
-        <p class="text-xs mb-3">Crypto deposits appear here with the user’s name, email, coin, network, and the address they were told to send to. Approve only after you confirm the on-chain payment.</p>
+      <div class="av-panel mb-3">
+        <div class="av-panel-head">Pending deposits</div>
+        <div class="av-panel-body">
+        <p class="text-xs av-muted mb-3">Crypto deposits show coin, network, and address. Approve only after on-chain confirmation.</p>
         <?php if (!$pendingDep): ?>
           <p class="text-sm">No pending deposits.</p>
         <?php else: ?>
@@ -1031,6 +1115,7 @@ $tab = $_GET['tab'] ?? 'overview';
           <?php endforeach; ?>
           </div>
         <?php endif; ?>
+        </div>
       </div>
       <div class="av-table-wrap">
         <table class="w-full text-left text-xs">
@@ -1061,6 +1146,7 @@ $tab = $_GET['tab'] ?? 'overview';
           <?php endforeach; ?>
           </tbody>
         </table>
+      </div>
       </div>
     <?php endif; ?>
 
