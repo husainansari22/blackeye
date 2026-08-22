@@ -832,9 +832,9 @@ try {
         }
 
         case 'admin.changePassword': {
-            $current = (string)($body['currentPassword'] ?? '');
-            $next = (string)($body['newPassword'] ?? '');
-            if (!admin_password_verify($current)) {
+            $current = trim((string)($body['currentPassword'] ?? ''));
+            $next = trim((string)($body['newPassword'] ?? ''));
+            if (!admin_current_password_ok($current)) {
                 json_out(['ok' => false, 'error' => 'Current password is wrong', 'code' => 'bad_current'], 400);
             }
             if (strlen($next) < 6) {

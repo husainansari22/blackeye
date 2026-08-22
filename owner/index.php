@@ -17,13 +17,33 @@ if (isset($_GET['logout'])) {
 
 if (($_POST['form'] ?? '') === 'login') {
     $user = trim((string)($_POST['username'] ?? ''));
-    $pass = (string)($_POST['password'] ?? '');
+    $pass = trim((string)($_POST['password'] ?? ''));
     if (owner_password_verify($user, $pass)) {
         $_SESSION['owner_ok'] = true;
         header('Location: /owner/');
         exit;
     }
-    $error = 'Invalid owner username or password.';
+    $error = 'Invalid owner username or password. If you changed it in Website Admin before, upload the latest owner login fix — or use Reset below with your api/config.php password.';
+}
+
+if (($_POST['form'] ?? '') === 'owner_recover') {
+    $master = trim((string)($_POST['master_password'] ?? ''));
+    $next = trim((string)($_POST['new_password'] ?? ''));
+    $confirm = trim((string)($_POST['confirm_password'] ?? ''));
+    $configPass = config_owner_password();
+    if ($configPass === '' || !hash_equals($configPass, $master)) {
+        $error = 'Recovery code does not match owner_password in api/config.php on the server.';
+    } elseif (strlen($next) < 6) {
+        $error = 'New password must be at least 6 characters.';
+    } elseif ($next !== $confirm) {
+        $error = 'New password and confirmation do not match.';
+    } else {
+        owner_password_set($next);
+        admin_password_set($next);
+        $_SESSION['owner_ok'] = true;
+        header('Location: /owner/?tab=settings&recovered=1');
+        exit;
+    }
 }
 
 $authed = !empty($_SESSION['owner_ok']);
@@ -357,7 +377,29 @@ $tab = $_GET['tab'] ?? 'overview';
         <input name="password" type="password" autocomplete="current-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
       <button class="w-full bg-brand text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
-      <p class="text-[11px] text-slate-400 text-center leading-relaxed">Use your Owner password from <code class="text-[10px]">api/config.php</code>, or the password you set in Website Admin → Security (username <code class="text-[10px]">admin</code> or <code class="text-[10px]">owner</code>).</p>
+      <details class="text-left border border-slate-200 dark:border-slate-700 rounded-xl p-3">
+        <summary class="text-xs font-semibold text-brand cursor-pointer">Reset password (uses api/config.php)</summary>
+        <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">If a past password change only saved on one phone, reset here with the <code class="text-[10px]">owner_password</code> from Hostinger → <code class="text-[10px]">public_html/api/config.php</code>. This updates Owner Admin and Website Admin on the server.</p>
+        <div class="space-y-2 mt-3">
+          <div>
+            <label class="text-xs text-slate-500">Config password (owner_password)</label>
+            <input name="master_password" type="password" autocomplete="off" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">New password</label>
+            <input name="new_password" type="password" autocomplete="new-password" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Confirm new password</label>
+            <input name="confirm_password" type="password" autocomplete="new-password" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
+          </div>
+          <button type="submit" form="ownerRecoverForm" class="w-full border-2 border-brand text-brand font-semibold py-2.5 rounded-xl text-sm">Reset &amp; sign in</button>
+        </div>
+      </details>
+      <form id="ownerRecoverForm" method="post" class="hidden">
+        <input type="hidden" name="form" value="owner_recover">
+      </form>
+      <p class="text-[11px] text-slate-400 text-center leading-relaxed">Website Admin password changes only apply here after the latest server files are uploaded. Until then, use <code class="text-[10px]">owner_password</code> from config.php or Reset above.</p>
       <a href="/" class="block text-center text-xs text-brand">← Back to website</a>
     </form>
   </div>

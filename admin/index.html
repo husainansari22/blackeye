@@ -217,7 +217,7 @@
           <div class="av-page-head">
             <div>
               <h2 class="av-page-title">Security</h2>
-              <p class="av-page-sub">Saved on the server — the same password works for Owner Admin (<code>/owner</code>, username <code>owner</code>).</p>
+              <p class="av-page-sub">Saved on the server only when you see a green success message. Current password can be your admin password <em>or</em> <code>owner_password</code> from api/config.php. Same password works for <a href="/owner/" class="underline" style="color:var(--av-brand)">Owner Admin</a>.</p>
             </div>
           </div>
           <div class="av-panel">
@@ -812,9 +812,8 @@
           lastErr = (e && e.message) || 'Could not reach the server';
         }
       }
-      if (A() && A().setAdminPasswordLocal) A().setAdminPasswordLocal(next);
-      else if (A() && A().changeAdminPassword) A().changeAdminPassword(current, next);
       if (serverOk) {
+        if (A() && A().setAdminPasswordLocal) A().setAdminPasswordLocal(next);
         msg.textContent = 'Password updated on the server. Use it for Owner Admin (owner) and Website Admin (admin).';
         msg.className = 'text-xs text-emerald-600';
         document.getElementById('pw_current').value = '';
@@ -826,9 +825,9 @@
         } catch (_) {}
       } else {
         msg.textContent = lastErr
-          ? ('Could not save on the server: ' + lastErr + ' (saved on this phone only)')
-          : 'Password updated on this device only. Check your connection and try again.';
-        msg.className = 'text-xs text-amber-600';
+          ? ('Could not save on the server: ' + lastErr + '. Your password was NOT changed. Try using owner_password from api/config.php as the current password, or reset at /owner/.')
+          : 'Could not reach the server. Password was NOT changed — check your connection and try again.';
+        msg.className = 'text-xs text-red-500';
       }
     }
 

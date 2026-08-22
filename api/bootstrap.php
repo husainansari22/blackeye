@@ -122,6 +122,23 @@ function owner_password_set(string $newPass): void {
     setting_set('owner_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
 }
 
+function config_owner_password(): string {
+    $cfg = app_config();
+    return (string)($cfg['owner_password'] ?? '');
+}
+
+/** Accept Website Admin password or the master password from api/config.php. */
+function admin_current_password_ok(string $current): bool {
+    if ($current === '') {
+        return false;
+    }
+    if (admin_password_verify($current)) {
+        return true;
+    }
+    $configPass = config_owner_password();
+    return $configPass !== '' && hash_equals($configPass, $current);
+}
+
 function money_f($n): string {
     return number_format((float)$n, 2, '.', '');
 }
