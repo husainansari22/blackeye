@@ -366,7 +366,7 @@
         <div class="kyc-hero">
           <div class="kyc-hero-icon kyc-hero-pending"><i class="fa-solid fa-hourglass-half"></i></div>
           <h2>Verification in review</h2>
-          <p>${st.kycStatus === 'blurry_review' ? 'DocScan flagged a blurry upload — an owner is reviewing your documents manually.' : 'DocScan AI screened your documents. An owner will finish verification shortly.'}</p>
+          <p>${st.kycStatus === 'blurry_review' ? 'DocScan flagged a blurry upload — a supervisor is reviewing your documents manually.' : 'DocScan AI screened your documents. A supervisor will finish verification shortly.'}</p>
           <p class="kyc-muted">${escapeHtml((st.submission && st.submission.businessName) || '')}</p>
           <button type="button" class="kyc-btn-primary" onclick="window.AcctventaKyc.close()">Close</button>
         </div>`;
@@ -379,12 +379,12 @@
           <div class="kyc-hero-icon"><i class="fa-solid fa-building-columns"></i></div>
           <p class="kyc-eyebrow">Business KYC</p>
           <h2>Verify your business account</h2>
-          <p>Build buyer trust with a verified seller badge. Upload your CAC papers and a valid ID — DocScan AI checks for real camera photos (not screenshots).</p>
+          <p>Build buyer trust with a verified seller badge. Upload your CAC papers and your government ID (front and back) — DocScan AI checks for real camera photos (not screenshots).</p>
           <ul class="kyc-bullets">
             <li><i class="fa-solid fa-check"></i> CAC / Certificate of Incorporation</li>
-            <li><i class="fa-solid fa-check"></i> Valid government ID card</li>
+            <li><i class="fa-solid fa-check"></i> Valid government ID — front and back</li>
             <li><i class="fa-solid fa-shield-halved"></i> Camera photos only — screenshots are rejected</li>
-            <li><i class="fa-solid fa-user-check"></i> Blurry-but-legit docs go to manual owner review</li>
+            <li><i class="fa-solid fa-user-check"></i> Blurry-but-legit docs go to manual supervisor review</li>
           </ul>
           ${st.kycStatus === 'rejected' ? `<div class="kyc-alert">Previous application was declined${st.submission && st.submission.rejectReason ? ': ' + escapeHtml(st.submission.rejectReason) : ''}. Please resubmit clearer camera photos.</div>` : ''}
           <button type="button" class="kyc-btn-primary" id="kycStartBtn">Start Business KYC</button>
@@ -450,10 +450,11 @@
           <h3>Documents upload</h3>
           <p class="kyc-lead">Photograph physical papers with your camera. Screenshots and edited images are rejected by DocScan AI.</p>
           ${docCard('cac', 'CAC / Certificate of Incorporation', true)}
-          ${docCard('idCard', 'Valid ID card (owner)', true)}
+          ${docCard('idCardFront', 'ID card — front', true)}
+          ${docCard('idCardBack', 'ID card — back', true)}
           <div class="kyc-nav">${navButtons(true)}</div>
         </div>`;
-      ['cac', 'idCard'].forEach(renderDocSlot);
+      ['cac', 'idCardFront', 'idCardBack'].forEach(renderDocSlot);
       el.querySelectorAll('[data-kyc-file]').forEach((inp) => {
         inp.addEventListener('change', () => onDocPick(inp.getAttribute('data-kyc-file'), inp.files && inp.files[0], false));
       });
@@ -465,18 +466,18 @@
     }
 
     if (name === 'review') {
-      const docsList = ['cac', 'idCard']
+      const labelMap = { cac: 'CAC', idCardFront: 'ID front', idCardBack: 'ID back' };
+      const docsList = ['cac', 'idCardFront', 'idCardBack']
         .filter((k) => state.documents[k])
         .map((k) => {
           const d = state.documents[k];
-          const label = k === 'cac' ? 'CAC' : 'ID card';
-          return `<li><strong>${label}</strong> — ${escapeHtml(d.name || '')} · ${escapeHtml((d.ai && d.ai.message) || 'Ready')}</li>`;
+          return `<li><strong>${labelMap[k] || k}</strong> — ${escapeHtml(d.name || '')} · ${escapeHtml((d.ai && d.ai.message) || 'Ready')}</li>`;
         })
         .join('');
       el.innerHTML = `
         <div class="kyc-section">
           <h3>Review &amp; submit</h3>
-          <p class="kyc-lead">Confirm everything looks right. Submission goes to DocScan AI, then owner review.</p>
+          <p class="kyc-lead">Confirm everything looks right. Submission goes to DocScan AI, then supervisor review.</p>
           <div class="kyc-summary">
             <p><span>Business</span>${escapeHtml(state.businessName)}</p>
             <p><span>CAC / Reg No.</span>${escapeHtml(state.registrationNumber)}</p>
@@ -537,11 +538,15 @@
         toast('Upload your CAC / Certificate of Incorporation', 'error');
         return false;
       }
-      if (!state.documents.idCard) {
-        toast('Upload a valid ID card', 'error');
+      if (!state.documents.idCardFront) {
+        toast('Upload the front of your ID card', 'error');
         return false;
       }
-      for (const key of ['cac', 'idCard']) {
+      if (!state.documents.idCardBack) {
+        toast('Upload the back of your ID card', 'error');
+        return false;
+      }
+      for (const key of ['cac', 'idCardFront', 'idCardBack']) {
         const v = state.documents[key]?.ai?.verdict;
         if (v === 'reject') {
           toast('Replace rejected documents with clear camera photos', 'error');

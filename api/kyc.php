@@ -36,6 +36,8 @@ function ensure_kyc_tables(): void {
       doc_reg_name VARCHAR(190) NOT NULL DEFAULT '',
       doc_id_url VARCHAR(500) NOT NULL DEFAULT '',
       doc_id_name VARCHAR(190) NOT NULL DEFAULT '',
+      doc_id_back_url VARCHAR(500) NOT NULL DEFAULT '',
+      doc_id_back_name VARCHAR(190) NOT NULL DEFAULT '',
       doc_address_url VARCHAR(500) NOT NULL DEFAULT '',
       doc_address_name VARCHAR(190) NOT NULL DEFAULT '',
       ai_summary TEXT,
@@ -49,6 +51,16 @@ function ensure_kyc_tables(): void {
       INDEX (status),
       CONSTRAINT fk_kyc_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Existing installs: add ID-back columns if missing
+    try {
+        $cols = db()->query("SHOW COLUMNS FROM kyc_submissions LIKE 'doc_id_back_url'")->fetch();
+        if (!$cols) {
+            db()->exec("ALTER TABLE kyc_submissions
+              ADD COLUMN doc_id_back_url VARCHAR(500) NOT NULL DEFAULT '' AFTER doc_id_name,
+              ADD COLUMN doc_id_back_name VARCHAR(190) NOT NULL DEFAULT '' AFTER doc_id_back_url");
+        }
+    } catch (Throwable $e) {}
 
     $dir = dirname(__DIR__) . '/uploads/kyc';
     if (!is_dir($dir)) {
@@ -250,7 +262,7 @@ function kyc_analyze_document(string $bin, string $mime, string $label, ?array $
         $message = 'Document looks authentic but is blurry. Sent to manual review.';
     } elseif ($hasCameraExif || !empty($clientHints['fromCameraCapture'])) {
         $verdict = 'needs_review';
-        $message = 'Camera photo accepted. Pending owner verification.';
+        $message = 'Camera photo accepted. Pending supervisor review.';
     }
 
     return [
@@ -335,7 +347,8 @@ function kyc_public_row(?array $row): ?array {
         'reviewedAt' => $row['reviewed_at'],
         'docs' => [
             'cac' => $row['doc_cac_url'] ?: null,
-            'idCard' => $row['doc_id_url'] ?: null,
+            'idCardFront' => $row['doc_id_url'] ?: null,
+            'idCardBack' => ($row['doc_id_back_url'] ?? '') ?: null,
         ],
     ];
 }
@@ -353,7 +366,10 @@ function kyc_doc_filesystem_path(string $url): ?string {
 
 /** Owner-facing proxy URL so docs open even when /uploads is blocked. */
 function kyc_owner_doc_url(int $kycId, string $type): string {
-    $type = $type === 'id' || $type === 'idCard' ? 'id' : 'cac';
+    $type = strtolower($type);
+    if (in_array($type, ['id', 'idcard', 'id_front', 'idfront', 'front'], true)) $type = 'id_front';
+    elseif (in_array($type, ['id_back', 'idback', 'back'], true)) $type = 'id_back';
+    else $type = 'cac';
     return '/owner/index.php?kyc_doc=1&id=' . $kycId . '&type=' . rawurlencode($type);
 }
 
@@ -364,7 +380,7 @@ function kyc_filter_ai_summary(string $summary): string {
     foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '') continue;
-        if (preg_match('/\b(CAC|Certificate of Incorporation|ID card|Valid ID)\b/i', $line)) {
+        if (preg_match('/\b(CAC|Certificate of Incorporation|ID card|Valid ID|ID front|ID back)\b/i', $line)) {
             $kept[] = $line;
         }
     }
@@ -374,7 +390,13 @@ function kyc_filter_ai_summary(string $summary): string {
 function kyc_stream_owner_doc(int $kycId, string $type): void {
     ensure_kyc_tables();
     $type = strtolower($type);
-    $col = ($type === 'id' || $type === 'idcard') ? 'doc_id_url' : 'doc_cac_url';
+    if (in_array($type, ['id', 'idcard', 'id_front', 'idfront', 'front'], true)) {
+        $col = 'doc_id_url';
+    } elseif (in_array($type, ['id_back', 'idback', 'back'], true)) {
+        $col = 'doc_id_back_url';
+    } else {
+        $col = 'doc_cac_url';
+    }
     $stmt = db()->prepare('SELECT ' . $col . ' AS url FROM kyc_submissions WHERE id = ? LIMIT 1');
     $stmt->execute([$kycId]);
     $row = $stmt->fetch();
@@ -464,7 +486,15 @@ function kyc_submit(array $u, array $payload): array {
 
     $docsIn = $payload['documents'] ?? [];
     if (!is_array($docsIn)) $docsIn = [];
-    $needed = ['cac' => 'CAC / Certificate of Incorporation', 'idCard' => 'Valid ID card'];
+    // Accept legacy idCard as front
+    if (empty($docsIn['idCardFront']) && !empty($docsIn['idCard'])) {
+        $docsIn['idCardFront'] = $docsIn['idCard'];
+    }
+    $needed = [
+        'cac' => 'CAC / Certificate of Incorporation',
+        'idCardFront' => 'ID card (front)',
+        'idCardBack' => 'ID card (back)',
+    ];
     $saved = [];
     $analyses = [];
 
@@ -503,9 +533,9 @@ function kyc_submit(array $u, array $payload): array {
         contact_person, contact_title, contact_email, contact_phone,
         owner_name, ownership_pct, owner_address, owner_dob,
         bank_account, bank_name, tax_id,
-        doc_cac_url, doc_cac_name, doc_reg_url, doc_reg_name, doc_id_url, doc_id_name, doc_address_url, doc_address_name,
+        doc_cac_url, doc_cac_name, doc_reg_url, doc_reg_name, doc_id_url, doc_id_name, doc_id_back_url, doc_id_back_name, doc_address_url, doc_address_name,
         ai_summary, ai_json
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
     $stmt->execute([
         $uid, $status,
         $req['businessName'], $req['businessUsername'], $req['registrationNumber'], $req['businessType'], $req['industry'], $req['businessAddress'],
@@ -514,14 +544,15 @@ function kyc_submit(array $u, array $payload): array {
         '', '', '',
         $saved['cac']['url'] ?? '', $saved['cac']['name'] ?? '',
         '', '',
-        $saved['idCard']['url'] ?? '', $saved['idCard']['name'] ?? '',
+        $saved['idCardFront']['url'] ?? '', $saved['idCardFront']['name'] ?? '',
+        $saved['idCardBack']['url'] ?? '', $saved['idCardBack']['name'] ?? '',
         '', '',
         $aiSummary, json_encode(['docs' => $analyses], JSON_UNESCAPED_UNICODE),
     ]);
 
     $msg = $status === 'blurry_review'
-        ? 'Documents look authentic but one or more are blurry. Our team will review manually.'
-        : 'Business KYC submitted. DocScan AI screened your uploads — pending owner review.';
+        ? 'Documents look authentic but one or more are blurry. A supervisor will review them manually.'
+        : 'Business KYC submitted. DocScan AI screened your uploads — pending supervisor review.';
     try {
         notify_user($uid, 'Business KYC submitted', $msg, 'kyc');
     } catch (Throwable $e) {}

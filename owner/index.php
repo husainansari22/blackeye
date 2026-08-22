@@ -601,7 +601,7 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="av-page-head">
           <div>
             <h2 class="av-page-title">Business KYC</h2>
-            <p class="av-page-sub">Tap a user line to review CAC + ID. DocScan flags screenshots; blurry docs need your decision.</p>
+            <p class="av-page-sub">Tap a user line to review CAC + ID (front &amp; back). DocScan flags screenshots; blurry docs need your decision.</p>
           </div>
           <div class="av-page-meta">
             <span class="av-chip <?= $pendingCount ? 'is-hot' : '' ?>"><strong><?= (int)$pendingCount ?></strong> pending</span>
@@ -619,9 +619,11 @@ $tab = $_GET['tab'] ?? 'overview';
               $isOpen = $openId === $kid;
               $aiText = kyc_filter_ai_summary((string)($k['ai_summary'] ?? ''));
               $cacUrl = trim((string)($k['doc_cac_url'] ?? ''));
-              $idUrl = trim((string)($k['doc_id_url'] ?? ''));
+              $idFrontUrl = trim((string)($k['doc_id_url'] ?? ''));
+              $idBackUrl = trim((string)($k['doc_id_back_url'] ?? ''));
               $cacProxy = $cacUrl !== '' ? kyc_owner_doc_url($kid, 'cac') : '';
-              $idProxy = $idUrl !== '' ? kyc_owner_doc_url($kid, 'id') : '';
+              $idFrontProxy = $idFrontUrl !== '' ? kyc_owner_doc_url($kid, 'id_front') : '';
+              $idBackProxy = $idBackUrl !== '' ? kyc_owner_doc_url($kid, 'id_back') : '';
               $badgeClass = 'av-badge';
               if ($k['status'] === 'approved') $badgeClass .= ' av-badge-ok';
               elseif ($k['status'] === 'rejected') $badgeClass .= ' av-badge-danger';
@@ -662,13 +664,19 @@ $tab = $_GET['tab'] ?? 'overview';
                         CAC
                       </a>
                     <?php endif; ?>
-                    <?php if ($idProxy): ?>
-                      <a href="<?= h($idProxy) ?>" target="_blank" rel="noopener" class="av-doc-thumb">
-                        <img src="<?= h($idProxy) ?>" alt="ID card" loading="lazy">
-                        ID card
+                    <?php if ($idFrontProxy): ?>
+                      <a href="<?= h($idFrontProxy) ?>" target="_blank" rel="noopener" class="av-doc-thumb">
+                        <img src="<?= h($idFrontProxy) ?>" alt="ID front" loading="lazy">
+                        ID front
                       </a>
                     <?php endif; ?>
-                    <?php if (!$cacProxy && !$idProxy): ?>
+                    <?php if ($idBackProxy): ?>
+                      <a href="<?= h($idBackProxy) ?>" target="_blank" rel="noopener" class="av-doc-thumb">
+                        <img src="<?= h($idBackProxy) ?>" alt="ID back" loading="lazy">
+                        ID back
+                      </a>
+                    <?php endif; ?>
+                    <?php if (!$cacProxy && !$idFrontProxy && !$idBackProxy): ?>
                       <p class="av-muted text-xs">No documents on file.</p>
                     <?php endif; ?>
                   </div>
