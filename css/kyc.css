@@ -227,11 +227,24 @@
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
 }
 
+.kyc-flow-footer {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+}
+
+.dark .kyc-flow-footer {
+  border-top-color: #1e293b;
+  background: rgba(15, 23, 42, 0.96);
+}
+
 .kyc-nav {
   display: flex;
   gap: 0.65rem;
-  margin-top: 1.25rem;
-  padding-top: 0.5rem;
+  margin: 0;
+  padding: 0;
 }
 
 .kyc-nav .kyc-btn-primary,
@@ -247,6 +260,13 @@
 
 .dark .kyc-nav .kyc-btn-ghost {
   border-color: #1e293b;
+}
+
+.kyc-field.kyc-field-error input,
+.kyc-field.kyc-field-error textarea,
+.kyc-field.kyc-field-error select {
+  border-color: #f43f5e;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12);
 }
 
 .kyc-doc {

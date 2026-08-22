@@ -6,6 +6,9 @@
   let step = 0;
   let state = emptyState();
   let statusCache = null;
+  let navAbort = null;
+  let lastFieldFocusAt = 0;
+  let lastValidateToastAt = 0;
 
   function emptyState() {
     return {
@@ -32,6 +35,13 @@
     else alert(msg);
   }
 
+  function toastOnce(msg, type, cooldownMs) {
+    const now = Date.now();
+    if (now - lastValidateToastAt < (cooldownMs || 900)) return;
+    lastValidateToastAt = now;
+    toast(msg, type);
+  }
+
   function overlay() {
     return document.getElementById('kycOverlay');
   }
@@ -40,8 +50,24 @@
     return document.getElementById('kycFlowBody');
   }
 
+  function footerEl() {
+    return document.getElementById('kycFlowFooter');
+  }
+
   function stepLabel() {
     return document.getElementById('kycStepText');
+  }
+
+  function setFooter(html) {
+    const foot = footerEl();
+    if (!foot) return;
+    if (html) {
+      foot.innerHTML = html;
+      foot.classList.remove('hidden');
+    } else {
+      foot.innerHTML = '';
+      foot.classList.add('hidden');
+    }
   }
 
   async function refreshStatus() {
@@ -337,6 +363,11 @@
   function render() {
     const el = bodyEl();
     if (!el) return;
+    if (navAbort) {
+      navAbort.abort();
+      navAbort = null;
+    }
+    setFooter('');
     const name = STEPS[step];
     if (stepLabel) {
       const map = {
@@ -408,8 +439,8 @@
           ${field('businessType', 'Business type', { required: true, type: 'select', options: ['Limited Liability', 'Business Name (BN)', 'Enterprise', 'Partnership', 'Other'] })}
           ${field('industry', 'Industry', { required: true, placeholder: 'e.g. Digital goods / Accounts marketplace' })}
           ${field('businessAddress', 'Business address', { required: true, type: 'textarea', placeholder: 'Registered address' })}
-          <div class="kyc-nav">${navButtons(true)}</div>
         </div>`;
+      setFooter(`<div class="kyc-nav">${navButtons()}</div>`);
       bindNav(['businessName', 'businessUsername', 'registrationNumber', 'businessType', 'industry', 'businessAddress']);
       return;
     }
@@ -423,8 +454,8 @@
           ${field('contactTitle', 'Position / title', { placeholder: 'e.g. Director' })}
           ${field('contactEmail', 'Email address', { required: true, type: 'email', placeholder: 'business@email.com' })}
           ${field('contactPhone', 'Phone number', { required: true, placeholder: '+234…' })}
-          <div class="kyc-nav">${navButtons(true)}</div>
         </div>`;
+      setFooter(`<div class="kyc-nav">${navButtons()}</div>`);
       bindNav(['contactPerson', 'contactTitle', 'contactEmail', 'contactPhone']);
       return;
     }
@@ -438,8 +469,8 @@
           ${field('ownershipPct', 'Ownership percentage', { required: true, type: 'number', placeholder: '100' })}
           ${field('ownerAddress', 'Owner address', { type: 'textarea', placeholder: 'Residential address' })}
           ${field('ownerDob', 'Date of birth', { type: 'date' })}
-          <div class="kyc-nav">${navButtons(true)}</div>
         </div>`;
+      setFooter(`<div class="kyc-nav">${navButtons()}</div>`);
       bindNav(['ownerName', 'ownershipPct', 'ownerAddress', 'ownerDob']);
       return;
     }
@@ -452,8 +483,8 @@
           ${docCard('cac', 'CAC / Certificate of Incorporation', true)}
           ${docCard('idCardFront', 'ID card — front', true)}
           ${docCard('idCardBack', 'ID card — back', true)}
-          <div class="kyc-nav">${navButtons(true)}</div>
         </div>`;
+      setFooter(`<div class="kyc-nav">${navButtons()}</div>`);
       ['cac', 'idCardFront', 'idCardBack'].forEach(renderDocSlot);
       el.querySelectorAll('[data-kyc-file]').forEach((inp) => {
         inp.addEventListener('change', () => onDocPick(inp.getAttribute('data-kyc-file'), inp.files && inp.files[0], false));
@@ -485,16 +516,23 @@
             <p><span>Owner</span>${escapeHtml(state.ownerName)}</p>
           </div>
           <ul class="kyc-doc-summary">${docsList || '<li>No documents attached</li>'}</ul>
-          <div class="kyc-nav">
+        </div>`;
+      setFooter(`<div class="kyc-nav">
             <button type="button" class="kyc-btn-ghost" id="kycBackBtn">Back</button>
             <button type="button" class="kyc-btn-primary" id="kycSubmitBtn">Submit for verification</button>
-          </div>
-        </div>`;
-      document.getElementById('kycBackBtn')?.addEventListener('click', () => {
-        step = Math.max(0, step - 1);
-        render();
-      });
-      document.getElementById('kycSubmitBtn')?.addEventListener('click', submitKyc);
+          </div>`);
+      const reviewAbort = new AbortController();
+      navAbort = reviewAbort;
+      const signal = reviewAbort.signal;
+      document.getElementById('kycBackBtn')?.addEventListener(
+        'click',
+        () => {
+          step = Math.max(0, step - 1);
+          render();
+        },
+        { signal }
+      );
+      document.getElementById('kycSubmitBtn')?.addEventListener('click', submitKyc, { signal });
     }
   }
 
@@ -503,21 +541,65 @@
             <button type="button" class="kyc-btn-primary" id="kycNextBtn">Continue</button>`;
   }
 
+  function clearFieldErrors() {
+    bodyEl()?.querySelectorAll('.kyc-field-error').forEach((n) => n.classList.remove('kyc-field-error'));
+  }
+
+  function markFieldError(id) {
+    const input = document.getElementById('kyc_' + id);
+    const wrap = input && input.closest('.kyc-field');
+    if (wrap) wrap.classList.add('kyc-field-error');
+  }
+
   function bindNav(fieldIds) {
-    document.getElementById('kycBackBtn')?.addEventListener('click', () => {
-      pullFields(fieldIds);
-      step = Math.max(0, step - 1);
-      render();
-    });
-    document.getElementById('kycNextBtn')?.addEventListener('click', () => {
-      pullFields(fieldIds);
-      if (!validateStep()) return;
-      step = Math.min(STEPS.length - 1, step + 1);
-      render();
-    });
+    if (navAbort) navAbort.abort();
+    navAbort = new AbortController();
+    const signal = navAbort.signal;
+    const root = overlay() || document;
+
+    root.addEventListener(
+      'focusin',
+      (e) => {
+        const t = e.target;
+        if (t && (t.matches('input, textarea, select') || t.closest('.kyc-field'))) {
+          lastFieldFocusAt = Date.now();
+          const wrap = t.closest && t.closest('.kyc-field');
+          if (wrap) wrap.classList.remove('kyc-field-error');
+        }
+      },
+      { signal }
+    );
+
+    document.getElementById('kycBackBtn')?.addEventListener(
+      'click',
+      () => {
+        pullFields(fieldIds);
+        step = Math.max(0, step - 1);
+        render();
+      },
+      { signal }
+    );
+
+    document.getElementById('kycNextBtn')?.addEventListener(
+      'click',
+      (e) => {
+        // Ignore accidental Continue taps right after focusing a field (keyboard / layout ghost clicks).
+        if (Date.now() - lastFieldFocusAt < 550) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        pullFields(fieldIds);
+        if (!validateStep()) return;
+        step = Math.min(STEPS.length - 1, step + 1);
+        render();
+      },
+      { signal }
+    );
   }
 
   function validateStep() {
+    clearFieldErrors();
     const name = STEPS[step];
     const need = {
       business: ['businessName', 'registrationNumber', 'businessType', 'industry', 'businessAddress'],
@@ -526,30 +608,38 @@
       documents: [],
     }[name];
     if (need) {
-      for (const id of need) {
-        if (!String(state[id] || '').trim()) {
-          toast('Please complete all required fields', 'error');
-          return false;
+      const missing = need.filter((id) => !String(state[id] || '').trim());
+      if (missing.length) {
+        missing.forEach(markFieldError);
+        const first = document.getElementById('kyc_' + missing[0]);
+        if (first && typeof first.focus === 'function') {
+          try {
+            first.focus({ preventScroll: false });
+          } catch (_) {
+            first.focus();
+          }
         }
+        toastOnce('Please complete all required fields', 'error', 1200);
+        return false;
       }
     }
     if (name === 'documents') {
       if (!state.documents.cac) {
-        toast('Upload your CAC / Certificate of Incorporation', 'error');
+        toastOnce('Upload your CAC / Certificate of Incorporation', 'error', 1200);
         return false;
       }
       if (!state.documents.idCardFront) {
-        toast('Upload the front of your ID card', 'error');
+        toastOnce('Upload the front of your ID card', 'error', 1200);
         return false;
       }
       if (!state.documents.idCardBack) {
-        toast('Upload the back of your ID card', 'error');
+        toastOnce('Upload the back of your ID card', 'error', 1200);
         return false;
       }
       for (const key of ['cac', 'idCardFront', 'idCardBack']) {
         const v = state.documents[key]?.ai?.verdict;
         if (v === 'reject') {
-          toast('Replace rejected documents with clear camera photos', 'error');
+          toastOnce('Replace rejected documents with clear camera photos', 'error', 1200);
           return false;
         }
       }
@@ -627,6 +717,11 @@
   function closeKyc() {
     const ov = overlay();
     if (!ov) return;
+    if (navAbort) {
+      navAbort.abort();
+      navAbort = null;
+    }
+    setFooter('');
     ov.classList.add('hidden');
     ov.classList.remove('flex');
     document.body.style.overflow = '';
