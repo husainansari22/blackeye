@@ -1,5 +1,5 @@
 /**
- * Acctventa Business KYC — DocScan AI + multi-step wizard.
+ * Acctventa Business KYC — multi-step business verification wizard.
  */
 (function (global) {
   const STEPS = ['intro', 'business', 'contact', 'ownership', 'documents', 'review'];
@@ -82,22 +82,15 @@
 
   /** Block Back/Continue while the keyboard opens (iOS ghost-clicks the footer). */
   function lockNav(ms) {
-    const hold = Math.max(600, ms || 900);
+    const hold = Math.max(800, ms || 1100);
     navLockedUntil = Math.max(navLockedUntil, Date.now() + hold);
     lastFieldFocusAt = Date.now();
     setFooterLocked(true);
     clearTimeout(navLockTimer);
+    // Re-enable hit targets after the keyboard/layout shift settles (keep time-guard on click).
     navLockTimer = setTimeout(() => {
-      if (Date.now() < navLockedUntil) return;
-      const active = document.activeElement;
-      const body = bodyEl();
-      const stillEditing =
-        active &&
-        body &&
-        body.contains(active) &&
-        /^(INPUT|TEXTAREA|SELECT)$/i.test(active.tagName || '');
-      if (!stillEditing) setFooterLocked(false);
-    }, hold + 40);
+      setFooterLocked(false);
+    }, hold);
   }
 
   function navIsLocked() {
@@ -476,11 +469,11 @@
           ${field('businessUsername', 'Public username', { placeholder: 'Storefront handle' })}
           ${field('registrationNumber', 'Business registration / CAC number', { required: true, placeholder: 'RC / BN number' })}
           ${field('businessType', 'Business type', { required: true, type: 'select', options: ['Limited Liability', 'Business Name (BN)', 'Enterprise', 'Partnership', 'Other'] })}
-          ${field('industry', 'Industry', { required: true, placeholder: 'e.g. Digital goods / Accounts marketplace' })}
           ${field('businessAddress', 'Business address', { required: true, type: 'textarea', placeholder: 'Registered address' })}
+          ${field('industry', 'Industry', { required: true, placeholder: 'e.g. Digital goods / Accounts marketplace' })}
         </div>`;
       setFooter(`<div class="kyc-nav">${navButtons()}</div>`);
-      bindNav(['businessName', 'businessUsername', 'registrationNumber', 'businessType', 'industry', 'businessAddress']);
+      bindNav(['businessName', 'businessUsername', 'registrationNumber', 'businessType', 'businessAddress', 'industry']);
       return;
     }
 
@@ -566,7 +559,7 @@
       document.getElementById('kycBackBtn')?.addEventListener(
         'click',
         (e) => {
-          if (navIsLocked() || Date.now() - lastFieldFocusAt < 700) {
+          if (navIsLocked()) {
             e.preventDefault();
             return;
           }
@@ -611,9 +604,14 @@
     const signal = navAbort.signal;
     const root = overlay() || document;
     const body = bodyEl();
+    const foot = footerEl();
+    let armedBtn = null;
 
     const armLock = (e) => {
-      if (isFieldTarget(e.target)) lockNav(1000);
+      if (isFieldTarget(e.target)) {
+        armedBtn = null;
+        lockNav(1200);
+      }
     };
 
     // pointerdown/touchstart fire before iOS moves the footer under the finger
@@ -625,41 +623,43 @@
       'focusin',
       (e) => {
         if (!isFieldTarget(e.target)) return;
-        lockNav(1000);
+        armedBtn = null;
+        lockNav(1200);
         const wrap = e.target.closest && e.target.closest('.kyc-field');
         if (wrap) wrap.classList.remove('kyc-field-error');
       },
       { signal }
     );
-    root.addEventListener(
-      'focusout',
-      () => {
-        clearTimeout(navLockTimer);
-        navLockTimer = setTimeout(() => {
-          const active = document.activeElement;
-          const stillEditing =
-            active &&
-            body &&
-            body.contains(active) &&
-            /^(INPUT|TEXTAREA|SELECT)$/i.test(active.tagName || '');
-          if (!stillEditing && Date.now() >= navLockedUntil) setFooterLocked(false);
-        }, 320);
-      },
-      { signal }
-    );
 
-    const guardNavClick = (e) => {
-      if (!navIsLocked() && Date.now() - lastFieldFocusAt >= 700) return false;
-      e.preventDefault();
-      e.stopPropagation();
-      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
-      return true;
+    const armFooterBtn = (e) => {
+      if (navIsLocked()) {
+        armedBtn = null;
+        return;
+      }
+      const btn = e.target && e.target.closest && e.target.closest('#kycBackBtn, #kycNextBtn');
+      armedBtn = btn ? btn.id : null;
+    };
+    if (foot) {
+      foot.addEventListener('pointerdown', armFooterBtn, { signal });
+      foot.addEventListener('touchstart', armFooterBtn, { signal, passive: true });
+    }
+
+    const guardNavClick = (e, expectedId) => {
+      if (navIsLocked() || armedBtn !== expectedId) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        armedBtn = null;
+        return true;
+      }
+      armedBtn = null;
+      return false;
     };
 
     document.getElementById('kycBackBtn')?.addEventListener(
       'click',
       (e) => {
-        if (guardNavClick(e)) return;
+        if (guardNavClick(e, 'kycBackBtn')) return;
         goBackFromForm(fieldIds);
       },
       { signal }
@@ -668,7 +668,7 @@
     document.getElementById('kycNextBtn')?.addEventListener(
       'click',
       (e) => {
-        if (guardNavClick(e)) return;
+        if (guardNavClick(e, 'kycNextBtn')) return;
         pullFields(fieldIds);
         if (!validateStep()) return;
         step = Math.min(STEPS.length - 1, step + 1);
@@ -682,7 +682,7 @@
     clearFieldErrors();
     const name = STEPS[step];
     const need = {
-      business: ['businessName', 'registrationNumber', 'businessType', 'industry', 'businessAddress'],
+      business: ['businessName', 'registrationNumber', 'businessType', 'businessAddress', 'industry'],
       contact: ['contactPerson', 'contactEmail', 'contactPhone'],
       ownership: ['ownerName', 'ownershipPct'],
       documents: [],
