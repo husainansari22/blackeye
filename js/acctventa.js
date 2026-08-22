@@ -500,6 +500,15 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
+  /** Public TXID: 4a36412c-0c41-455a-b87d */
+  function uuidTxid() {
+    const bytes = new Uint8Array(10);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(bytes);
+    else for (let i = 0; i < 10; i++) bytes[i] = Math.floor(Math.random() * 256);
+    const h = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20);
+  }
+
   /** All approved marketplace listings across users */
   function getMarketplaceListings() {
     const users = getUsers();
@@ -589,8 +598,11 @@
     const fromWd = Number((price - fromDeposit).toFixed(2));
     buyer.withdrawableBalance = Number(Math.max(0, buyerWd - fromWd).toFixed(2));
     // Escrow: seller funds locked until complete (auto-complete for auto release)
+    const orderTx = uuidTxid();
     const order = {
       id: uid(),
+      publicId: orderTx,
+      txid: orderTx,
       listingId: listing.id,
       title: listing.title,
       price,
@@ -629,6 +641,7 @@
       seller.transactions = seller.transactions || [];
       seller.transactions.unshift({
         id: uid(),
+        reference: uuidTxid(),
         type: 'sale',
         amount: net,
         status: 'completed',
@@ -638,6 +651,7 @@
       if (commission > 0) {
         seller.transactions.unshift({
           id: uid(),
+          reference: uuidTxid(),
           type: 'commission',
           amount: commission,
           status: 'completed',
@@ -817,6 +831,7 @@
     user.transactions = user.transactions || [];
     user.transactions.unshift({
       id: uid(),
+      reference: uuidTxid(),
       type: 'deposit',
       amount: credited,
       fee,
@@ -868,17 +883,18 @@
     user.transactions = user.transactions || [];
     user.transactions.unshift({
       id: uid(),
+      reference: uuidTxid(),
       type: 'withdrawal',
       amount,
       fee: feeFromAmount,
       payout,
       method: method || 'bank',
       status: 'pending',
-      note: 'Withdrawal requested — pending admin approval.',
+      note: 'Withdrawal requested — pending approval.',
       createdAt: new Date().toISOString()
     });
     persistUser(user);
-    return { ok: true, payout, fee: feeFromAmount, message: 'Withdrawal submitted. Pending admin approval.' };
+    return { ok: true, payout, fee: feeFromAmount, message: 'Withdrawal submitted. Pending approval.' };
   }
 
   function setPlan(user, planId, opts) {
@@ -900,6 +916,7 @@
       user.transactions = user.transactions || [];
       user.transactions.unshift({
         id: uid(),
+        reference: uuidTxid(),
         type: 'plan',
         amount: price,
         status: 'completed',

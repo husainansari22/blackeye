@@ -414,11 +414,20 @@
   function formatTxWhen(iso) {
     try {
       const d = new Date(iso);
-      const now = new Date();
-      const sameDay = d.toDateString() === now.toDateString();
-      const t = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-      if (sameDay) return 'Today, ' + t;
-      return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ', ' + t;
+      if (!d.getTime()) return relativeTime(iso);
+      const day = d.getDate();
+      const ord = (function (n) {
+        const j = n % 10;
+        const k = n % 100;
+        if (j === 1 && k !== 11) return n + 'st';
+        if (j === 2 && k !== 12) return n + 'nd';
+        if (j === 3 && k !== 13) return n + 'rd';
+        return n + 'th';
+      })(day);
+      const weekday = d.toLocaleDateString(undefined, { weekday: 'long' });
+      const month = d.toLocaleDateString(undefined, { month: 'long' });
+      const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      return weekday + ', ' + month + ' ' + ord + ', ' + time;
     } catch (e) {
       return relativeTime(iso);
     }
@@ -426,10 +435,123 @@
 
   function statusDot(status) {
     const s = String(status || '').toLowerCase();
-    if (s === 'completed') return '<span class="inline-flex items-center gap-1 text-[10px] text-emerald-500"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Completed</span>';
-    if (s === 'pending') return '<span class="inline-flex items-center gap-1 text-[10px] text-amber-500"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Pending</span>';
-    if (s === 'failed' || s === 'cancelled') return '<span class="inline-flex items-center gap-1 text-[10px] text-red-500"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>' + escapeHtml(s.charAt(0).toUpperCase() + s.slice(1)) + '</span>';
-    return '<span class="text-[10px] text-slate-400">' + escapeHtml(status || '') + '</span>';
+    if (s === 'completed') {
+      return '<span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-500"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>Completed</span>';
+    }
+    if (s === 'pending') {
+      return '<span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-500"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>Pending</span>';
+    }
+    if (s === 'failed') {
+      return '<span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-500"><span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>Failed</span>';
+    }
+    if (s === 'cancelled' || s === 'canceled') {
+      return '<span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-500"><span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>Cancelled</span>';
+    }
+    return '<span class="text-[11px] text-slate-400 capitalize">' + escapeHtml(status || '') + '</span>';
+  }
+
+  function displayTxId(t) {
+    const ref = String((t && (t.txid || t.publicId || t.reference)) || '').trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}$/i.test(ref)) return ref.toLowerCase();
+    const seed = String((t && t.id) || ref || '0');
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    const hex = (h.toString(16) + Math.abs(h * 2654435761).toString(16) + '00000000000000000000').slice(0, 20);
+    return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20);
+  }
+
+  function truncateTxId(id) {
+    const s = String(id || '');
+    if (s.length <= 14) return s;
+    return s.slice(0, 10) + '…';
+  }
+
+  function txTypeMeta(t) {
+    const ty = String((t && t.type) || '').toLowerCase();
+    if (ty === 'deposit') {
+      const from =
+        t.method === 'flutterwave'
+          ? 'From Flutterwave'
+          : t.method === 'crypto'
+            ? 'From crypto'
+            : 'From bank';
+      return {
+        title: 'Deposit',
+        sub: from,
+        icon: 'fa-arrow-down',
+        iconCls: 'bg-emerald-500/15 text-emerald-500',
+        amountCls: 'text-emerald-500',
+        sign: '+',
+      };
+    }
+    if (ty === 'withdrawal' || ty === 'withdraw') {
+      return {
+        title: 'Withdrawal',
+        sub: t.method === 'crypto' ? 'To crypto' : 'To bank',
+        icon: 'fa-arrow-up',
+        iconCls: 'bg-rose-500/15 text-rose-400',
+        amountCls: 'text-rose-400',
+        sign: '-',
+      };
+    }
+    if (ty === 'purchase') {
+      return {
+        title: 'Purchase',
+        sub: t.note || 'Marketplace purchase',
+        icon: 'fa-bag-shopping',
+        iconCls: 'bg-brandPrimary/15 text-brandPrimary',
+        amountCls: 'text-rose-400',
+        sign: '-',
+      };
+    }
+    if (ty === 'sale') {
+      return {
+        title: 'Sale',
+        sub: t.note || 'Marketplace sale',
+        icon: 'fa-store',
+        iconCls: 'bg-emerald-500/15 text-emerald-500',
+        amountCls: 'text-emerald-500',
+        sign: '+',
+      };
+    }
+    if (ty === 'refund') {
+      return {
+        title: 'Refund',
+        sub: t.note || 'Order refund',
+        icon: 'fa-rotate-left',
+        iconCls: 'bg-amber-500/15 text-amber-500',
+        amountCls: 'text-emerald-500',
+        sign: '+',
+      };
+    }
+    if (ty === 'commission') {
+      return {
+        title: 'Commission',
+        sub: t.note || 'Platform fee',
+        icon: 'fa-percent',
+        iconCls: 'bg-slate-500/15 text-slate-400',
+        amountCls: 'text-rose-400',
+        sign: '-',
+      };
+    }
+    if (ty === 'plan') {
+      return {
+        title: 'Plan',
+        sub: t.note || 'Plan upgrade',
+        icon: 'fa-crown',
+        iconCls: 'bg-brandPrimary/15 text-brandPrimary',
+        amountCls: 'text-rose-400',
+        sign: '-',
+      };
+    }
+    return {
+      title: ty ? ty.charAt(0).toUpperCase() + ty.slice(1) : 'Transaction',
+      sub: t.note || t.method || 'Wallet activity',
+      icon: 'fa-receipt',
+      iconCls: 'bg-slate-500/15 text-slate-400',
+      amountCls: 'text-slate-200',
+      sign: '',
+    };
   }
 
   window.toggleWalletBalanceVisibility = function () {
@@ -448,7 +570,8 @@
   };
 
   window.setWalletHistoryTab = function (tab) {
-    walletHistTab = tab === 'withdrawal' ? 'withdrawal' : 'deposit';
+    const allowed = { deposit: 1, withdrawal: 1, others: 1, all: 1 };
+    walletHistTab = allowed[tab] ? tab : 'deposit';
     document.querySelectorAll('.wallet-hist-tab').forEach((b) => {
       const on = b.getAttribute('data-wallet-hist') === walletHistTab;
       b.classList.toggle('text-brandPrimary', on);
@@ -465,50 +588,95 @@
     const u = refreshUser();
     const box = document.getElementById('txHistoryList');
     if (!box || !u) return;
-    const wantDeposit = walletHistTab === 'deposit';
+    const tab = walletHistTab || 'deposit';
     const txs = (u.transactions || []).filter((t) => {
       const ty = String(t.type || '').toLowerCase();
-      return wantDeposit ? ty === 'deposit' : ty === 'withdrawal' || ty === 'withdraw';
+      if (tab === 'all') return true;
+      if (tab === 'deposit') return ty === 'deposit';
+      if (tab === 'withdrawal') return ty === 'withdrawal' || ty === 'withdraw';
+      return ty !== 'deposit' && ty !== 'withdrawal' && ty !== 'withdraw';
     });
+    const emptyLabel =
+      tab === 'deposit' ? 'deposits' : tab === 'withdrawal' ? 'withdrawals' : tab === 'others' ? 'other transactions' : 'transactions';
     if (!txs.length) {
-      box.innerHTML = `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl py-10 text-center text-xs text-slate-400">No ${wantDeposit ? 'deposits' : 'withdrawals'} yet.</div>`;
+      box.innerHTML =
+        '<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl py-10 text-center text-xs text-slate-400">No ' +
+        emptyLabel +
+        ' yet.</div>';
       return;
     }
     box.innerHTML = txs
       .map((t) => {
-        const isDep = String(t.type).toLowerCase() === 'deposit';
-        const txid = t.reference || t.id || '';
-        const methodLabel = isDep
-          ? t.method === 'flutterwave'
-            ? 'From Flutterwave'
-            : 'From bank'
-          : t.method === 'crypto'
-            ? 'To crypto'
-            : 'To bank';
-        return `<button type="button" onclick="openTxDetail('${escapeAttr(String(t.id || txid))}')" class="w-full text-left bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-start hover:border-brandPrimary transition">
-          <span class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isDep ? 'bg-emerald-500/15 text-emerald-500' : 'bg-brandPrimary/15 text-brandPrimary'}">
-            <i class="fa-solid ${isDep ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
-          </span>
-          <div class="min-w-0 flex-1">
-            <div class="flex justify-between gap-2">
-              <p class="font-bold text-sm">${isDep ? 'Deposit' : 'Withdrawal'}</p>
-              <p class="font-bold text-sm ${isDep ? 'text-emerald-500' : 'text-rose-400'}">${isDep ? '+' : '-'}${money(t.amount)}</p>
-            </div>
-            <div class="flex justify-between gap-2 mt-0.5">
-              <p class="text-[11px] text-slate-500">${escapeHtml(methodLabel)}</p>
-              ${statusDot(t.status)}
-            </div>
-            <div class="flex justify-between gap-2 mt-1 items-center">
-              <p class="text-[10px] text-slate-400 font-mono truncate">TXID: ${escapeHtml(String(txid).slice(0, 14))}${String(txid).length > 14 ? '…' : ''}
-                <button type="button" onclick="event.stopPropagation(); navigator.clipboard && navigator.clipboard.writeText('${escapeAttr(String(txid))}');" class="ml-1 text-slate-500"><i class="fa-regular fa-copy"></i></button>
-              </p>
-              <p class="text-[10px] text-slate-400 shrink-0">${formatTxWhen(t.createdAt)}</p>
-            </div>
-          </div>
-        </button>`;
+        const meta = txTypeMeta(t);
+        const txid = displayTxId(t);
+        const shortId = truncateTxId(txid);
+        const openId = escapeAttr(String(t.id || txid));
+        const copyId = escapeAttr(txid);
+        return (
+          '<button type="button" onclick="openTxDetail(\'' +
+          openId +
+          '\')" class="w-full text-left bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 hover:border-brandPrimary transition">' +
+          '<div class="flex gap-3 items-start">' +
+          '<span class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 ' +
+          meta.iconCls +
+          '"><i class="fa-solid ' +
+          meta.icon +
+          '"></i></span>' +
+          '<div class="min-w-0 flex-1 space-y-1">' +
+          '<div class="flex justify-between gap-3 items-start">' +
+          '<p class="font-bold text-[15px] text-slate-900 dark:text-white leading-tight">' +
+          escapeHtml(meta.title) +
+          '</p>' +
+          '<p class="font-bold text-[15px] shrink-0 ' +
+          meta.amountCls +
+          '">' +
+          meta.sign +
+          money(t.amount) +
+          '</p>' +
+          '</div>' +
+          '<div class="flex justify-between gap-3 items-center">' +
+          '<p class="text-[12px] text-slate-500 dark:text-slate-400 truncate">' +
+          escapeHtml(meta.sub) +
+          '</p>' +
+          statusDot(t.status) +
+          '</div>' +
+          '<div class="flex justify-between gap-3 items-center pt-0.5">' +
+          '<p class="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 min-w-0">' +
+          '<span class="truncate">TXID: ' +
+          escapeHtml(shortId) +
+          '</span>' +
+          '<span role="button" tabindex="0" onclick="event.stopPropagation(); copyTxId(\'' +
+          copyId +
+          '\')" class="shrink-0 text-slate-500 hover:text-brandPrimary"><i class="fa-regular fa-copy"></i></span>' +
+          '</p>' +
+          '<p class="text-[11px] text-slate-400 shrink-0 text-right">' +
+          escapeHtml(formatTxWhen(t.createdAt)) +
+          '</p>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          '</button>'
+        );
       })
       .join('');
   }
+
+  window.copyTxId = function (id) {
+    const text = String(id || '');
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        function () {
+          alert('TXID copied');
+        },
+        function () {
+          prompt('Copy TXID', text);
+        }
+      );
+    } else {
+      prompt('Copy TXID', text);
+    }
+  };
 
   window.openTxDetail = function (id) {
     const u = refreshUser();

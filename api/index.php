@@ -306,7 +306,7 @@ try {
                     'extraInfo' => $ad['extra_info'],
                 ]);
                 $status = $ad['release_type'] === 'manual' ? 'pending' : 'completed';
-                $publicId = strtoupper(substr(uid_token(10), 0, 14));
+                $publicId = uuid_txid();
                 $pdo->prepare('INSERT INTO orders (public_id, listing_id, buyer_id, seller_id, title, category, price, status, credentials_json, completed_at)
                     VALUES (?,?,?,?,?,?,?,?,?,?)')->execute([
                     $publicId, $listingId, (int)$u['id'], (int)$ad['seller_id'], $ad['title'], $ad['category'], money_f($price), $status, $creds,
@@ -457,7 +457,9 @@ try {
             $u = require_user();
             $stmt = db()->prepare('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 100');
             $stmt->execute([(int)$u['id']]);
-            json_out(['ok' => true, 'user' => public_user($u), 'transactions' => $stmt->fetchAll()]);
+            $rows = $stmt->fetchAll();
+            $txs = array_map('map_public_transaction', $rows);
+            json_out(['ok' => true, 'user' => public_user($u), 'transactions' => $txs]);
         }
 
         case 'wallet.deposit': {
@@ -499,7 +501,7 @@ try {
                         'code' => 'crypto_address_missing',
                     ], 503);
                 }
-                $txRef = 'AVC' . strtoupper(substr(uid_token(8), 0, 16));
+                $txRef = uuid_txid();
                 $note = 'Crypto deposit pending · ' . $coin . ' · ' . $network . ' · to=' . $address;
                 if ($txHash !== '') {
                     $note .= ' · user_txid=' . preg_replace('/\s+/', '', $txHash);
@@ -530,7 +532,7 @@ try {
             }
 
             ensure_tx_reference_column();
-            $txRef = 'AVD' . strtoupper(substr(uid_token(8), 0, 16));
+            $txRef = uuid_txid();
             $checkout = flw_create_checkout($u, $amount, $txRef, $prefer ?: 'NGN');
             if (!$checkout['ok']) {
                 json_out(['ok' => false, 'error' => $checkout['error'] ?? 'Could not start payment'], 502);
@@ -660,7 +662,7 @@ try {
             }
 
             ensure_tx_reference_column();
-            $txRef = 'AVP' . strtoupper(substr(uid_token(8), 0, 16));
+            $txRef = uuid_txid();
             $checkout = flw_create_checkout($u, $price, $txRef, $prefer ?: 'NGN', [
                 'purpose' => 'plan_upgrade',
                 'title' => (app_config()['app_name'] ?? 'Acctventa') . ' Plan',
@@ -755,7 +757,7 @@ try {
             $fee = round($amount * $rate, 2);
             $payout = round($amount - $fee, 2);
             ensure_tx_reference_column();
-            $txRef = 'AVW' . strtoupper(substr(uid_token(8), 0, 16));
+            $txRef = uuid_txid();
             $note = 'Payout via ' . $method . ' · ' . $destination;
             if ($accountName !== '') $note .= ' · ' . $accountName;
             if ($bankName !== '') $note .= ' · ' . $bankName;
@@ -780,7 +782,7 @@ try {
                 'reference' => $txRef,
                 'status' => 'pending',
                 'user' => public_user($fresh),
-                'message' => 'Withdrawal submitted. You’ll be paid after owner approval.',
+                'message' => 'Withdrawal submitted. You’ll be paid after approval.',
             ]);
         }
 
@@ -788,7 +790,8 @@ try {
             $u = require_user();
             $stmt = db()->prepare('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 100');
             $stmt->execute([(int)$u['id']]);
-            json_out(['ok' => true, 'transactions' => $stmt->fetchAll()]);
+            $txs = array_map('map_public_transaction', $stmt->fetchAll());
+            json_out(['ok' => true, 'transactions' => $txs]);
         }
 
         case 'notifications.list': {

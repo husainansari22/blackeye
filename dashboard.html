@@ -247,11 +247,13 @@
             </div>
 
             <div>
-                <div class="flex gap-4 border-b border-slate-200 dark:border-slate-800 mb-3 overflow-x-auto">
+                <div class="flex gap-4 border-b border-slate-200 dark:border-slate-800 mb-3 overflow-x-auto scrollbar-none">
                     <button type="button" data-wallet-hist="deposit" onclick="setWalletHistoryTab('deposit')" class="wallet-hist-tab pb-2 text-sm font-bold text-brandPrimary border-b-2 border-brandPrimary whitespace-nowrap">Deposit History</button>
                     <button type="button" data-wallet-hist="withdrawal" onclick="setWalletHistoryTab('withdrawal')" class="wallet-hist-tab pb-2 text-sm font-semibold text-slate-400 whitespace-nowrap">Withdrawal History</button>
+                    <button type="button" data-wallet-hist="others" onclick="setWalletHistoryTab('others')" class="wallet-hist-tab pb-2 text-sm font-semibold text-slate-400 whitespace-nowrap">Others</button>
+                    <button type="button" data-wallet-hist="all" onclick="setWalletHistoryTab('all')" class="wallet-hist-tab pb-2 text-sm font-semibold text-slate-400 whitespace-nowrap">All</button>
                 </div>
-                <div id="txHistoryList" class="space-y-2"></div>
+                <div id="txHistoryList" class="space-y-2.5"></div>
             </div>
         </div>
 

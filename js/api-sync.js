@@ -82,6 +82,7 @@
   }
 
   function mapTx(row) {
+    const publicId = row.publicId || row.txid || row.reference || '';
     return {
       id: String(row.id),
       type: row.type,
@@ -91,6 +92,9 @@
       status: row.status,
       method: row.method || '',
       note: row.note || '',
+      reference: publicId || String(row.reference || ''),
+      publicId: publicId || String(row.reference || row.id || ''),
+      txid: publicId || String(row.reference || row.id || ''),
       createdAt: row.created_at || row.createdAt,
     };
   }

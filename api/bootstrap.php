@@ -73,6 +73,41 @@ function uid_token(int $bytes = 16): string {
     return bin2hex(random_bytes($bytes));
 }
 
+/** Public TXID style: 4a36412c-0c41-455a-b87d */
+function uuid_txid(): string {
+    $h = bin2hex(random_bytes(10));
+    return substr($h, 0, 8) . '-' . substr($h, 8, 4) . '-' . substr($h, 12, 4) . '-' . substr($h, 16, 4);
+}
+
+/** Stable display TXID for rows missing a UUID reference. */
+function tx_public_id(array $row): string {
+    $ref = trim((string)($row['reference'] ?? ''));
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}$/i', $ref)) {
+        return strtolower($ref);
+    }
+    $seed = hash('sha256', 'acctventa-tx-' . (string)($row['id'] ?? '0') . '-' . (string)($row['created_at'] ?? ''));
+    return substr($seed, 0, 8) . '-' . substr($seed, 8, 4) . '-' . substr($seed, 12, 4) . '-' . substr($seed, 16, 4);
+}
+
+function map_public_transaction(array $row): array {
+    $publicId = tx_public_id($row);
+    return [
+        'id' => (string)($row['id'] ?? ''),
+        'type' => $row['type'] ?? '',
+        'amount' => (float)($row['amount'] ?? 0),
+        'fee' => (float)($row['fee'] ?? 0),
+        'payout' => isset($row['payout']) && $row['payout'] !== null ? (float)$row['payout'] : null,
+        'status' => $row['status'] ?? '',
+        'method' => $row['method'] ?? '',
+        'note' => $row['note'] ?? '',
+        'reference' => $publicId,
+        'publicId' => $publicId,
+        'txid' => $publicId,
+        'created_at' => $row['created_at'] ?? null,
+        'createdAt' => $row['created_at'] ?? null,
+    ];
+}
+
 function bearer_token(): ?string {
     $hdr = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
     if (preg_match('/Bearer\s+(\S+)/i', $hdr, $m)) return $m[1];
