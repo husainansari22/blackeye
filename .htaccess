@@ -9,9 +9,16 @@ RewriteRule ^auth/sign-in/?$ /index.html?page=login [L,QSA]
 RewriteRule ^auth/login/?$ /index.html?page=login [L,QSA]
 RewriteRule ^auth/admin/?$ /admin/ [L,QSA]
 
-# Optional: /signup and /login shortcuts
+# Optional: /signup and /login shortcuts (directory index pages also exist as fallback)
 RewriteRule ^signup/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^browse/?$ /marketplace.html [L,QSA]
+RewriteRule ^register/?$ /index.html?page=signup [L,QSA]
+
+# Legacy / wrong subdomain paths → main site
+RewriteRule ^app/?$ / [L,R=301]
+RewriteCond %{HTTP_HOST} ^app\.acctventa\.com$ [NC]
+RewriteRule ^(.*)$ https://acctventa.com/$1 [L,R=301]
 
 # Public sitelink / legal pages
 RewriteRule ^marketplace/?$ /marketplace.html [L]

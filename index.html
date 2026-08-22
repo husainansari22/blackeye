@@ -540,18 +540,24 @@
             `;
         }
 
+        let deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+        });
+
         function openAppInstallModal() {
             const modal = document.getElementById('appModal');
             document.getElementById('modalBody').innerHTML = `
-                <h3 class="font-bold text-xl mb-1 text-white">Install the AcctVenta App</h3>
-                <p class="text-xs text-gray-400 mb-4">Add app.acctventa.com to your home screen and use it like a native app — no app store required.</p>
+                <h3 class="font-bold text-xl mb-1 text-white">Install the Acctventa App</h3>
+                <p class="text-xs text-gray-400 mb-4">Add <strong class="text-skyBrand">acctventa.com</strong> to your home screen and use it like a native app — no app store required.</p>
                 
                 <div class="bg-darkBg p-4 rounded-xl border border-gray-800 space-y-2 mb-3">
                     <div class="flex items-center gap-2 text-sm font-bold text-white">
                         <i class="fa-brands fa-apple text-xl"></i> iOS (Safari)
                     </div>
                     <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
-                        <li>Open <span class="text-skyBrand underline">app.acctventa.com</span> in Safari</li>
+                        <li>Open <a href="https://acctventa.com/" class="text-skyBrand underline">acctventa.com</a> in Safari</li>
                         <li>Tap the Share icon in the toolbar</li>
                         <li>Select <strong>Add to Home Screen</strong></li>
                     </ol>
@@ -562,15 +568,68 @@
                         <i class="fa-brands fa-android text-emerald-400 text-xl"></i> Android (Chrome)
                     </div>
                     <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
-                        <li>Open <span class="text-skyBrand underline">app.acctventa.com</span> in Chrome</li>
+                        <li>Open <a href="https://acctventa.com/" class="text-skyBrand underline">acctventa.com</a> in Chrome</li>
                         <li>Tap the menu (⋮) top-right corner</li>
                         <li>Select <strong>Install app</strong> or <strong>Add to Home screen</strong></li>
                     </ol>
                 </div>
 
-                <button onclick="closeModal()" class="w-full bg-skyBrand hover:bg-skyHover text-white py-3.5 rounded-xl font-bold text-sm transition shadow-lg">Download Now</button>
+                <button type="button" onclick="downloadAcctventaApp()" class="w-full bg-skyBrand hover:bg-skyHover text-white py-3.5 rounded-xl font-bold text-sm transition shadow-lg">Download Now</button>
             `;
             modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        async function downloadAcctventaApp() {
+            // Prefer the browser's native install prompt when available
+            if (deferredPwaPrompt) {
+                try {
+                    deferredPwaPrompt.prompt();
+                    await deferredPwaPrompt.userChoice;
+                    deferredPwaPrompt = null;
+                    closeModal();
+                    if (window.AcctventaToast) window.AcctventaToast.success('Install started');
+                    return;
+                } catch (e) {}
+            }
+
+            const ua = navigator.userAgent || '';
+            const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(ua);
+
+            if (isIOS) {
+                if (window.AcctventaToast) {
+                    window.AcctventaToast.info('On Safari: tap Share → Add to Home Screen');
+                } else {
+                    alert('On Safari: tap Share → Add to Home Screen to install Acctventa.');
+                }
+                closeModal();
+                // Stay on the main site so they can add the current page
+                if (location.hostname !== 'acctventa.com' && location.hostname !== 'www.acctventa.com') {
+                    location.href = 'https://acctventa.com/';
+                }
+                return;
+            }
+
+            if (isAndroid) {
+                if (window.AcctventaToast) {
+                    window.AcctventaToast.info('Tap menu (⋮) → Install app / Add to Home screen');
+                } else {
+                    alert('In Chrome: tap menu (⋮) → Install app or Add to Home screen.');
+                }
+                closeModal();
+                if (location.hostname !== 'acctventa.com' && location.hostname !== 'www.acctventa.com') {
+                    location.href = 'https://acctventa.com/';
+                }
+                return;
+            }
+
+            // Desktop / other: open the live app
+            closeModal();
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                location.href = '/dashboard.html';
+            } else {
+                location.href = '/login';
+            }
         }
 
         function handleBrowseMarket() {
