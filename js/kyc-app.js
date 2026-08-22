@@ -607,7 +607,9 @@
     const ov = overlay();
     if (!ov) return;
     try {
-      document.getElementById('leftMenu')?.classList.add('hidden');
+      ['appModal','walletFlowOverlay','sellWizardOverlay','chatOverlay','filterDrawer','leftMenu','rightMenu'].forEach(function(id){
+        var el=document.getElementById(id); if(!el)return; el.classList.add('hidden'); el.classList.remove('flex');
+      });
     } catch (e) {}
     await refreshStatus();
     if (forceForm) {

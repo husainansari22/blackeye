@@ -310,8 +310,8 @@ $tab = $_GET['tab'] ?? 'overview';
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/admin-app.css?v=20260822kyc3">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
-  <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
-  <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
+  <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
+  <script src="/js/mobile-fix.js?v=20260822tap1"></script>
   <script src="/js/ui-toast.js?v=20260821toast2"></script>
   <style>
     body.av-app{font-family:"Plus Jakarta Sans",system-ui,sans-serif}

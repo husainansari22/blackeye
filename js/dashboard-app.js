@@ -728,7 +728,7 @@
         ${t.note ? `<p class="text-xs text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-800">${escapeHtml(t.note)}</p>` : ''}
       </div>
       <button onclick="closeModal()" class="w-full bg-brandPrimary text-white py-3 rounded-xl font-bold text-sm">Close</button>`;
-    document.getElementById('appModal').classList.remove('hidden');
+    (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
   };
 
   function currencySymbol(code) {
@@ -785,7 +785,7 @@
     overlay.classList.add('flex');
     // Hide main modal if open
     const modal = document.getElementById('appModal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
     try {
       body.scrollTop = 0;
     } catch (e) {}
@@ -1480,7 +1480,7 @@
       <div class="flex justify-between items-center mb-4"><span class="text-slate-500 text-sm">Price</span><span class="text-2xl font-extrabold text-brandPrimary">${money(item.price)}</span></div>
       <p class="text-[11px] text-emerald-600 mb-3"><i class="fa-solid fa-shield-halved mr-1"></i>${item.releaseType === 'manual' ? 'Manual delivery — seller funds stay in escrow until login details are sent (AI release).' : 'Auto delivery — credentials unlock instantly after purchase.'}</p>
       <button onclick="buyListing('${item.id}')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Buy now · ${money(item.price)}</button>`;
-    document.getElementById('appModal').classList.remove('hidden');
+    (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
   };
 
   window.buyListing = async function (id) {
@@ -1542,7 +1542,7 @@
         ${!isSeller && order.sellerEmail ? `<button onclick="openSellerProfile('${escapeAttr(order.sellerEmail)}')" class="col-span-2 text-xs text-slate-500 underline py-1">View seller profile</button>` : ''}
         ${isSeller && order.status === 'pending' ? `<button onclick="releaseOrder('${orderId}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">I sent login details — release funds</button>` : ''}
       </div>`;
-    document.getElementById('appModal').classList.remove('hidden');
+    (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
   };
 
   window.leaveSellerReview = async function (orderId) {
@@ -1600,7 +1600,7 @@
               : '<p class="text-xs text-slate-400">No live listings.</p>'
           }
         </div>`;
-      document.getElementById('appModal').classList.remove('hidden');
+      (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
     } catch (e) {
       alert(e.message || 'Could not load seller profile');
     }

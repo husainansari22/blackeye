@@ -39,3 +39,32 @@ img, video, canvas, svg {
   max-width: 100%;
   height: auto;
 }
+
+/*
+ * CRITICAL: Tailwind "hidden flex" on the same node is unreliable —
+ * flex can win and leave a full-screen overlay stealing every tap.
+ * Force closed overlays to truly not receive pointer events.
+ */
+#appModal.hidden,
+#walletFlowOverlay.hidden,
+#kycOverlay.hidden,
+#sellWizardOverlay.hidden,
+#chatOverlay.hidden,
+#filterDrawer.hidden,
+#leftMenu.hidden,
+#rightMenu.hidden,
+#notificationDrawer.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+#appModal:not(.hidden),
+#walletFlowOverlay:not(.hidden),
+#kycOverlay:not(.hidden),
+#sellWizardOverlay:not(.hidden),
+#chatOverlay:not(.hidden) {
+  display: flex !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
