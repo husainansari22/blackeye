@@ -302,6 +302,7 @@
     user.payoutAccountName = user.payoutAccountName || '';
     user.payoutCurrency = user.payoutCurrency || '';
     user.payoutBankLocked = !!user.payoutBankLocked;
+    user.avatarUrl = user.avatarUrl || user.avatar || '';
     if (!isValidReferralCode(user.referralCode)) {
       user.referralCode = randomReferralCode();
     }

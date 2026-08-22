@@ -31,7 +31,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
-    <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc7">
+    <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
+    <link rel="stylesheet" href="/css/profile.css?v=20260822prof1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -139,7 +140,7 @@
                     <span id="notifBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                 </button>
                 <button type="button" onclick="toggleRightMenu()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
-                    <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-brandPrimary text-white text-xs font-bold uppercase">?</span>
+                    <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-brandPrimary text-white text-xs font-bold uppercase overflow-hidden">?</span>
                 </button>
             </div>
         </div>
@@ -498,7 +499,7 @@
             <!-- Profile -->
             <div class="px-5 pb-2 space-y-2 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-start gap-3">
-                    <div id="leftProfileAvatar" class="w-11 h-11 rounded-md bg-sky-600 flex items-center justify-center text-white shrink-0 text-sm font-bold uppercase">?</div>
+                    <div id="leftProfileAvatar" class="w-11 h-11 rounded-full bg-brandPrimary flex items-center justify-center text-white shrink-0 text-sm font-bold uppercase overflow-hidden">?</div>
                     <div class="min-w-0 pt-0.5">
                         <h3 id="leftProfileName" class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug">Guest</h3>
                         <p id="leftProfileEmail" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">—</p>
@@ -552,59 +553,64 @@
     </div>
 
     <!-- RIGHT PROFILE PANEL — signed-in user's details -->
-    <div id="rightMenu" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
+    <div id="rightMenu" class="profile-panel fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-black">
         <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
             <div class="flex items-center gap-3 px-4 pt-3 pb-2">
-                <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-brandPrimary/40 text-brandPrimary flex items-center justify-center hover:bg-brandPrimary hover:text-white transition" aria-label="Go back">
                     <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white">My Profile</h3>
             </div>
 
-            <div class="px-5 pb-4 space-y-4 border-b border-slate-200 dark:border-slate-800">
+            <div class="profile-hero">
                 <div class="flex items-center gap-4">
-                    <div id="rightProfileAvatar" class="w-16 h-16 rounded-xl bg-brandPrimary flex items-center justify-center text-white text-xl font-bold uppercase shrink-0">?</div>
-                    <div class="min-w-0">
-                        <h4 id="rightProfileName" class="font-bold text-base text-slate-900 dark:text-white leading-snug">Guest</h4>
-                        <p id="rightProfileEmail" class="text-sm text-brandPrimary mt-0.5 truncate underline">—</p>
-                        <p id="rightProfilePhone" class="text-xs text-slate-500 mt-1">—</p>
+                    <button type="button" class="profile-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
+                        <div id="rightProfileAvatar" class="av-user-avatar av-user-avatar--lg">?</div>
+                        <span class="profile-avatar-cam"><i class="fa-solid fa-camera"></i></span>
+                    </button>
+                    <input id="profilePhotoInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfilePhoto(this)">
+                    <div class="profile-hero-meta min-w-0">
+                        <h4 id="rightProfileName">Guest</h4>
+                        <a id="rightProfileEmail" class="profile-email" href="#">—</a>
+                        <p id="rightProfilePhone" class="profile-phone">—</p>
                     </div>
                 </div>
+                <p class="profile-hint">Tap the camera to upload a profile picture</p>
             </div>
 
-            <div class="px-5 py-4 space-y-3 border-b border-slate-200 dark:border-slate-800">
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-500">Wallet balance</span>
-                    <span id="rightProfileBalance" class="font-bold text-slate-800 dark:text-white">$0.00</span>
+            <div class="profile-stats">
+                <div class="profile-stat">
+                    <span>Wallet balance</span>
+                    <span id="rightProfileBalance" class="profile-stat-val">$0.00</span>
                 </div>
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-500">Member since</span>
-                    <span id="rightProfileJoined" class="font-medium text-slate-800 dark:text-white">—</span>
+                <div class="profile-stat">
+                    <span>Member since</span>
+                    <span id="rightProfileJoined" class="profile-stat-val">—</span>
                 </div>
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-500">Referral code</span>
-                    <span id="rightProfileRefCode" class="font-mono text-brandPrimary text-xs">—</span>
+                <div class="profile-stat">
+                    <span>Referral code</span>
+                    <span id="rightProfileRefCode" class="profile-stat-val profile-stat-val--brand">—</span>
                 </div>
             </div>
 
-            <nav class="px-2 pt-2">
-                <a href="#" onclick="openAccountSettings(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
+            <nav class="profile-nav px-3 pt-1 pb-8">
+                <a href="#" onclick="openAccountSettings(); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-gear"></i> Account settings
                 </a>
-                <a href="#" onclick="switchTab('wallet'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-wallet w-5 text-center"></i> Wallet
+                <a href="#" onclick="switchTab('wallet'); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-wallet"></i> Wallet
                 </a>
-                <a href="#" onclick="switchTab('orders'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-clipboard-check w-5 text-center"></i> My purchases
+                <a href="#" onclick="switchTab('orders'); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-clipboard-check"></i> My purchases
                 </a>
-                <a href="#" onclick="switchTab('referral'); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-users w-5 text-center"></i> Referral
+                <a href="#" onclick="switchTab('referral'); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-users"></i> Referral
                 </a>
-                <a href="#" onclick="openSupportCenter(); toggleRightMenu(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-headset w-5 text-center"></i> Support
+                <a href="#" onclick="openSupportCenter(); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-headset"></i> Support
                 </a>
-                <a href="#" onclick="handleLogout(); return false;" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition">
-                    <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
+                <a href="#" onclick="handleLogout(); return false;" class="profile-nav-out">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out
                 </a>
             </nav>
         </div>
@@ -802,11 +808,11 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260822ref2"></script>
+    <script src="/js/acctventa.js?v=20260822prof1"></script>
     <script src="/js/api-client.js?v=20260822kyc1"></script>
-    <script src="/js/api-sync.js?v=20260821cat1"></script>
+    <script src="/js/api-sync.js?v=20260822prof1"></script>
     <script src="/js/kyc-app.js?v=20260822kyc9"></script>
-    <script src="/js/dashboard-app.js?v=20260821cat1"></script>
+    <script src="/js/dashboard-app.js?v=20260822prof1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

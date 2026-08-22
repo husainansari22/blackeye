@@ -163,6 +163,7 @@
         payoutAccountName: user.payoutAccountName || '',
         payoutCurrency: user.payoutCurrency || '',
         payoutBankLocked: !!user.payoutBankLocked,
+        avatarUrl: user.avatarUrl || '',
         ads: (adsRes.ads || []).map(mapAd),
         orders: (ordersRes.orders || []).map(mapOrder),
         transactions: (walletRes.transactions || []).map(mapTx),

@@ -33,19 +33,36 @@
     return u;
   }
 
+  function paintAvatar(id, u) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const url = (u && (u.avatarUrl || u.avatar)) || '';
+    const initials = A().getInitials((u && u.name) || '');
+    if (url) {
+      el.innerHTML = '<img alt="" src="' + String(url).replace(/"/g, '&quot;') + '">';
+      el.classList.add('has-photo');
+    } else {
+      el.textContent = initials;
+      el.classList.remove('has-photo');
+    }
+  }
+
   function applyProfileChrome(u) {
-    const initials = A().getInitials(u.name);
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
     };
-    set('headerProfileAvatar', initials);
-    set('leftProfileAvatar', initials);
+    paintAvatar('headerProfileAvatar', u);
+    paintAvatar('leftProfileAvatar', u);
+    paintAvatar('rightProfileAvatar', u);
     set('leftProfileName', (u.name || '').toUpperCase());
     set('leftProfileEmail', u.email);
-    set('rightProfileAvatar', initials);
     set('rightProfileName', u.name);
     set('rightProfileEmail', u.email);
+    const mailEl = document.getElementById('rightProfileEmail');
+    if (mailEl && mailEl.tagName === 'A') {
+      mailEl.href = u.email ? 'mailto:' + u.email : '#';
+    }
     set('rightProfilePhone', u.phone || 'No phone added');
     set('rightProfileBalance', money(u.balance));
     set('rightProfileRefCode', u.referralCode || '—');
@@ -1999,6 +2016,60 @@
     }
   }
 
+  function compressAvatarFile(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !String(file.type || '').startsWith('image/')) {
+        reject(new Error('Please choose a photo'));
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        reject(new Error('Photo is too large (max 8MB)'));
+        return;
+      }
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        try {
+          const max = 512;
+          let w = img.width;
+          let h = img.height;
+          if (w < 1 || h < 1) {
+            reject(new Error('Could not read that photo'));
+            return;
+          }
+          if (w > h) {
+            if (w > max) {
+              h = Math.round((h * max) / w);
+              w = max;
+            }
+          } else if (h > max) {
+            w = Math.round((w * max) / h);
+            h = max;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not process photo'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(blobUrl);
+          resolve(canvas.toDataURL('image/jpeg', 0.86));
+        } catch (err) {
+          URL.revokeObjectURL(blobUrl);
+          reject(err);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error('Could not read that photo'));
+      };
+      img.src = blobUrl;
+    });
+  }
+
   window.AcctventaUI = {
     refreshAll() {
       const u = requireAuth();
@@ -2018,6 +2089,40 @@
       renderAds();
       renderMarketplace();
       renderNotifications();
+    },
+    async onProfilePhoto(input) {
+      const file = input && input.files && input.files[0];
+      if (input) input.value = '';
+      if (!file) return;
+      const u = requireAuth();
+      if (!u) return;
+      try {
+        const dataUrl = await compressAvatarFile(file);
+        if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi() && window.AcctventaApi) {
+          const res = await window.AcctventaApi.updateProfile({
+            name: u.name,
+            phone: u.phone || '',
+            avatar: dataUrl,
+          });
+          if (res && res.user && res.user.avatarUrl) {
+            u.avatarUrl = res.user.avatarUrl;
+          } else {
+            u.avatarUrl = dataUrl;
+          }
+          A().persistUser(u);
+          if (window.AcctventaApiSync.hydrateFromApi) {
+            await window.AcctventaApiSync.hydrateFromApi();
+          }
+        } else {
+          u.avatarUrl = dataUrl;
+          A().persistUser(u);
+        }
+        applyProfileChrome(A().getCurrentUser() || u);
+        if (window.AcctventaToast) window.AcctventaToast.success('Profile photo updated');
+        else alert('Profile photo updated');
+      } catch (e) {
+        alert((e && e.message) || 'Could not update photo');
+      }
     }
   };
 

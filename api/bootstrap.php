@@ -239,6 +239,7 @@ function require_user(): array {
 function public_user(array $u): array {
     ensure_user_payout_columns();
     ensure_wallet_ledger_columns();
+    ensure_user_avatar_column();
     $u = ensure_user_referral_code($u);
     $bal = (float)$u['balance'];
     $wd = array_key_exists('withdrawable_balance', $u)
@@ -256,6 +257,7 @@ function public_user(array $u): array {
         'email' => $u['email'],
         'phone' => $u['phone'],
         'countryCode' => strtolower((string)($u['country_code'] ?? '')),
+        'avatarUrl' => (string)($u['avatar_url'] ?? ''),
         'balance' => $bal,
         'withdrawableBalance' => (float)money_f($wd),
         'owing' => $bal < 0 ? abs($bal) : 0,
@@ -281,6 +283,84 @@ function public_user(array $u): array {
         'payoutCurrency' => (string)($u['payout_currency'] ?? ''),
         'payoutBankLocked' => (int)($u['payout_bank_locked'] ?? 0) === 1,
     ];
+}
+
+function ensure_user_avatar_column(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->query('SELECT avatar_url FROM users LIMIT 1');
+    } catch (Throwable $e) {
+        try {
+            db()->exec("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) NOT NULL DEFAULT '' AFTER phone");
+        } catch (Throwable $e2) {}
+    }
+    $dir = dirname(__DIR__) . '/uploads/avatars';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $ht = $dir . '/.htaccess';
+    if (!is_file($ht)) {
+        @file_put_contents($ht, "Options -Indexes\n<FilesMatch \"\\.(php|phtml|php3|php4|php5|phar)$\">\nDeny from all\n</FilesMatch>\n");
+    }
+}
+
+/**
+ * Save a JPEG/PNG/WebP data-URL as the user's public avatar. Returns the public URL.
+ */
+function save_user_avatar(int $userId, string $data): string {
+    ensure_user_avatar_column();
+    $mime = '';
+    $bin = '';
+    if (preg_match('#^data:([^;]+);base64,(.+)$#s', $data, $m)) {
+        $mime = strtolower(trim($m[1]));
+        $bin = base64_decode($m[2], true);
+    } else {
+        $bin = base64_decode($data, true);
+    }
+    if ($bin === false || $bin === '') {
+        throw new RuntimeException('Could not read that photo');
+    }
+    if (strlen($bin) > 2.5 * 1024 * 1024) {
+        throw new RuntimeException('Photo is too large (max 2.5MB)');
+    }
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/jpg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+    if (!isset($allowed[$mime])) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $detected = strtolower((string)($finfo->buffer($bin) ?: ''));
+        if (isset($allowed[$detected])) {
+            $mime = $detected;
+        } else {
+            throw new RuntimeException('Use a JPEG, PNG, or WebP photo');
+        }
+    }
+    $ext = $allowed[$mime];
+    $stored = 'u' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+    $dir = dirname(__DIR__) . '/uploads/avatars';
+    $path = $dir . '/' . $stored;
+    if (file_put_contents($path, $bin) === false) {
+        throw new RuntimeException('Could not save photo');
+    }
+
+    $stmt = db()->prepare('SELECT avatar_url FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $prev = (string)($stmt->fetchColumn() ?: '');
+    if ($prev !== '' && preg_match('#^/uploads/avatars/([a-zA-Z0-9._-]+)$#', $prev, $pm)) {
+        $old = $dir . '/' . $pm[1];
+        if (is_file($old)) {
+            @unlink($old);
+        }
+    }
+
+    $url = '/uploads/avatars/' . $stored;
+    db()->prepare('UPDATE users SET avatar_url = ? WHERE id = ?')->execute([$url, $userId]);
+    return $url;
 }
 
 function ensure_user_payout_columns(): void {

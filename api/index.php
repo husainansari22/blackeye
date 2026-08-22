@@ -126,10 +126,19 @@ try {
 
         case 'auth.profile': {
             $u = require_user();
+            ensure_user_avatar_column();
             $name = trim((string)($body['name'] ?? $u['name']));
             $phone = trim((string)($body['phone'] ?? $u['phone']));
             if ($name === '') json_out(['ok' => false, 'error' => 'Name is required'], 422);
             db()->prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?')->execute([$name, $phone, (int)$u['id']]);
+            $avatarData = (string)($body['avatar'] ?? '');
+            if ($avatarData !== '') {
+                try {
+                    save_user_avatar((int)$u['id'], $avatarData);
+                } catch (Throwable $e) {
+                    json_out(['ok' => false, 'error' => $e->getMessage()], 422);
+                }
+            }
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
             json_out(['ok' => true, 'user' => public_user($fresh)]);
         }
@@ -1107,6 +1116,7 @@ try {
 
         case 'sellers.profile': {
             ensure_marketplace_extras();
+            ensure_user_avatar_column();
             $sellerId = (int)($body['sellerId'] ?? $_GET['sellerId'] ?? 0);
             $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
             if ($sellerId < 1 && $sellerEmail !== '') {
@@ -1131,6 +1141,7 @@ try {
                     'name' => $seller['name'],
                     'email' => $seller['email'],
                     'isVerified' => (int)$seller['is_verified'] === 1,
+                    'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
                     'memberSince' => $seller['created_at'],
                     'completedSales' => $sales,
                     'rating' => seller_rating_summary($sid),

@@ -1,0 +1,243 @@
+/* My Profile — round avatars + brand-blue restyle */
+
+.av-user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #0ea5e9;
+  color: #fff;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.av-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#headerProfileAvatar,
+#leftProfileAvatar {
+  overflow: hidden;
+}
+
+#headerProfileAvatar img,
+#leftProfileAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 9999px;
+}
+
+#rightMenu.profile-panel {
+  background: #f0f9ff;
+}
+
+.dark #rightMenu.profile-panel {
+  background: #020617;
+}
+
+.profile-hero {
+  margin: 0 1rem 0.75rem;
+  padding: 1.15rem 1rem 1.25rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(165deg, rgba(14, 165, 233, 0.16), rgba(14, 165, 233, 0.04) 55%, transparent);
+  border: 1px solid rgba(14, 165, 233, 0.28);
+}
+
+.dark .profile-hero {
+  background: linear-gradient(165deg, rgba(14, 165, 233, 0.2), rgba(15, 23, 42, 0.4) 60%, transparent);
+  border-color: rgba(14, 165, 233, 0.28);
+}
+
+.profile-avatar-btn {
+  position: relative;
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.av-user-avatar--lg {
+  width: 5.5rem;
+  height: 5.5rem;
+  font-size: 1.55rem;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 6px #0ea5e9;
+}
+
+.dark .av-user-avatar--lg {
+  box-shadow: 0 0 0 3px #020617, 0 0 0 6px #0ea5e9;
+}
+
+.profile-avatar-cam {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 9999px;
+  background: #0ea5e9;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  box-shadow: 0 0 0 2px #fff;
+  pointer-events: none;
+}
+
+.dark .profile-avatar-cam {
+  box-shadow: 0 0 0 2px #020617;
+}
+
+.profile-hero-meta {
+  min-width: 0;
+}
+
+.profile-hero-meta h4 {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.dark .profile-hero-meta h4 {
+  color: #fff;
+}
+
+.profile-hero-meta a,
+.profile-hero-meta .profile-email {
+  display: block;
+  font-size: 0.8125rem;
+  color: #0ea5e9;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.profile-hero-meta a:hover {
+  text-decoration: underline;
+}
+
+.profile-phone {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.dark .profile-phone {
+  color: #94a3b8;
+}
+
+.profile-hint {
+  margin: 0.7rem 0 0;
+  font-size: 0.7rem;
+  color: #0284c7;
+}
+
+.profile-stats {
+  margin: 0 1rem 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+.dark .profile-stats {
+  background: #0f172a;
+  border-color: rgba(14, 165, 233, 0.2);
+}
+
+.profile-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .profile-stat {
+  border-bottom-color: #1e293b;
+}
+
+.profile-stat:last-child {
+  border-bottom: 0;
+}
+
+.profile-stat span:first-child {
+  color: #64748b;
+}
+
+.dark .profile-stat span:first-child {
+  color: #94a3b8;
+}
+
+.profile-stat strong,
+.profile-stat .profile-stat-val {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dark .profile-stat strong,
+.dark .profile-stat .profile-stat-val {
+  color: #f8fafc;
+}
+
+.profile-stat .profile-stat-val--brand {
+  color: #0ea5e9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+.profile-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  margin: 0.15rem 0;
+  border-radius: 0.85rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dark .profile-nav a {
+  color: #f1f5f9;
+}
+
+.profile-nav a i {
+  width: 1.25rem;
+  text-align: center;
+  color: #0ea5e9;
+}
+
+.profile-nav a:hover {
+  background: rgba(14, 165, 233, 0.1);
+  color: #0284c7;
+}
+
+.profile-nav a.profile-nav-out {
+  color: #f43f5e;
+}
+
+.profile-nav a.profile-nav-out i {
+  color: #f43f5e;
+}
+
+.profile-nav a.profile-nav-out:hover {
+  background: rgba(244, 63, 94, 0.1);
+  color: #e11d48;
+}
