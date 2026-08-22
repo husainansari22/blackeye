@@ -644,11 +644,8 @@
         }
 
         function handleBrowseMarket() {
-            if (localStorage.getItem('isLoggedIn') === 'true') {
-                window.location.href = "/dashboard.html";
-            } else {
-                switchPage('signup');
-            }
+            // Anyone can browse listings; buy/sell still require sign-in on the dashboard
+            window.location.href = '/dashboard.html#home';
         }
 
         function getUsers() {

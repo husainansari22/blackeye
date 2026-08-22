@@ -145,7 +145,7 @@
                     <i class="fa-regular fa-bell text-lg"></i>
                     <span id="notifBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                 </button>
-                <button type="button" onclick="toggleRightMenu()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
+                <button type="button" onclick="openProfileOrSignIn()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
                     <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-brandPrimary text-white text-xs font-bold uppercase overflow-hidden">?</span>
                 </button>
             </div>
@@ -518,19 +518,25 @@
 
             <!-- Nav list (tight spacing so Sell Product stays on screen) -->
             <nav class="px-2 pt-1">
-                <a href="#" onclick="switchTab('account_dashboard'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" onclick="switchTab('home'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-house w-5 text-center"></i> Home
+                </a>
+                <a href="#" onclick="switchTab('market'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-store w-5 text-center"></i> Marketplace
+                </a>
+                <a href="#" data-auth-only onclick="switchTab('account_dashboard'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-border-all w-5 text-center"></i> Account Dashboard
                 </a>
-                <a href="#" onclick="switchTab('referral'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" data-auth-only onclick="switchTab('referral'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-users w-5 text-center"></i> Referral
                 </a>
-                <a href="#" onclick="switchTab('plans'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" data-auth-only onclick="switchTab('plans'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-award w-5 text-center"></i> Plans
                 </a>
-                <a href="#" onclick="switchTab('orders'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" data-auth-only onclick="switchTab('orders'); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Purchase
                 </a>
-                <a href="#" onclick="openAccountSettings(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" data-auth-only onclick="openAccountSettings(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
                 </a>
                 <a href="#" onclick="openSupportCenter(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
@@ -539,7 +545,7 @@
                 <a href="/guidelines" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-scale-balanced w-5 text-center"></i> Community Standards
                 </a>
-                <a href="#" onclick="openMyStories(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" data-auth-only onclick="openMyStories(); toggleLeftMenu(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-camera w-5 text-center"></i> My Stories
                 </a>
                 <div class="flex items-center justify-between px-3 py-2 text-[14px] text-slate-800 dark:text-white">
@@ -548,12 +554,22 @@
                         <div class="w-4 h-4 bg-white rounded-full absolute left-1 dark:translate-x-4 top-1 transition-transform shadow" id="themeThumb"></div>
                     </div>
                 </div>
-                <a href="#" onclick="handleLogout(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" data-auth-only onclick="handleLogout(); return false;" class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
                 </a>
             </nav>
 
-            <div class="px-5 pt-3 pb-6">
+            <!-- Guest: Login / Sign up (acctbazaar-style) -->
+            <div id="leftGuestAuth" class="px-5 pt-3 pb-6 space-y-2.5 hidden">
+                <a href="/login" class="block w-full text-center border-2 border-brandPrimary text-brandPrimary font-semibold py-3 rounded-xl transition text-sm hover:bg-brandPrimary/10">
+                    Log in
+                </a>
+                <a href="/signup" class="block w-full text-center bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
+                    Sign up
+                </a>
+            </div>
+
+            <div id="leftAuthSell" class="px-5 pt-3 pb-6">
                 <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
                     Sell Product
                 </button>
@@ -799,39 +815,73 @@
     <!-- BOTTOM NAVIGATION (acctbazaar-style) -->
     <nav class="fixed bottom-0 left-0 z-40 w-full bg-lightCard dark:bg-darkCard shadow-[0px_-2px_80.7px_0px_rgba(200,209,212,0.25)] dark:shadow-[0px_-2px_40px_0px_rgba(0,0,0,0.4)] border-t border-slate-100 dark:border-slate-800">
         <div class="mx-auto flex max-w-[500px] items-center justify-between px-6 py-3.5">
-            <button onclick="switchTab('home'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-brandPrimary transition">
+            <button onclick="switchTab('home')" class="nav-item flex flex-col items-center gap-1 font-medium text-brandPrimary transition">
                 <i class="fa-solid fa-house text-lg"></i><span class="text-xs">Home</span>
             </button>
-            <button onclick="switchTab('market'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+            <button onclick="switchTab('market')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
                 <i class="fa-solid fa-border-all text-lg"></i><span class="text-xs">Market</span>
             </button>
-            <button onclick="switchTab('orders'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+            <button onclick="switchTab('orders')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
                 <i class="fa-regular fa-clipboard text-lg"></i><span class="text-xs">Orders</span>
             </button>
-            <button onclick="switchTab('ads'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+            <button onclick="switchTab('ads')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
                 <i class="fa-solid fa-bullhorn text-lg"></i><span class="text-xs">Ads</span>
             </button>
-            <button onclick="switchTab('wallet'); setActiveNav(this);" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
+            <button onclick="switchTab('wallet')" class="nav-item flex flex-col items-center gap-1 font-medium text-[#C7CED0] hover:text-brandPrimary transition">
                 <i class="fa-solid fa-wallet text-lg"></i><span class="text-xs">Wallet</span>
             </button>
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260822prof1"></script>
-    <script src="/js/api-client.js?v=20260822kyc1"></script>
-    <script src="/js/api-sync.js?v=20260822prof1"></script>
+    <script src="/js/acctventa.js?v=20260822guest1"></script>
+    <script src="/js/api-client.js?v=20260822guest1"></script>
+    <script src="/js/api-sync.js?v=20260822guest1"></script>
     <script src="/js/kyc-app.js?v=20260822kyc9"></script>
-    <script src="/js/dashboard-app.js?v=20260822prof1"></script>
+    <script src="/js/dashboard-app.js?v=20260822guest1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
             'home', 'market', 'orders', 'ads', 'wallet',
             'account_dashboard', 'referral', 'plans', 'support'
         ];
+        const AUTH_TABS = ['orders', 'ads', 'wallet', 'account_dashboard', 'referral', 'plans'];
         const DASH_TAB_KEY = 'acctventa_dash_tab';
+
+        function dashIsLoggedIn() {
+            try {
+                if (window.AcctventaUI && typeof window.AcctventaUI.isLoggedIn === 'function') {
+                    return !!window.AcctventaUI.isLoggedIn();
+                }
+                return localStorage.getItem('isLoggedIn') === 'true';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function promptDashSignIn(msg) {
+            if (window.AcctventaUI && window.AcctventaUI.promptSignIn) {
+                window.AcctventaUI.promptSignIn(msg || 'You are not logged in');
+            } else if (window.AcctventaToast) {
+                window.AcctventaToast.error(msg || 'You are not logged in');
+            } else {
+                alert(msg || 'You are not logged in');
+            }
+        }
+
+        function openProfileOrSignIn() {
+            if (!dashIsLoggedIn()) {
+                promptDashSignIn('You are not logged in. Sign in first.');
+                return;
+            }
+            toggleRightMenu();
+        }
 
         function switchTab(tabId) {
             if (!tabId) tabId = 'home';
+            if (AUTH_TABS.includes(tabId) && !dashIsLoggedIn()) {
+                promptDashSignIn('You are not logged in. Sign in first.');
+                return;
+            }
             document.querySelectorAll('.app-tab').forEach((t) => t.classList.add('hidden'));
             const el = document.getElementById('tab_' + tabId);
             if (el) {
@@ -880,6 +930,7 @@
                 }
             }
             if (!DASH_TABS.includes(tab)) tab = 'home';
+            if (AUTH_TABS.includes(tab) && !dashIsLoggedIn()) tab = 'home';
             switchTab(tab);
         }
 
@@ -1080,7 +1131,10 @@
         });
         function openAccountSettings() {
             const u = window.Acctventa && window.Acctventa.getCurrentUser();
-            if (!u) return;
+            if (!u) {
+                promptDashSignIn('You are not logged in. Sign in first.');
+                return;
+            }
             document.getElementById('modalBody').innerHTML = `
                 <h3 class="font-bold text-lg mb-4">Account Settings</h3>
                 <label class="block text-xs text-slate-500 mb-1">Full name</label>

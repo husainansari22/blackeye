@@ -19,10 +19,14 @@
     return currentUser;
   }
 
-  function requireAuth() {
+  function requireAuth(opts) {
     const u = refreshUser();
     if (!u) {
-      window.location.href = '/index.html?page=login';
+      if (opts && opts.redirect) {
+        window.location.href = '/login';
+        return null;
+      }
+      promptSignIn((opts && opts.message) || 'You are not logged in');
       return null;
     }
     // ensure plan defaults
@@ -31,6 +35,27 @@
       A().persistUser(u);
     }
     return u;
+  }
+
+  function promptSignIn(message) {
+    const msg = message || 'You are not logged in';
+    if (window.AcctventaToast) window.AcctventaToast.error(msg);
+    else alert(msg);
+  }
+
+  function syncGuestMenu(isLoggedIn) {
+    document.querySelectorAll('[data-auth-only]').forEach((el) => {
+      el.classList.toggle('hidden', !isLoggedIn);
+    });
+    document.querySelectorAll('[data-guest-only]').forEach((el) => {
+      el.classList.toggle('hidden', !!isLoggedIn);
+    });
+    const guestAuth = document.getElementById('leftGuestAuth');
+    if (guestAuth) guestAuth.classList.toggle('hidden', !!isLoggedIn);
+    const sellWrap = document.getElementById('leftAuthSell');
+    if (sellWrap) sellWrap.classList.toggle('hidden', !isLoggedIn);
+    const verifiedBtn = document.getElementById('leftBecomeVerifiedBtn');
+    if (verifiedBtn) verifiedBtn.classList.toggle('hidden', !isLoggedIn);
   }
 
   function paintAvatar(id, u) {
@@ -52,6 +77,29 @@
       const el = document.getElementById(id);
       if (el) el.textContent = val;
     };
+    if (!u) {
+      paintAvatar('headerProfileAvatar', { name: 'Guest' });
+      paintAvatar('leftProfileAvatar', { name: 'Guest' });
+      paintAvatar('rightProfileAvatar', { name: 'Guest' });
+      set('leftProfileName', 'GUEST');
+      set('leftProfileEmail', 'Browse freely · sign in to buy');
+      set('rightProfileName', 'Guest');
+      set('rightProfileEmail', 'Not signed in');
+      const mailEl = document.getElementById('rightProfileEmail');
+      if (mailEl && mailEl.tagName === 'A') mailEl.href = '/login';
+      set('rightProfilePhone', '—');
+      set('rightProfileBalance', money(0));
+      set('rightProfileRefCode', '—');
+      set('rightProfileJoined', '—');
+      const notifBadge = document.getElementById('notifBadge');
+      if (notifBadge) {
+        notifBadge.classList.add('hidden');
+        notifBadge.classList.remove('flex');
+      }
+      syncGuestMenu(false);
+      return;
+    }
+    syncGuestMenu(true);
     paintAvatar('headerProfileAvatar', u);
     paintAvatar('leftProfileAvatar', u);
     paintAvatar('rightProfileAvatar', u);
@@ -1341,7 +1389,7 @@
   };
 
   window.openSellProductWizard = function () {
-    const u = requireAuth();
+    const u = requireAuth({ message: 'You are not logged in. Sign in first to sell.' });
     if (!u) return;
     if (!A().canUploadToday(u)) {
       alert('Daily upload limit reached (' + A().getPlan(u).dailyUploads + '). Upgrade your plan to upload more today.');
@@ -1502,6 +1550,10 @@
 
   window.buyListing = async function (id) {
     const u = refreshUser();
+    if (!u) {
+      promptSignIn('You are not logged in. Sign in first to buy.');
+      return;
+    }
     const res = await Promise.resolve(A().purchaseListing(u, id));
     if (!res.ok) {
       alert(res.error);
@@ -1678,7 +1730,7 @@
   };
 
   window.openSupportChat = async function () {
-    const u = requireAuth();
+    const u = requireAuth({ message: 'You are not logged in. Sign in first.' });
     if (!u) return;
     chatMode = 'support';
     activeOrderId = null;
@@ -2071,11 +2123,15 @@
   }
 
   window.AcctventaUI = {
+    promptSignIn,
+    isLoggedIn() {
+      return !!refreshUser();
+    },
     refreshAll() {
-      const u = requireAuth();
-      if (!u) return;
+      const u = refreshUser();
       applyProfileChrome(u);
       renderMarketplace();
+      if (!u) return;
       renderAds();
       renderOrders();
       renderPlans();
@@ -2094,7 +2150,7 @@
       const file = input && input.files && input.files[0];
       if (input) input.value = '';
       if (!file) return;
-      const u = requireAuth();
+      const u = requireAuth({ message: 'You are not logged in. Sign in to update your photo.' });
       if (!u) return;
       try {
         const dataUrl = await compressAvatarFile(file);
@@ -2128,11 +2184,14 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (window.AcctventaApiSync) {
-      await window.AcctventaApiSync.hydrateFromApi();
+      const hydrated = await window.AcctventaApiSync.hydrateFromApi();
+      if (!hydrated && window.AcctventaApiSync.hydratePublicMarket) {
+        await window.AcctventaApiSync.hydratePublicMarket();
+      }
     }
     window.AcctventaUI.refreshAll();
     try {
-      if (window.AcctventaKyc) await window.AcctventaKyc.refreshStatus();
+      if (window.AcctventaKyc && refreshUser()) await window.AcctventaKyc.refreshStatus();
     } catch (e) {}
     // Keep the user on wallet/orders/etc after refresh (do not bounce to home)
     try {

@@ -110,6 +110,46 @@
     };
   }
 
+  function patchMarketListingsOnly() {
+    const A = global.Acctventa;
+    if (!A || A.__apiMarketPatched) return;
+    A.__apiMarketPatched = true;
+    const origMarket = A.getMarketplaceListings.bind(A);
+    A.getMarketplaceListings = function () {
+      if (global.__acctventaApiMarket) return global.__acctventaApiMarket;
+      return origMarket();
+    };
+    const origFind = A.findListingById.bind(A);
+    A.findListingById = function (id) {
+      const list = global.__acctventaApiMarket || [];
+      const hit = list.find((x) => String(x.id) === String(id));
+      return hit || origFind(id);
+    };
+  }
+
+  /** Public marketplace for guests (no login required). */
+  async function hydratePublicMarket() {
+    const Api = global.AcctventaApi;
+    const A = global.Acctventa;
+    if (!Api || !A) return false;
+    let ok = false;
+    try {
+      ok = await Api.isAvailable();
+    } catch (e) {
+      return false;
+    }
+    if (!ok) return false;
+    try {
+      const marketRes = await Api.market().catch(() => ({ listings: [] }));
+      global.__acctventaApiMarket = (marketRes.listings || []).map(mapListing);
+      patchMarketListingsOnly();
+      return true;
+    } catch (e) {
+      console.warn('Public market hydrate failed', e);
+      return false;
+    }
+  }
+
   async function hydrateFromApi() {
     const Api = global.AcctventaApi;
     const A = global.Acctventa;
@@ -231,18 +271,7 @@
     if (!A || !Api || A.__apiPatched) return;
     A.__apiPatched = true;
 
-    const origMarket = A.getMarketplaceListings.bind(A);
-    A.getMarketplaceListings = function () {
-      if (global.__acctventaApiMarket) return global.__acctventaApiMarket;
-      return origMarket();
-    };
-
-    const origFind = A.findListingById.bind(A);
-    A.findListingById = function (id) {
-      const list = global.__acctventaApiMarket || [];
-      const hit = list.find((x) => String(x.id) === String(id));
-      return hit || origFind(id);
-    };
+    patchMarketListingsOnly();
 
     A.createAd = async function (_user, draft) {
       try {
@@ -390,6 +419,7 @@
 
   global.AcctventaApiSync = {
     hydrateFromApi,
+    hydratePublicMarket,
     loadMessages,
     usingApi,
     patchAcctventaForApi,

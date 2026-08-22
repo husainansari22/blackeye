@@ -45,9 +45,9 @@
       <li>See ratings, reviews, and verified badges</li>
     </ul>
     <p>
-      <a class="av-pub-cta" href="/dashboard.html">Open the marketplace</a>
+      <a class="av-pub-cta" href="/dashboard.html#home">Open the marketplace</a>
     </p>
-    <p class="text-sm mt-4">New here? <a href="/signup">Create a free account</a> first — then you can browse and check out.</p>
+    <p class="text-sm mt-4">Browse freely. <a href="/login">Sign in</a> when you are ready to buy — or <a href="/signup">create a free account</a>.</p>
     <p class="av-pub-nav">
       <a href="/sell">Become a Merchant</a>
       <a href="/guidelines">Community Standards</a>
@@ -55,9 +55,7 @@
     </p>
   </main>
   <script>
-    if (localStorage.getItem('isLoggedIn') === 'true') {
-      location.replace('/dashboard.html');
-    }
+    location.replace('/dashboard.html#home');
   </script>
 </body>
 </html>
