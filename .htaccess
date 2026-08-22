@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Never rewrite uploaded files
+RewriteRule ^uploads/ - [L]
+
 # Auth routes → landing page signup/login views
 RewriteRule ^auth/sign-up/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^auth/sign-in/?$ /index.html?page=login [L,QSA]

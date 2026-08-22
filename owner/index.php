@@ -31,6 +31,11 @@ if ($authed) {
     try { migrate_legacy_support_email(); } catch (Throwable $e) {}
 }
 
+// Secure KYC document viewer (avoids /uploads 404 on some hosts)
+if ($authed && isset($_GET['kyc_doc'])) {
+    kyc_stream_owner_doc((int)($_GET['id'] ?? 0), (string)($_GET['type'] ?? 'cac'));
+}
+
 if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $form = $_POST['form'] ?? '';
     try {
@@ -590,12 +595,13 @@ $tab = $_GET['tab'] ?? 'overview';
       foreach ($kycRows as $kr) {
         if (in_array($kr['status'], ['needs_review', 'blurry_review', 'pending'], true)) $pendingCount++;
       }
+      $openId = (int)($_GET['open'] ?? 0);
     ?>
       <div class="av-page">
         <div class="av-page-head">
           <div>
             <h2 class="av-page-title">Business KYC</h2>
-            <p class="av-page-sub">Review CAC + ID uploads. DocScan flags screenshots; blurry-but-legit docs wait for your approve/reject.</p>
+            <p class="av-page-sub">Tap a user line to review CAC + ID. DocScan flags screenshots; blurry docs need your decision.</p>
           </div>
           <div class="av-page-meta">
             <span class="av-chip <?= $pendingCount ? 'is-hot' : '' ?>"><strong><?= (int)$pendingCount ?></strong> pending</span>
@@ -606,72 +612,108 @@ $tab = $_GET['tab'] ?? 'overview';
         <?php if (!$kycRows): ?>
           <div class="av-panel"><div class="av-empty">No KYC submissions yet.</div></div>
         <?php else: ?>
-          <?php foreach ($kycRows as $k):
-            $docs = array_filter([
-              'CAC' => $k['doc_cac_url'] ?? '',
-              'ID card' => $k['doc_id_url'] ?? '',
-            ]);
-            $badgeClass = 'av-badge';
-            if ($k['status'] === 'approved') $badgeClass .= ' av-badge-ok';
-            elseif ($k['status'] === 'rejected') $badgeClass .= ' av-badge-danger';
-            elseif ($k['status'] === 'blurry_review') $badgeClass .= ' av-badge-warn';
-          ?>
-            <article class="av-row-card">
-              <div class="av-row-top">
-                <div class="min-w-0">
-                  <h3 class="av-row-title"><?= h($k['business_name']) ?></h3>
-                  <p class="av-row-sub"><?= h($k['user_name']) ?> · <?= h($k['user_email']) ?> · #<?= (int)$k['id'] ?></p>
-                  <p class="av-row-sub">Submitted <?= h($k['created_at']) ?> · Reg <?= h($k['registration_number']) ?> · <?= h($k['business_type']) ?></p>
+          <div class="av-panel av-kyc-list">
+            <div class="av-panel-head"><span>Applications</span></div>
+            <?php foreach ($kycRows as $k):
+              $kid = (int)$k['id'];
+              $isOpen = $openId === $kid;
+              $aiText = kyc_filter_ai_summary((string)($k['ai_summary'] ?? ''));
+              $cacUrl = trim((string)($k['doc_cac_url'] ?? ''));
+              $idUrl = trim((string)($k['doc_id_url'] ?? ''));
+              $cacProxy = $cacUrl !== '' ? kyc_owner_doc_url($kid, 'cac') : '';
+              $idProxy = $idUrl !== '' ? kyc_owner_doc_url($kid, 'id') : '';
+              $badgeClass = 'av-badge';
+              if ($k['status'] === 'approved') $badgeClass .= ' av-badge-ok';
+              elseif ($k['status'] === 'rejected') $badgeClass .= ' av-badge-danger';
+              elseif ($k['status'] === 'blurry_review') $badgeClass .= ' av-badge-warn';
+              $parts = preg_split('/\s+/', trim((string)$k['user_name']));
+              $initials = '';
+              foreach ($parts as $p) { if ($p !== '') $initials .= strtoupper($p[0]); if (strlen($initials) >= 2) break; }
+              if ($initials === '') $initials = '?';
+            ?>
+              <div class="av-kyc-line<?= $isOpen ? ' is-open' : '' ?>" data-kyc-line="<?= $kid ?>">
+                <button type="button" class="av-kyc-line-btn" onclick="toggleKycLine(<?= $kid ?>)" aria-expanded="<?= $isOpen ? 'true' : 'false' ?>">
+                  <span class="av-avatar"><?= h($initials) ?></span>
+                  <span class="av-kyc-line-main min-w-0">
+                    <span class="av-kyc-line-title"><?= h($k['user_name']) ?> <span class="av-muted" style="font-weight:500">· <?= h($k['business_name']) ?></span></span>
+                    <span class="av-kyc-line-sub"><?= h($k['user_email']) ?> · #<?= $kid ?> · <?= h($k['created_at']) ?></span>
+                  </span>
+                  <span class="<?= $badgeClass ?>"><?= h(str_replace('_', ' ', $k['status'])) ?></span>
+                  <i class="av-kyc-chevron" aria-hidden="true">›</i>
+                </button>
+                <div class="av-kyc-line-body"<?= $isOpen ? '' : ' hidden' ?>>
+                  <div class="av-soft-box">
+                    <p><span class="lbl">Business</span><?= h($k['business_name']) ?> · <?= h($k['business_type']) ?></p>
+                    <p><span class="lbl">Reg / CAC No.</span><?= h($k['registration_number']) ?></p>
+                    <p><span class="lbl">Contact</span><?= h($k['contact_person']) ?><?= $k['contact_title'] !== '' ? ' (' . h($k['contact_title']) . ')' : '' ?> · <?= h($k['contact_email']) ?> · <?= h($k['contact_phone']) ?></p>
+                    <p><span class="lbl">Owner</span><?= h($k['owner_name']) ?> · <?= h($k['ownership_pct']) ?>%</p>
+                    <p><span class="lbl">Address</span><?= h($k['business_address']) ?></p>
+                  </div>
+                  <?php if ($aiText !== ''): ?>
+                    <div class="av-soft-box" style="margin-top:0.55rem">
+                      <p style="font-weight:800;margin:0 0 0.35rem">DocScan AI</p>
+                      <pre class="whitespace-pre-wrap text-[11px] leading-relaxed" style="color:var(--av-muted);margin:0;font-family:inherit"><?= h($aiText) ?></pre>
+                    </div>
+                  <?php endif; ?>
+                  <div class="av-doc-thumbs" style="margin-top:0.65rem">
+                    <?php if ($cacProxy): ?>
+                      <a href="<?= h($cacProxy) ?>" target="_blank" rel="noopener" class="av-doc-thumb">
+                        <img src="<?= h($cacProxy) ?>" alt="CAC" loading="lazy">
+                        CAC
+                      </a>
+                    <?php endif; ?>
+                    <?php if ($idProxy): ?>
+                      <a href="<?= h($idProxy) ?>" target="_blank" rel="noopener" class="av-doc-thumb">
+                        <img src="<?= h($idProxy) ?>" alt="ID card" loading="lazy">
+                        ID card
+                      </a>
+                    <?php endif; ?>
+                    <?php if (!$cacProxy && !$idProxy): ?>
+                      <p class="av-muted text-xs">No documents on file.</p>
+                    <?php endif; ?>
+                  </div>
+                  <?php if (in_array($k['status'], ['needs_review', 'blurry_review', 'pending'], true)): ?>
+                    <div class="av-actions" style="margin-top:0.75rem">
+                      <form method="post">
+                        <input type="hidden" name="form" value="kyc_review">
+                        <input type="hidden" name="kyc_id" value="<?= $kid ?>">
+                        <input type="hidden" name="decision" value="approve">
+                        <button class="av-btn av-btn-success">Approve &amp; verify</button>
+                      </form>
+                      <form method="post" class="grow" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+                        <input type="hidden" name="form" value="kyc_review">
+                        <input type="hidden" name="kyc_id" value="<?= $kid ?>">
+                        <input type="hidden" name="decision" value="reject">
+                        <input name="reject_reason" placeholder="Rejection reason (shown to user)" class="grow text-xs px-3 py-2 rounded-xl">
+                        <button class="av-btn av-btn-danger">Reject</button>
+                      </form>
+                    </div>
+                  <?php elseif ($k['status'] === 'rejected' && ($k['reject_reason'] ?? '') !== ''): ?>
+                    <p class="text-xs" style="color:#e11d48;margin-top:0.65rem">Rejected: <?= h($k['reject_reason']) ?></p>
+                  <?php endif; ?>
                 </div>
-                <span class="<?= $badgeClass ?>"><?= h(str_replace('_', ' ', $k['status'])) ?></span>
               </div>
-              <div class="av-row-grid cols-2">
-                <div class="av-soft-box">
-                  <p><span class="lbl">Contact</span><?= h($k['contact_person']) ?><?= $k['contact_title'] !== '' ? ' (' . h($k['contact_title']) . ')' : '' ?></p>
-                  <p><?= h($k['contact_email']) ?> · <?= h($k['contact_phone']) ?></p>
-                  <p><span class="lbl">Owner</span><?= h($k['owner_name']) ?> · <?= h($k['ownership_pct']) ?>%</p>
-                  <p><span class="lbl">Address</span><?= h($k['business_address']) ?></p>
-                </div>
-                <div class="av-soft-box">
-                  <p style="font-weight:800;margin:0 0 0.35rem">DocScan AI</p>
-                  <pre class="whitespace-pre-wrap text-[11px] leading-relaxed" style="color:var(--av-muted);margin:0;font-family:inherit"><?= h($k['ai_summary'] ?: 'No AI notes') ?></pre>
-                </div>
-              </div>
-              <?php if ($docs): ?>
-                <div class="av-doc-thumbs">
-                  <?php foreach ($docs as $label => $url): if (!$url) continue; ?>
-                    <a href="<?= h($url) ?>" target="_blank" rel="noopener" class="av-doc-thumb">
-                      <?php if (preg_match('/\.(jpe?g|png|webp|gif)$/i', $url)): ?>
-                        <img src="<?= h($url) ?>" alt="<?= h($label) ?>">
-                      <?php else: ?>
-                        <span class="ph">📄</span>
-                      <?php endif; ?>
-                      <?= h($label) ?>
-                    </a>
-                  <?php endforeach; ?>
-                </div>
-              <?php endif; ?>
-              <?php if (in_array($k['status'], ['needs_review', 'blurry_review', 'pending'], true)): ?>
-                <div class="av-actions">
-                  <form method="post">
-                    <input type="hidden" name="form" value="kyc_review">
-                    <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
-                    <input type="hidden" name="decision" value="approve">
-                    <button class="av-btn av-btn-success">Approve &amp; verify</button>
-                  </form>
-                  <form method="post" class="grow" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
-                    <input type="hidden" name="form" value="kyc_review">
-                    <input type="hidden" name="kyc_id" value="<?= (int)$k['id'] ?>">
-                    <input type="hidden" name="decision" value="reject">
-                    <input name="reject_reason" placeholder="Rejection reason (shown to user)" class="grow text-xs px-3 py-2 rounded-xl">
-                    <button class="av-btn av-btn-danger">Reject</button>
-                  </form>
-                </div>
-              <?php elseif ($k['status'] === 'rejected' && ($k['reject_reason'] ?? '') !== ''): ?>
-                <p class="text-xs" style="color:#e11d48">Rejected: <?= h($k['reject_reason']) ?></p>
-              <?php endif; ?>
-            </article>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
+          </div>
+          <script>
+            function toggleKycLine(id) {
+              var rows = document.querySelectorAll('[data-kyc-line]');
+              rows.forEach(function (row) {
+                var open = String(row.getAttribute('data-kyc-line')) === String(id) && !row.classList.contains('is-open');
+                var body = row.querySelector('.av-kyc-line-body');
+                var btn = row.querySelector('.av-kyc-line-btn');
+                row.classList.toggle('is-open', open);
+                if (body) body.hidden = !open;
+                if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+              });
+              try {
+                var url = new URL(window.location.href);
+                if (document.querySelector('[data-kyc-line].is-open')) url.searchParams.set('open', String(id));
+                else url.searchParams.delete('open');
+                history.replaceState({}, '', url.toString());
+              } catch (e) {}
+            }
+          </script>
         <?php endif; ?>
       </div>
     <?php endif; ?>

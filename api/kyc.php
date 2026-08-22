@@ -340,6 +340,77 @@ function kyc_public_row(?array $row): ?array {
     ];
 }
 
+/** Absolute filesystem path for a stored KYC doc URL, or null. */
+function kyc_doc_filesystem_path(string $url): ?string {
+    $url = trim($url);
+    if ($url === '' || !preg_match('#^/uploads/kyc/([a-zA-Z0-9._-]+)$#', $url, $m)) {
+        return null;
+    }
+    $path = dirname(__DIR__) . '/uploads/kyc/' . $m[1];
+    if (!is_file($path)) return null;
+    return $path;
+}
+
+/** Owner-facing proxy URL so docs open even when /uploads is blocked. */
+function kyc_owner_doc_url(int $kycId, string $type): string {
+    $type = $type === 'id' || $type === 'idCard' ? 'id' : 'cac';
+    return '/owner/index.php?kyc_doc=1&id=' . $kycId . '&type=' . rawurlencode($type);
+}
+
+/** Keep only CAC / ID lines in DocScan notes (legacy submissions may list extra docs). */
+function kyc_filter_ai_summary(string $summary): string {
+    $lines = preg_split('/\R+/', $summary) ?: [];
+    $kept = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '') continue;
+        if (preg_match('/\b(CAC|Certificate of Incorporation|ID card|Valid ID)\b/i', $line)) {
+            $kept[] = $line;
+        }
+    }
+    return $kept ? implode("\n", $kept) : trim($summary);
+}
+
+function kyc_stream_owner_doc(int $kycId, string $type): void {
+    ensure_kyc_tables();
+    $type = strtolower($type);
+    $col = ($type === 'id' || $type === 'idcard') ? 'doc_id_url' : 'doc_cac_url';
+    $stmt = db()->prepare('SELECT ' . $col . ' AS url FROM kyc_submissions WHERE id = ? LIMIT 1');
+    $stmt->execute([$kycId]);
+    $row = $stmt->fetch();
+    if (!$row || empty($row['url'])) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Document not found';
+        exit;
+    }
+    $path = kyc_doc_filesystem_path((string)$row['url']);
+    if (!$path) {
+        // Fallback: try basename under uploads/kyc even if URL format drifted
+        $base = basename((string)$row['url']);
+        $try = dirname(__DIR__) . '/uploads/kyc/' . $base;
+        if (is_file($try)) $path = $try;
+    }
+    if (!$path || !is_file($path)) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'File missing on server';
+        exit;
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($path) ?: 'application/octet-stream';
+    if (!preg_match('#^(image/|application/pdf)#', $mime)) {
+        $mime = 'application/octet-stream';
+    }
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (string)filesize($path));
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: private, max-age=300');
+    header('Content-Disposition: inline; filename="' . basename($path) . '"');
+    readfile($path);
+    exit;
+}
+
 function kyc_status_for_user(array $u): array {
     ensure_kyc_tables();
     $verified = (int)($u['is_verified'] ?? 0) === 1;
