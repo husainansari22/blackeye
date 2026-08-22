@@ -9,6 +9,8 @@
   let navAbort = null;
   let lastFieldFocusAt = 0;
   let lastValidateToastAt = 0;
+  let navLockedUntil = 0;
+  let navLockTimer = null;
 
   function emptyState() {
     return {
@@ -64,10 +66,47 @@
     if (html) {
       foot.innerHTML = html;
       foot.classList.remove('hidden');
+      foot.classList.remove('kyc-flow-footer--locked');
     } else {
       foot.innerHTML = '';
       foot.classList.add('hidden');
+      foot.classList.remove('kyc-flow-footer--locked');
     }
+  }
+
+  function setFooterLocked(locked) {
+    const foot = footerEl();
+    if (!foot || foot.classList.contains('hidden')) return;
+    foot.classList.toggle('kyc-flow-footer--locked', !!locked);
+  }
+
+  /** Block Back/Continue while the keyboard opens (iOS ghost-clicks the footer). */
+  function lockNav(ms) {
+    const hold = Math.max(600, ms || 900);
+    navLockedUntil = Math.max(navLockedUntil, Date.now() + hold);
+    lastFieldFocusAt = Date.now();
+    setFooterLocked(true);
+    clearTimeout(navLockTimer);
+    navLockTimer = setTimeout(() => {
+      if (Date.now() < navLockedUntil) return;
+      const active = document.activeElement;
+      const body = bodyEl();
+      const stillEditing =
+        active &&
+        body &&
+        body.contains(active) &&
+        /^(INPUT|TEXTAREA|SELECT)$/i.test(active.tagName || '');
+      if (!stillEditing) setFooterLocked(false);
+    }, hold + 40);
+  }
+
+  function navIsLocked() {
+    return Date.now() < navLockedUntil;
+  }
+
+  function isFieldTarget(t) {
+    if (!t || !t.closest) return false;
+    return !!(t.closest('.kyc-field') || (t.matches && t.matches('input, textarea, select')));
   }
 
   async function refreshStatus() {
@@ -238,7 +277,7 @@
     if (slot) {
       slot.classList.add('kyc-scanning');
       const status = slot.querySelector('.kyc-doc-status');
-      if (status) status.textContent = 'DocScan AI analyzing…';
+      if (status) status.textContent = 'Checking photo…';
     }
     try {
       const ai = await analyzeImageFile(file);
@@ -397,7 +436,7 @@
         <div class="kyc-hero">
           <div class="kyc-hero-icon kyc-hero-pending"><i class="fa-solid fa-hourglass-half"></i></div>
           <h2>Verification in review</h2>
-          <p>${st.kycStatus === 'blurry_review' ? 'DocScan flagged a blurry upload — a supervisor is reviewing your documents manually.' : 'DocScan AI screened your documents. A supervisor will finish verification shortly.'}</p>
+          <p>${st.kycStatus === 'blurry_review' ? 'A blurry upload was flagged — a supervisor is reviewing your documents manually.' : 'Your documents were received. A supervisor will finish verification shortly.'}</p>
           <p class="kyc-muted">${escapeHtml((st.submission && st.submission.businessName) || '')}</p>
           <button type="button" class="kyc-btn-primary" onclick="window.AcctventaKyc.close()">Close</button>
         </div>`;
@@ -410,7 +449,7 @@
           <div class="kyc-hero-icon"><i class="fa-solid fa-building-columns"></i></div>
           <p class="kyc-eyebrow">Business KYC</p>
           <h2>Verify your business account</h2>
-          <p>Build buyer trust with a verified seller badge. Upload your CAC papers and your government ID (front and back) — DocScan AI checks for real camera photos (not screenshots).</p>
+          <p>Build buyer trust with a verified seller badge. Upload your CAC papers and your government ID (front and back). Use clear camera photos — screenshots are not accepted.</p>
           <ul class="kyc-bullets">
             <li><i class="fa-solid fa-check"></i> CAC / Certificate of Incorporation</li>
             <li><i class="fa-solid fa-check"></i> Valid government ID — front and back</li>
@@ -479,7 +518,7 @@
       el.innerHTML = `
         <div class="kyc-section">
           <h3>Documents upload</h3>
-          <p class="kyc-lead">Photograph physical papers with your camera. Screenshots and edited images are rejected by DocScan AI.</p>
+          <p class="kyc-lead">Photograph physical papers with your camera. Screenshots and heavily edited images are not accepted.</p>
           ${docCard('cac', 'CAC / Certificate of Incorporation', true)}
           ${docCard('idCardFront', 'ID card — front', true)}
           ${docCard('idCardBack', 'ID card — back', true)}
@@ -508,7 +547,7 @@
       el.innerHTML = `
         <div class="kyc-section">
           <h3>Review &amp; submit</h3>
-          <p class="kyc-lead">Confirm everything looks right. Submission goes to DocScan AI, then supervisor review.</p>
+          <p class="kyc-lead">Confirm everything looks right. Submission goes to supervisor review.</p>
           <div class="kyc-summary">
             <p><span>Business</span>${escapeHtml(state.businessName)}</p>
             <p><span>CAC / Reg No.</span>${escapeHtml(state.registrationNumber)}</p>
@@ -526,8 +565,12 @@
       const signal = reviewAbort.signal;
       document.getElementById('kycBackBtn')?.addEventListener(
         'click',
-        () => {
-          step = Math.max(0, step - 1);
+        (e) => {
+          if (navIsLocked() || Date.now() - lastFieldFocusAt < 700) {
+            e.preventDefault();
+            return;
+          }
+          step = Math.max(1, step - 1);
           render();
         },
         { signal }
@@ -551,31 +594,73 @@
     if (wrap) wrap.classList.add('kyc-field-error');
   }
 
+  function goBackFromForm(fieldIds) {
+    pullFields(fieldIds);
+    // Never dump mid-form users back onto the marketing intro (ghost taps used to do this).
+    if (step <= 1) {
+      closeKyc();
+      return;
+    }
+    step -= 1;
+    render();
+  }
+
   function bindNav(fieldIds) {
     if (navAbort) navAbort.abort();
     navAbort = new AbortController();
     const signal = navAbort.signal;
     const root = overlay() || document;
+    const body = bodyEl();
 
+    const armLock = (e) => {
+      if (isFieldTarget(e.target)) lockNav(1000);
+    };
+
+    // pointerdown/touchstart fire before iOS moves the footer under the finger
+    if (body) {
+      body.addEventListener('pointerdown', armLock, { signal, capture: true });
+      body.addEventListener('touchstart', armLock, { signal, capture: true, passive: true });
+    }
     root.addEventListener(
       'focusin',
       (e) => {
-        const t = e.target;
-        if (t && (t.matches('input, textarea, select') || t.closest('.kyc-field'))) {
-          lastFieldFocusAt = Date.now();
-          const wrap = t.closest && t.closest('.kyc-field');
-          if (wrap) wrap.classList.remove('kyc-field-error');
-        }
+        if (!isFieldTarget(e.target)) return;
+        lockNav(1000);
+        const wrap = e.target.closest && e.target.closest('.kyc-field');
+        if (wrap) wrap.classList.remove('kyc-field-error');
+      },
+      { signal }
+    );
+    root.addEventListener(
+      'focusout',
+      () => {
+        clearTimeout(navLockTimer);
+        navLockTimer = setTimeout(() => {
+          const active = document.activeElement;
+          const stillEditing =
+            active &&
+            body &&
+            body.contains(active) &&
+            /^(INPUT|TEXTAREA|SELECT)$/i.test(active.tagName || '');
+          if (!stillEditing && Date.now() >= navLockedUntil) setFooterLocked(false);
+        }, 320);
       },
       { signal }
     );
 
+    const guardNavClick = (e) => {
+      if (!navIsLocked() && Date.now() - lastFieldFocusAt >= 700) return false;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      return true;
+    };
+
     document.getElementById('kycBackBtn')?.addEventListener(
       'click',
-      () => {
-        pullFields(fieldIds);
-        step = Math.max(0, step - 1);
-        render();
+      (e) => {
+        if (guardNavClick(e)) return;
+        goBackFromForm(fieldIds);
       },
       { signal }
     );
@@ -583,12 +668,7 @@
     document.getElementById('kycNextBtn')?.addEventListener(
       'click',
       (e) => {
-        // Ignore accidental Continue taps right after focusing a field (keyboard / layout ghost clicks).
-        if (Date.now() - lastFieldFocusAt < 550) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
+        if (guardNavClick(e)) return;
         pullFields(fieldIds);
         if (!validateStep()) return;
         step = Math.min(STEPS.length - 1, step + 1);
@@ -705,9 +785,10 @@
     if (forceForm) {
       step = 1;
       state = emptyState();
-    } else {
+    } else if (step < 1) {
       step = 0;
     }
+    // else resume the in-progress step (do not kick users back to intro)
     ov.classList.remove('hidden');
     ov.classList.add('flex');
     document.body.style.overflow = 'hidden';

@@ -233,11 +233,23 @@
   border-top: 1px solid #e2e8f0;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(8px);
+  transition: opacity 0.15s ease;
 }
 
 .dark .kyc-flow-footer {
   border-top-color: #1e293b;
   background: rgba(15, 23, 42, 0.96);
+}
+
+/* While a field is focused / keyboard is opening — ignore footer taps (iOS ghost clicks). */
+.kyc-flow-footer.kyc-flow-footer--locked {
+  pointer-events: none !important;
+  opacity: 0.45;
+}
+
+.kyc-flow-footer.kyc-flow-footer--locked .kyc-btn-primary,
+.kyc-flow-footer.kyc-flow-footer--locked .kyc-btn-ghost {
+  pointer-events: none !important;
 }
 
 .kyc-nav {
