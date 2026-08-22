@@ -398,20 +398,43 @@ def write(path, data):
     print("wrote", path, len(data))
 
 
+def ico_from_pngs(entries):
+    """entries: list of (size, png_bytes)"""
+    count = len(entries)
+    header = struct.pack("<HHH", 0, 1, count)
+    offset = 6 + 16 * count
+    out = bytearray(header)
+    blobs = bytearray()
+    for size, png_bytes in entries:
+        w = 0 if size >= 256 else size
+        out += struct.pack("<BBBBHHII", w, w, 0, 0, 1, 32, len(png_bytes), offset)
+        blobs += png_bytes
+        offset += len(png_bytes)
+    return bytes(out) + bytes(blobs)
+
+
 def main():
+    png16 = draw_icon(16, radius_ratio=0.28)
+    png32 = draw_icon(32, radius_ratio=0.26)
     png48 = draw_icon(48)
+    png64 = draw_icon(64)
     png96 = draw_icon(96)
     png180 = draw_icon(180)
     png192 = draw_icon(192)
     png512 = draw_icon(512)
     write("favicon-48.png", png48)
+    write("favicon-48x48.png", png48)
+    write("favicon-96x96.png", png96)
+    write("favicon-32x32.png", png32)
     write("img/brand/icon-48.png", png48)
+    write("img/brand/icon-64.png", png64)
     write("img/brand/icon-96.png", png96)
     write("img/brand/icon-192.png", png192)
     write("img/brand/icon-512.png", png512)
     write("apple-touch-icon.png", png180)
-    write("favicon.ico", ico_from_png(png48, 48))
+    write("favicon.ico", ico_from_pngs([(16, png16), (32, png32), (48, png48)]))
     write("img/brand/og-cover.png", draw_og())
+    write("img/brand/google-favicon.png", png96)
 
 
 if __name__ == "__main__":

@@ -6,13 +6,18 @@
     <title>Acctventa</title>
     <meta name="description" content="The marketplace for digital products and services. Buy and sell social media accounts, VPNs, emails, and more from trusted sellers with escrow protection.">
     <link rel="canonical" href="https://acctventa.com/">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="icon" href="/favicon.ico" sizes="48x48">
-    <link rel="icon" type="image/png" sizes="48x48" href="/img/brand/icon-48.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/img/brand/icon-192.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
+    <!-- Google SERP favicon: PNG 48/96 first (absolute URLs). SVG is optional for modern browsers. -->
+    <link rel="icon" href="https://acctventa.com/favicon-96x96.png" type="image/png" sizes="96x96">
+    <link rel="icon" href="https://acctventa.com/favicon-48x48.png" type="image/png" sizes="48x48">
+    <link rel="icon" href="https://acctventa.com/favicon-32x32.png" type="image/png" sizes="32x32">
+    <link rel="shortcut icon" href="https://acctventa.com/favicon.ico">
+    <link rel="icon" href="https://acctventa.com/favicon.ico" sizes="any">
+    <link rel="icon" href="https://acctventa.com/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="https://acctventa.com/apple-touch-icon.png" sizes="180x180">
+    <link rel="manifest" href="https://acctventa.com/site.webmanifest">
     <meta name="theme-color" content="#0ea5e9">
+    <meta name="msapplication-TileColor" content="#0ea5e9">
+    <meta name="msapplication-TileImage" content="https://acctventa.com/img/brand/icon-192.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Acctventa">
     <meta property="og:title" content="Acctventa">
@@ -45,7 +50,13 @@
       "@type": "Organization",
       "name": "Acctventa",
       "url": "https://acctventa.com/",
-      "logo": "https://acctventa.com/img/brand/icon-512.png",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://acctventa.com/img/brand/icon-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://acctventa.com/img/brand/google-favicon.png",
       "email": "support@acctventa.com",
       "sameAs": ["https://t.me/acctventa"]
     }
