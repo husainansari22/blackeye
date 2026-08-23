@@ -412,7 +412,7 @@
       sub.textContent =
         'New accounts start on Free — ' +
         freePlan.dailyUploads +
-        ' uploads per day. Paid plans unlock higher daily upload limits via Flutterwave.';
+        ' uploads per day. Paid plans unlock higher daily upload limits — pay from your wallet balance.';
     }
     const bal = Number(u.balance) || 0;
     box.innerHTML = Object.values(plans)
@@ -426,13 +426,11 @@
             '<button disabled class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-400">Active plan</button>';
         } else if (!price) {
           actions = `<button onclick="selectPlan('${p.id}')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Use Free plan</button>`;
+        } else if (canWallet) {
+          actions = `<button onclick="selectPlan('${p.id}','wallet')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Pay from wallet (${money(bal)})</button>`;
         } else {
-          actions = `<button onclick="selectPlan('${p.id}','flutterwave')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Pay now</button>`;
-          if (canWallet) {
-            actions += `<button onclick="selectPlan('${p.id}','wallet')" class="w-full mt-2 py-2.5 rounded-xl text-xs font-bold border border-brandPrimary text-brandPrimary hover:bg-brandPrimary/10">Pay from wallet (${money(bal)} available)</button>`;
-          } else {
-            actions += `<p class="text-[10px] text-slate-400 text-center mt-2">Or deposit to wallet, then upgrade from balance.</p>`;
-          }
+          actions = `<button onclick="selectPlan('${p.id}','wallet')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Upgrade · ${money(price)}</button>
+            <p class="text-[10px] text-slate-400 text-center mt-2">Needs wallet balance — deposit first if funds are low.</p>`;
         }
         return `<div class="bg-lightCard dark:bg-darkCard border ${active ? 'border-brandPrimary' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-4 shadow-sm space-y-3">
         <div class="flex justify-between items-center">
@@ -1142,9 +1140,14 @@
         </div>`
       : `<div id="wdFieldsBank" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
           <p class="text-xs font-bold">Bank Details</p>
-          <div><label class="text-[11px] text-slate-500">Select bank</label><input id="withdrawBank" type="text" value="${escapeAttr(u.payoutBank || '')}" placeholder="e.g. Opay, GTBank" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+          <div><label class="text-[11px] text-slate-500">Select bank <span class="text-red-500">*</span></label>
+            <select id="withdrawBankCode" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+              <option value="">Loading banks…</option>
+            </select>
+            <input id="withdrawBank" type="hidden" value="${escapeAttr(u.payoutBank || '')}">
+          </div>
           <div><label class="text-[11px] text-slate-500">Account number <span class="text-red-500">*</span></label><input id="withdrawDest" type="text" value="${escapeAttr(u.payoutAccount || '')}" placeholder="Enter account number" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
-          <div><label class="text-[11px] text-slate-500">Account name</label><input id="withdrawName" type="text" value="${escapeAttr(u.payoutAccountName || '')}" placeholder="Account name" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+          <div><label class="text-[11px] text-slate-500">Account name <span class="text-red-500">*</span></label><input id="withdrawName" type="text" value="${escapeAttr(u.payoutAccountName || '')}" placeholder="Account name" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
         </div>`;
 
     openWalletFlow(
@@ -1218,6 +1221,53 @@
     withdrawCryptoCoin = firstCrypto;
     renderWithdrawCryptoGrid();
     fillWithdrawNetworks();
+    if (!locked) loadWithdrawBanks(u);
+  }
+
+  async function loadWithdrawBanks(u) {
+    const sel = document.getElementById('withdrawBankCode');
+    if (!sel) return;
+    const savedCode = (u && (u.payoutBankCode || u.payout_bank_code)) || '';
+    const savedName = (u && (u.payoutBank || '')) || '';
+    try {
+      let banks = [];
+      if (window.AcctventaApi && typeof window.AcctventaApi.banksList === 'function') {
+        const res = await window.AcctventaApi.banksList({ country: 'NG' });
+        banks = res.banks || [];
+      }
+      if (!banks.length) {
+        sel.innerHTML =
+          '<option value="">Type bank name below if list unavailable</option>' +
+          (savedName ? `<option value="${escapeAttr(savedName)}" selected>${escapeHtml(savedName)}</option>` : '');
+        // fallback text input
+        const hidden = document.getElementById('withdrawBank');
+        if (hidden) {
+          hidden.type = 'text';
+          hidden.placeholder = 'e.g. Opay, GTBank';
+          hidden.className = 'mt-2 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm';
+          hidden.value = savedName;
+        }
+        return;
+      }
+      sel.innerHTML =
+        '<option value="">Select bank</option>' +
+        banks
+          .map((b) => {
+            const code = String(b.code || '');
+            const name = String(b.name || '');
+            const selected = savedCode === code || savedName.toLowerCase() === name.toLowerCase() ? ' selected' : '';
+            return `<option value="${escapeAttr(code)}" data-name="${escapeAttr(name)}"${selected}>${escapeHtml(name)}</option>`;
+          })
+          .join('');
+      sel.onchange = function () {
+        const opt = sel.options[sel.selectedIndex];
+        const hidden = document.getElementById('withdrawBank');
+        if (hidden) hidden.value = (opt && opt.getAttribute('data-name')) || '';
+      };
+      if (sel.selectedIndex > 0) sel.onchange();
+    } catch (e) {
+      sel.innerHTML = '<option value="">Could not load banks — enter bank name</option>';
+    }
   }
 
   function renderWithdrawCryptoGrid() {
@@ -1374,20 +1424,37 @@
     let dest = '';
     let accountName = '';
     let bankName = '';
+    let bankCode = '';
     if (isCrypto) {
       dest = ((document.getElementById('withdrawCryptoDest') || {}).value || '').trim();
     } else if (locked) {
       dest = (u.payoutAccount || '').trim();
       accountName = (u.payoutAccountName || '').trim();
       bankName = (u.payoutBank || '').trim();
+      bankCode = (u.payoutBankCode || '').trim();
     } else {
       dest = ((document.getElementById('withdrawDest') || {}).value || '').trim();
       accountName = ((document.getElementById('withdrawName') || {}).value || '').trim();
-      bankName = ((document.getElementById('withdrawBank') || {}).value || '').trim();
+      const codeSel = document.getElementById('withdrawBankCode');
+      bankCode = ((codeSel || {}).value || '').trim();
+      if (codeSel && codeSel.selectedIndex > 0) {
+        const opt = codeSel.options[codeSel.selectedIndex];
+        bankName = (opt && opt.getAttribute('data-name')) || ((document.getElementById('withdrawBank') || {}).value || '').trim();
+      } else {
+        bankName = ((document.getElementById('withdrawBank') || {}).value || '').trim();
+      }
     }
     const network = ((document.getElementById('withdrawNetwork') || {}).value || '').trim();
     if (!dest) {
       alert(isCrypto ? 'Enter wallet address' : 'Enter account number');
+      return;
+    }
+    if (!isCrypto && !locked && !bankCode && !bankName) {
+      alert('Select your bank');
+      return;
+    }
+    if (!isCrypto && !accountName) {
+      alert('Enter account name');
       return;
     }
     res = await Promise.resolve(
@@ -1395,6 +1462,7 @@
         destination: dest,
         accountName: isCrypto ? withdrawCryptoCoin + ' · ' + network : accountName,
         bankName: isCrypto ? withdrawCryptoCoin + (network ? ' / ' + network : '') : bankName || withdrawCurrency,
+        bankCode: isCrypto ? '' : bankCode,
         currency: withdrawCurrency,
       })
     );
@@ -2029,25 +2097,60 @@
     if (!u) return;
     const plan = (A().PLANS && A().PLANS[planId]) || null;
     const price = plan ? Number(plan.price) || 0 : 0;
-    const payMethod = method || (price > 0 ? 'flutterwave' : 'free');
-    if (price > 0 && payMethod === 'flutterwave') {
-      if (!confirm('Continue to Flutterwave to pay ' + money(price) + ' for ' + (plan.name || planId) + ' (' + plan.dailyUploads + ' uploads / day)?')) return;
-    } else if (price > 0 && payMethod === 'wallet') {
-      if (!confirm('Pay ' + money(price) + ' from your wallet balance to activate ' + (plan.name || planId) + '?')) return;
+    // Paid plans are wallet-only (same as buying listings) — no Flutterwave checkout here.
+    const payMethod = price > 0 ? 'wallet' : method || 'free';
+    if (price > 0) {
+      const bal = Number(u.balance) || 0;
+      if (bal + 0.0001 < price) {
+        if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
+          window.CommerceUI.showInsufficientFundsModal();
+        } else {
+          alert('Insufficient funds. Please deposit money into your wallet.');
+        }
+        return;
+      }
+      if (
+        !confirm(
+          'Pay ' +
+            money(price) +
+            ' from your wallet to activate ' +
+            (plan.name || planId) +
+            ' (' +
+            plan.dailyUploads +
+            ' uploads / day)?'
+        )
+      ) {
+        return;
+      }
     }
     try {
-      const res = await Promise.resolve(A().setPlan(u, planId, { method: payMethod === 'wallet' ? 'wallet' : 'flutterwave' }));
+      const res = await Promise.resolve(A().setPlan(u, planId, { method: payMethod }));
       if (!res || !res.ok) {
+        if (res && (res.code === 'insufficient_funds' || /insufficient/i.test(String(res.error || '')))) {
+          if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
+            window.CommerceUI.showInsufficientFundsModal();
+          } else {
+            alert(res.error || 'Insufficient funds');
+          }
+          return;
+        }
         alert((res && res.error) || 'Could not update plan');
         return;
       }
-      if (res.checkout) return; // redirected to Flutterwave
       if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
       applyProfileChrome(refreshUser());
       renderPlans();
       const active = A().getPlan(refreshUser());
       alert(res.message || ('Plan updated to ' + active.name + ' — ' + active.dailyUploads + ' uploads / day.'));
     } catch (e) {
+      if (e && (e.code === 'insufficient_funds' || /insufficient/i.test(String(e.message || '')))) {
+        if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
+          window.CommerceUI.showInsufficientFundsModal();
+        } else {
+          alert(e.message || 'Insufficient funds');
+        }
+        return;
+      }
       alert(e.message || 'Plan upgrade failed');
     }
   };

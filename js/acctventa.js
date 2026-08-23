@@ -943,7 +943,7 @@
     const method = (opts && opts.method) || (price > 0 ? 'wallet' : 'free');
     if (price > 0 && method === 'wallet') {
       if ((user.balance || 0) < price) {
-        return { ok: false, error: 'Insufficient wallet balance. Deposit funds or use Flutterwave.' };
+        return { ok: false, error: 'Insufficient funds. Please deposit money into your wallet.', code: 'insufficient_funds' };
       }
       const prevBal = Number(user.balance || 0);
       const buyerWd = Number(user.withdrawableBalance || 0);

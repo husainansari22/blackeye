@@ -209,6 +209,7 @@
         payoutAccountName: user.payoutAccountName || '',
         payoutCurrency: user.payoutCurrency || '',
         payoutBankLocked: !!user.payoutBankLocked,
+        payoutBankCode: user.payoutBankCode || '',
         avatarUrl: user.avatarUrl || '',
         ads: (adsRes.ads || []).map(mapAd),
         orders: (ordersRes.orders || []).map(mapOrder),
@@ -341,6 +342,7 @@
           destination: (extra && extra.destination) || '',
           accountName: (extra && extra.accountName) || '',
           bankName: (extra && extra.bankName) || '',
+          bankCode: (extra && extra.bankCode) || '',
           currency: (extra && extra.currency) || '',
         };
         const res = await Api.withdraw(payload);
@@ -353,12 +355,9 @@
 
     A.setPlan = async function (_user, planId, opts) {
       try {
-        const method = (opts && opts.method) || 'flutterwave';
-        const res = await Api.upgradePlan({ planId: String(planId), method });
-        if (res.paymentLink) {
-          window.location.href = res.paymentLink;
-          return { ok: true, checkout: true, paymentLink: res.paymentLink };
-        }
+        // Packages are paid from wallet only (Flutterwave is for deposits).
+        const method = (opts && opts.method) || 'wallet';
+        const res = await Api.upgradePlan({ planId: String(planId), method: method === 'free' ? 'wallet' : method });
         await hydrateFromApi();
         return {
           ok: true,
@@ -367,7 +366,7 @@
           message: res.message || 'Plan updated.',
         };
       } catch (e) {
-        return { ok: false, error: e.message || 'Plan upgrade failed' };
+        return { ok: false, error: e.message || 'Plan upgrade failed', code: e.code || '' };
       }
     };
 

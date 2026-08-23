@@ -89,6 +89,7 @@
       <div class="av-tabs">
         <button class="av-tab admin-tab av-tab-active" data-tab="support" onclick="showTab('support')">Inbox</button>
         <button class="av-tab admin-tab" data-tab="chats" onclick="showTab('chats')">Order chats</button>
+        <button class="av-tab admin-tab" data-tab="wallet" onclick="showTab('wallet')">Withdrawals</button>
         <button class="av-tab admin-tab" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
         <button class="av-tab admin-tab" data-tab="users" onclick="showTab('users')">Users</button>
         <button class="av-tab admin-tab" data-tab="security" onclick="showTab('security')">Security</button>
@@ -192,6 +193,22 @@
         </div>
       </section>
 
+      <!-- WITHDRAWALS -->
+      <section id="tab_wallet" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Withdrawals</h2>
+              <p class="av-page-sub">Approve to pay via Flutterwave (when enabled in Owner → Gateways), or reject to refund the user.</p>
+            </div>
+            <div class="av-page-meta">
+              <button onclick="loadAdminWithdrawals()" class="av-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <div id="adminWithdrawList" class="space-y-3"></div>
+        </div>
+      </section>
+
       <!-- ADS -->
       <section id="tab_ads" class="admin-panel hidden">
         <div class="av-page">
@@ -280,6 +297,7 @@
       if (name === 'ads') loadAds();
       if (name === 'users') loadUsers();
       if (name === 'support') initSupportInbox();
+      if (name === 'wallet') loadAdminWithdrawals();
       if (name === 'chats') {
         renderAdminOrderHeader(null);
         loadAdminOrderChats();
@@ -461,6 +479,66 @@
         box.innerHTML = '<p class="text-red-500">' + escHtml(e.message) + '</p>';
       }
     }
+    async function loadAdminWithdrawals() {
+      const box = document.getElementById('adminWithdrawList');
+      if (!box) return;
+      const Api = window.AcctventaApi;
+      if (!Api || !Api.getStaffToken()) {
+        box.innerHTML = '<p class="text-sm text-slate-500">Connect Support inbox with Owner/Admin credentials first.</p>';
+        return;
+      }
+      box.innerHTML = '<p class="text-sm text-slate-500">Loading…</p>';
+      try {
+        const res = await Api.staffWalletPending();
+        const rows = res.withdrawals || [];
+        if (!rows.length) {
+          box.innerHTML = '<p class="text-sm text-slate-500">No pending withdrawals.</p>';
+          return;
+        }
+        box.innerHTML = rows.map(t => {
+          const id = Number(t.id);
+          return `<div class="av-panel"><div class="av-panel-body space-y-2 text-xs">
+            <p class="font-bold text-sm av-text">${escHtml(t.name)} · ${escHtml(t.email)}</p>
+            <p>$${Number(t.amount||0).toFixed(2)} · fee $${Number(t.fee||0).toFixed(2)} · payout <strong>$${Number(t.payout||0).toFixed(2)}</strong> · ${escHtml(t.method||'')}</p>
+            <p class="break-all text-slate-500">${escHtml(t.note||'')}</p>
+            <p class="font-mono text-[10px] text-slate-400">${escHtml(t.reference||'')}</p>
+            <textarea id="wdNote_${id}" rows="2" class="w-full av-input px-2 py-1.5 text-xs" placeholder="Optional note / bankCode=044">${escHtml(t.note||'')}</textarea>
+            <label class="flex items-center gap-2 text-[11px] text-slate-500"><input type="checkbox" id="wdManual_${id}"> Mark paid manually (skip Flutterwave)</label>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="av-send" style="background:#059669" onclick="adminApproveWd(${id})">Approve &amp; pay</button>
+              <button type="button" class="av-send" style="background:#ef4444" onclick="adminRejectWd(${id})">Reject + refund</button>
+            </div>
+          </div></div>`;
+        }).join('');
+      } catch (e) {
+        box.innerHTML = '<p class="text-sm text-red-500">' + escHtml(e.message) + '</p>';
+      }
+    }
+    async function adminApproveWd(id) {
+      const Api = window.AcctventaApi;
+      const noteEl = document.getElementById('wdNote_' + id);
+      const manEl = document.getElementById('wdManual_' + id);
+      if (!confirm('Approve this withdrawal? Flutterwave will pay the bank account if Withdraw gateway is enabled.')) return;
+      try {
+        const r = await Api.staffApproveWithdrawal({
+          txId: id,
+          note: noteEl ? noteEl.value : '',
+          forceManual: !!(manEl && manEl.checked),
+        });
+        const mode = (r.result && r.result.mode) || '';
+        alert(mode === 'flutterwave' ? 'Sent via Flutterwave.' : 'Marked paid manually.');
+        loadAdminWithdrawals();
+      } catch (e) { alert(e.message); }
+    }
+    async function adminRejectWd(id) {
+      if (!confirm('Reject and refund this withdrawal to the user?')) return;
+      try {
+        await window.AcctventaApi.staffRejectWithdrawal({ txId: id });
+        alert('Rejected and refunded.');
+        loadAdminWithdrawals();
+      } catch (e) { alert(e.message); }
+    }
+
     function escHtml(s) {
       return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }

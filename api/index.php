@@ -629,6 +629,70 @@ try {
             json_out(['ok' => true, 'completedOrders24h' => $orders24h, 'activeListings' => $activeListings]);
         }
 
+        case 'banks.list': {
+            // Used by withdraw form — requires login; falls back to empty if Flutterwave keys missing.
+            require_user();
+            $country = strtoupper(trim((string)($body['country'] ?? $_GET['country'] ?? 'NG')));
+            if ($country === '') $country = 'NG';
+            $res = flw_list_banks($country);
+            json_out(['ok' => true, 'banks' => $res['banks'] ?? [], 'source' => !empty($res['ok']) ? 'flutterwave' : 'none', 'error' => $res['error'] ?? null]);
+        }
+
+        case 'staff.wallet.pending': {
+            require_staff();
+            ensure_wallet_ledger_columns();
+            $wd = db()->query("SELECT t.*, u.email, u.name, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
+                FROM transactions t JOIN users u ON u.id = t.user_id
+                WHERE t.type = 'withdrawal' AND t.status = 'pending'
+                ORDER BY t.created_at ASC LIMIT 200")->fetchAll();
+            $dep = db()->query("SELECT t.*, u.email, u.name
+                FROM transactions t JOIN users u ON u.id = t.user_id
+                WHERE t.type = 'deposit' AND t.status = 'pending'
+                ORDER BY t.created_at ASC LIMIT 200")->fetchAll();
+            json_out(['ok' => true, 'withdrawals' => $wd, 'deposits' => $dep]);
+        }
+
+        case 'staff.wallet.approve_withdrawal': {
+            $staff = require_staff();
+            $txId = (int)($body['txId'] ?? $body['id'] ?? 0);
+            $forceManual = !empty($body['forceManual']);
+            $noteEdit = trim((string)($body['note'] ?? ''));
+            $stmt = db()->prepare('SELECT t.*, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
+                FROM transactions t LEFT JOIN users u ON u.id = t.user_id WHERE t.id = ? LIMIT 1');
+            $stmt->execute([$txId]);
+            $row = $stmt->fetch();
+            if (!$row || ($row['type'] ?? '') !== 'withdrawal') json_out(['ok' => false, 'error' => 'Withdrawal not found'], 404);
+            if (($row['status'] ?? '') !== 'pending') json_out(['ok' => false, 'error' => 'Already processed'], 400);
+            if ($noteEdit !== '') {
+                db()->prepare('UPDATE transactions SET note = ? WHERE id = ?')->execute([$noteEdit, $txId]);
+                $row['note'] = $noteEdit;
+            }
+            $actor = 'Staff ' . ($staff['staff_name'] ?? 'admin');
+            $pay = approve_withdrawal_payout($row, $actor . ' approved', $forceManual);
+            if (empty($pay['ok'])) {
+                json_out(['ok' => false, 'error' => $pay['error'] ?? 'Payout failed', 'code' => $pay['code'] ?? ''], 400);
+            }
+            json_out(['ok' => true, 'result' => $pay]);
+        }
+
+        case 'staff.wallet.reject_withdrawal': {
+            $staff = require_staff();
+            $txId = (int)($body['txId'] ?? $body['id'] ?? 0);
+            $stmt = db()->prepare('SELECT * FROM transactions WHERE id = ? LIMIT 1');
+            $stmt->execute([$txId]);
+            $row = $stmt->fetch();
+            if (!$row || ($row['type'] ?? '') !== 'withdrawal') json_out(['ok' => false, 'error' => 'Withdrawal not found'], 404);
+            if (($row['status'] ?? '') !== 'pending') json_out(['ok' => false, 'error' => 'Already processed'], 400);
+            ensure_wallet_ledger_columns();
+            db()->prepare('UPDATE users SET balance = balance + ?, withdrawable_balance = withdrawable_balance + ?, total_withdrawals = GREATEST(0, total_withdrawals - ?) WHERE id = ?')
+                ->execute([money_f($row['amount']), money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
+            $note = (string)($row['note'] ?? '');
+            $note .= ' · Rejected by ' . ($staff['staff_name'] ?? 'admin');
+            db()->prepare("UPDATE transactions SET status = 'cancelled', note = ? WHERE id = ?")->execute([$note, $txId]);
+            notify_user((int)$row['user_id'], 'Withdrawal declined', 'Your withdrawal of $' . money_f($row['amount']) . ' was declined and refunded to your withdrawable balance.', 'wallet');
+            json_out(['ok' => true]);
+        }
+
         case 'messages.list': {
             ensure_marketplace_extras();
             $staff = staff_from_token();
@@ -878,80 +942,40 @@ try {
             }
 
             $price = (float)$plan['price'];
-            $method = strtolower(trim((string)($body['method'] ?? 'flutterwave')));
-            $prefer = strtoupper(trim((string)($body['currency'] ?? country_to_currency((string)($u['country_code'] ?? 'ng')))));
-
-            // Pay from wallet balance (spend-only deposits preferred)
-            if ($method === 'wallet') {
-                if ((float)$u['balance'] < $price) {
-                    json_out(['ok' => false, 'error' => 'Insufficient wallet balance. Deposit funds or pay with Flutterwave.'], 400);
-                }
-                $pdo = db();
-                $pdo->beginTransaction();
-                try {
-                    debit_user_for_purchase($pdo, (int)$u['id'], $price);
-                    $pdo->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute([$planId, (int)$u['id']]);
-                    $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, method, note) VALUES (?, \'plan\', ?, \'completed\', \'wallet\', ?)')
-                        ->execute([(int)$u['id'], money_f($price), 'Plan upgrade · plan=' . $planId . ' · paid from wallet']);
-                    $pdo->commit();
-                } catch (Throwable $e) {
-                    $pdo->rollBack();
-                    throw $e;
-                }
-                $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
-                notify_user((int)$u['id'], 'Plan upgraded', ($plan['name'] ?? $planId) . ' is active — ' . (int)$plan['daily_uploads'] . ' uploads / day.', 'plan');
-                json_out([
-                    'ok' => true,
-                    'plan' => $planId,
-                    'dailyUploads' => (int)$plan['daily_uploads'],
-                    'paidFrom' => 'wallet',
-                    'user' => public_user($fresh),
-                    'message' => 'Plan upgraded using wallet balance.',
-                ]);
+            // Paid packages are wallet-only. Flutterwave is used to deposit into the wallet, not for plan checkout.
+            $method = strtolower(trim((string)($body['method'] ?? 'wallet')));
+            if ($method !== 'wallet' && $method !== 'free') {
+                $method = 'wallet';
             }
 
-            if (!flw_deposit_enabled()) {
+            if ((float)$u['balance'] < $price) {
                 json_out([
                     'ok' => false,
-                    'error' => 'Flutterwave is not enabled. In Owner Admin → Gateways, enable Flutterwave deposits (same keys are used for plan upgrades).',
-                    'code' => 'gateway_disabled',
-                ], 503);
+                    'error' => 'Insufficient funds. Please deposit money into your wallet.',
+                    'code' => 'insufficient_funds',
+                ], 400);
             }
-
-            ensure_tx_reference_column();
-            $txRef = uuid_txid();
-            $checkout = flw_create_checkout($u, $price, $txRef, $prefer ?: 'NGN', [
-                'purpose' => 'plan_upgrade',
-                'title' => (app_config()['app_name'] ?? 'Acctventa') . ' Plan',
-                'description' => 'Upgrade to ' . ($plan['name'] ?? $planId) . ' — ' . (int)$plan['daily_uploads'] . ' uploads/day',
-                'redirect_url' => rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/') . '/wallet-return.html?purpose=plan',
-                'meta' => ['plan_id' => $planId, 'daily_uploads' => (int)$plan['daily_uploads']],
-            ]);
-            if (!$checkout['ok']) {
-                json_out(['ok' => false, 'error' => $checkout['error'] ?? 'Could not start payment'], 502);
+            $pdo = db();
+            $pdo->beginTransaction();
+            try {
+                debit_user_for_purchase($pdo, (int)$u['id'], $price);
+                $pdo->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute([$planId, (int)$u['id']]);
+                $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, method, note) VALUES (?, \'plan\', ?, \'completed\', \'wallet\', ?)')
+                    ->execute([(int)$u['id'], money_f($price), 'Plan upgrade · plan=' . $planId . ' · paid from wallet']);
+                $pdo->commit();
+            } catch (Throwable $e) {
+                $pdo->rollBack();
+                throw $e;
             }
-            $charge = $checkout['charge'];
-            $note = sprintf(
-                'Awaiting Flutterwave plan upgrade · plan=%s · charge=%s%s|usd=%s|rate=%s',
-                $planId,
-                $charge['amount'],
-                $charge['currency'],
-                money_f($price),
-                $charge['rate']
-            );
-            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'plan\', ?, 0, \'pending\', \'flutterwave\', ?, ?)')
-                ->execute([(int)$u['id'], money_f($price), $note, $txRef]);
-
+            $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
+            notify_user((int)$u['id'], 'Plan upgraded', ($plan['name'] ?? $planId) . ' is active — ' . (int)$plan['daily_uploads'] . ' uploads / day.', 'plan');
             json_out([
                 'ok' => true,
-                'checkout' => true,
-                'paymentLink' => $checkout['link'],
-                'reference' => $txRef,
                 'plan' => $planId,
-                'amount' => $price,
-                'payAmount' => $charge['amount'],
-                'payCurrency' => $charge['currency'],
                 'dailyUploads' => (int)$plan['daily_uploads'],
+                'paidFrom' => 'wallet',
+                'user' => public_user($fresh),
+                'message' => 'Plan upgraded using wallet balance.',
             ]);
         }
 
@@ -997,6 +1021,7 @@ try {
             $destination = trim((string)($body['destination'] ?? $body['account'] ?? ''));
             $accountName = trim((string)($body['accountName'] ?? ''));
             $bankName = trim((string)($body['bankName'] ?? ''));
+            $bankCode = trim((string)($body['bankCode'] ?? $body['bank_code'] ?? ''));
             $currency = strtoupper(trim((string)($body['currency'] ?? ($u['payout_currency'] ?? '') ?: country_to_currency((string)($u['country_code'] ?? 'ng')))));
 
             $locked = (int)($u['payout_bank_locked'] ?? 0) === 1;
@@ -1004,11 +1029,15 @@ try {
                 $destination = (string)($u['payout_account'] ?? '');
                 $accountName = (string)($u['payout_account_name'] ?? '');
                 $bankName = (string)($u['payout_bank'] ?? '');
+                $bankCode = (string)($u['payout_bank_code'] ?? $bankCode);
                 if (($u['payout_currency'] ?? '') !== '') $currency = strtoupper((string)$u['payout_currency']);
             }
 
             if ($destination === '') {
                 json_out(['ok' => false, 'error' => 'Enter your payout account / wallet address'], 422);
+            }
+            if ($method === 'bank' && $bankCode === '' && $bankName !== '') {
+                $bankCode = flw_resolve_bank_code($bankName);
             }
             $rate = (float)setting_get('withdraw_commission_rate', 0.1);
             $fee = round($amount * $rate, 2);
@@ -1018,12 +1047,19 @@ try {
             $note = 'Payout via ' . $method . ' · ' . $destination;
             if ($accountName !== '') $note .= ' · ' . $accountName;
             if ($bankName !== '') $note .= ' · ' . $bankName;
+            if ($bankCode !== '') $note .= ' · bankCode=' . $bankCode;
             if ($currency !== '') $note .= ' · ' . $currency;
 
             // Save bank details on first bank withdraw (editable until first successful payout)
             if ($method === 'bank' && !$locked) {
-                db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ? WHERE id = ?')
-                    ->execute([$bankName, $destination, $accountName, $currency, (int)$u['id']]);
+                ensure_user_payout_columns();
+                try {
+                    db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ?, payout_bank_code = ? WHERE id = ?')
+                        ->execute([$bankName, $destination, $accountName, $currency, $bankCode, (int)$u['id']]);
+                } catch (Throwable $e) {
+                    db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ? WHERE id = ?')
+                        ->execute([$bankName, $destination, $accountName, $currency, (int)$u['id']]);
+                }
             }
 
             db()->prepare('UPDATE users SET balance = balance - ?, withdrawable_balance = GREATEST(0, withdrawable_balance - ?), total_withdrawals = total_withdrawals + ? WHERE id = ?')

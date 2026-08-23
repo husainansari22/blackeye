@@ -318,6 +318,18 @@
     staffDeductRefund(payload) {
       return request('staff.orders.deduct_refund', { method: 'POST', body: payload, asStaff: true });
     },
+    staffWalletPending() {
+      return request('staff.wallet.pending', { asStaff: true });
+    },
+    staffApproveWithdrawal(payload) {
+      return request('staff.wallet.approve_withdrawal', { method: 'POST', body: payload, asStaff: true });
+    },
+    staffRejectWithdrawal(payload) {
+      return request('staff.wallet.reject_withdrawal', { method: 'POST', body: payload, asStaff: true });
+    },
+    banksList(query) {
+      return request('banks.list', { query: query || {} });
+    },
     // -------- Social proof / storefronts --------
     socialProof() {
       return request('stats.social_proof');

@@ -176,6 +176,7 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $row = $tx->fetch();
             if ($row) {
                 $old = $row['status'];
+                $skipGenericStatus = false;
                 // If cancelling/rejecting a pending withdrawal, refund the user
                 if ($row['type'] === 'withdrawal' && $old === 'pending' && in_array($newStatus, ['cancelled', 'failed'], true)) {
                     ensure_wallet_ledger_columns();
@@ -184,16 +185,26 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     notify_user((int)$row['user_id'], 'Withdrawal declined', 'Your withdrawal of $' . money_f($row['amount']) . ' was declined and refunded to your withdrawable balance.', 'wallet');
                 }
                 if ($row['type'] === 'withdrawal' && $old === 'pending' && $newStatus === 'completed') {
-                    notify_user((int)$row['user_id'], 'Withdrawal paid', 'Your withdrawal of $' . money_f($row['payout'] ?? $row['amount']) . ' was marked completed.', 'wallet');
-                    // Lock bank details after first successful bank payout
-                    if (strtolower((string)($row['method'] ?? '')) === 'bank') {
-                        ensure_user_payout_columns();
-                        db()->prepare('UPDATE users SET payout_bank_locked = 1 WHERE id = ? AND payout_account != \'\'')
-                            ->execute([(int)$row['user_id']]);
+                    $forceManual = !empty($_POST['force_manual']);
+                    if (!empty($_POST['note_edit'])) {
+                        db()->prepare('UPDATE transactions SET note = ? WHERE id = ?')->execute([trim((string)$_POST['note_edit']), $txId]);
+                        $row['note'] = trim((string)$_POST['note_edit']);
                     }
+                    $urow = db()->prepare('SELECT payout_bank, payout_account, payout_account_name, payout_bank_code FROM users WHERE id = ?');
+                    $urow->execute([(int)$row['user_id']]);
+                    $urow = $urow->fetch() ?: [];
+                    $merged = array_merge($row, $urow);
+                    $pay = approve_withdrawal_payout($merged, 'Owner approved', $forceManual);
+                    if (empty($pay['ok'])) {
+                        throw new RuntimeException('Payout failed: ' . ($pay['error'] ?? 'unknown error'));
+                    }
+                    $flash = (!empty($pay['mode']) && $pay['mode'] === 'flutterwave')
+                        ? ('Withdrawal sent via Flutterwave' . (!empty($pay['amountNgn']) ? ' (₦' . number_format((float)$pay['amountNgn']) . ')' : '') . '.')
+                        : 'Withdrawal marked paid manually.';
+                    $skipGenericStatus = true;
                 }
                 // Approving a pending deposit credits the wallet (crypto / manual)
-                if ($row['type'] === 'deposit' && $old === 'pending' && $newStatus === 'completed') {
+                if (!$skipGenericStatus && $row['type'] === 'deposit' && $old === 'pending' && $newStatus === 'completed') {
                     db()->prepare('UPDATE users SET balance = balance + ?, total_deposits = total_deposits + ? WHERE id = ?')
                         ->execute([money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
                     notify_user((int)$row['user_id'], 'Deposit credited', 'Your deposit of $' . money_f($row['amount']) . ' was credited to your wallet (spendable — not withdrawable).', 'wallet');
@@ -201,14 +212,18 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         maybe_credit_referral_reward((int)$row['user_id']);
                     } catch (Throwable $e) {}
                 }
-                if (!empty($_POST['note_edit'])) {
-                    db()->prepare('UPDATE transactions SET status = ?, note = ? WHERE id = ?')
-                        ->execute([$newStatus, trim((string)$_POST['note_edit']), $txId]);
-                } else {
-                    db()->prepare('UPDATE transactions SET status = ? WHERE id = ?')->execute([$newStatus, $txId]);
+                if (!$skipGenericStatus) {
+                    if (!empty($_POST['note_edit'])) {
+                        db()->prepare('UPDATE transactions SET status = ?, note = ? WHERE id = ?')
+                            ->execute([$newStatus, trim((string)$_POST['note_edit']), $txId]);
+                    } else {
+                        db()->prepare('UPDATE transactions SET status = ? WHERE id = ?')->execute([$newStatus, $txId]);
+                    }
+                    $flash = 'Transaction status updated.';
                 }
+            } else {
+                $flash = 'Transaction not found.';
             }
-            $flash = 'Transaction status updated.';
         }
         if ($form === 'currencies') {
             $localIn = $_POST['local'] ?? [];
@@ -1161,7 +1176,7 @@ $tab = $_GET['tab'] ?? 'overview';
       <div class="av-panel mb-3">
         <div class="av-panel-head">Pending withdrawals</div>
         <div class="av-panel-body">
-        <p class="text-xs av-muted mb-3">Rejecting refunds the user’s wallet. Completing marks payout as paid.</p>
+        <p class="text-xs av-muted mb-3">Approve bank withdrawals to pay via Flutterwave (from your Flutterwave balance) when Withdraw gateway is set to Flutterwave. Crypto stays manual. Rejecting refunds the user’s wallet.</p>
         <?php if (!$pendingWd): ?>
           <p class="text-sm">No pending withdrawals.</p>
         <?php else: ?>
@@ -1172,14 +1187,16 @@ $tab = $_GET['tab'] ?? 'overview';
                 <p class="font-bold text-sm"><?= h($t['name']) ?> · <?= h($t['email']) ?></p>
                 <p>$<?= number_format((float)$t['amount'], 2) ?> · fee $<?= number_format((float)$t['fee'], 2) ?> · payout $<?= number_format((float)($t['payout'] ?? 0), 2) ?></p>
                 <p class="text-slate-500 mt-1"><?= h($t['method']) ?></p>
+                <p class="break-all text-slate-600 dark:text-slate-300"><?= h($t['note']) ?></p>
                 <p class="font-mono text-[10px] text-slate-400"><?= h($t['reference'] ?? '') ?></p>
               </div>
               <form method="post" class="space-y-2">
                 <input type="hidden" name="form" value="tx_status">
                 <input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>">
-                <textarea name="note_edit" rows="2" class="w-full border rounded-lg px-2 py-1.5 text-xs" placeholder="Payout note / bank details"><?= h($t['note']) ?></textarea>
+                <textarea name="note_edit" rows="2" class="w-full border rounded-lg px-2 py-1.5 text-xs" placeholder="Payout note / bank details (include bankCode=044 if needed)"><?= h($t['note']) ?></textarea>
+                <label class="flex items-center gap-2 text-[11px] text-slate-500"><input type="checkbox" name="force_manual" value="1"> Mark paid manually (skip Flutterwave)</label>
                 <div class="flex flex-wrap gap-2">
-                  <button name="status" value="completed" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Approve / Paid</button>
+                  <button name="status" value="completed" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Approve &amp; pay</button>
                   <button name="status" value="cancelled" class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Reject + refund</button>
                 </div>
               </form>

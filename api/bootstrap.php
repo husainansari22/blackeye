@@ -307,6 +307,7 @@ function public_user(array $u): array {
         'payoutAccountName' => (string)($u['payout_account_name'] ?? ''),
         'payoutCurrency' => (string)($u['payout_currency'] ?? ''),
         'payoutBankLocked' => (int)($u['payout_bank_locked'] ?? 0) === 1,
+        'payoutBankCode' => (string)($u['payout_bank_code'] ?? ''),
     ];
 }
 
@@ -399,6 +400,7 @@ function ensure_user_payout_columns(): void {
         'payout_account_name' => "ALTER TABLE users ADD COLUMN payout_account_name VARCHAR(120) NOT NULL DEFAULT '' AFTER payout_account",
         'payout_currency' => "ALTER TABLE users ADD COLUMN payout_currency VARCHAR(10) NOT NULL DEFAULT '' AFTER payout_account_name",
         'payout_bank_locked' => "ALTER TABLE users ADD COLUMN payout_bank_locked TINYINT(1) NOT NULL DEFAULT 0 AFTER payout_currency",
+        'payout_bank_code' => "ALTER TABLE users ADD COLUMN payout_bank_code VARCHAR(20) NOT NULL DEFAULT '' AFTER payout_bank_locked",
     ];
     foreach ($cols as $name => $sql) {
         try {

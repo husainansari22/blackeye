@@ -372,3 +372,216 @@ function settle_flutterwave_payment(string $txRef, float $amountPaid, string $fl
     }
     return credit_deposit_from_gateway($txRef, $amountPaid, $flwId, $paidCurrency);
 }
+
+/** Nigerian (or other) bank list from Flutterwave for withdrawal forms. */
+function flw_list_banks(string $country = 'NG'): array {
+    $secret = flw_withdraw_secret();
+    if ($secret === '') return ['ok' => false, 'error' => 'Flutterwave secret key missing', 'banks' => []];
+    $country = strtoupper($country ?: 'NG');
+    $res = flw_http('GET', 'https://api.flutterwave.com/v3/banks/' . rawurlencode($country), null, $secret);
+    if (($res['status'] ?? '') !== 'success' || !is_array($res['data'] ?? null)) {
+        return ['ok' => false, 'error' => $res['message'] ?? 'Could not load banks', 'banks' => []];
+    }
+    $banks = [];
+    foreach ($res['data'] as $b) {
+        if (!is_array($b)) continue;
+        $code = (string)($b['code'] ?? '');
+        $name = (string)($b['name'] ?? '');
+        if ($code === '' || $name === '') continue;
+        $banks[] = ['code' => $code, 'name' => $name];
+    }
+    usort($banks, static fn($a, $b) => strcasecmp($a['name'], $b['name']));
+    return ['ok' => true, 'banks' => $banks];
+}
+
+/** Best-effort match of a free-text bank name to a Flutterwave bank code. */
+function flw_resolve_bank_code(string $bankName, string $country = 'NG'): string {
+    $bankName = trim($bankName);
+    if ($bankName === '') return '';
+    if (preg_match('/^\d{3,6}$/', $bankName)) return $bankName;
+    $list = flw_list_banks($country);
+    if (empty($list['ok'])) return '';
+    $needle = strtolower($bankName);
+    foreach ($list['banks'] as $b) {
+        $name = strtolower((string)$b['name']);
+        if ($name === $needle || strpos($name, $needle) !== false || strpos($needle, $name) !== false) {
+            return (string)$b['code'];
+        }
+    }
+    return '';
+}
+
+/**
+ * Send a bank payout via Flutterwave Transfer API.
+ * Amount is USD from our ledger; converted to NGN (or local) for the transfer.
+ */
+function flw_create_bank_transfer(array $opts): array {
+    $secret = flw_withdraw_secret();
+    if ($secret === '') {
+        return ['ok' => false, 'error' => 'Flutterwave withdraw secret key missing in Owner Admin → Gateways'];
+    }
+    $accountNumber = preg_replace('/\s+/', '', (string)($opts['account_number'] ?? ''));
+    $bankCode = trim((string)($opts['bank_code'] ?? ''));
+    $usd = (float)($opts['usd_amount'] ?? 0);
+    $reference = trim((string)($opts['reference'] ?? ''));
+    $narration = trim((string)($opts['narration'] ?? 'Acctventa withdrawal'));
+    $currency = strtoupper((string)($opts['currency'] ?? 'NGN'));
+    if ($accountNumber === '' || $bankCode === '') {
+        return ['ok' => false, 'error' => 'Bank code and account number are required for Flutterwave payout'];
+    }
+    if ($usd <= 0 || $reference === '') {
+        return ['ok' => false, 'error' => 'Invalid payout amount or reference'];
+    }
+    if ($currency !== 'NGN') {
+        // Currently we payout NGN via Flutterwave for African bank accounts.
+        $currency = 'NGN';
+    }
+    $rate = usd_ngn_rate();
+    $ngn = (int)round($usd * $rate);
+    if ($ngn < 100) $ngn = 100;
+
+    $payload = [
+        'account_bank' => $bankCode,
+        'account_number' => $accountNumber,
+        'amount' => $ngn,
+        'narration' => $narration,
+        'currency' => $currency,
+        'reference' => $reference,
+        'debit_currency' => $currency,
+    ];
+    $res = flw_http('POST', 'https://api.flutterwave.com/v3/transfers', $payload, $secret);
+    if (($res['status'] ?? '') === 'success' && !empty($res['data'])) {
+        return [
+            'ok' => true,
+            'transfer' => $res['data'],
+            'flw_id' => (string)($res['data']['id'] ?? ''),
+            'status' => strtoupper((string)($res['data']['status'] ?? 'NEW')),
+            'amount_ngn' => $ngn,
+            'rate' => $rate,
+        ];
+    }
+    $msg = $res['message'] ?? ($res['error'] ?? 'Flutterwave transfer failed');
+    return ['ok' => false, 'error' => $msg, 'raw' => $res];
+}
+
+/**
+ * Admin-approved withdrawal payout.
+ * - Bank + Flutterwave withdraw enabled → auto-transfer from your Flutterwave balance
+ * - Crypto / manual → mark completed (you pay outside the site)
+ */
+function approve_withdrawal_payout(array $tx, string $actorNote = '', bool $forceManual = false): array {
+    if (($tx['type'] ?? '') !== 'withdrawal') {
+        return ['ok' => false, 'error' => 'Not a withdrawal'];
+    }
+    if (($tx['status'] ?? '') !== 'pending') {
+        return ['ok' => false, 'error' => 'Withdrawal is not pending'];
+    }
+    $method = strtolower((string)($tx['method'] ?? 'bank'));
+    $payoutUsd = (float)($tx['payout'] ?? $tx['amount'] ?? 0);
+    $note = (string)($tx['note'] ?? '');
+    $ref = (string)($tx['reference'] ?? ('wd_' . $tx['id']));
+
+    $gw = gateway_row();
+    $provider = strtolower((string)($gw['withdraw_provider'] ?? ''));
+    $flwOn = !empty($gw['withdraw_enabled']) && $provider === 'flutterwave' && flw_withdraw_secret() !== '';
+
+    if (!$forceManual && $method === 'bank' && $flwOn) {
+        $bankCode = '';
+        if (preg_match('/bankCode=([0-9A-Za-z]+)/', $note, $m)) {
+            $bankCode = $m[1];
+        }
+        $account = '';
+        if (preg_match('/·\s*([0-9]{8,20})\s*·/', $note, $m)) {
+            $account = $m[1];
+        }
+        // Prefer columns if present in a joined user row
+        if ($account === '' && !empty($tx['payout_account'])) {
+            $account = (string)$tx['payout_account'];
+        }
+        if ($bankCode === '' && !empty($tx['payout_bank_code'])) {
+            $bankCode = (string)$tx['payout_bank_code'];
+        }
+        if ($bankCode === '' && !empty($tx['payout_bank'])) {
+            $bankCode = flw_resolve_bank_code((string)$tx['payout_bank']);
+        }
+        if ($bankCode === '') {
+            // Try free-text bank name from note
+            if (preg_match('/·\s*([^·]+)\s*$/', $note, $m)) {
+                $bankCode = flw_resolve_bank_code(trim($m[1]));
+            }
+        }
+        // Destination often stored as: Payout via bank · ACCOUNT · NAME · BANK · CURRENCY
+        if ($account === '') {
+            $parts = array_map('trim', explode('·', $note));
+            foreach ($parts as $p) {
+                if (preg_match('/^[0-9]{8,20}$/', $p)) {
+                    $account = $p;
+                    break;
+                }
+            }
+        }
+        if ($bankCode === '' || $account === '') {
+            return [
+                'ok' => false,
+                'error' => 'Cannot auto-pay: missing bank code or account number. Edit the note to include bankCode=044 and the account number, or approve as manual.',
+                'code' => 'missing_bank_details',
+            ];
+        }
+        $transfer = flw_create_bank_transfer([
+            'account_number' => $account,
+            'bank_code' => $bankCode,
+            'usd_amount' => $payoutUsd,
+            'reference' => $ref,
+            'narration' => 'Acctventa withdrawal ' . $ref,
+            'currency' => 'NGN',
+        ]);
+        if (empty($transfer['ok'])) {
+            return ['ok' => false, 'error' => $transfer['error'] ?? 'Flutterwave payout failed', 'raw' => $transfer['raw'] ?? null];
+        }
+        $newNote = $note;
+        if ($actorNote !== '') $newNote .= ' · ' . $actorNote;
+        $newNote .= ' · Flutterwave transfer #' . ($transfer['flw_id'] ?: 'ok')
+            . ' · ₦' . number_format((float)$transfer['amount_ngn'], 0)
+            . ' · status ' . ($transfer['status'] ?? '');
+        db()->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ? AND status = \'pending\'')
+            ->execute([$newNote, 'flutterwave', (int)$tx['id']]);
+        // Lock bank details after first successful bank payout
+        ensure_user_payout_columns();
+        db()->prepare('UPDATE users SET payout_bank_locked = 1 WHERE id = ? AND payout_account != \'\'')
+            ->execute([(int)$tx['user_id']]);
+        notify_user(
+            (int)$tx['user_id'],
+            'Withdrawal paid',
+            'Your withdrawal of $' . money_f($payoutUsd) . ' was approved and sent via Flutterwave.',
+            'wallet'
+        );
+        return [
+            'ok' => true,
+            'mode' => 'flutterwave',
+            'flwId' => $transfer['flw_id'],
+            'amountNgn' => $transfer['amount_ngn'],
+            'status' => $transfer['status'],
+        ];
+    }
+
+    // Manual / crypto / Flutterwave disabled → mark paid (you send money yourself)
+    $newNote = $note;
+    if ($actorNote !== '') $newNote .= ' · ' . $actorNote;
+    $newNote .= $forceManual || $method === 'crypto' || !$flwOn
+        ? ' · Marked paid manually'
+        : ' · Marked paid';
+    db()->prepare('UPDATE transactions SET status = \'completed\', note = ? WHERE id = ? AND status = \'pending\'')
+        ->execute([$newNote, (int)$tx['id']]);
+    if ($method === 'bank') {
+        ensure_user_payout_columns();
+        db()->prepare('UPDATE users SET payout_bank_locked = 1 WHERE id = ? AND payout_account != \'\'')
+            ->execute([(int)$tx['user_id']]);
+    }
+    notify_user(
+        (int)$tx['user_id'],
+        'Withdrawal paid',
+        'Your withdrawal of $' . money_f($payoutUsd) . ' was marked completed.',
+        'wallet'
+    );
+    return ['ok' => true, 'mode' => 'manual'];
+}
