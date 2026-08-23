@@ -641,6 +641,7 @@ try {
         case 'staff.wallet.pending': {
             require_staff();
             ensure_wallet_ledger_columns();
+            ensure_user_payout_columns();
             $wd = db()->query("SELECT t.*, u.email, u.name, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
                 FROM transactions t JOIN users u ON u.id = t.user_id
                 WHERE t.type = 'withdrawal' AND t.status = 'pending'
@@ -654,6 +655,7 @@ try {
 
         case 'staff.wallet.approve_withdrawal': {
             $staff = require_staff();
+            ensure_user_payout_columns();
             $txId = (int)($body['txId'] ?? $body['id'] ?? 0);
             $forceManual = !empty($body['forceManual']);
             $noteEdit = trim((string)($body['note'] ?? ''));

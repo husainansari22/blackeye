@@ -1417,6 +1417,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
           <div class="border rounded-xl p-4 space-y-2">
             <h3 class="font-semibold">Withdraw / payout</h3>
+            <p class="text-[10px] text-slate-400">Withdraw payouts: set provider to <strong>flutterwave</strong> and enable — when you Approve a bank withdrawal, Flutterwave pays the seller from your Flutterwave balance. Crypto stays manual.</p>
             <select name="withdraw_provider" class="w-full border rounded-xl px-3 py-2 text-sm">
               <?php foreach (['none','paystack','flutterwave','stripe','nowpayments','manual'] as $p): ?>
                 <option value="<?= $p ?>" <?= ($gw['withdraw_provider']??'')===$p?'selected':'' ?>><?= $p ?></option>
