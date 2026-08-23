@@ -73,17 +73,46 @@ import { createDecartClient, models } from "@decartai/sdk";
     return parts.join(" ");
   }
 
-  async function ensureCamera() {
-    if (localStream) return localStream;
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: "user",
-        frameRate: model.fps,
-        width: { ideal: model.width },
-        height: { ideal: model.height },
-      },
+  function stopLocalTracks() {
+    if (!localStream) return;
+    localStream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch {
+        // ignore
+      }
     });
+    localStream = null;
+    camera.srcObject = null;
+    camera.classList.remove("is-on");
+    cameraEmpty.classList.remove("is-hidden");
+  }
+
+  async function ensureCamera() {
+    // Always re-open cleanly so a failed Lucy connect cannot leave a dead track.
+    stopLocalTracks();
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        },
+      });
+    } catch (err) {
+      const name = err?.name || "";
+      if (name === "NotReadableError" || /video source|Could not start/i.test(err?.message || "")) {
+        throw new Error(
+          "Camera is busy. Close OBS / other apps using the webcam, then try Start live again."
+        );
+      }
+      if (name === "NotAllowedError") {
+        throw new Error("Camera permission blocked. Allow camera for kelvinoz.com and retry.");
+      }
+      throw new Error(err?.message || "Could not open camera");
+    }
     camera.srcObject = localStream;
     await camera.play();
     camera.classList.add("is-on");
@@ -174,6 +203,8 @@ import { createDecartClient, models } from "@decartai/sdk";
         // ignore
       }
       realtimeClient = null;
+      // Release camera so retry / OBS can use it
+      stopLocalTracks();
       throw err;
     }
   }
@@ -186,15 +217,9 @@ import { createDecartClient, models } from "@decartai/sdk";
       // ignore
     }
     realtimeClient = null;
-    if (localStream) {
-      localStream.getTracks().forEach((t) => t.stop());
-      localStream = null;
-    }
-    camera.srcObject = null;
+    stopLocalTracks();
     output.srcObject = null;
-    camera.classList.remove("is-on");
     output.classList.remove("is-on");
-    cameraEmpty.classList.remove("is-hidden");
     outputEmpty.textContent = "Waiting";
     outputEmpty.classList.remove("is-hidden");
     startBtn.disabled = false;
