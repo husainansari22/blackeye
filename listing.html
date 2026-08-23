@@ -18,6 +18,11 @@
   <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{brandPrimary:'#0ea5e9',brandHover:'#0284c7',darkBg:'#0f172a'}}}}</script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/legal.css?v=20260823c1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.05rem;height:1.05rem;min-width:1.05rem;margin-left:.28rem;border-radius:999px;background:#0ea5e9;color:#fff;vertical-align:middle;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(14,165,233,.28)}
+    .av-verify-badge i{font-size:.55rem;color:#fff;line-height:1}
+  </style>
   <script src="/js/api-client.js?v=20260823c1"></script>
 </head>
 <body class="av-pub bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
@@ -70,7 +75,7 @@
         <p class="text-xs font-bold uppercase tracking-widest text-brandPrimary mb-2">${escapeHtml(listing.category || 'Digital product')}</p>
         <h1 class="text-2xl font-extrabold tracking-tight mb-2">${escapeHtml(title)}</h1>
         <p class="text-sm text-slate-500 mb-4">Sold by
-          <a class="text-brandPrimary font-semibold" href="/seller/${encodeURIComponent(sellerId || seller)}">${escapeHtml(seller)}</a>${(listing.sellerVerified || listing.seller_verified || listing.isVerified) ? ' <span class="text-emerald-500 font-bold">✓ Verified</span>' : ''}
+          <a class="text-brandPrimary font-semibold inline-flex items-center" href="/seller/${encodeURIComponent(sellerId || seller)}">${escapeHtml(seller)}${(listing.sellerVerified || listing.seller_verified || listing.isVerified) ? '<span class="av-verify-badge" title="Verified" aria-label="Verified"><i class="fa-solid fa-check"></i></span>' : ''}</a>
           ${listing.sellerRating ? ' · ★ ' + Number(listing.sellerRating).toFixed(1) : ''}
         </p>
         <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">${escapeHtml(desc)}</p>

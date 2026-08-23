@@ -953,6 +953,33 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   color: var(--av-muted);
   line-height: 1.35;
 }
+
+/* Blue verify checkmark beside names */
+.av-verify-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  min-width: 1.05rem;
+  border-radius: 999px;
+  background: #0ea5e9;
+  color: #fff !important;
+  flex-shrink: 0;
+  vertical-align: middle;
+  box-shadow: 0 0 0 1.5px rgba(14, 165, 233, 0.28);
+}
+.av-verify-badge i {
+  font-size: 0.55rem;
+  color: #fff !important;
+  line-height: 1;
+}
+.av-verify-badge-lg {
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+}
+.av-verify-badge-lg i { font-size: 0.65rem; }
 .av-user-meta {
   display: flex;
   flex-wrap: wrap;

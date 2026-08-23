@@ -351,7 +351,7 @@ $tab = $_GET['tab'] ?? 'overview';
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set6">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260823badge2">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -908,7 +908,10 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="av-user-detail-hero">
           <div class="av-avatar av-avatar-lg"><?= h($initials) ?></div>
           <div class="min-w-0">
-            <h2 class="av-settings-title" style="margin:0"><?= h($u['name']) ?></h2>
+            <h2 class="av-settings-title" style="margin:0;display:inline-flex;align-items:center;gap:0.35rem;flex-wrap:wrap">
+              <?= h($u['name']) ?>
+              <?php if ($verified): ?><span class="av-verify-badge av-verify-badge-lg" title="Verified" aria-label="Verified"><i class="fa-solid fa-check"></i></span><?php endif; ?>
+            </h2>
             <p class="av-row-sub"><?= h($u['email']) ?> · #<?= (int)$u['id'] ?></p>
           </div>
         </div>
@@ -1035,12 +1038,14 @@ $tab = $_GET['tab'] ?? 'overview';
             <a class="av-settings-row" href="?tab=users&amp;id=<?= (int)$u['id'] ?>">
               <span class="av-avatar av-avatar-sm"><?= h($initials) ?></span>
               <span class="av-settings-label">
-                <?= h($u['name']) ?>
+                <span class="inline-flex items-center gap-1">
+                  <?= h($u['name']) ?>
+                  <?php if ($verified): ?><span class="av-verify-badge" title="Verified" aria-label="Verified"><i class="fa-solid fa-check"></i></span><?php endif; ?>
+                </span>
                 <span class="av-row-sub" style="display:block;font-weight:500"><?= h($u['email']) ?></span>
               </span>
               <span class="av-settings-value">
                 $<?= number_format((float)$u['balance'], 2) ?>
-                <?php if ($verified): ?> · ✓<?php endif; ?>
                 <?php if ($banned): ?> · banned<?php endif; ?>
               </span>
               <i class="fa-solid fa-chevron-right av-settings-chevron"></i>

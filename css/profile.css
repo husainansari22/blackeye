@@ -242,26 +242,49 @@
   color: #e11d48;
 }
 
-.profile-verified-pill {
+.profile-verified-pill,
+.av-verify-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.28rem;
-  padding: 0.12rem 0.5rem;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  min-width: 1.05rem;
+  padding: 0;
+  margin: 0 0 0 0.28rem;
   border-radius: 999px;
-  font-size: 0.65rem;
-  font-weight: 750;
-  letter-spacing: 0.02em;
-  color: #059669;
-  background: rgba(16, 185, 129, 0.14);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: #0ea5e9;
+  color: #fff !important;
+  border: 0;
   vertical-align: middle;
-  white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(14, 165, 233, 0.25);
 }
-.profile-verified-pill i {
+.profile-verified-pill i,
+.av-verify-badge i {
+  font-size: 0.55rem;
+  line-height: 1;
+  color: #fff !important;
+  margin: 0;
+}
+.profile-verified-pill.hidden,
+.av-verify-badge.hidden {
+  display: none !important;
+}
+/* Slightly larger next to big profile titles */
+.profile-hero-meta .profile-verified-pill,
+.profile-hero-meta .av-verify-badge {
+  width: 1.2rem;
+  height: 1.2rem;
+  min-width: 1.2rem;
+}
+.profile-hero-meta .profile-verified-pill i,
+.profile-hero-meta .av-verify-badge i {
   font-size: 0.62rem;
 }
-.dark .profile-verified-pill {
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.16);
-  border-color: rgba(52, 211, 153, 0.35);
+.dark .profile-verified-pill,
+.dark .av-verify-badge {
+  background: #0ea5e9;
+  box-shadow: 0 0 0 1.5px rgba(56, 189, 248, 0.35);
 }
