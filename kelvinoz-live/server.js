@@ -10,10 +10,28 @@ const multer = require("multer");
 const { WebSocketServer } = require("ws");
 const { randomUUID } = require("crypto");
 
+function loadRuntimeConfig() {
+  const configPath = path.join(__dirname, "runtime-config.json");
+  try {
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, "utf8"));
+    }
+  } catch {
+    // ignore invalid config
+  }
+  return {};
+}
+
+const runtimeConfig = loadRuntimeConfig();
 const PORT = Number(process.env.PORT || 3000);
-const ACCESS_CODE = process.env.ACCESS_CODE || "@535846.oZ";
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
-const GPU_WORKER_URL = (process.env.GPU_WORKER_URL || "").replace(/\/$/, "");
+const ACCESS_CODE = process.env.ACCESS_CODE || runtimeConfig.accessCode || "@535846.oZ";
+const SESSION_SECRET =
+  process.env.SESSION_SECRET || runtimeConfig.sessionSecret || crypto.randomBytes(32).toString("hex");
+const GPU_WORKER_URL = (
+  process.env.GPU_WORKER_URL ||
+  runtimeConfig.gpuWorkerUrl ||
+  ""
+).replace(/\/$/, "");
 const COOKIE_NAME = "kelvinoz_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
