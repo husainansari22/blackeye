@@ -412,7 +412,7 @@
       sub.textContent =
         'New accounts start on Free — ' +
         freePlan.dailyUploads +
-        ' uploads per day. Paid plans unlock higher daily upload limits — pay from your wallet balance.';
+        ' uploads per day. Paid plans unlock higher daily upload limits via Flutterwave or wallet.';
     }
     const bal = Number(u.balance) || 0;
     box.innerHTML = Object.values(plans)
@@ -426,11 +426,13 @@
             '<button disabled class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-400">Active plan</button>';
         } else if (!price) {
           actions = `<button onclick="selectPlan('${p.id}')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Use Free plan</button>`;
-        } else if (canWallet) {
-          actions = `<button onclick="selectPlan('${p.id}','wallet')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Pay from wallet (${money(bal)})</button>`;
         } else {
-          actions = `<button onclick="selectPlan('${p.id}','wallet')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Upgrade · ${money(price)}</button>
-            <p class="text-[10px] text-slate-400 text-center mt-2">Needs wallet balance — deposit first if funds are low.</p>`;
+          actions = `<button onclick="selectPlan('${p.id}','flutterwave')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white hover:bg-brandHover">Pay now</button>`;
+          if (canWallet) {
+            actions += `<button onclick="selectPlan('${p.id}','wallet')" class="w-full mt-2 py-2.5 rounded-xl text-xs font-bold border border-brandPrimary text-brandPrimary hover:bg-brandPrimary/10">Pay from wallet (${money(bal)} available)</button>`;
+          } else {
+            actions += `<p class="text-[10px] text-slate-400 text-center mt-2">Or deposit to wallet, then upgrade from balance.</p>`;
+          }
         }
         return `<div class="bg-lightCard dark:bg-darkCard border ${active ? 'border-brandPrimary' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-4 shadow-sm space-y-3">
         <div class="flex justify-between items-center">
@@ -2097,9 +2099,50 @@
     if (!u) return;
     const plan = (A().PLANS && A().PLANS[planId]) || null;
     const price = plan ? Number(plan.price) || 0 : 0;
-    // Paid plans are wallet-only (same as buying listings) — no Flutterwave checkout here.
-    const payMethod = price > 0 ? 'wallet' : method || 'free';
-    if (price > 0) {
+    const payMethod = method || (price > 0 ? 'flutterwave' : 'free');
+
+    async function runUpgrade() {
+      try {
+        const res = await Promise.resolve(
+          A().setPlan(u, planId, { method: payMethod === 'wallet' ? 'wallet' : price > 0 ? 'flutterwave' : 'free' })
+        );
+        if (!res || !res.ok) {
+          if (res && (res.code === 'insufficient_funds' || /insufficient/i.test(String(res.error || '')))) {
+            if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
+              window.CommerceUI.showInsufficientFundsModal();
+            } else {
+              alert(res.error || 'Insufficient funds');
+            }
+            return;
+          }
+          alert((res && res.error) || 'Could not update plan');
+          return;
+        }
+        if (res.checkout) return; // redirected to Flutterwave
+        if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
+        applyProfileChrome(refreshUser());
+        renderPlans();
+        const active = A().getPlan(refreshUser());
+        alert(res.message || ('Plan updated to ' + active.name + ' — ' + active.dailyUploads + ' uploads / day.'));
+      } catch (e) {
+        if (e && (e.code === 'insufficient_funds' || /insufficient/i.test(String(e.message || '')))) {
+          if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
+            window.CommerceUI.showInsufficientFundsModal();
+          } else {
+            alert(e.message || 'Insufficient funds');
+          }
+          return;
+        }
+        alert(e.message || 'Plan upgrade failed');
+      }
+    }
+
+    if (price <= 0) {
+      await runUpgrade();
+      return;
+    }
+
+    if (payMethod === 'wallet') {
       const bal = Number(u.balance) || 0;
       if (bal + 0.0001 < price) {
         if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
@@ -2109,50 +2152,22 @@
         }
         return;
       }
-      if (
-        !confirm(
-          'Pay ' +
-            money(price) +
-            ' from your wallet to activate ' +
-            (plan.name || planId) +
-            ' (' +
-            plan.dailyUploads +
-            ' uploads / day)?'
-        )
-      ) {
-        return;
-      }
     }
-    try {
-      const res = await Promise.resolve(A().setPlan(u, planId, { method: payMethod }));
-      if (!res || !res.ok) {
-        if (res && (res.code === 'insufficient_funds' || /insufficient/i.test(String(res.error || '')))) {
-          if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
-            window.CommerceUI.showInsufficientFundsModal();
-          } else {
-            alert(res.error || 'Insufficient funds');
-          }
-          return;
-        }
-        alert((res && res.error) || 'Could not update plan');
-        return;
-      }
-      if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
-      applyProfileChrome(refreshUser());
-      renderPlans();
-      const active = A().getPlan(refreshUser());
-      alert(res.message || ('Plan updated to ' + active.name + ' — ' + active.dailyUploads + ' uploads / day.'));
-    } catch (e) {
-      if (e && (e.code === 'insufficient_funds' || /insufficient/i.test(String(e.message || '')))) {
-        if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
-          window.CommerceUI.showInsufficientFundsModal();
-        } else {
-          alert(e.message || 'Insufficient funds');
-        }
-        return;
-      }
-      alert(e.message || 'Plan upgrade failed');
+
+    // Branded confirm (not the browser system dialog)
+    if (window.CommerceUI && typeof window.CommerceUI.confirmPlanCheckout === 'function') {
+      const ok = await window.CommerceUI.confirmPlanCheckout({
+        planName: plan.name || planId,
+        price: price,
+        dailyUploads: plan.dailyUploads,
+        method: payMethod,
+      });
+      if (!ok) return;
+      await runUpgrade();
+      return;
     }
+
+    await runUpgrade();
   };
 
   window.setAdsFilter = function (f) {

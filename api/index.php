@@ -944,40 +944,85 @@ try {
             }
 
             $price = (float)$plan['price'];
-            // Paid packages are wallet-only. Flutterwave is used to deposit into the wallet, not for plan checkout.
-            $method = strtolower(trim((string)($body['method'] ?? 'wallet')));
-            if ($method !== 'wallet' && $method !== 'free') {
-                $method = 'wallet';
+            $method = strtolower(trim((string)($body['method'] ?? 'flutterwave')));
+            $prefer = strtoupper(trim((string)($body['currency'] ?? country_to_currency((string)($u['country_code'] ?? 'ng')))));
+
+            // Pay from wallet balance
+            if ($method === 'wallet') {
+                if ((float)$u['balance'] < $price) {
+                    json_out([
+                        'ok' => false,
+                        'error' => 'Insufficient funds. Please deposit money into your wallet.',
+                        'code' => 'insufficient_funds',
+                    ], 400);
+                }
+                $pdo = db();
+                $pdo->beginTransaction();
+                try {
+                    debit_user_for_purchase($pdo, (int)$u['id'], $price);
+                    $pdo->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute([$planId, (int)$u['id']]);
+                    $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, method, note) VALUES (?, \'plan\', ?, \'completed\', \'wallet\', ?)')
+                        ->execute([(int)$u['id'], money_f($price), 'Plan upgrade · plan=' . $planId . ' · paid from wallet']);
+                    $pdo->commit();
+                } catch (Throwable $e) {
+                    $pdo->rollBack();
+                    throw $e;
+                }
+                $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
+                notify_user((int)$u['id'], 'Plan upgraded', ($plan['name'] ?? $planId) . ' is active — ' . (int)$plan['daily_uploads'] . ' uploads / day.', 'plan');
+                json_out([
+                    'ok' => true,
+                    'plan' => $planId,
+                    'dailyUploads' => (int)$plan['daily_uploads'],
+                    'paidFrom' => 'wallet',
+                    'user' => public_user($fresh),
+                    'message' => 'Plan upgraded using wallet balance.',
+                ]);
             }
 
-            if ((float)$u['balance'] < $price) {
+            // Flutterwave hosted checkout for plan upgrades
+            if (!flw_deposit_enabled()) {
                 json_out([
                     'ok' => false,
-                    'error' => 'Insufficient funds. Please deposit money into your wallet.',
-                    'code' => 'insufficient_funds',
-                ], 400);
+                    'error' => 'Flutterwave is not enabled. In Owner Admin → Gateways, enable Flutterwave deposits (same keys are used for plan upgrades).',
+                    'code' => 'gateway_disabled',
+                ], 503);
             }
-            $pdo = db();
-            $pdo->beginTransaction();
-            try {
-                debit_user_for_purchase($pdo, (int)$u['id'], $price);
-                $pdo->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute([$planId, (int)$u['id']]);
-                $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, method, note) VALUES (?, \'plan\', ?, \'completed\', \'wallet\', ?)')
-                    ->execute([(int)$u['id'], money_f($price), 'Plan upgrade · plan=' . $planId . ' · paid from wallet']);
-                $pdo->commit();
-            } catch (Throwable $e) {
-                $pdo->rollBack();
-                throw $e;
+
+            ensure_tx_reference_column();
+            $txRef = uuid_txid();
+            $checkout = flw_create_checkout($u, $price, $txRef, $prefer ?: 'NGN', [
+                'purpose' => 'plan_upgrade',
+                'title' => (app_config()['app_name'] ?? 'Acctventa') . ' Plan',
+                'description' => 'Upgrade to ' . ($plan['name'] ?? $planId) . ' — ' . (int)$plan['daily_uploads'] . ' uploads/day',
+                'redirect_url' => rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/') . '/wallet-return.html?purpose=plan',
+                'meta' => ['plan_id' => $planId, 'daily_uploads' => (int)$plan['daily_uploads']],
+            ]);
+            if (!$checkout['ok']) {
+                json_out(['ok' => false, 'error' => $checkout['error'] ?? 'Could not start payment'], 502);
             }
-            $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
-            notify_user((int)$u['id'], 'Plan upgraded', ($plan['name'] ?? $planId) . ' is active — ' . (int)$plan['daily_uploads'] . ' uploads / day.', 'plan');
+            $charge = $checkout['charge'];
+            $note = sprintf(
+                'Awaiting Flutterwave plan upgrade · plan=%s · charge=%s%s|usd=%s|rate=%s',
+                $planId,
+                $charge['amount'],
+                $charge['currency'],
+                money_f($price),
+                $charge['rate']
+            );
+            db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, status, method, note, reference) VALUES (?, \'plan\', ?, 0, \'pending\', \'flutterwave\', ?, ?)')
+                ->execute([(int)$u['id'], money_f($price), $note, $txRef]);
+
             json_out([
                 'ok' => true,
+                'checkout' => true,
+                'paymentLink' => $checkout['link'],
+                'reference' => $txRef,
                 'plan' => $planId,
+                'amount' => $price,
+                'payAmount' => $charge['amount'],
+                'payCurrency' => $charge['currency'],
                 'dailyUploads' => (int)$plan['daily_uploads'],
-                'paidFrom' => 'wallet',
-                'user' => public_user($fresh),
-                'message' => 'Plan upgraded using wallet balance.',
             ]);
         }
 

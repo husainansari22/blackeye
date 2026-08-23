@@ -355,9 +355,12 @@
 
     A.setPlan = async function (_user, planId, opts) {
       try {
-        // Packages are paid from wallet only (Flutterwave is for deposits).
-        const method = (opts && opts.method) || 'wallet';
-        const res = await Api.upgradePlan({ planId: String(planId), method: method === 'free' ? 'wallet' : method });
+        const method = (opts && opts.method) || 'flutterwave';
+        const res = await Api.upgradePlan({ planId: String(planId), method });
+        if (res.paymentLink) {
+          window.location.href = res.paymentLink;
+          return { ok: true, checkout: true, paymentLink: res.paymentLink };
+        }
         await hydrateFromApi();
         return {
           ok: true,

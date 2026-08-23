@@ -103,6 +103,67 @@
     if (typeof global.switchTab === 'function') global.switchTab('wallet');
   }
 
+  /**
+   * Branded plan checkout confirm — matches Acctventa dark/light cards
+   * (replaces the browser system confirm dialog).
+   */
+  function confirmPlanCheckout(opts) {
+    opts = opts || {};
+    var planName = opts.planName || 'plan';
+    var price = money(opts.price || 0);
+    var uploads = opts.dailyUploads != null ? opts.dailyUploads : '';
+    var method = opts.method === 'wallet' ? 'wallet' : 'flutterwave';
+    var title = method === 'wallet' ? 'Pay from wallet' : 'Continue to checkout';
+    var body =
+      method === 'wallet'
+        ? 'Pay <strong class="text-brandPrimary">' +
+          escapeHtml(price) +
+          '</strong> from your wallet to activate <strong>' +
+          escapeHtml(planName) +
+          '</strong>' +
+          (uploads !== '' ? ' (' + escapeHtml(String(uploads)) + ' uploads / day)' : '') +
+          '?'
+        : 'Continue to Flutterwave to pay <strong class="text-brandPrimary">' +
+          escapeHtml(price) +
+          '</strong> for <strong>' +
+          escapeHtml(planName) +
+          '</strong>' +
+          (uploads !== '' ? ' (' + escapeHtml(String(uploads)) + ' uploads / day)' : '') +
+          '?';
+    var cta = method === 'wallet' ? 'Pay from wallet' : 'Continue to pay';
+
+    return new Promise(function (resolve) {
+      openAppModal(
+        '<div class="text-left py-1">' +
+          '<div class="flex items-center gap-3 mb-4">' +
+          '<div class="w-11 h-11 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-crown"></i></div>' +
+          '<div class="min-w-0">' +
+          '<h3 class="font-extrabold text-base tracking-tight">' +
+          escapeHtml(title) +
+          '</h3>' +
+          '<p class="text-[11px] text-slate-500 mt-0.5">Acctventa packages</p>' +
+          '</div></div>' +
+          '<p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">' +
+          body +
+          '</p>' +
+          '<div class="flex gap-2">' +
+          '<button type="button" id="planConfirmCancel" class="flex-1 py-3 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Cancel</button>' +
+          '<button type="button" id="planConfirmOk" class="flex-1 py-3 rounded-xl text-sm font-bold bg-brandPrimary hover:bg-brandHover text-white shadow-sm">' +
+          escapeHtml(cta) +
+          '</button>' +
+          '</div></div>'
+      );
+      var cancelBtn = document.getElementById('planConfirmCancel');
+      var okBtn = document.getElementById('planConfirmOk');
+      function done(val) {
+        closeAppModal();
+        resolve(!!val);
+      }
+      if (cancelBtn) cancelBtn.onclick = function () { done(false); };
+      if (okBtn) okBtn.onclick = function () { done(true); };
+    });
+  }
+
   // ---------------------------------------------------------------------
   // Cart
   // ---------------------------------------------------------------------
