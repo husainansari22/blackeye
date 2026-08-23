@@ -329,7 +329,7 @@ $tab = $_GET['tab'] ?? 'overview';
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set4">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set5">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -454,6 +454,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
 
+        <p class="av-section-label">Needs attention</p>
         <div class="av-settings-group">
           <a class="av-settings-row" href="?tab=wallet">
             <span class="av-settings-icon" style="background:#f59e0b"><i class="fa-solid fa-money-bill-transfer"></i></span>
@@ -481,6 +482,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </a>
         </div>
 
+        <p class="av-section-label">Manage</p>
         <div class="av-settings-group">
           <a class="av-settings-row" href="?tab=users">
             <span class="av-settings-icon" style="background:#0ea5e9"><i class="fa-solid fa-users"></i></span>
@@ -511,6 +513,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </a>
         </div>
 
+        <p class="av-section-label">Setup</p>
         <div class="av-settings-group">
           <a class="av-settings-row" href="?tab=currencies">
             <span class="av-settings-icon" style="background:#eab308"><i class="fa-brands fa-bitcoin"></i></span>
@@ -856,10 +859,10 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="av-page-head">
           <div>
             <h2 class="av-page-title">Users</h2>
-            <p class="av-page-sub">Ban, verify, or login as a user.</p>
+            <p class="av-page-sub">Ban, verify, login as, or adjust balances.</p>
           </div>
-          <div class="av-page-meta">
-            <span class="av-chip"><strong><?= count($users) ?></strong> shown</span>
+          <div class="av-page-meta av-page-meta-static">
+            <span class="av-stat-pill"><strong><?= count($users) ?></strong> shown</span>
           </div>
         </div>
         <div class="av-panel">
@@ -872,6 +875,8 @@ $tab = $_GET['tab'] ?? 'overview';
             $initials = '';
             foreach ($parts as $p) { if ($p !== '') $initials .= strtoupper($p[0]); if (strlen($initials) >= 2) break; }
             if ($initials === '') $initials = '?';
+            $banned = (int)$u['is_banned'] === 1;
+            $verified = (int)$u['is_verified'] === 1;
           ?>
             <div class="av-user-card">
               <div class="av-user-main">
@@ -879,42 +884,42 @@ $tab = $_GET['tab'] ?? 'overview';
                 <div class="min-w-0 flex-1">
                   <p class="av-row-title"><?= h($u['name']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$u['id'] ?></span></p>
                   <p class="av-row-sub"><?= h($u['email']) ?></p>
-                  <p class="av-row-sub">
-                    Balance $<?= number_format((float)$u['balance'], 2) ?>
-                    · WD $<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?>
-                    · <?= h($u['plan']) ?>
-                    <?= (int)$u['is_banned'] ? ' · Banned' : '' ?>
-                    <?= (int)$u['is_verified'] ? ' · Verified' : '' ?>
-                  </p>
+                  <div class="av-user-meta">
+                    <span class="av-stat-pill"><strong>$<?= number_format((float)$u['balance'], 2) ?></strong> bal</span>
+                    <span class="av-stat-pill"><strong>$<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?></strong> WD</span>
+                    <span class="av-stat-pill"><?= h($u['plan'] ?: 'free') ?></span>
+                    <?php if ($banned): ?><span class="av-status-badge av-status-failed">banned</span><?php endif; ?>
+                    <?php if ($verified): ?><span class="av-status-badge av-status-completed">verified</span><?php endif; ?>
+                  </div>
                 </div>
               </div>
               <div class="av-user-actions">
                 <form method="post">
                   <input type="hidden" name="form" value="ban_user">
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <input type="hidden" name="banned" value="<?= (int)$u['is_banned']?0:1 ?>">
-                  <button class="av-btn"><?= (int)$u['is_banned']?'Unban':'Ban' ?></button>
+                  <input type="hidden" name="banned" value="<?= $banned ? 0 : 1 ?>">
+                  <button class="av-btn<?= $banned ? ' av-btn-success' : '' ?>"><?= $banned ? 'Unban' : 'Ban' ?></button>
                 </form>
                 <form method="post">
                   <input type="hidden" name="form" value="verify_user">
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <input type="hidden" name="verified" value="<?= (int)$u['is_verified']?0:1 ?>">
-                  <button class="av-btn av-btn-success"><?= (int)$u['is_verified']?'Unverify':'Verify' ?></button>
+                  <input type="hidden" name="verified" value="<?= $verified ? 0 : 1 ?>">
+                  <button class="av-btn<?= $verified ? '' : ' av-btn-success' ?>"><?= $verified ? 'Unverify' : 'Verify' ?></button>
                 </form>
                 <form method="post" target="_blank">
                   <input type="hidden" name="form" value="login_as_user">
                   <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <button class="av-btn av-btn-primary">Login as user</button>
-                </form>
-                <form method="post" class="av-user-actions" style="width:100%;margin-top:0.15rem">
-                  <input type="hidden" name="form" value="adjust_balance">
-                  <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <input name="amount" type="number" step="0.01" placeholder="+/- amount" class="text-xs px-3 py-2 rounded-xl" style="width:7rem">
-                  <input name="note" placeholder="note" class="text-xs px-3 py-2 rounded-xl" style="width:7rem">
-                  <label class="av-chip" style="cursor:pointer"><input type="checkbox" name="as_withdrawable" value="1"> WD</label>
-                  <button class="av-btn av-btn-primary">Adjust</button>
+                  <button class="av-btn av-btn-primary">Login as</button>
                 </form>
               </div>
+              <form method="post" class="av-user-adjust">
+                <input type="hidden" name="form" value="adjust_balance">
+                <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                <input name="amount" type="number" step="0.01" placeholder="+/- $" inputmode="decimal">
+                <input name="note" type="text" placeholder="Note">
+                <label class="av-wd-toggle"><input type="checkbox" name="as_withdrawable" value="1"> WD</label>
+                <button class="av-btn av-btn-primary">Adjust</button>
+              </form>
             </div>
           <?php endforeach; ?>
         </div>
@@ -928,89 +933,115 @@ $tab = $_GET['tab'] ?? 'overview';
             <h2 class="av-page-title">Ads</h2>
             <p class="av-page-sub">Approve, deny, or remove marketplace listings.</p>
           </div>
-          <div class="av-page-meta">
-            <span class="av-chip"><strong><?= count($ads) ?></strong> listings</span>
+          <div class="av-page-meta av-page-meta-static">
+            <span class="av-stat-pill"><strong><?= count($ads) ?></strong> listings</span>
           </div>
         </div>
         <?php if (!$ads): ?>
           <div class="av-panel"><div class="av-empty">No ads yet.</div></div>
+        <?php else: ?>
+          <div class="av-panel">
+            <div class="av-panel-head"><span>Listings</span></div>
+            <?php foreach ($ads as $a):
+              $st = (string)$a['status'];
+              $badge = 'av-badge-muted';
+              if ($st === 'active') $badge = 'av-badge-ok';
+              elseif ($st === 'pending') $badge = 'av-badge-warn';
+              elseif ($st === 'denied') $badge = 'av-badge-danger';
+            ?>
+              <article class="av-user-card">
+                <div class="av-admin-card-top">
+                  <div class="min-w-0 flex-1">
+                    <p class="av-row-title"><?= h($a['title']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$a['id'] ?></span></p>
+                    <p class="av-row-sub"><?= h($a['seller_name']) ?> · <?= h($a['category']) ?></p>
+                    <p class="av-row-sub" style="word-break:break-all"><?= h($a['preview_link']) ?></p>
+                    <?php if ($a['deny_reason']): ?><p class="av-row-sub" style="color:#e11d48"><?= h($a['deny_reason']) ?></p><?php endif; ?>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0">
+                    <span class="av-badge <?= $badge ?>"><?= h($st) ?></span>
+                    <p class="av-row-title" style="margin-top:0.4rem;color:var(--av-brand)">$<?= number_format((float)$a['price'], 2) ?></p>
+                  </div>
+                </div>
+                <div class="av-admin-card-actions">
+                  <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Approve</button></form>
+                  <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="Deny reason" class="av-field"><button class="av-btn av-btn-danger">Deny</button></form>
+                  <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="removed"><button class="av-btn">Remove</button></form>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          </div>
         <?php endif; ?>
-        <?php foreach ($ads as $a):
-          $st = (string)$a['status'];
-          $badge = 'av-badge-muted';
-          if ($st === 'active') $badge = 'av-badge-ok';
-          elseif ($st === 'pending') $badge = 'av-badge-warn';
-          elseif ($st === 'denied') $badge = 'av-badge-danger';
-        ?>
-          <article class="av-row-card">
-            <div class="av-row-top">
-              <div class="min-w-0">
-                <h3 class="av-row-title"><?= h($a['title']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$a['id'] ?></span></h3>
-                <p class="av-row-sub"><?= h($a['seller_name']) ?> · <?= h($a['seller_email']) ?> · <?= h($a['category']) ?></p>
-                <p class="av-row-sub" style="word-break:break-all"><?= h($a['preview_link']) ?></p>
-                <?php if ($a['deny_reason']): ?><p class="av-row-sub" style="color:#e11d48"><?= h($a['deny_reason']) ?></p><?php endif; ?>
-              </div>
-              <div style="text-align:right">
-                <span class="av-badge <?= $badge ?>"><?= h($st) ?></span>
-                <p class="av-row-title" style="margin-top:0.45rem;color:var(--av-brand)">$<?= number_format((float)$a['price'], 2) ?></p>
-              </div>
-            </div>
-            <div class="av-actions">
-              <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Approve</button></form>
-              <form method="post" class="grow" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="deny reason" class="grow text-xs px-3 py-2 rounded-xl"><button class="av-btn av-btn-danger">Deny</button></form>
-              <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="removed"><button class="av-btn">Remove</button></form>
-            </div>
-          </article>
-        <?php endforeach; ?>
       </div>
     <?php endif; ?>
 
     <?php if ($tab === 'orders'): $orders = db()->query('SELECT o.*, b.name buyer_name, s.name seller_name, s.balance seller_balance FROM orders o JOIN users b ON b.id=o.buyer_id JOIN users s ON s.id=o.seller_id ORDER BY o.created_at DESC LIMIT 200')->fetchAll(); ?>
-      <div class="av-card  p-4 mb-3 space-y-2">
-        <h2 class="font-bold">Find sale by Transaction ID</h2>
-        <p class="text-xs text-slate-500">Search TXID / email / name, open buyer↔seller chat, then refund if needed (seller can go negative).</p>
-        <div class="flex flex-wrap gap-2">
-          <input id="ownerTxSearch" type="text" placeholder="TXID or email…" class="border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2 text-base flex-1 min-w-[200px]">
-          <button type="button" onclick="ownerSearchOrder()" class="bg-brand text-white font-bold px-4 py-2 rounded-xl text-sm">Search</button>
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Orders</h2>
+            <p class="av-page-sub">Search by TXID, update status, or refund.</p>
+          </div>
+          <div class="av-page-meta av-page-meta-static">
+            <span class="av-stat-pill"><strong><?= count($orders) ?></strong> shown</span>
+          </div>
         </div>
-        <div id="ownerTxResult" class="text-xs space-y-2"></div>
-      </div>
-      <div class="av-table-wrap">
-        <table class="w-full text-left text-xs">
-          <thead><tr><th class="p-3">TXID</th><th class="p-3">Item</th><th class="p-3">Buyer</th><th class="p-3">Seller</th><th class="p-3">Price</th><th class="p-3">Status</th><th class="p-3">Actions</th></tr></thead>
-          <tbody>
+
+        <div class="av-panel mb-3">
+          <div class="av-panel-head"><span>Find sale</span></div>
+          <div class="av-panel-body space-y-2">
+            <p class="text-xs av-muted">Search TXID / email / name, then open chat or refund.</p>
+            <div class="av-admin-card-actions" style="margin-top:0">
+              <input id="ownerTxSearch" type="text" placeholder="TXID or email…" class="av-field" style="flex:1 1 12rem">
+              <button type="button" onclick="ownerSearchOrder()" class="av-btn av-btn-primary">Search</button>
+            </div>
+            <div id="ownerTxResult" class="text-xs space-y-2"></div>
+          </div>
+        </div>
+
+        <div class="av-panel">
+          <div class="av-panel-head"><span>Recent orders</span></div>
+          <?php if (!$orders): ?>
+            <div class="av-empty">No orders yet.</div>
+          <?php endif; ?>
           <?php foreach ($orders as $o): ?>
-            <tr class="border-t dark:border-slate-800">
-              <td class="p-3 font-mono"><?= h($o['public_id']) ?></td>
-              <td class="p-3"><?= h($o['title']) ?></td>
-              <td class="p-3"><?= h($o['buyer_name']) ?></td>
-              <td class="p-3"><?= h($o['seller_name']) ?><?php if ((float)$o['seller_balance'] < 0): ?><br><span class="text-red-500">bal -$<?= number_format(abs((float)$o['seller_balance']), 2) ?></span><?php endif; ?></td>
-              <td class="p-3">$<?= number_format((float)$o['price'], 2) ?></td>
-              <td class="p-3"><?= h($o['status']) ?></td>
-              <td class="p-3 space-y-1 min-w-[200px]">
-                <form method="post" class="flex gap-1">
+            <article class="av-user-card">
+              <div class="av-admin-card-top">
+                <div class="min-w-0 flex-1">
+                  <p class="av-row-title"><?= h($o['title']) ?></p>
+                  <p class="av-row-sub font-mono"><?= h($o['public_id']) ?></p>
+                  <p class="av-row-sub">Buyer <?= h($o['buyer_name']) ?> · Seller <?= h($o['seller_name']) ?></p>
+                  <?php if ((float)$o['seller_balance'] < 0): ?>
+                    <p class="av-row-sub" style="color:#e11d48">Seller bal -$<?= number_format(abs((float)$o['seller_balance']), 2) ?></p>
+                  <?php endif; ?>
+                </div>
+                <div style="text-align:right;flex-shrink:0">
+                  <span class="av-status-badge av-status-<?= h($o['status']) ?>"><?= h($o['status']) ?></span>
+                  <p class="av-row-title" style="margin-top:0.4rem;color:var(--av-brand)">$<?= number_format((float)$o['price'], 2) ?></p>
+                </div>
+              </div>
+              <div class="av-admin-card-actions">
+                <form method="post">
                   <input type="hidden" name="form" value="order_status">
                   <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-                  <select name="status" class="border dark:border-slate-700 dark:bg-slate-950 rounded px-1">
+                  <select name="status" class="av-field" style="flex:0 1 7.5rem">
                     <?php foreach (['pending','completed','cancelled','disputed'] as $st): ?>
                       <option <?= $o['status']===$st?'selected':'' ?>><?= $st ?></option>
                     <?php endforeach; ?>
                   </select>
-                  <button class="bg-brand text-white px-2 rounded">Save</button>
+                  <button class="av-btn av-btn-primary">Save</button>
                 </form>
                 <?php if ($o['status'] !== 'cancelled'): ?>
                 <form method="post" onsubmit="return confirm('Refund buyer and deduct seller (allows negative / owing)?')">
                   <input type="hidden" name="form" value="owner_refund">
                   <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-                  <button class="bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold">Refund buyer</button>
+                  <button class="av-btn av-btn-danger">Refund</button>
                 </form>
                 <?php endif; ?>
-                <a class="text-brand underline text-[10px]" href="?tab=chats&order_id=<?= (int)$o['id'] ?>">View chat</a>
-              </td>
-            </tr>
+                <a class="av-btn" href="?tab=chats&order_id=<?= (int)$o['id'] ?>">Chat</a>
+              </div>
+            </article>
           <?php endforeach; ?>
-          </tbody>
-        </table>
+        </div>
       </div>
       <script>
         async function ownerSearchOrder(){
@@ -1018,10 +1049,6 @@ $tab = $_GET['tab'] ?? 'overview';
           const box=document.getElementById('ownerTxResult');
           if(!q){box.innerHTML='';return;}
           try{
-            const token=localStorage.getItem('acctventa_staff_token')||'';
-            if(!token){
-              // create via support tab once — fallback fetch staff login not needed; use server-rendered link hint
-            }
             const url=new URL('/api/index.php',location.origin);
             url.searchParams.set('action','staff.orders.search');
             url.searchParams.set('q',q);
@@ -1029,15 +1056,14 @@ $tab = $_GET['tab'] ?? 'overview';
             const data=await res.json();
             if(!res.ok||data.ok===false) throw new Error(data.error||'Search failed — open Support tab once to mint staff token, then retry');
             const rows=data.orders||[];
-            if(!rows.length){box.innerHTML='<p class="text-slate-500">No matches.</p>';return;}
-            box.innerHTML=rows.map(o=>`<div class="border dark:border-slate-700 rounded-lg p-2">
+            if(!rows.length){box.innerHTML='<p class="av-muted">No matches.</p>';return;}
+            box.innerHTML=rows.map(o=>`<div class="av-admin-card">
               <p class="font-mono font-bold">${esc(o.public_id)}</p>
               <p>${esc(o.title)} · ${esc(o.status)} · $${Number(o.price).toFixed(2)}</p>
-              <p>Buyer: ${esc(o.buyer_name)} (${esc(o.buyer_email)}) · bal $${Number(o.buyer_balance).toFixed(2)}</p>
-              <p>Seller: ${esc(o.seller_name)} (${esc(o.seller_email)}) · bal <span class="${Number(o.seller_balance)<0?'text-red-500 font-bold':''}">$${Number(o.seller_balance).toFixed(2)}</span></p>
-              <a class="text-brand underline" href="?tab=chats&order_id=${o.id}">Open buyer/seller chat</a>
+              <p class="av-muted">Buyer: ${esc(o.buyer_name)} · Seller: ${esc(o.seller_name)}</p>
+              <a class="av-btn av-btn-primary" style="margin-top:0.45rem;display:inline-flex" href="?tab=chats&order_id=${o.id}">Open chat</a>
             </div>`).join('');
-          }catch(e){box.innerHTML='<p class="text-red-500">'+esc(e.message)+'</p>';}
+          }catch(e){box.innerHTML='<p style="color:#e11d48">'+esc(e.message)+'</p>';}
         }
         function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
       </script>
@@ -1240,25 +1266,38 @@ $tab = $_GET['tab'] ?? 'overview';
           ORDER BY r.created_at DESC LIMIT 100")->fetchAll();
       } catch (Throwable $e) {}
     ?>
-      <div class="av-table-wrap">
-        <table class="w-full text-left text-xs">
-          <thead><tr><th class="p-3">When</th><th class="p-3">TXID</th><th class="p-3">Buyer</th><th class="p-3">Seller</th><th class="p-3">Reason</th><th class="p-3">Open</th></tr></thead>
-          <tbody>
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Reports</h2>
+            <p class="av-page-sub">Seller reports from buyers after purchase.</p>
+          </div>
+          <div class="av-page-meta av-page-meta-static">
+            <span class="av-stat-pill"><strong><?= count($reports) ?></strong> shown</span>
+          </div>
+        </div>
+        <div class="av-panel">
+          <div class="av-panel-head"><span>Recent reports</span></div>
           <?php if (!$reports): ?>
-            <tr><td colspan="6" class="p-4 text-slate-400">No seller reports yet.</td></tr>
+            <div class="av-empty">No seller reports yet.</div>
           <?php endif; ?>
           <?php foreach ($reports as $r): ?>
-            <tr class="border-t dark:border-slate-800">
-              <td class="p-3"><?= h($r['created_at']) ?></td>
-              <td class="p-3 font-mono"><?= h($r['public_id']) ?></td>
-              <td class="p-3"><?= h($r['buyer_name']) ?></td>
-              <td class="p-3"><?= h($r['seller_name']) ?></td>
-              <td class="p-3"><?= h($r['reason']) ?></td>
-              <td class="p-3"><a class="text-brand underline" href="?tab=chats&order_id=<?= (int)$r['order_id'] ?>">Chat</a></td>
-            </tr>
+            <article class="av-user-card">
+              <div class="av-admin-card-top">
+                <div class="min-w-0 flex-1">
+                  <p class="av-row-title"><?= h($r['title'] ?? 'Order') ?></p>
+                  <p class="av-row-sub font-mono"><?= h($r['public_id']) ?></p>
+                  <p class="av-row-sub">Buyer <?= h($r['buyer_name']) ?> · Seller <?= h($r['seller_name']) ?></p>
+                  <p class="av-row-sub"><?= h($r['reason']) ?></p>
+                  <p class="av-row-sub av-muted"><?= h($r['created_at']) ?></p>
+                </div>
+              </div>
+              <div class="av-admin-card-actions">
+                <a class="av-btn av-btn-primary" href="?tab=chats&order_id=<?= (int)$r['order_id'] ?>">Open chat</a>
+              </div>
+            </article>
           <?php endforeach; ?>
-          </tbody>
-        </table>
+        </div>
       </div>
     <?php endif; ?>
 
@@ -1532,114 +1571,163 @@ $tab = $_GET['tab'] ?? 'overview';
         $fxRate = (float)setting_get('usd_ngn_rate', '1600');
         $fxCur = setting_get('payment_currency', 'NGN');
       ?>
-      <form method="post" class="av-info p-5 space-y-3 mb-4">
-        <input type="hidden" name="form" value="fx_rate">
-        <h2 class="font-bold text-lg text-slate-900">Quick Naira rate</h2>
-        <p class="text-xs text-slate-600">Wallet stays in <strong>USD ($)</strong>. For all country rates use <a href="?tab=currencies" class="text-brand font-semibold underline">Currencies</a>.</p>
-        <div class="grid sm:grid-cols-3 gap-3 items-end">
+      <div class="av-page">
+        <div class="av-page-head">
           <div>
-            <label class="text-xs text-slate-500 font-medium">Charge currency</label>
-            <select name="payment_currency" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white">
-              <option value="NGN" <?= $fxCur==='NGN'?'selected':'' ?>>NGN (Naira)</option>
-              <option value="USD" <?= $fxCur==='USD'?'selected':'' ?>>USD (no convert)</option>
-            </select>
+            <h2 class="av-page-title">Payment gateways</h2>
+            <p class="av-page-sub">Flutterwave keys, webhooks, and Naira rate.</p>
           </div>
-          <div>
-            <label class="text-xs text-slate-500 font-medium">1 USD = how many ₦?</label>
-            <input name="usd_ngn_rate" type="number" min="1" step="1" value="<?= h((string)$fxRate) ?>" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white font-semibold" required>
-          </div>
-          <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save Naira rate</button>
         </div>
-        <p class="text-[11px] text-slate-500">Example at ₦<?= number_format($fxRate) ?>: deposit <strong>$3.00</strong> → customer pays about <strong>₦<?= number_format(3 * $fxRate) ?></strong>.</p>
-      </form>
 
-      <form method="post" class="av-card  p-5 space-y-4">
-        <input type="hidden" name="form" value="gateway">
-        <h2 class="font-bold text-lg">Payment gateways</h2>
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="border rounded-xl p-4 space-y-2">
-            <h3 class="font-semibold">Deposit</h3>
-            <select name="deposit_provider" class="w-full border rounded-xl px-3 py-2 text-sm">
-              <?php foreach (['none','paystack','flutterwave','stripe','nowpayments'] as $p): ?>
-                <option value="<?= $p ?>" <?= ($gw['deposit_provider']??'')===$p?'selected':'' ?>><?= $p ?></option>
-              <?php endforeach; ?>
-            </select>
-            <label class="text-sm flex gap-2 items-center"><input type="checkbox" name="deposit_enabled" <?= !empty($gw['deposit_enabled'])?'checked':'' ?>> Enabled</label>
-            <input name="deposit_public_key" value="<?= h($gw['deposit_public_key']??'') ?>" placeholder="Flutterwave Public Key (FLWPUBK_...)" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <input name="deposit_secret_key" value="<?= h($gw['deposit_secret_key']??'') ?>" placeholder="Flutterwave Secret Key (FLWSECK_...) — required" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <input name="deposit_webhook" value="<?= h($gw['deposit_webhook']??'') ?>" placeholder="https://acctventa.com/api/index.php?action=webhook.flutterwave" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <textarea name="deposit_notes" class="w-full border rounded-xl px-3 py-2 text-sm" rows="2" placeholder="Optional notes / encryption key"><?= h($gw['deposit_notes']??'') ?></textarea>
-            <p class="text-[11px] text-slate-500">Use <strong>Settings → API Keys</strong> in Flutterwave (keys starting with FLWPUBK_ / FLWSECK_), not only V4 Client ID. Set webhook URL in Flutterwave to the same webhook above.</p>
+        <form method="post" class="av-panel mb-3">
+          <input type="hidden" name="form" value="fx_rate">
+          <div class="av-panel-head"><span>Quick Naira rate</span></div>
+          <div class="av-panel-body space-y-3">
+            <p class="text-xs av-muted">Wallet stays in USD. For all country rates use <a href="?tab=currencies" class="text-brand font-semibold underline">Currencies</a>.</p>
+            <div class="av-form-grid cols-3">
+              <div class="av-field-block">
+                <label>Charge currency</label>
+                <select name="payment_currency">
+                  <option value="NGN" <?= $fxCur==='NGN'?'selected':'' ?>>NGN (Naira)</option>
+                  <option value="USD" <?= $fxCur==='USD'?'selected':'' ?>>USD (no convert)</option>
+                </select>
+              </div>
+              <div class="av-field-block">
+                <label>1 USD = how many ₦?</label>
+                <input name="usd_ngn_rate" type="number" min="1" step="1" value="<?= h((string)$fxRate) ?>" required>
+              </div>
+              <div class="av-field-block" style="display:flex;align-items:end">
+                <button class="av-btn av-btn-primary" style="width:100%">Save Naira rate</button>
+              </div>
+            </div>
+            <p class="text-[11px] av-muted">Example at ₦<?= number_format($fxRate) ?>: deposit <strong>$3.00</strong> → about <strong>₦<?= number_format(3 * $fxRate) ?></strong>.</p>
           </div>
-          <div class="border rounded-xl p-4 space-y-2">
-            <h3 class="font-semibold">Withdraw / payout</h3>
-            <p class="text-[10px] text-slate-400">Withdraw payouts: set provider to <strong>flutterwave</strong> and enable — when you Approve a bank withdrawal, Flutterwave pays the seller from your Flutterwave balance. Crypto stays manual.</p>
-            <select name="withdraw_provider" class="w-full border rounded-xl px-3 py-2 text-sm">
-              <?php foreach (['none','paystack','flutterwave','stripe','nowpayments','manual'] as $p): ?>
-                <option value="<?= $p ?>" <?= ($gw['withdraw_provider']??'')===$p?'selected':'' ?>><?= $p ?></option>
-              <?php endforeach; ?>
-            </select>
-            <label class="text-sm flex gap-2 items-center"><input type="checkbox" name="withdraw_enabled" <?= !empty($gw['withdraw_enabled'])?'checked':'' ?>> Enabled</label>
-            <input name="withdraw_public_key" value="<?= h($gw['withdraw_public_key']??'') ?>" placeholder="Public key" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <input name="withdraw_secret_key" value="<?= h($gw['withdraw_secret_key']??'') ?>" placeholder="Secret key" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <input name="withdraw_webhook" value="<?= h($gw['withdraw_webhook']??'') ?>" placeholder="Webhook URL" class="w-full border rounded-xl px-3 py-2 text-sm">
-            <textarea name="withdraw_notes" class="w-full border rounded-xl px-3 py-2 text-sm" rows="2" placeholder="Notes"><?= h($gw['withdraw_notes']??'') ?></textarea>
+        </form>
+
+        <form method="post" class="av-panel">
+          <input type="hidden" name="form" value="gateway">
+          <div class="av-panel-head"><span>Providers</span></div>
+          <div class="av-panel-body space-y-4">
+            <div class="av-admin-card">
+              <h3 class="av-row-title" style="margin-bottom:0.55rem">Deposit</h3>
+              <div class="av-form-grid space-y-2">
+                <div class="av-field-block">
+                  <label>Provider</label>
+                  <select name="deposit_provider">
+                    <?php foreach (['none','paystack','flutterwave','stripe','nowpayments'] as $p): ?>
+                      <option value="<?= $p ?>" <?= ($gw['deposit_provider']??'')===$p?'selected':'' ?>><?= $p ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+                <label class="av-wd-toggle" style="padding-left:0"><input type="checkbox" name="deposit_enabled" <?= !empty($gw['deposit_enabled'])?'checked':'' ?>> Enabled</label>
+                <div class="av-field-block"><label>Public key</label><input name="deposit_public_key" value="<?= h($gw['deposit_public_key']??'') ?>" placeholder="FLWPUBK_..."></div>
+                <div class="av-field-block"><label>Secret key</label><input name="deposit_secret_key" value="<?= h($gw['deposit_secret_key']??'') ?>" placeholder="FLWSECK_..."></div>
+                <div class="av-field-block"><label>Webhook</label><input name="deposit_webhook" value="<?= h($gw['deposit_webhook']??'') ?>" placeholder="https://acctventa.com/api/index.php?action=webhook.flutterwave"></div>
+                <div class="av-field-block"><label>Notes</label><textarea name="deposit_notes" rows="2" placeholder="Optional notes"><?= h($gw['deposit_notes']??'') ?></textarea></div>
+              </div>
+            </div>
+            <div class="av-admin-card">
+              <h3 class="av-row-title" style="margin-bottom:0.55rem">Withdraw / payout</h3>
+              <p class="text-[11px] av-muted mb-2">Set provider to flutterwave and enable — Approve pays the bank from your Flutterwave balance. Crypto stays manual.</p>
+              <div class="av-form-grid space-y-2">
+                <div class="av-field-block">
+                  <label>Provider</label>
+                  <select name="withdraw_provider">
+                    <?php foreach (['none','paystack','flutterwave','stripe','nowpayments','manual'] as $p): ?>
+                      <option value="<?= $p ?>" <?= ($gw['withdraw_provider']??'')===$p?'selected':'' ?>><?= $p ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+                <label class="av-wd-toggle" style="padding-left:0"><input type="checkbox" name="withdraw_enabled" <?= !empty($gw['withdraw_enabled'])?'checked':'' ?>> Enabled</label>
+                <div class="av-field-block"><label>Public key</label><input name="withdraw_public_key" value="<?= h($gw['withdraw_public_key']??'') ?>" placeholder="Public key"></div>
+                <div class="av-field-block"><label>Secret key</label><input name="withdraw_secret_key" value="<?= h($gw['withdraw_secret_key']??'') ?>" placeholder="Secret key"></div>
+                <div class="av-field-block"><label>Webhook</label><input name="withdraw_webhook" value="<?= h($gw['withdraw_webhook']??'') ?>" placeholder="Webhook URL"></div>
+                <div class="av-field-block"><label>Notes</label><textarea name="withdraw_notes" rows="2" placeholder="Notes"><?= h($gw['withdraw_notes']??'') ?></textarea></div>
+              </div>
+            </div>
+            <button class="av-btn av-btn-primary">Save gateways</button>
           </div>
-        </div>
-        <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save gateways</button>
-      </form>
+        </form>
+      </div>
     <?php endif; ?>
 
     <?php if ($tab === 'settings'): ?>
-      <form method="post" class="av-card  p-5 grid sm:grid-cols-2 gap-4">
-        <input type="hidden" name="form" value="settings">
-        <h2 class="font-bold text-lg sm:col-span-2">Platform fees & support</h2>
-        <div class="sm:col-span-2 av-info p-4 grid sm:grid-cols-2 gap-3">
-          <div class="sm:col-span-2">
-            <h3 class="font-bold text-sm text-slate-800">₦ Naira rate</h3>
-            <p class="text-[11px] text-slate-500">Same control as Gateways tab. Changes apply to the next Flutterwave deposit.</p>
-          </div>
+      <div class="av-page">
+        <div class="av-page-head">
           <div>
-            <label class="text-xs text-slate-500">Flutterwave charge currency</label>
-            <select name="payment_currency" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm bg-white">
-              <?php $pc = setting_get('payment_currency', 'NGN'); ?>
-              <option value="NGN" <?= $pc==='NGN'?'selected':'' ?>>NGN (Naira) — recommended</option>
-              <option value="USD" <?= $pc==='USD'?'selected':'' ?>>USD</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-slate-500">USD → NGN rate (e.g. 1600)</label>
-            <input name="usd_ngn_rate" type="number" step="1" min="1" value="<?= h(setting_get('usd_ngn_rate','1600')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm bg-white">
-            <p class="text-[11px] text-slate-400 mt-1">$3 deposit → ₦(3 × rate) on Flutterwave.</p>
+            <h2 class="av-page-title">Settings</h2>
+            <p class="av-page-sub">Fees, referral rewards, and support contacts.</p>
           </div>
         </div>
-        <div><label class="text-xs text-slate-500">Min deposit ($)</label><input name="min_deposit" type="number" step="0.01" value="<?= h(setting_get('min_deposit',3)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Min withdraw ($)</label><input name="min_withdraw" type="number" step="0.01" value="<?= h(setting_get('min_withdraw',5)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Sales commission (%)</label><input name="sales_commission" type="number" step="0.1" value="<?= h(((float)setting_get('sales_commission_rate',0.22))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm" title="Deducted from every successful sale; seller receives the remainder as withdrawable balance"></div>
-        <div><label class="text-xs text-slate-500">Withdraw commission (%)</label><input name="withdraw_commission" type="number" step="0.1" value="<?= h(((float)setting_get('withdraw_commission_rate',0.1))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Referral reward ($)</label><input name="referral_reward" type="number" step="0.01" value="<?= h(setting_get('referral_reward_amount',5)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Referral min deposit ($)</label><input name="referral_min_deposit" type="number" step="0.01" value="<?= h(setting_get('referral_min_deposit',50)) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div><label class="text-xs text-slate-500">Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div>
-        <div class="sm:col-span-2"><button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save settings</button></div>
-      </form>
+        <form method="post" class="av-panel">
+          <input type="hidden" name="form" value="settings">
+          <div class="av-panel-head"><span>Platform</span></div>
+          <div class="av-panel-body space-y-4">
+            <div class="av-admin-card">
+              <h3 class="av-row-title" style="margin-bottom:0.45rem">₦ Naira rate</h3>
+              <p class="text-[11px] av-muted mb-2">Same control as Gateways. Applies to the next Flutterwave deposit.</p>
+              <div class="av-form-grid cols-2">
+                <div class="av-field-block">
+                  <label>Charge currency</label>
+                  <select name="payment_currency">
+                    <?php $pc = setting_get('payment_currency', 'NGN'); ?>
+                    <option value="NGN" <?= $pc==='NGN'?'selected':'' ?>>NGN (Naira)</option>
+                    <option value="USD" <?= $pc==='USD'?'selected':'' ?>>USD</option>
+                  </select>
+                </div>
+                <div class="av-field-block">
+                  <label>USD → NGN rate</label>
+                  <input name="usd_ngn_rate" type="number" step="1" min="1" value="<?= h(setting_get('usd_ngn_rate','1600')) ?>">
+                </div>
+              </div>
+            </div>
+            <div class="av-form-grid cols-2">
+              <div class="av-field-block"><label>Min deposit ($)</label><input name="min_deposit" type="number" step="0.01" value="<?= h(setting_get('min_deposit',3)) ?>"></div>
+              <div class="av-field-block"><label>Min withdraw ($)</label><input name="min_withdraw" type="number" step="0.01" value="<?= h(setting_get('min_withdraw',5)) ?>"></div>
+              <div class="av-field-block"><label>Sales commission (%)</label><input name="sales_commission" type="number" step="0.1" value="<?= h(((float)setting_get('sales_commission_rate',0.22))*100) ?>"></div>
+              <div class="av-field-block"><label>Withdraw commission (%)</label><input name="withdraw_commission" type="number" step="0.1" value="<?= h(((float)setting_get('withdraw_commission_rate',0.1))*100) ?>"></div>
+              <div class="av-field-block"><label>Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>"></div>
+              <div class="av-field-block"><label>Referral reward ($)</label><input name="referral_reward" type="number" step="0.01" value="<?= h(setting_get('referral_reward_amount',5)) ?>"></div>
+              <div class="av-field-block"><label>Referral min deposit ($)</label><input name="referral_min_deposit" type="number" step="0.01" value="<?= h(setting_get('referral_min_deposit',50)) ?>"></div>
+              <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>"></div>
+              <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>"></div>
+            </div>
+            <button class="av-btn av-btn-primary">Save settings</button>
+          </div>
+        </form>
+      </div>
     <?php endif; ?>
 
     <?php if ($tab === 'plans'): $plans = db()->query('SELECT * FROM plans ORDER BY price ASC')->fetchAll(); ?>
-      <p class="text-xs av-muted mb-3">Daily upload limits shown on Packages &amp; Pricing come from here. Paid plan upgrades charge via <strong>Flutterwave</strong> (same keys as Gateways → deposits) or from the user’s wallet balance.</p>
-      <div class="space-y-3">
-        <?php foreach ($plans as $p): ?>
-          <form method="post" class="bg-white border rounded-xl p-4 grid sm:grid-cols-5 gap-3 items-end">
-            <input type="hidden" name="form" value="plan">
-            <input type="hidden" name="plan_id" value="<?= h($p['id']) ?>">
-            <div class="sm:col-span-1"><p class="font-semibold"><?= h($p['id']) ?></p></div>
-            <div><label class="text-xs">Name</label><input name="name" value="<?= h($p['name']) ?>" class="w-full border rounded-lg px-2 py-2 text-sm"></div>
-            <div><label class="text-xs">Price</label><input name="price" type="number" step="0.01" value="<?= h($p['price']) ?>" class="w-full border rounded-lg px-2 py-2 text-sm"></div>
-            <div><label class="text-xs">Daily uploads</label><input name="daily_uploads" type="number" value="<?= h($p['daily_uploads']) ?>" class="w-full border rounded-lg px-2 py-2 text-sm"></div>
-            <div><label class="text-xs">Approval label</label><input name="approval_label" value="<?= h($p['approval_label']) ?>" class="w-full border rounded-lg px-2 py-2 text-sm"><button class="mt-2 w-full bg-brand text-white rounded-lg py-2 text-xs font-bold">Save</button></div>
-          </form>
-        <?php endforeach; ?>
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Plans &amp; pricing</h2>
+            <p class="av-page-sub">Daily upload limits shown on Packages &amp; Pricing. Paid upgrades use Flutterwave or wallet.</p>
+          </div>
+        </div>
+        <div class="av-panel">
+          <div class="av-panel-head"><span>Plans</span></div>
+          <div class="av-panel-body space-y-3">
+            <?php foreach ($plans as $p): ?>
+              <form method="post" class="av-admin-card av-plan-card">
+                <input type="hidden" name="form" value="plan">
+                <input type="hidden" name="plan_id" value="<?= h($p['id']) ?>">
+                <div>
+                  <p class="av-row-title"><?= h($p['id']) ?></p>
+                </div>
+                <div class="av-field-block"><label>Name</label><input name="name" value="<?= h($p['name']) ?>"></div>
+                <div class="av-field-block"><label>Price</label><input name="price" type="number" step="0.01" value="<?= h($p['price']) ?>"></div>
+                <div class="av-field-block"><label>Daily uploads</label><input name="daily_uploads" type="number" value="<?= h($p['daily_uploads']) ?>"></div>
+                <div class="av-field-block">
+                  <label>Approval label</label>
+                  <input name="approval_label" value="<?= h($p['approval_label']) ?>">
+                  <button class="av-btn av-btn-primary" style="width:100%;margin-top:0.45rem">Save</button>
+                </div>
+              </form>
+            <?php endforeach; ?>
+          </div>
+        </div>
       </div>
     <?php endif; ?>
   </main>

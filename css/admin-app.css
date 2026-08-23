@@ -850,11 +850,12 @@ html.dark .av-chip.is-hot { color: #fde68a; }
 .av-stat:hover {
   border-color: color-mix(in srgb, var(--av-brand) 45%, var(--av-border));
 }
+/* User directory — compact mobile layout */
 .av-user-card {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  padding: 0.9rem 1rem;
+  gap: 0.7rem;
+  padding: 0.95rem 1rem;
   border-bottom: 1px solid var(--av-border);
 }
 .av-user-card:last-child { border-bottom: 0; }
@@ -876,10 +877,150 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   font-weight: 800;
   flex-shrink: 0;
 }
+.av-user-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
 .av-user-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+.av-user-actions form { margin: 0; min-width: 0; }
+.av-user-actions .av-btn {
+  width: 100%;
+  justify-content: center;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+  font-size: 0.72rem;
+}
+.av-user-adjust {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) auto auto;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--av-border);
+}
+.av-user-adjust input[type="number"],
+.av-user-adjust input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--av-border);
+  background: var(--av-bg);
+  color: var(--av-text);
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.78rem;
+}
+.av-user-adjust .av-wd-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--av-muted);
+  white-space: nowrap;
+  padding: 0.45rem 0.35rem;
+  cursor: pointer;
+  user-select: none;
+}
+.av-user-adjust .av-btn { white-space: nowrap; }
+
+/* Shared admin list / form shells */
+.av-section-label {
+  margin: 0 0 0.45rem 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--av-muted);
+}
+.av-settings-page .av-section-label {
+  margin: 0.15rem 0 0.4rem 0.35rem;
+}
+.av-settings-page .av-settings-group + .av-section-label {
+  margin-top: 0.85rem;
+}
+.av-admin-card {
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+  margin-bottom: 0.65rem;
+}
+.av-admin-card:last-child { margin-bottom: 0; }
+.av-admin-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.av-admin-card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+.av-admin-card-actions form {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.av-admin-card-actions .av-field {
+  flex: 1 1 8rem;
+  min-width: 0;
+  border: 1px solid var(--av-border);
+  background: var(--av-bg);
+  color: var(--av-text);
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.78rem;
+}
+.av-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .av-form-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .av-form-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.av-field-block label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: var(--av-muted);
+  margin-bottom: 0.28rem;
+}
+.av-field-block input,
+.av-field-block select,
+.av-field-block textarea {
+  width: 100%;
+  border: 1px solid var(--av-border);
+  background: var(--av-bg);
+  color: var(--av-text);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.86rem;
+}
+.av-plan-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  align-items: end;
+}
+@media (min-width: 640px) {
+  .av-plan-card {
+    grid-template-columns: 5.5rem repeat(3, minmax(0, 1fr)) minmax(7rem, 1fr);
+  }
 }
 
 /* Slim KYC application lines */
