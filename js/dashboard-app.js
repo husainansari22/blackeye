@@ -1138,17 +1138,20 @@
             <p><span class="text-slate-500 text-[11px]">Account number</span><br><span class="font-semibold">${escapeHtml(u.payoutAccount || '—')}</span></p>
             <p><span class="text-slate-500 text-[11px]">Account name</span><br><span class="font-semibold">${escapeHtml(u.payoutAccountName || '—')}</span></p>
           </div>
-          <p class="text-[10px] text-slate-400">Bank details were locked after your first successful withdrawal. Contact support to change them.</p>
         </div>`
       : `<div id="wdFieldsBank" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
           <p class="text-xs font-bold">Bank Details</p>
-          <div><label class="text-[11px] text-slate-500">Select bank <span class="text-red-500">*</span></label>
-            <select id="withdrawBankCode" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
-              <option value="">Loading banks…</option>
-            </select>
-            <input id="withdrawBank" type="hidden" value="${escapeAttr(u.payoutBank || '')}">
+          <div class="relative">
+            <label class="text-[11px] text-slate-500">Select bank <span class="text-red-500">*</span></label>
+            <input type="hidden" id="withdrawBankCode" value="${escapeAttr(u.payoutBankCode || '')}">
+            <input type="hidden" id="withdrawBank" value="${escapeAttr(u.payoutBank || '')}">
+            <div class="mt-1 relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+              <input id="withdrawBankSearch" type="search" autocomplete="off" placeholder="Search bank…" value="${escapeAttr(u.payoutBank || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-3 text-sm focus:outline-none focus:border-brandPrimary">
+            </div>
+            <div id="withdrawBankList" class="hidden absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg"></div>
           </div>
-          <div><label class="text-[11px] text-slate-500">Account number <span class="text-red-500">*</span></label><input id="withdrawDest" type="text" value="${escapeAttr(u.payoutAccount || '')}" placeholder="Enter account number" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
+          <div><label class="text-[11px] text-slate-500">Account number <span class="text-red-500">*</span></label><input id="withdrawDest" type="text" inputmode="numeric" value="${escapeAttr(u.payoutAccount || '')}" placeholder="Enter account number" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
           <div><label class="text-[11px] text-slate-500">Account name <span class="text-red-500">*</span></label><input id="withdrawName" type="text" value="${escapeAttr(u.payoutAccountName || '')}" placeholder="Account name" class="mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm"></div>
         </div>`;
 
@@ -1226,49 +1229,93 @@
     if (!locked) loadWithdrawBanks(u);
   }
 
+  let withdrawBanksCache = [];
+
   async function loadWithdrawBanks(u) {
-    const sel = document.getElementById('withdrawBankCode');
-    if (!sel) return;
+    const search = document.getElementById('withdrawBankSearch');
+    const list = document.getElementById('withdrawBankList');
+    const codeEl = document.getElementById('withdrawBankCode');
+    const nameEl = document.getElementById('withdrawBank');
+    if (!search || !list) return;
     const savedCode = (u && (u.payoutBankCode || u.payout_bank_code)) || '';
     const savedName = (u && (u.payoutBank || '')) || '';
+    search.placeholder = 'Loading banks…';
+    search.disabled = true;
     try {
       let banks = [];
       if (window.AcctventaApi && typeof window.AcctventaApi.banksList === 'function') {
         const res = await window.AcctventaApi.banksList({ country: 'NG' });
         banks = res.banks || [];
       }
-      if (!banks.length) {
-        sel.innerHTML =
-          '<option value="">Type bank name below if list unavailable</option>' +
-          (savedName ? `<option value="${escapeAttr(savedName)}" selected>${escapeHtml(savedName)}</option>` : '');
-        // fallback text input
-        const hidden = document.getElementById('withdrawBank');
-        if (hidden) {
-          hidden.type = 'text';
-          hidden.placeholder = 'e.g. Opay, GTBank';
-          hidden.className = 'mt-2 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm';
-          hidden.value = savedName;
+      withdrawBanksCache = banks
+        .map((b) => ({ code: String(b.code || ''), name: String(b.name || '') }))
+        .filter((b) => b.code && b.name)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      search.disabled = false;
+      search.placeholder = 'Search bank…';
+      if (savedCode || savedName) {
+        const hit =
+          withdrawBanksCache.find((b) => b.code === savedCode) ||
+          withdrawBanksCache.find((b) => b.name.toLowerCase() === savedName.toLowerCase());
+        if (hit) {
+          if (codeEl) codeEl.value = hit.code;
+          if (nameEl) nameEl.value = hit.name;
+          search.value = hit.name;
+        } else if (savedName) {
+          search.value = savedName;
+          if (nameEl) nameEl.value = savedName;
+          if (codeEl && savedCode) codeEl.value = savedCode;
         }
-        return;
       }
-      sel.innerHTML =
-        '<option value="">Select bank</option>' +
-        banks
-          .map((b) => {
-            const code = String(b.code || '');
-            const name = String(b.name || '');
-            const selected = savedCode === code || savedName.toLowerCase() === name.toLowerCase() ? ' selected' : '';
-            return `<option value="${escapeAttr(code)}" data-name="${escapeAttr(name)}"${selected}>${escapeHtml(name)}</option>`;
-          })
+      function renderBankList(q) {
+        const query = String(q || '').trim().toLowerCase();
+        const filtered = !query
+          ? withdrawBanksCache.slice(0, 80)
+          : withdrawBanksCache.filter((b) => b.name.toLowerCase().includes(query)).slice(0, 80);
+        if (!filtered.length) {
+          list.innerHTML = '<p class="px-3 py-2.5 text-xs text-slate-500">No banks match</p>';
+          list.classList.remove('hidden');
+          return;
+        }
+        list.innerHTML = filtered
+          .map(
+            (b) =>
+              `<button type="button" class="w-full text-left px-3 py-2.5 text-sm hover:bg-brandPrimary/10 border-b border-slate-100 dark:border-slate-800 last:border-0" data-code="${escapeAttr(b.code)}" data-name="${escapeAttr(b.name)}">${escapeHtml(b.name)}</button>`
+          )
           .join('');
-      sel.onchange = function () {
-        const opt = sel.options[sel.selectedIndex];
-        const hidden = document.getElementById('withdrawBank');
-        if (hidden) hidden.value = (opt && opt.getAttribute('data-name')) || '';
+        list.classList.remove('hidden');
+        list.querySelectorAll('[data-code]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            if (codeEl) codeEl.value = btn.getAttribute('data-code') || '';
+            if (nameEl) nameEl.value = btn.getAttribute('data-name') || '';
+            search.value = btn.getAttribute('data-name') || '';
+            list.classList.add('hidden');
+          });
+        });
+      }
+      search.onfocus = function () {
+        renderBankList(search.value);
       };
-      if (sel.selectedIndex > 0) sel.onchange();
+      search.oninput = function () {
+        // Typing clears previous selection until they pick again
+        if (codeEl) codeEl.value = '';
+        if (nameEl) nameEl.value = '';
+        renderBankList(search.value);
+      };
+      search.onkeydown = function (ev) {
+        if (ev.key === 'Escape') list.classList.add('hidden');
+      };
+      document.addEventListener(
+        'click',
+        function hideBankList(ev) {
+          if (!list.contains(ev.target) && ev.target !== search) list.classList.add('hidden');
+        },
+        true
+      );
     } catch (e) {
-      sel.innerHTML = '<option value="">Could not load banks — enter bank name</option>';
+      search.disabled = false;
+      search.placeholder = 'Search bank…';
+      list.innerHTML = '<p class="px-3 py-2.5 text-xs text-red-500">Could not load banks</p>';
     }
   }
 
@@ -1437,13 +1484,10 @@
     } else {
       dest = ((document.getElementById('withdrawDest') || {}).value || '').trim();
       accountName = ((document.getElementById('withdrawName') || {}).value || '').trim();
-      const codeSel = document.getElementById('withdrawBankCode');
-      bankCode = ((codeSel || {}).value || '').trim();
-      if (codeSel && codeSel.selectedIndex > 0) {
-        const opt = codeSel.options[codeSel.selectedIndex];
-        bankName = (opt && opt.getAttribute('data-name')) || ((document.getElementById('withdrawBank') || {}).value || '').trim();
-      } else {
-        bankName = ((document.getElementById('withdrawBank') || {}).value || '').trim();
+      bankCode = ((document.getElementById('withdrawBankCode') || {}).value || '').trim();
+      bankName = ((document.getElementById('withdrawBank') || {}).value || '').trim();
+      if (!bankName) {
+        bankName = ((document.getElementById('withdrawBankSearch') || {}).value || '').trim();
       }
     }
     const network = ((document.getElementById('withdrawNetwork') || {}).value || '').trim();
