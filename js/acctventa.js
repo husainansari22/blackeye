@@ -941,6 +941,38 @@
     const plan = PLANS[planId];
     const price = Number(plan.price) || 0;
     const method = (opts && opts.method) || (price > 0 ? 'wallet' : 'free');
+
+    // Prefer live API whenever a token exists (Flutterwave checkout needs the server).
+    try {
+      const Api = global.AcctventaApi;
+      if (Api && typeof Api.getToken === 'function' && Api.getToken() && typeof Api.upgradePlan === 'function') {
+        return Api.upgradePlan({ planId: String(planId), method: method === 'free' ? 'wallet' : method }).then(function (res) {
+          if (res && res.paymentLink) {
+            global.location.href = res.paymentLink;
+            return { ok: true, checkout: true, paymentLink: res.paymentLink };
+          }
+          if (global.AcctventaApiSync && typeof global.AcctventaApiSync.hydrateFromApi === 'function') {
+            return global.AcctventaApiSync.hydrateFromApi().then(function () {
+              return {
+                ok: true,
+                plan: res.plan || planId,
+                dailyUploads: res.dailyUploads != null ? res.dailyUploads : plan.dailyUploads,
+                message: res.message || 'Plan updated to ' + plan.name,
+              };
+            });
+          }
+          return {
+            ok: true,
+            plan: res.plan || planId,
+            dailyUploads: res.dailyUploads != null ? res.dailyUploads : plan.dailyUploads,
+            message: res.message || 'Plan updated to ' + plan.name,
+          };
+        }).catch(function (e) {
+          return { ok: false, error: (e && e.message) || 'Plan upgrade failed', code: (e && e.code) || '' };
+        });
+      }
+    } catch (e) {}
+
     if (price > 0 && method === 'wallet') {
       if ((user.balance || 0) < price) {
         return { ok: false, error: 'Insufficient funds. Please deposit money into your wallet.', code: 'insufficient_funds' };
@@ -963,7 +995,7 @@
         createdAt: new Date().toISOString(),
       });
     } else if (price > 0 && method === 'flutterwave') {
-      return { ok: false, error: 'Live backend required for Flutterwave plan checkout. Log in with API enabled.' };
+      return { ok: false, error: 'Please log in again to enable live Flutterwave checkout.', code: 'api_required' };
     }
     user.plan = planId;
     persistUser(user);

@@ -2103,9 +2103,34 @@
 
     async function runUpgrade() {
       try {
-        const res = await Promise.resolve(
-          A().setPlan(u, planId, { method: payMethod === 'wallet' ? 'wallet' : price > 0 ? 'flutterwave' : 'free' })
-        );
+        const methodBody = payMethod === 'wallet' ? 'wallet' : price > 0 ? 'flutterwave' : 'free';
+        let res = null;
+        // Always prefer live API when logged in — never the local demo stub for Flutterwave.
+        const Api = window.AcctventaApi;
+        const hasToken = !!(Api && typeof Api.getToken === 'function' && Api.getToken());
+        if (hasToken && typeof Api.upgradePlan === 'function') {
+          try {
+            const apiRes = await Api.upgradePlan({ planId: String(planId), method: methodBody });
+            if (apiRes && apiRes.paymentLink) {
+              window.location.href = apiRes.paymentLink;
+              return;
+            }
+            res = {
+              ok: true,
+              plan: apiRes.plan,
+              dailyUploads: apiRes.dailyUploads,
+              message: apiRes.message || 'Plan updated.',
+            };
+          } catch (apiErr) {
+            res = {
+              ok: false,
+              error: (apiErr && apiErr.message) || 'Plan upgrade failed',
+              code: (apiErr && apiErr.code) || '',
+            };
+          }
+        } else {
+          res = await Promise.resolve(A().setPlan(u, planId, { method: methodBody }));
+        }
         if (!res || !res.ok) {
           if (res && (res.code === 'insufficient_funds' || /insufficient/i.test(String(res.error || '')))) {
             if (window.CommerceUI && typeof window.CommerceUI.showInsufficientFundsModal === 'function') {
@@ -2118,7 +2143,7 @@
           alert((res && res.error) || 'Could not update plan');
           return;
         }
-        if (res.checkout) return; // redirected to Flutterwave
+        if (res.checkout) return;
         if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
         applyProfileChrome(refreshUser());
         renderPlans();
@@ -2154,7 +2179,6 @@
       }
     }
 
-    // Branded confirm (not the browser system dialog)
     if (window.CommerceUI && typeof window.CommerceUI.confirmPlanCheckout === 'function') {
       const ok = await window.CommerceUI.confirmPlanCheckout({
         planName: plan.name || planId,
