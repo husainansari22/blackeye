@@ -995,3 +995,91 @@ html.dark .av-app thead {
   .av-topbar-inner { height: 3.25rem; }
   .av-brand span.title { font-size: 0.95rem; }
 }
+
+/* iOS Settings-style overview */
+.av-settings-page {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+.av-settings-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--av-text);
+  margin: 0.25rem 0 1.1rem;
+  padding: 0 0.15rem;
+}
+.av-settings-group {
+  background: var(--av-surface);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.1rem;
+  border: 1px solid var(--av-border);
+  box-shadow: var(--av-shadow);
+}
+.av-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.72rem 0.9rem;
+  min-height: 3.15rem;
+  text-decoration: none !important;
+  color: var(--av-text) !important;
+  background: transparent;
+  border: 0;
+  width: 100%;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+.av-settings-row:not(.is-static):active {
+  background: color-mix(in srgb, var(--av-brand) 10%, var(--av-surface-2));
+}
+.av-settings-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 3.35rem;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--av-border);
+  opacity: 0.85;
+}
+.av-settings-icon {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+.av-settings-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.98rem;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+}
+.av-settings-value {
+  font-size: 0.9rem;
+  color: var(--av-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.av-settings-value.is-hot {
+  color: #f59e0b;
+  font-weight: 700;
+}
+.av-settings-chevron {
+  color: var(--av-muted);
+  font-size: 0.72rem;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+.av-settings-row.is-static {
+  cursor: default;
+}

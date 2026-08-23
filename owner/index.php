@@ -326,7 +326,8 @@ $tab = $_GET['tab'] ?? 'overview';
     (function(){try{var t=localStorage.getItem('acctventa_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260822kyc3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -397,36 +398,94 @@ $tab = $_GET['tab'] ?? 'overview';
     </div>
 
     <?php if ($tab === 'overview'): ?>
-      <div class="av-page">
-        <div class="av-page-head">
-          <div>
-            <h2 class="av-page-title">Overview</h2>
-            <p class="av-page-sub">Live snapshot of users, KYC, ads, wallet, and sales volume.</p>
-          </div>
-          <div class="av-page-meta">
-            <span class="av-chip"><strong><?= (int)$stats['kyc_pending'] ?></strong> KYC queue</span>
-            <span class="av-chip <?= $stats['ads_pending'] ? 'is-hot' : '' ?>"><strong><?= (int)$stats['ads_pending'] ?></strong> ads</span>
-            <span class="av-chip"><strong><?= (int)$stats['withdraw_pending'] ?></strong> withdrawals</span>
-          </div>
+      <div class="av-page av-settings-page">
+        <h2 class="av-settings-title">Overview</h2>
+
+        <div class="av-settings-group">
+          <a class="av-settings-row" href="?tab=wallet">
+            <span class="av-settings-icon" style="background:#f59e0b"><i class="fa-solid fa-money-bill-transfer"></i></span>
+            <span class="av-settings-label">Withdrawals</span>
+            <span class="av-settings-value<?= $stats['withdraw_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['withdraw_pending'] ?> pending</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=wallet">
+            <span class="av-settings-icon" style="background:#10b981"><i class="fa-solid fa-arrow-down"></i></span>
+            <span class="av-settings-label">Deposits</span>
+            <span class="av-settings-value<?= $stats['deposit_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['deposit_pending'] ?> pending</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=kyc">
+            <span class="av-settings-icon" style="background:#8b5cf6"><i class="fa-solid fa-id-card"></i></span>
+            <span class="av-settings-label">KYC review</span>
+            <span class="av-settings-value<?= $stats['kyc_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['kyc_pending'] ?></span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=ads">
+            <span class="av-settings-icon" style="background:#ef4444"><i class="fa-solid fa-rectangle-ad"></i></span>
+            <span class="av-settings-label">Pending ads</span>
+            <span class="av-settings-value<?= $stats['ads_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['ads_pending'] ?></span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
         </div>
-        <div class="av-stat-grid">
-          <div class="av-stat"><p class="label">Users</p><p class="value"><?= $stats['users'] ?></p></div>
-          <div class="av-stat"><p class="label">Pending ads</p><p class="value"><?= $stats['ads_pending'] ?></p></div>
-          <div class="av-stat"><p class="label">KYC review</p><p class="value"><?= $stats['kyc_pending'] ?></p></div>
-          <div class="av-stat"><p class="label">Orders</p><p class="value"><?= $stats['orders'] ?></p></div>
-          <div class="av-stat"><p class="label">Pending withdrawals</p><p class="value"><?= $stats['withdraw_pending'] ?></p></div>
-          <div class="av-stat"><p class="label">Pending deposits</p><p class="value"><?= $stats['deposit_pending'] ?></p></div>
-          <div class="av-stat"><p class="label">Completed volume</p><p class="value">$<?= number_format($stats['volume'], 2) ?></p></div>
+
+        <div class="av-settings-group">
+          <a class="av-settings-row" href="?tab=users">
+            <span class="av-settings-icon" style="background:#0ea5e9"><i class="fa-solid fa-users"></i></span>
+            <span class="av-settings-label">Users</span>
+            <span class="av-settings-value"><?= (int)$stats['users'] ?></span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=orders">
+            <span class="av-settings-icon" style="background:#6366f1"><i class="fa-solid fa-bag-shopping"></i></span>
+            <span class="av-settings-label">Orders</span>
+            <span class="av-settings-value"><?= (int)$stats['orders'] ?></span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=chats">
+            <span class="av-settings-icon" style="background:#14b8a6"><i class="fa-solid fa-comments"></i></span>
+            <span class="av-settings-label">Order chats</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=support">
+            <span class="av-settings-icon" style="background:#ec4899"><i class="fa-solid fa-headset"></i></span>
+            <span class="av-settings-label">Support inbox</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=reports">
+            <span class="av-settings-icon" style="background:#f97316"><i class="fa-solid fa-flag"></i></span>
+            <span class="av-settings-label">Reports</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
         </div>
-        <div class="av-panel">
-          <div class="av-panel-head">Quick links</div>
-          <div class="av-panel-body flex flex-wrap gap-2">
-            <a class="av-btn av-btn-primary" href="?tab=kyc">Review KYC</a>
-            <a class="av-btn" href="?tab=wallet">Wallet queue</a>
-            <a class="av-btn" href="?tab=ads">Ads</a>
-            <a class="av-btn" href="?tab=support">Inbox</a>
-            <a class="av-btn" href="?tab=currencies">Crypto addresses</a>
-            <a class="av-btn" href="?tab=users">Users</a>
+
+        <div class="av-settings-group">
+          <a class="av-settings-row" href="?tab=currencies">
+            <span class="av-settings-icon" style="background:#eab308"><i class="fa-brands fa-bitcoin"></i></span>
+            <span class="av-settings-label">Crypto addresses</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=gateways">
+            <span class="av-settings-icon" style="background:#06b6d4"><i class="fa-solid fa-credit-card"></i></span>
+            <span class="av-settings-label">Payment gateways</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=plans">
+            <span class="av-settings-icon" style="background:#a855f7"><i class="fa-solid fa-crown"></i></span>
+            <span class="av-settings-label">Plans &amp; pricing</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+          <a class="av-settings-row" href="?tab=settings">
+            <span class="av-settings-icon" style="background:#64748b"><i class="fa-solid fa-gear"></i></span>
+            <span class="av-settings-label">Settings</span>
+            <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+          </a>
+        </div>
+
+        <div class="av-settings-group">
+          <div class="av-settings-row is-static">
+            <span class="av-settings-icon" style="background:#22c55e"><i class="fa-solid fa-chart-line"></i></span>
+            <span class="av-settings-label">Completed volume</span>
+            <span class="av-settings-value">$<?= number_format($stats['volume'], 2) ?></span>
           </div>
         </div>
       </div>
