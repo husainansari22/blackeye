@@ -294,7 +294,15 @@
 
   async function clearCart() {
     if (!cartCache.length) return;
-    if (!global.confirm('Remove all items from your cart?')) return;
+    var ok = global.AcctventaConfirm
+      ? await global.AcctventaConfirm({
+          title: 'Clear cart',
+          message: 'Remove all items from your cart?',
+          okText: 'Remove all',
+          icon: 'fa-cart-shopping',
+        })
+      : global.confirm('Remove all items from your cart?');
+    if (!ok) return;
     try {
       await Api().cartClear();
       cartCache = [];

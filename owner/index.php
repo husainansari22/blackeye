@@ -351,11 +351,12 @@ $tab = $_GET['tab'] ?? 'overview';
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260823badge2">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260823badge3">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
   <script src="/js/ui-toast.js?v=20260821toast2"></script>
+  <script src="/js/av-confirm.js?v=20260823confirm1"></script>
   <style>
     body.av-app{font-family:"Plus Jakarta Sans",system-ui,sans-serif}
   </style>
@@ -910,7 +911,7 @@ $tab = $_GET['tab'] ?? 'overview';
           <div class="min-w-0">
             <h2 class="av-settings-title" style="margin:0;display:inline-flex;align-items:center;gap:0.35rem;flex-wrap:wrap">
               <?= h($u['name']) ?>
-              <?php if ($verified): ?><span class="av-verify-badge av-verify-badge-lg" title="Verified" aria-label="Verified"><i class="fa-solid fa-check"></i></span><?php endif; ?>
+              <?php if ($verified): ?><span class="av-verify-badge av-verify-badge-lg" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span><?php endif; ?>
             </h2>
             <p class="av-row-sub"><?= h($u['email']) ?> · #<?= (int)$u['id'] ?></p>
           </div>
@@ -1040,7 +1041,7 @@ $tab = $_GET['tab'] ?? 'overview';
               <span class="av-settings-label">
                 <span class="inline-flex items-center gap-1">
                   <?= h($u['name']) ?>
-                  <?php if ($verified): ?><span class="av-verify-badge" title="Verified" aria-label="Verified"><i class="fa-solid fa-check"></i></span><?php endif; ?>
+                  <?php if ($verified): ?><span class="av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span><?php endif; ?>
                 </span>
                 <span class="av-row-sub" style="display:block;font-weight:500"><?= h($u['email']) ?></span>
               </span>
@@ -1161,7 +1162,7 @@ $tab = $_GET['tab'] ?? 'overview';
                   <button class="av-btn av-btn-primary">Save</button>
                 </form>
                 <?php if ($o['status'] !== 'cancelled'): ?>
-                <form method="post" onsubmit="return confirm('Refund buyer and deduct seller (allows negative / owing)?')">
+                <form method="post" onsubmit="return avConfirmSubmit(event, 'Refund buyer and deduct seller (allows negative / owing)?', { title: 'Refund order', okText: 'Refund buyer', icon: 'fa-rotate-left', danger: true })">
                   <input type="hidden" name="form" value="owner_refund">
                   <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
                   <button class="av-btn av-btn-danger">Refund</button>
@@ -1335,11 +1336,11 @@ $tab = $_GET['tab'] ?? 'overview';
           const actions=document.getElementById('orderChatActions');
           actions.classList.toggle('hidden', o.status==='cancelled');
           document.getElementById('orderChatRefundBtn').onclick=async()=>{
-            if(!confirm('Refund buyer and deduct seller (negative OK)?'))return;
+            if(!(await AcctventaConfirm({title:'Refund order',message:'Refund buyer and deduct seller (negative OK)?',okText:'Refund buyer',icon:'fa-rotate-left',danger:true})))return;
             try{const r=await apiStaff('staff.orders.refund',{method:'POST',body:{orderId:id}});alert('Refunded. Seller balance: $'+Number(r.sellerBalance).toFixed(2)+(r.owing?' (owing $'+Number(r.owing).toFixed(2)+')':''));openOrderChat(id);}catch(e){alert(e.message);}
           };
           document.getElementById('orderWarrantyRefundBtn').onclick=async()=>{
-            if(!confirm('24h warranty refund: deduct seller (incl. commission clawback) and refund buyer full price?'))return;
+            if(!(await AcctventaConfirm({title:'Warranty refund',message:'24h warranty refund: deduct seller (incl. commission clawback) and refund buyer full price?',okText:'Process refund',icon:'fa-shield-halved',danger:true})))return;
             try{
               await apiStaff('staff.orders.deduct_refund',{method:'POST',body:{orderId:id,note:'Owner warranty replacement'}});
               alert('Warranty refund completed.');
@@ -1360,7 +1361,7 @@ $tab = $_GET['tab'] ?? 'overview';
               meta.textContent='#'+(d.id)+' · '+ (d.status||'') +' · '+(d.reason||'No reason')+' · buyer '+(d.buyer_name||d.buyerName||'');
               const noteEl=document.getElementById('orderDisputeNote');
               document.getElementById('orderDisputeRefundBtn').onclick=async()=>{
-                if(!confirm('Resolve dispute with refund to buyer?'))return;
+                if(!(await AcctventaConfirm({title:'Resolve dispute',message:'Resolve dispute with refund to buyer?',okText:'Refund buyer',icon:'fa-gavel',danger:true})))return;
                 try{
                   await apiStaff('staff.disputes.resolve',{method:'POST',body:{disputeId:d.id,decision:'refund_buyer',note:noteEl.value||''}});
                   alert('Dispute resolved — buyer refunded.');
@@ -1368,7 +1369,7 @@ $tab = $_GET['tab'] ?? 'overview';
                 }catch(e){alert(e.message);}
               };
               document.getElementById('orderDisputeDenyBtn').onclick=async()=>{
-                if(!confirm('Deny this dispute?'))return;
+                if(!(await AcctventaConfirm({title:'Deny dispute',message:'Deny this dispute?',okText:'Deny dispute',icon:'fa-ban',danger:true})))return;
                 try{
                   await apiStaff('staff.disputes.resolve',{method:'POST',body:{disputeId:d.id,decision:'deny',note:noteEl.value||''}});
                   alert('Dispute denied.');

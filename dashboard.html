@@ -902,8 +902,9 @@
     <script src="/js/api-client.js?v=20260823c6"></script>
     <script src="/js/api-sync.js?v=20260823ver1"></script>
     <script src="/js/kyc-app.js?v=20260823ver1"></script>
-    <script src="/js/commerce-ui.js?v=20260823c6"></script>
-    <script src="/js/dashboard-app.js?v=20260823badge3"></script>
+    <script src="/js/av-confirm.js?v=20260823confirm1"></script>
+    <script src="/js/commerce-ui.js?v=20260823confirm1"></script>
+    <script src="/js/dashboard-app.js?v=20260823confirm1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
@@ -1396,8 +1397,17 @@
         window.addEventListener('pageshow', () => {
             try { restoreDashTab(); } catch (e) {}
         });
-        function handleLogout() {
-            if (!confirm('Are you sure you want to log out?')) return;
+        async function handleLogout() {
+            const ok = window.AcctventaConfirm
+                ? await window.AcctventaConfirm({
+                    title: 'Log out',
+                    message: 'Are you sure you want to log out?',
+                    okText: 'Log out',
+                    icon: 'fa-right-from-bracket',
+                    danger: true,
+                })
+                : confirm('Are you sure you want to log out?');
+            if (!ok) return;
             const finish = () => {
                 try {
                     sessionStorage.removeItem(DASH_TAB_KEY);

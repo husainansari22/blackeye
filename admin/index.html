@@ -34,6 +34,7 @@
   <script src="/js/api-client.js?v=20260822adm1"></script>
   <script src="/js/staff-alerts.js?v=20260821toast2"></script>
   <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+  <script src="/js/av-confirm.js?v=20260823confirm1"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
@@ -411,7 +412,7 @@
       const btn = document.getElementById('adminOrderRefundBtn');
       if (btn) {
         btn.onclick = async () => {
-          if (!confirm('Refund buyer and deduct seller (negative OK)?')) return;
+          if (!(await AcctventaConfirm({ title: 'Refund order', message: 'Refund buyer and deduct seller (negative OK)?', okText: 'Refund buyer', icon: 'fa-rotate-left', danger: true }))) return;
           try {
             const r = await Api.staffOrderRefund({ orderId: id });
             alert('Refunded. Seller balance $' + Number(r.sellerBalance).toFixed(2));
@@ -422,7 +423,7 @@
       const warrantyBtn = document.getElementById('adminOrderWarrantyBtn');
       if (warrantyBtn) {
         warrantyBtn.onclick = async () => {
-          if (!confirm('24h warranty refund: deduct seller (incl. commission clawback) and refund buyer full price?')) return;
+          if (!(await AcctventaConfirm({ title: 'Warranty refund', message: '24h warranty refund: deduct seller (incl. commission clawback) and refund buyer full price?', okText: 'Process refund', icon: 'fa-shield-halved', danger: true }))) return;
           try {
             await Api.staffDeductRefund({ orderId: id, note: 'Admin warranty replacement' });
             alert('Warranty refund completed.');
@@ -444,7 +445,7 @@
           meta.textContent = '#' + d.id + ' · ' + (d.status || '') + ' · ' + (d.reason || 'No reason') + ' · buyer ' + (d.buyer_name || d.buyerName || '');
           const noteEl = document.getElementById('adminOrderDisputeNote');
           document.getElementById('adminOrderDisputeRefundBtn').onclick = async () => {
-            if (!confirm('Resolve dispute with refund to buyer?')) return;
+            if (!(await AcctventaConfirm({ title: 'Resolve dispute', message: 'Resolve dispute with refund to buyer?', okText: 'Refund buyer', icon: 'fa-gavel', danger: true }))) return;
             try {
               await Api.staffDisputeResolve({ disputeId: d.id, decision: 'refund_buyer', note: (noteEl && noteEl.value) || '' });
               alert('Dispute resolved — buyer refunded.');
@@ -452,7 +453,7 @@
             } catch (e) { alert(e.message); }
           };
           document.getElementById('adminOrderDisputeDenyBtn').onclick = async () => {
-            if (!confirm('Deny this dispute?')) return;
+            if (!(await AcctventaConfirm({ title: 'Deny dispute', message: 'Deny this dispute?', okText: 'Deny dispute', icon: 'fa-ban', danger: true }))) return;
             try {
               await Api.staffDisputeResolve({ disputeId: d.id, decision: 'deny', note: (noteEl && noteEl.value) || '' });
               alert('Dispute denied.');
@@ -518,7 +519,7 @@
       const Api = window.AcctventaApi;
       const noteEl = document.getElementById('wdNote_' + id);
       const manEl = document.getElementById('wdManual_' + id);
-      if (!confirm('Approve this withdrawal? Flutterwave will pay the bank account if Withdraw gateway is enabled.')) return;
+      if (!(await AcctventaConfirm({ title: 'Approve withdrawal', message: 'Approve this withdrawal? Flutterwave will pay the bank account if Withdraw gateway is enabled.', okText: 'Approve', icon: 'fa-circle-check' }))) return;
       try {
         const r = await Api.staffApproveWithdrawal({
           txId: id,
@@ -531,7 +532,7 @@
       } catch (e) { alert(e.message); }
     }
     async function adminRejectWd(id) {
-      if (!confirm('Reject and refund this withdrawal to the user?')) return;
+      if (!(await AcctventaConfirm({ title: 'Reject withdrawal', message: 'Reject and refund this withdrawal to the user?', okText: 'Reject & refund', icon: 'fa-xmark', danger: true }))) return;
       try {
         await window.AcctventaApi.staffRejectWithdrawal({ txId: id });
         alert('Rejected and refunded.');

@@ -1451,9 +1451,34 @@
               alert('No wallet is available at the moment.');
               return;
             }
-            if (!confirm('Confirm you will send (or already sent) $' + amount.toFixed(2) + ' in ' + depositCurrency + ' on ' + depositNetwork + ' to:\n\n' + addr + '\n\nYour wallet will NOT credit until payment is confirmed.')) {
-              return;
-            }
+            const cryptoOk = window.AcctventaConfirm
+              ? await window.AcctventaConfirm({
+                  title: 'Crypto deposit',
+                  message:
+                    'Confirm you will send (or already sent) $' +
+                    amount.toFixed(2) +
+                    ' in ' +
+                    depositCurrency +
+                    ' on ' +
+                    depositNetwork +
+                    ' to:\n\n' +
+                    addr +
+                    '\n\nYour wallet will NOT credit until payment is confirmed.',
+                  okText: 'I understand',
+                  icon: 'fa-wallet',
+                })
+              : confirm(
+                  'Confirm you will send (or already sent) $' +
+                    amount.toFixed(2) +
+                    ' in ' +
+                    depositCurrency +
+                    ' on ' +
+                    depositNetwork +
+                    ' to:\n\n' +
+                    addr +
+                    '\n\nYour wallet will NOT credit until payment is confirmed.'
+                );
+            if (!cryptoOk) return;
           }
           const payload = {
             amount: Number(amount),
@@ -1626,7 +1651,19 @@
         return;
       }
       sellDraft = { ...sellDraft, category, platform: category, title, description, price: Number(price) };
-      if (!confirm('Warning: Uploading bad, fake, or non-working accounts can get you banned. After 3 verified bad uploads, your account may be permanently banned. Continue?')) return;
+      const uploadOk = window.AcctventaConfirm
+        ? await window.AcctventaConfirm({
+            title: 'Upload policy',
+            message:
+              'Warning: Uploading bad, fake, or non-working accounts can get you banned. After 3 verified bad uploads, your account may be permanently banned. Continue?',
+            okText: 'Continue',
+            icon: 'fa-triangle-exclamation',
+            danger: true,
+          })
+        : confirm(
+            'Warning: Uploading bad, fake, or non-working accounts can get you banned. After 3 verified bad uploads, your account may be permanently banned. Continue?'
+          );
+      if (!uploadOk) return;
       showSellStep(2);
       return;
     }
@@ -1850,7 +1887,19 @@
   };
 
   window.confirmRefund = async function (orderId) {
-    if (!confirm('Refund this order to the buyer? Seller balance can go negative (owing) if funds are insufficient. Future sales repay the debt automatically.')) return;
+    const refundOk = window.AcctventaConfirm
+      ? await window.AcctventaConfirm({
+          title: 'Refund order',
+          message:
+            'Refund this order to the buyer? Seller balance can go negative (owing) if funds are insufficient. Future sales repay the debt automatically.',
+          okText: 'Refund buyer',
+          icon: 'fa-rotate-left',
+          danger: true,
+        })
+      : confirm(
+          'Refund this order to the buyer? Seller balance can go negative (owing) if funds are insufficient. Future sales repay the debt automatically.'
+        );
+    if (!refundOk) return;
     const u = refreshUser();
     const res = await Promise.resolve(A().refundOrder(u, orderId));
     if (!res.ok) {
