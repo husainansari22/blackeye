@@ -17,16 +17,15 @@
 
   const bc = new BroadcastChannel("kelvinoz-live-frames");
   const sendCanvas = document.createElement("canvas");
-  const sendCtx = sendCanvas.getContext("2d");
+  const sendCtx = sendCanvas.getContext("2d", { willReadFrequently: true });
 
   let stream = null;
   let characterB64 = null;
   let running = false;
-  let ws = null;
+  let busy = false;
   let gpuOnline = false;
-  let sending = false;
-  let lastSend = 0;
-  const SEND_INTERVAL_MS = 180; // ~5-6 fps to GPU
+  let gotFrame = false;
+  let timer = null;
 
   obsUrl.value = `${location.origin}/obs`;
 
@@ -34,23 +33,26 @@
     statusText.textContent = text;
   }
 
+  function setOutputWaiting(text) {
+    outputEmpty.textContent = text;
+    outputEmpty.classList.remove("is-hidden");
+    if (!gotFrame) output.classList.remove("is-on");
+  }
+
   function setGpu(online, detail) {
     gpuOnline = online;
     gpuPill.textContent = online ? "GPU online" : "GPU offline";
     gpuPill.classList.toggle("pill-on", online);
     gpuPill.classList.toggle("pill-off", !online);
-    if (detail) setStatus(detail);
+    if (detail && !running) setStatus(detail);
   }
 
   async function refreshStatus() {
     try {
       const res = await fetch("/api/status");
       const data = await res.json();
-      if (data.gpu?.online) {
-        setGpu(true, data.gpu.detail || "GPU ready");
-      } else {
-        setGpu(false, data.gpu?.detail || "GPU offline");
-      }
+      if (data.gpu?.online) setGpu(true, data.gpu.detail || "GPU ready");
+      else setGpu(false, data.gpu?.detail || "GPU offline");
     } catch {
       setGpu(false, "Could not reach status API");
     }
@@ -60,16 +62,17 @@
     if (stream) return;
     stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 540 } },
     });
     camera.srcObject = stream;
     await camera.play();
-    const w = camera.videoWidth || 1280;
-    const h = camera.videoHeight || 720;
+    await new Promise((r) => setTimeout(r, 250));
+    const w = camera.videoWidth || 960;
+    const h = camera.videoHeight || 540;
     output.width = w;
     output.height = h;
-    sendCanvas.width = w;
-    sendCanvas.height = h;
+    sendCanvas.width = Math.min(w, 640);
+    sendCanvas.height = Math.round(sendCanvas.width * (h / w));
     camera.classList.add("is-on");
     cameraEmpty.classList.add("is-hidden");
   }
@@ -77,6 +80,7 @@
   function drawOutputFrame(dataUrl) {
     const img = new Image();
     img.onload = () => {
+      gotFrame = true;
       ctx.drawImage(img, 0, 0, output.width, output.height);
       output.classList.add("is-on");
       outputEmpty.classList.add("is-hidden");
@@ -89,68 +93,47 @@
     img.src = dataUrl;
   }
 
-  function pumpFrames() {
-    if (!running) return;
-    const now = Date.now();
-    if (
-      ws &&
-      ws.readyState === WebSocket.OPEN &&
-      characterB64 &&
-      gpuOnline &&
-      !sending &&
-      now - lastSend >= SEND_INTERVAL_MS &&
-      camera.videoWidth > 0
-    ) {
-      sending = true;
-      lastSend = now;
+  async function sendOneFrame() {
+    if (!running || busy || !characterB64 || !gpuOnline) return;
+    if (!camera.videoWidth) return;
+    busy = true;
+    try {
       sendCtx.drawImage(camera, 0, 0, sendCanvas.width, sendCanvas.height);
-      const data = sendCanvas.toDataURL("image/jpeg", 0.72);
-      ws.send(JSON.stringify({ type: "frame", data }));
-      sending = false;
-    }
-    requestAnimationFrame(pumpFrames);
-  }
-
-  function pushConfig() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(
-      JSON.stringify({
-        type: "config",
-        prompt: promptEl.value,
-        character_b64: characterB64,
-        characterPath: characterB64 ? "loaded" : null,
-      })
-    );
-  }
-
-  function connectWs() {
-    if (ws) {
-      try {
-        ws.close();
-      } catch {}
-    }
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    ws = new WebSocket(`${proto}://${location.host}/ws/live`);
-    ws.onopen = () => {
-      pushConfig();
-    };
-    ws.onmessage = (ev) => {
-      try {
-        const msg = JSON.parse(ev.data);
-        if (msg.type === "status") setStatus(msg.message || "GPU connected");
-        if (msg.type === "config_ack") {
-          if (msg.needs_character) setStatus("Upload a character photo first.");
-          else if (msg.ok) setStatus("Character loaded on GPU. Transforming…");
-        }
-        if (msg.type === "frame" && msg.data) drawOutputFrame(msg.data);
-        if (msg.type === "error") setStatus(msg.error || "GPU error");
-      } catch {
-        // ignore
+      const frame_b64 = sendCanvas.toDataURL("image/jpeg", 0.7);
+      const res = await fetch("/api/transform", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          frame_b64,
+          character_b64: characterB64,
+          prompt: promptEl.value || "",
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && data.data) {
+        drawOutputFrame(data.data);
+        setStatus(`Live · ${data.pipeline || "gpu"} · ${data.elapsed_ms || "?"}ms`);
+      } else {
+        setOutputWaiting(data.error || "Waiting for face / GPU…");
+        setStatus(data.error || "Transform failed");
       }
-    };
-    ws.onclose = () => {
-      if (running) setStatus("GPU connection closed.");
-    };
+    } catch (err) {
+      setOutputWaiting("GPU request failed");
+      setStatus(err.message || "GPU request failed");
+    } finally {
+      busy = false;
+    }
+  }
+
+  function startLoop() {
+    stopLoop();
+    timer = setInterval(sendOneFrame, 220);
+    sendOneFrame();
+  }
+
+  function stopLoop() {
+    if (timer) clearInterval(timer);
+    timer = null;
   }
 
   async function fileToB64(file) {
@@ -165,7 +148,7 @@
   photoInput.addEventListener("change", async () => {
     const file = photoInput.files?.[0];
     if (!file) return;
-    setStatus("Uploading character photo…");
+    setStatus("Loading character photo…");
     const fd = new FormData();
     fd.append("photo", file);
     const res = await fetch("/api/character", { method: "POST", body: fd });
@@ -177,29 +160,29 @@
     characterB64 = await fileToB64(file);
     photoPreview.src = data.path;
     photoPreview.hidden = false;
-    pushConfig();
-    setStatus("Character photo ready — press Start camera.");
+    setStatus("Character ready — click Start camera");
   });
-
-  promptEl.addEventListener("change", () => pushConfig());
-  promptEl.addEventListener("blur", () => pushConfig());
 
   startBtn.addEventListener("click", async () => {
     try {
       if (!characterB64) {
         setStatus("Choose a character photo first.");
+        setOutputWaiting("Upload a character photo first");
+        return;
+      }
+      if (!gpuOnline) {
+        setStatus("GPU is offline.");
+        setOutputWaiting("GPU offline");
         return;
       }
       await ensureCamera();
       running = true;
+      gotFrame = false;
       startBtn.disabled = true;
       stopBtn.disabled = false;
-      outputEmpty.textContent = "Waiting for GPU…";
-      outputEmpty.classList.remove("is-hidden");
-      output.classList.remove("is-on");
-      connectWs();
-      pumpFrames();
-      setStatus(gpuOnline ? "Sending webcam to GPU for character transform…" : "GPU offline — cannot transform.");
+      setOutputWaiting("Sending to GPU…");
+      setStatus("Transforming on GPU…");
+      startLoop();
     } catch (err) {
       setStatus(err.message || "Camera permission denied");
     }
@@ -207,9 +190,9 @@
 
   stopBtn.addEventListener("click", () => {
     running = false;
+    stopLoop();
     startBtn.disabled = false;
     stopBtn.disabled = true;
-    if (ws) ws.close();
     if (stream) {
       stream.getTracks().forEach((t) => t.stop());
       stream = null;
@@ -221,6 +204,7 @@
     outputEmpty.textContent = "Waiting";
     outputEmpty.classList.remove("is-hidden");
     ctx.clearRect(0, 0, output.width, output.height);
+    gotFrame = false;
     setStatus("Stopped.");
   });
 
@@ -235,5 +219,5 @@
   });
 
   refreshStatus();
-  setInterval(refreshStatus, 15000);
+  setInterval(refreshStatus, 10000);
 })();

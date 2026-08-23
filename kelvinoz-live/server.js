@@ -182,19 +182,26 @@ app.post("/api/transform", requireAuth, async (req, res) => {
   if (!GPU_WORKER_URL) {
     return res.status(503).json({
       ok: false,
-      error: "GPU worker offline. Deploy L40S and set GPU_WORKER_URL.",
+      error: "GPU worker offline. Deploy GPU and set GPU_WORKER_URL.",
     });
   }
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
     const r = await fetch(`${GPU_WORKER_URL}/transform`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body || {}),
+      signal: controller.signal,
     });
-    const data = await r.json().catch(() => ({}));
+    clearTimeout(timer);
+    const data = await r.json().catch(() => ({ ok: false, error: "Bad GPU response" }));
     return res.status(r.status).json(data);
   } catch (err) {
-    return res.status(502).json({ ok: false, error: String(err.message || err) });
+    return res.status(502).json({
+      ok: false,
+      error: err.name === "AbortError" ? "GPU timeout" : String(err.message || err),
+    });
   }
 });
 
