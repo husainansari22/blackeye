@@ -164,11 +164,11 @@ app.post("/api/realtime-token", requireAuth, async (_req, res) => {
   }
   try {
     const client = await getDecartClient();
+    // Unscoped token — origin locks can close the Lucy signaling socket
+    // immediately and surface as "WebSocket is not open" in the browser.
     const token = await client.tokens.create({
-      expiresIn: 600,
-      allowedModels: ["lucy-2.5", "lucy-2.1"],
-      allowedOrigins: ["https://kelvinoz.com", "https://www.kelvinoz.com", "http://localhost:3000"],
-      constraints: { realtime: { maxSessionDuration: 3600 } },
+      expiresIn: 900,
+      allowedModels: ["lucy-2.5"],
     });
     return res.json({
       ok: true,

@@ -49411,39 +49411,41 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     function setStatus(text) {
       statusText.textContent = text;
     }
+    function setOutputMsg(text) {
+      outputEmpty.textContent = text;
+      outputEmpty.classList.remove("is-hidden");
+    }
     function setLucy(online, detail) {
       lucyReady = online;
       lucyPill.textContent = online ? "Lucy 2.5 ready" : "Lucy offline";
       lucyPill.classList.toggle("pill-on", online);
       lucyPill.classList.toggle("pill-off", !online);
-      if (detail) setStatus(detail);
+      if (detail && !realtimeClient) setStatus(detail);
     }
     async function refreshStatus() {
       try {
         const res = await fetch("/api/status");
         const data = await res.json();
-        if (data.lucy?.configured) {
-          setLucy(true, data.lucy.detail || "Lucy 2.5 configured");
-        } else {
-          setLucy(false, data.lucy?.detail || "Add DECART_API_KEY to enable Lucy 2.5");
-        }
+        if (data.lucy?.configured) setLucy(true, data.lucy.detail || "Lucy 2.5 configured");
+        else setLucy(false, data.lucy?.detail || "Add DECART_API_KEY");
       } catch {
         setLucy(false, "Status check failed");
       }
     }
     async function getClientToken() {
       const res = await fetch("/api/realtime-token", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create Lucy token");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Token failed (${res.status})`);
+      if (!data.apiKey) throw new Error("Token response missing apiKey");
       return data.apiKey;
     }
     function buildPrompt() {
       const scene = (promptEl.value || "").trim();
       const parts = [
         "Substitute the character in the video with the person in the reference image.",
-        "Match body pose, face motion, and clothing from the reference. Full character transformation, not face-only."
+        "Full-body character transformation matching pose and motion from the webcam."
       ];
-      if (scene) parts.push(`Also set the background/scene to: ${scene}`);
+      if (scene) parts.push(`Change the background/scene to: ${scene}`);
       return parts.join(" ");
     }
     async function ensureCamera() {
@@ -49453,8 +49455,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         video: {
           facingMode: "user",
           frameRate: model.fps,
-          width: model.width,
-          height: model.height
+          width: { ideal: model.width },
+          height: { ideal: model.height }
         }
       });
       camera.srcObject = localStream;
@@ -49485,47 +49487,61 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     async function startLucy() {
       if (!characterFile) {
         setStatus("Choose a character photo first.");
-        outputEmpty.textContent = "Upload a character photo first";
+        setOutputMsg("Upload a character photo first");
         return;
       }
       if (!lucyReady) {
-        setStatus("Lucy is offline \u2014 add your Decart API key.");
+        setStatus("Lucy is offline \u2014 Decart key missing.");
+        setOutputMsg("Lucy offline");
         return;
       }
       startBtn.disabled = true;
       stopBtn.disabled = false;
-      outputEmpty.textContent = "Connecting Lucy 2.5\u2026";
-      outputEmpty.classList.remove("is-hidden");
-      setStatus("Minting Lucy session token\u2026");
-      const stream = await ensureCamera();
-      const apiKey = await getClientToken();
-      const client = createDecartClient({ apiKey });
-      setStatus("Connecting Lucy 2.5 realtime\u2026");
-      realtimeClient = await client.realtime.connect(stream, {
-        model,
-        mirror: "auto",
-        onRemoteStream: (remoteStream) => {
-          output.srcObject = remoteStream;
-          output.play().catch(() => {
-          });
-          output.classList.add("is-on");
-          outputEmpty.classList.add("is-hidden");
-          startObsCapture();
-          setStatus("Live \xB7 Lucy 2.5");
-        },
-        initialState: {
-          prompt: {
-            text: buildPrompt(),
-            enhance: true
+      setOutputMsg("Connecting Lucy 2.5\u2026");
+      setStatus("Getting Lucy session\u2026");
+      try {
+        const stream = await ensureCamera();
+        const apiKey = await getClientToken();
+        setStatus("Opening Lucy realtime\u2026");
+        const client = createDecartClient({ apiKey });
+        const promptText = buildPrompt();
+        realtimeClient = await client.realtime.connect(stream, {
+          model,
+          mirror: "auto",
+          preferredVideoCodec: "vp8",
+          onRemoteStream: (remoteStream) => {
+            output.srcObject = remoteStream;
+            output.muted = true;
+            output.playsInline = true;
+            output.play().catch(() => {
+            });
+            output.classList.add("is-on");
+            outputEmpty.classList.add("is-hidden");
+            startObsCapture();
+            setStatus("Live \xB7 Lucy 2.5");
+          },
+          onConnectionChange: (state) => {
+            if (state && state !== "connected") setStatus(`Lucy connection: ${state}`);
+          },
+          initialState: {
+            prompt: { text: promptText, enhance: true },
+            image: characterFile
           }
+        });
+        setStatus("Live \xB7 Lucy 2.5 connected");
+      } catch (err) {
+        const msg = err?.message || String(err);
+        setStatus(msg);
+        setOutputMsg(msg);
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        try {
+          if (realtimeClient) await realtimeClient.disconnect();
+        } catch {
         }
-      });
-      await realtimeClient.set({
-        prompt: buildPrompt(),
-        image: characterFile,
-        enhance: true
-      });
-      setStatus("Live \xB7 Lucy 2.5 character swap active");
+        realtimeClient = null;
+        throw err;
+      }
     }
     async function stopLucy() {
       stopObsCapture();
@@ -49560,20 +49576,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         realtimeClient.set({ prompt: buildPrompt(), image: file2, enhance: true }).catch((err) => setStatus(err.message || "Failed to update character"));
       }
     });
-    promptEl.addEventListener("change", () => {
+    let promptTimer = null;
+    promptEl.addEventListener("input", () => {
       if (!realtimeClient) return;
-      const opts = { prompt: buildPrompt(), enhance: true };
-      if (characterFile) opts.image = characterFile;
-      realtimeClient.set(opts).catch((err) => setStatus(err.message || "Failed to update prompt"));
+      clearTimeout(promptTimer);
+      promptTimer = setTimeout(() => {
+        const opts = { prompt: buildPrompt(), enhance: true };
+        if (characterFile) opts.image = characterFile;
+        realtimeClient.set(opts).catch((err) => setStatus(err.message || "Failed to update prompt"));
+      }, 600);
     });
     startBtn.addEventListener("click", async () => {
       try {
         await startLucy();
-      } catch (err) {
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        setStatus(err.message || "Failed to start Lucy");
-        outputEmpty.textContent = err.message || "Failed to start";
+      } catch {
       }
     });
     stopBtn.addEventListener("click", () => {
