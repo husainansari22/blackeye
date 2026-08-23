@@ -1,18 +1,20 @@
 {
   "name": "kelvinoz-live",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Private live character transformation studio for kelvinoz.com",
+  "description": "Private Lucy 2.5 live studio for kelvinoz.com",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "node -e \"console.log('No build step; static assets served by Express')\""
+    "build": "esbuild public/assets/studio-lucy.js --bundle --format=iife --platform=browser --outfile=public/assets/studio.bundle.js --target=es2020"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "@decartai/sdk": "^0.1.21",
     "cookie-parser": "^1.4.7",
+    "esbuild": "^0.28.2",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.2",
     "uuid": "^11.1.0",

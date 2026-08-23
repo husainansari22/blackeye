@@ -121,6 +121,7 @@ button.ghost {
   height: 100%;
   object-fit: cover;
   display: none;
+  background: #000;
 }
 
 #camera.is-on,

@@ -7,7 +7,6 @@ const crypto = require("crypto");
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const multer = require("multer");
-const { WebSocketServer } = require("ws");
 const { randomUUID } = require("crypto");
 
 function loadRuntimeConfig() {
@@ -17,7 +16,7 @@ function loadRuntimeConfig() {
       return JSON.parse(fs.readFileSync(configPath, "utf8"));
     }
   } catch {
-    // ignore invalid config
+    // ignore
   }
   return {};
 }
@@ -27,11 +26,7 @@ const PORT = Number(process.env.PORT || 3000);
 const ACCESS_CODE = process.env.ACCESS_CODE || runtimeConfig.accessCode || "@535846.oZ";
 const SESSION_SECRET =
   process.env.SESSION_SECRET || runtimeConfig.sessionSecret || crypto.randomBytes(32).toString("hex");
-const GPU_WORKER_URL = (
-  process.env.GPU_WORKER_URL ||
-  runtimeConfig.gpuWorkerUrl ||
-  ""
-).replace(/\/$/, "");
+const DECART_API_KEY = process.env.DECART_API_KEY || runtimeConfig.decartApiKey || "";
 const COOKIE_NAME = "kelvinoz_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
@@ -40,6 +35,7 @@ const uploadsDir = path.join(dataDir, "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 const sessions = new Map();
+let decartClientPromise = null;
 
 function sign(value) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(value).digest("hex");
@@ -56,12 +52,8 @@ function readSession(token) {
   if (!token || !token.includes(".")) return null;
   const [id, sig] = token.split(".");
   if (!id || sig !== sign(id)) return null;
+  if (!sessions.has(id)) sessions.set(id, { createdAt: Date.now() });
   const session = sessions.get(id);
-  if (!session) {
-    // Accept signed cookie even after process restart (private single-user site)
-    sessions.set(id, { createdAt: Date.now() });
-    return id;
-  }
   if (Date.now() - session.createdAt > SESSION_TTL_MS) {
     sessions.delete(id);
     return null;
@@ -79,6 +71,16 @@ function requireAuth(req, res, next) {
   }
   req.sessionId = sid;
   next();
+}
+
+async function getDecartClient() {
+  if (!DECART_API_KEY) throw new Error("DECART_API_KEY not configured");
+  if (!decartClientPromise) {
+    decartClientPromise = import("@decartai/sdk").then(({ createDecartClient }) =>
+      createDecartClient({ apiKey: DECART_API_KEY })
+    );
+  }
+  return decartClientPromise;
 }
 
 const upload = multer({
@@ -102,7 +104,7 @@ const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
-app.use("/assets", express.static(path.join(__dirname, "public", "assets")));
+app.use("/assets", express.static(path.join(__dirname, "public", "assets"), { maxAge: 0 }));
 
 app.get("/login", (req, res) => {
   if (readSession(req.cookies[COOKIE_NAME])) return res.redirect("/");
@@ -132,34 +134,50 @@ app.post("/api/logout", (req, res) => {
 });
 
 app.get("/api/status", requireAuth, async (_req, res) => {
-  let gpu = { online: false, detail: "GPU worker not configured" };
-  if (GPU_WORKER_URL) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2500);
-      const r = await fetch(`${GPU_WORKER_URL}/health`, { signal: controller.signal });
-      clearTimeout(timer);
-      if (r.ok) {
-        const body = await r.json().catch(() => ({}));
-        gpu = { online: true, detail: body.detail || "GPU worker online", ...body };
-      } else {
-        gpu = { online: false, detail: `GPU worker HTTP ${r.status}` };
-      }
-    } catch (err) {
-      gpu = { online: false, detail: err.name === "AbortError" ? "GPU worker timeout" : String(err.message || err) };
-    }
-  }
+  const configured = Boolean(DECART_API_KEY);
   res.json({
     ok: true,
-    gpu,
+    lucy: {
+      configured,
+      model: "lucy-2.5",
+      detail: configured
+        ? "Lucy 2.5 ready — full realtime character + scene transform"
+        : "Add DECART_API_KEY (platform.decart.ai) to enable Lucy 2.5",
+    },
     obsBrowserSource: "/obs",
     features: {
       characterPhoto: true,
       backgroundPrompt: true,
       liveCamera: true,
       obsLink: true,
+      lucy25: true,
     },
   });
+});
+
+app.post("/api/realtime-token", requireAuth, async (_req, res) => {
+  if (!DECART_API_KEY) {
+    return res.status(503).json({
+      ok: false,
+      error: "DECART_API_KEY missing. Create a key at https://platform.decart.ai/api-keys",
+    });
+  }
+  try {
+    const client = await getDecartClient();
+    const token = await client.tokens.create({
+      expiresIn: 600,
+      allowedModels: ["lucy-2.5", "lucy-2.1"],
+      allowedOrigins: ["https://kelvinoz.com", "https://www.kelvinoz.com", "http://localhost:3000"],
+      constraints: { realtime: { maxSessionDuration: 3600 } },
+    });
+    return res.json({
+      ok: true,
+      apiKey: token.apiKey || token.api_key,
+      expiresAt: token.expiresAt || token.expires_at,
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: String(err.message || err) });
+  }
 });
 
 app.post("/api/character", requireAuth, (req, res) => {
@@ -178,33 +196,6 @@ app.get("/media/:name", requireAuth, (req, res) => {
   res.sendFile(file);
 });
 
-app.post("/api/transform", requireAuth, async (req, res) => {
-  if (!GPU_WORKER_URL) {
-    return res.status(503).json({
-      ok: false,
-      error: "GPU worker offline. Deploy GPU and set GPU_WORKER_URL.",
-    });
-  }
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45000);
-    const r = await fetch(`${GPU_WORKER_URL}/transform`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body || {}),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    const data = await r.json().catch(() => ({ ok: false, error: "Bad GPU response" }));
-    return res.status(r.status).json(data);
-  } catch (err) {
-    return res.status(502).json({
-      ok: false,
-      error: err.name === "AbortError" ? "GPU timeout" : String(err.message || err),
-    });
-  }
-});
-
 app.get("/obs", requireAuth, (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "obs.html"));
 });
@@ -213,74 +204,6 @@ app.get("/", requireAuth, (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: "/ws/live" });
-
-wss.on("connection", (client, req) => {
-  const cookies = Object.fromEntries(
-    String(req.headers.cookie || "")
-      .split(";")
-      .map((c) => c.trim().split("="))
-      .filter((p) => p[0])
-      .map(([k, ...v]) => [k, decodeURIComponent(v.join("="))])
-  );
-  if (!readSession(cookies[COOKIE_NAME])) {
-    client.close(4401, "Unauthorized");
-    return;
-  }
-
-  let upstream;
-  if (GPU_WORKER_URL) {
-    try {
-      const wsUrl = GPU_WORKER_URL.replace(/^http/, "ws") + "/ws/live";
-      const WebSocket = require("ws");
-      upstream = new WebSocket(wsUrl);
-      upstream.on("message", (data) => {
-        if (client.readyState === 1) client.send(data);
-      });
-      upstream.on("close", () => {
-        if (client.readyState === 1) client.close();
-      });
-      upstream.on("error", () => {
-        if (client.readyState === 1) {
-          client.send(JSON.stringify({ type: "error", error: "GPU websocket error" }));
-        }
-      });
-    } catch (err) {
-      client.send(JSON.stringify({ type: "error", error: String(err.message || err) }));
-    }
-  } else {
-    client.send(
-      JSON.stringify({
-        type: "status",
-        gpuOnline: false,
-        message: "GPU worker not connected. Local preview mode only.",
-      })
-    );
-  }
-
-  client.on("message", (data) => {
-    if (upstream && upstream.readyState === 1) {
-      upstream.send(data);
-      return;
-    }
-    try {
-      const msg = JSON.parse(String(data));
-      if (msg.type === "ping") {
-        client.send(JSON.stringify({ type: "pong", t: Date.now() }));
-      } else if (msg.type === "config") {
-        client.send(JSON.stringify({ type: "config_ack", ok: true, needs_character: !msg.character_b64 }));
-      }
-    } catch {
-      // ignore
-    }
-  });
-
-  client.on("close", () => {
-    if (upstream && upstream.readyState <= 1) upstream.close();
-  });
-});
-
-server.listen(PORT, () => {
-  console.log(`KelvinOz Live listening on :${PORT}`);
+http.createServer(app).listen(PORT, () => {
+  console.log(`KelvinOz Live (Lucy 2.5) on :${PORT} key=${DECART_API_KEY ? "set" : "MISSING"}`);
 });
