@@ -1,4 +1,4 @@
-import { createDecartClient, models } from "@decartai/sdk";
+import { createDecartClient, models, resolveFpsNumber } from "@decartai/sdk";
 
 (() => {
   const camera = document.getElementById("camera");
@@ -23,7 +23,9 @@ import { createDecartClient, models } from "@decartai/sdk";
   let characterFile = null;
   let realtimeClient = null;
   let captureTimer = null;
+  let waitTimer = null;
   let lucyReady = false;
+  let gotRemote = false;
 
   obsUrl.value = `${location.origin}/obs`;
 
@@ -73,6 +75,23 @@ import { createDecartClient, models } from "@decartai/sdk";
     return parts.join(" ");
   }
 
+  /** Compress reference photo so Lucy handshake stays fast/reliable. */
+  async function prepareCharacterBlob(file) {
+    const bmp = await createImageBitmap(file);
+    const maxSide = 1024;
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width * scale));
+    const h = Math.max(1, Math.round(bmp.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext("2d").drawImage(bmp, 0, 0, w, h);
+    bmp.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
+    if (!blob) throw new Error("Failed to prepare character photo");
+    return new File([blob], "character.jpg", { type: "image/jpeg" });
+  }
+
   function stopLocalTracks() {
     if (!localStream) return;
     localStream.getTracks().forEach((t) => {
@@ -89,27 +108,24 @@ import { createDecartClient, models } from "@decartai/sdk";
   }
 
   async function ensureCamera() {
-    // Always re-open cleanly so a failed Lucy connect cannot leave a dead track.
     stopLocalTracks();
     try {
       localStream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
           facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 30 },
+          frameRate: { ideal: resolveFpsNumber(model.fps) },
+          width: { ideal: model.width },
+          height: { ideal: model.height },
         },
       });
     } catch (err) {
       const name = err?.name || "";
       if (name === "NotReadableError" || /video source|Could not start/i.test(err?.message || "")) {
-        throw new Error(
-          "Camera is busy. Close OBS / other apps using the webcam, then try Start live again."
-        );
+        throw new Error("Camera is busy. Close OBS webcam source, then retry Start live.");
       }
       if (name === "NotAllowedError") {
-        throw new Error("Camera permission blocked. Allow camera for kelvinoz.com and retry.");
+        throw new Error("Camera permission blocked for kelvinoz.com.");
       }
       throw new Error(err?.message || "Could not open camera");
     }
@@ -118,6 +134,24 @@ import { createDecartClient, models } from "@decartai/sdk";
     camera.classList.add("is-on");
     cameraEmpty.classList.add("is-hidden");
     return localStream;
+  }
+
+  function attachRemote(remoteStream) {
+    gotRemote = true;
+    if (waitTimer) {
+      clearTimeout(waitTimer);
+      waitTimer = null;
+    }
+    output.srcObject = remoteStream;
+    output.muted = true;
+    output.playsInline = true;
+    const play = () => output.play().catch(() => {});
+    play();
+    output.onloadedmetadata = play;
+    output.classList.add("is-on");
+    outputEmpty.classList.add("is-hidden");
+    startObsCapture();
+    setStatus("Live · Lucy 2.5 generating");
   }
 
   function startObsCapture() {
@@ -149,48 +183,80 @@ import { createDecartClient, models } from "@decartai/sdk";
       return;
     }
     if (!lucyReady) {
-      setStatus("Lucy is offline — Decart key missing.");
+      setStatus("Lucy offline — Decart key missing.");
       setOutputMsg("Lucy offline");
       return;
     }
 
     startBtn.disabled = true;
     stopBtn.disabled = false;
+    gotRemote = false;
     setOutputMsg("Connecting Lucy 2.5…");
     setStatus("Getting Lucy session…");
 
     try {
       const stream = await ensureCamera();
       const apiKey = await getClientToken();
+      const character = await prepareCharacterBlob(characterFile);
+      const promptText = buildPrompt();
       setStatus("Opening Lucy realtime…");
 
       const client = createDecartClient({ apiKey });
-      const promptText = buildPrompt();
 
       realtimeClient = await client.realtime.connect(stream, {
         model,
-        mirror: "auto",
-        preferredVideoCodec: "vp8",
-        onRemoteStream: (remoteStream) => {
-          output.srcObject = remoteStream;
-          output.muted = true;
-          output.playsInline = true;
-          output.play().catch(() => {});
-          output.classList.add("is-on");
-          outputEmpty.classList.add("is-hidden");
-          startObsCapture();
-          setStatus("Live · Lucy 2.5");
-        },
+        mirror: true,
+        onRemoteStream: (remoteStream) => attachRemote(remoteStream),
         onConnectionChange: (state) => {
-          if (state && state !== "connected") setStatus(`Lucy connection: ${state}`);
+          if (gotRemote) return;
+          if (state === "generating") setOutputMsg("Lucy generating…");
+          else if (state === "connected") setOutputMsg("Connected — waiting for Lucy video…");
+          else if (state === "reconnecting") setOutputMsg("Reconnecting…");
+          setStatus(`Lucy: ${state}`);
+        },
+        onQueuePosition: (qp) => {
+          const pos = qp?.position ?? qp;
+          setStatus(`Lucy queue position: ${pos}`);
+          setOutputMsg(`In Lucy queue (#${pos})…`);
         },
         initialState: {
           prompt: { text: promptText, enhance: true },
-          image: characterFile,
+          image: character,
         },
       });
 
-      setStatus("Live · Lucy 2.5 connected");
+      realtimeClient.on("error", (error) => {
+        const msg = error?.message || String(error);
+        setStatus(msg);
+        if (!gotRemote) setOutputMsg(msg);
+      });
+
+      realtimeClient.on("generationTick", () => {
+        if (!gotRemote) setOutputMsg("Lucy generating frames…");
+      });
+
+      // Force generation start in case initial handshake image didn't apply.
+      try {
+        await realtimeClient.set({
+          prompt: promptText,
+          image: character,
+          enhance: true,
+        });
+      } catch (err) {
+        setStatus(err?.message || "Lucy set() failed");
+      }
+
+      if (!gotRemote) {
+        setStatus("Live · waiting for Lucy video track");
+        setOutputMsg("Waiting for Lucy video…");
+        waitTimer = setTimeout(() => {
+          if (gotRemote) return;
+          setOutputMsg(
+            "No Lucy video yet. Check Decart credits at platform.decart.ai/billing (most common), then hard refresh and retry."
+          );
+          setStatus("No remote video — likely zero Decart credits or blocked WebRTC UDP");
+        }, 12000);
+      }
     } catch (err) {
       const msg = err?.message || String(err);
       setStatus(msg);
@@ -203,13 +269,15 @@ import { createDecartClient, models } from "@decartai/sdk";
         // ignore
       }
       realtimeClient = null;
-      // Release camera so retry / OBS can use it
       stopLocalTracks();
-      throw err;
     }
   }
 
   async function stopLucy() {
+    if (waitTimer) {
+      clearTimeout(waitTimer);
+      waitTimer = null;
+    }
     stopObsCapture();
     try {
       if (realtimeClient) await realtimeClient.disconnect();
@@ -217,6 +285,7 @@ import { createDecartClient, models } from "@decartai/sdk";
       // ignore
     }
     realtimeClient = null;
+    gotRemote = false;
     stopLocalTracks();
     output.srcObject = null;
     output.classList.remove("is-on");
@@ -234,30 +303,28 @@ import { createDecartClient, models } from "@decartai/sdk";
     photoPreview.src = URL.createObjectURL(file);
     photoPreview.hidden = false;
     setStatus("Character photo ready — click Start live");
-    if (realtimeClient) {
-      realtimeClient
-        .set({ prompt: buildPrompt(), image: file, enhance: true })
-        .catch((err) => setStatus(err.message || "Failed to update character"));
-    }
   });
 
   let promptTimer = null;
   promptEl.addEventListener("input", () => {
-    if (!realtimeClient) return;
+    if (!realtimeClient || !characterFile) return;
     clearTimeout(promptTimer);
-    promptTimer = setTimeout(() => {
-      const opts = { prompt: buildPrompt(), enhance: true };
-      if (characterFile) opts.image = characterFile;
-      realtimeClient.set(opts).catch((err) => setStatus(err.message || "Failed to update prompt"));
-    }, 600);
+    promptTimer = setTimeout(async () => {
+      try {
+        const character = await prepareCharacterBlob(characterFile);
+        await realtimeClient.set({
+          prompt: buildPrompt(),
+          image: character,
+          enhance: true,
+        });
+      } catch (err) {
+        setStatus(err.message || "Failed to update prompt");
+      }
+    }, 700);
   });
 
-  startBtn.addEventListener("click", async () => {
-    try {
-      await startLucy();
-    } catch {
-      // already surfaced
-    }
+  startBtn.addEventListener("click", () => {
+    startLucy();
   });
 
   stopBtn.addEventListener("click", () => {
