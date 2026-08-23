@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KelvinOz Live — Access</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/studio.css" />
+</head>
+<body class="auth-body">
+  <div class="auth-shell">
+    <p class="brand">KelvinOz Live</p>
+    <h1>Private studio</h1>
+    <p class="lede">Enter your access code to continue.</p>
+    <form id="login-form" class="auth-form">
+      <label for="code">Access code</label>
+      <input id="code" name="code" type="password" autocomplete="current-password" required autofocus />
+      <button type="submit">Enter</button>
+      <p id="login-error" class="error" hidden></p>
+    </form>
+  </div>
+  <script>
+    const form = document.getElementById("login-form");
+    const errorEl = document.getElementById("login-error");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorEl.hidden = true;
+      const code = document.getElementById("code").value;
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      if (!res.ok) {
+        errorEl.textContent = "Wrong access code.";
+        errorEl.hidden = false;
+        return;
+      }
+      location.href = "/";
+    });
+  </script>
+</body>
+</html>
