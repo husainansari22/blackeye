@@ -134,15 +134,20 @@ app.post("/api/logout", (req, res) => {
 });
 
 app.get("/api/status", requireAuth, async (_req, res) => {
-  const configured = Boolean(DECART_API_KEY);
+  const lucyConfigured = Boolean(DECART_API_KEY);
   res.json({
     ok: true,
+    mode: "free-local",
+    freeLocal: {
+      configured: true,
+      detail: "Free on-device mode — MediaPipe in your browser (no Decart, no Hostinger GPU)",
+    },
     lucy: {
-      configured,
+      configured: lucyConfigured,
       model: "lucy-2.5",
-      detail: configured
-        ? "Lucy 2.5 ready — full realtime character + scene transform"
-        : "Add DECART_API_KEY (platform.decart.ai) to enable Lucy 2.5",
+      detail: lucyConfigured
+        ? "Optional paid Lucy 2.5 available (Decart credits)"
+        : "Lucy 2.5 is paid Decart API — free local mode does not need it",
     },
     obsBrowserSource: "/obs",
     features: {
@@ -150,7 +155,8 @@ app.get("/api/status", requireAuth, async (_req, res) => {
       backgroundPrompt: true,
       liveCamera: true,
       obsLink: true,
-      lucy25: true,
+      freeLocal: true,
+      lucy25: lucyConfigured,
     },
   });
 });

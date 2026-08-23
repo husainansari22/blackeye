@@ -15,7 +15,7 @@
       <p class="brand">KelvinOz Live</p>
     </div>
     <div class="topbar-actions">
-      <span id="gpu-pill" class="pill pill-off">Lucy offline</span>
+      <span id="gpu-pill" class="pill pill-on">Free local ready</span>
       <button id="start-btn" type="button">Start live</button>
       <button id="stop-btn" type="button" class="ghost" disabled>Stop</button>
       <button id="logout" type="button" class="ghost">Log out</button>
@@ -43,7 +43,7 @@
   <section class="controls">
     <div class="control-card">
       <h3>Character photo</h3>
-      <p class="tiny">Full character swap reference for Lucy 2.5</p>
+      <p class="tiny">Free local face overlay (runs in your browser — not Decart Lucy)</p>
       <label class="file-btn">
         Choose photo
         <input id="photo" type="file" accept="image/png,image/jpeg,image/webp" hidden />
@@ -52,7 +52,7 @@
     </div>
     <div class="control-card">
       <h3>Background / scene</h3>
-      <textarea id="prompt" rows="3" placeholder="Example: replace the background with a neon Tokyo street at night"></textarea>
+      <textarea id="prompt" rows="3" placeholder="Example: neon Tokyo street at night"></textarea>
     </div>
     <div class="control-card">
       <h3>OBS connect</h3>
@@ -60,10 +60,10 @@
         <input id="obs-url" readonly />
         <button id="copy-obs" type="button" class="ghost">Copy</button>
       </div>
-      <p id="status-text" class="status-text">Ready · Lucy 2.5 — close OBS camera first if Start fails</p>
+      <p id="status-text" class="status-text">Free local · no Decart credits · no Hostinger GPU</p>
     </div>
   </section>
 
-  <script src="/assets/studio.bundle.js"></script>
+  <script type="module" src="/assets/studio-free.js"></script>
 </body>
 </html>
