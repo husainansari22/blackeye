@@ -9,7 +9,12 @@
 
   function getToken() {
     try {
-      return localStorage.getItem(TOKEN_KEY) || '';
+      const ls = localStorage.getItem(TOKEN_KEY) || '';
+      if (ls) return ls;
+    } catch (e) {}
+    try {
+      const m = document.cookie.match(/(?:^|;\s*)acctventa_token=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
     } catch (e) {
       return '';
     }

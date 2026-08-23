@@ -2105,10 +2105,14 @@
       try {
         const methodBody = payMethod === 'wallet' ? 'wallet' : price > 0 ? 'flutterwave' : 'free';
         let res = null;
-        // Always prefer live API when logged in — never the local demo stub for Flutterwave.
+        // Prefer live API when logged in (token, cookie, or api-sync flag).
         const Api = window.AcctventaApi;
-        const hasToken = !!(Api && typeof Api.getToken === 'function' && Api.getToken());
-        if (hasToken && typeof Api.upgradePlan === 'function') {
+        const Sync = window.AcctventaApiSync;
+        const hasApiSession = !!(
+          (Api && typeof Api.getToken === 'function' && Api.getToken()) ||
+          (Sync && typeof Sync.usingApi === 'function' && Sync.usingApi())
+        );
+        if (hasApiSession && Api && typeof Api.upgradePlan === 'function') {
           try {
             const apiRes = await Api.upgradePlan({ planId: String(planId), method: methodBody });
             if (apiRes && apiRes.paymentLink) {

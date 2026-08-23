@@ -656,6 +656,7 @@
     // wallet
     showInsufficientFundsModal: showInsufficientFundsModal,
     closeAndGoWallet: closeAndGoWallet,
+    confirmPlanCheckout: confirmPlanCheckout,
     // discovery
     loadSocialProof: loadSocialProof,
     refreshMarketListings: refreshMarketListings,
