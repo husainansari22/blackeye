@@ -538,29 +538,54 @@ function approve_withdrawal_payout(array $tx, string $actorNote = '', bool $forc
         if (empty($transfer['ok'])) {
             return ['ok' => false, 'error' => $transfer['error'] ?? 'Flutterwave payout failed', 'raw' => $transfer['raw'] ?? null];
         }
+        $flwId = (string)($transfer['flw_id'] ?? '');
+        $flwStatus = strtoupper((string)($transfer['status'] ?? 'NEW'));
         $newNote = $note;
         if ($actorNote !== '') $newNote .= ' · ' . $actorNote;
-        $newNote .= ' · Flutterwave transfer #' . ($transfer['flw_id'] ?: 'ok')
+        $newNote .= ' · Flutterwave transfer #' . ($flwId !== '' ? $flwId : 'ok')
+            . ($flwId !== '' ? ' · flw_payout=' . $flwId : '')
             . ' · ₦' . number_format((float)$transfer['amount_ngn'], 0)
-            . ' · status ' . ($transfer['status'] ?? '');
-        db()->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ? AND status = \'pending\'')
+            . ' · status ' . $flwStatus;
+        // Only mark completed when Flutterwave already reports success; otherwise leave
+        // pending with flw_payout= so webhook/reconcile can flip status automatically.
+        if (in_array($flwStatus, ['SUCCESSFUL', 'SUCCESS'], true)) {
+            db()->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ? AND status = \'pending\'')
+                ->execute([$newNote, 'flutterwave', (int)$tx['id']]);
+            ensure_user_payout_columns();
+            db()->prepare('UPDATE users SET payout_bank_locked = 1 WHERE id = ? AND payout_account != \'\'')
+                ->execute([(int)$tx['user_id']]);
+            notify_user(
+                (int)$tx['user_id'],
+                'Withdrawal paid',
+                'Your withdrawal of $' . money_f($payoutUsd) . ' was approved and sent via Flutterwave.',
+                'wallet'
+            );
+            return [
+                'ok' => true,
+                'mode' => 'flutterwave',
+                'flwId' => $flwId,
+                'amountNgn' => $transfer['amount_ngn'],
+                'status' => $flwStatus,
+            ];
+        }
+        db()->prepare('UPDATE transactions SET note = ?, method = ? WHERE id = ? AND status = \'pending\'')
             ->execute([$newNote, 'flutterwave', (int)$tx['id']]);
-        // Lock bank details after first successful bank payout
         ensure_user_payout_columns();
         db()->prepare('UPDATE users SET payout_bank_locked = 1 WHERE id = ? AND payout_account != \'\'')
             ->execute([(int)$tx['user_id']]);
         notify_user(
             (int)$tx['user_id'],
-            'Withdrawal paid',
-            'Your withdrawal of $' . money_f($payoutUsd) . ' was approved and sent via Flutterwave.',
+            'Withdrawal sending',
+            'Your withdrawal of $' . money_f($payoutUsd) . ' was approved and is being paid via Flutterwave.',
             'wallet'
         );
         return [
             'ok' => true,
             'mode' => 'flutterwave',
-            'flwId' => $transfer['flw_id'],
+            'flwId' => $flwId,
             'amountNgn' => $transfer['amount_ngn'],
-            'status' => $transfer['status'],
+            'status' => $flwStatus,
+            'awaiting' => true,
         ];
     }
 
@@ -584,4 +609,256 @@ function approve_withdrawal_payout(array $tx, string $actorNote = '', bool $forc
         'wallet'
     );
     return ['ok' => true, 'mode' => 'manual'];
+}
+
+function flw_verify_transfer_by_id($transferId): array {
+    $secret = flw_withdraw_secret();
+    if ($secret === '') {
+        return ['ok' => false, 'error' => 'Flutterwave withdraw secret key missing'];
+    }
+    $id = trim((string)$transferId);
+    if ($id === '') {
+        return ['ok' => false, 'error' => 'Missing transfer id'];
+    }
+    $res = flw_http('GET', 'https://api.flutterwave.com/v3/transfers/' . rawurlencode($id), null, $secret);
+    if (($res['status'] ?? '') === 'success' && !empty($res['data'])) {
+        return ['ok' => true, 'data' => $res['data']];
+    }
+    return ['ok' => false, 'error' => $res['message'] ?? 'Transfer verify failed', 'raw' => $res];
+}
+
+/**
+ * True when a pending withdrawal is already sent to Flutterwave and waiting on bank result
+ * (should not appear in the Owner "approve" queue again).
+ */
+function tx_is_flutterwave_payout_inflight(array $tx): bool {
+    if (($tx['type'] ?? '') !== 'withdrawal') return false;
+    $note = (string)($tx['note'] ?? '');
+    return (bool)preg_match('/flw_payout=\d+/i', $note);
+}
+
+function flw_extract_payout_id(string $note): string {
+    if (preg_match('/flw_payout=(\d+)/i', $note, $m)) {
+        return $m[1];
+    }
+    if (preg_match('/Flutterwave transfer #(\d+)/i', $note, $m)) {
+        return $m[1];
+    }
+    return '';
+}
+
+/**
+ * Apply a Flutterwave transfer status onto a withdrawal row (idempotent).
+ * SUCCESSFUL → completed; FAILED/CANCELLED → failed + wallet refund (once).
+ */
+function apply_flutterwave_transfer_status(array $tx, string $flwStatus, string $flwId = ''): array {
+    $status = strtoupper(trim($flwStatus));
+    $note = (string)($tx['note'] ?? '');
+    $id = (int)($tx['id'] ?? 0);
+    if ($id < 1) return ['ok' => false, 'error' => 'Invalid tx'];
+
+    if (in_array($status, ['SUCCESSFUL', 'SUCCESS'], true)) {
+        if (($tx['status'] ?? '') === 'completed') {
+            return ['ok' => true, 'already' => true, 'status' => 'completed'];
+        }
+        $newNote = preg_replace('/\s*·\s*status\s+[A-Z_]+/i', '', $note);
+        $newNote = rtrim((string)$newNote, " ·");
+        if ($flwId !== '' && stripos($newNote, 'flw_payout=') === false) {
+            $newNote .= ' · flw_payout=' . $flwId;
+        }
+        $newNote .= ' · status SUCCESSFUL';
+        db()->prepare('UPDATE transactions SET status = \'completed\', note = ?, method = ? WHERE id = ?')
+            ->execute([$newNote, 'flutterwave', $id]);
+        if (($tx['status'] ?? '') === 'pending') {
+            notify_user(
+                (int)$tx['user_id'],
+                'Withdrawal paid',
+                'Your withdrawal of $' . money_f((float)($tx['payout'] ?? $tx['amount'] ?? 0)) . ' was sent via Flutterwave.',
+                'wallet'
+            );
+        }
+        return ['ok' => true, 'status' => 'completed'];
+    }
+
+    if (in_array($status, ['FAILED', 'CANCELLED', 'CANCELED'], true)) {
+        if (in_array(($tx['status'] ?? ''), ['failed', 'cancelled'], true)) {
+            return ['ok' => true, 'already' => true, 'status' => $tx['status']];
+        }
+        // Refund only if we had already deducted (normal withdraw flow) and not yet refunded.
+        if (stripos($note, 'flw_refunded=1') === false && ($tx['status'] ?? '') !== 'cancelled') {
+            ensure_wallet_ledger_columns();
+            db()->prepare('UPDATE users SET balance = balance + ?, withdrawable_balance = withdrawable_balance + ?, total_withdrawals = GREATEST(0, total_withdrawals - ?) WHERE id = ?')
+                ->execute([
+                    money_f((float)$tx['amount']),
+                    money_f((float)$tx['amount']),
+                    money_f((float)$tx['amount']),
+                    (int)$tx['user_id'],
+                ]);
+            $note .= ' · flw_refunded=1';
+            notify_user(
+                (int)$tx['user_id'],
+                'Withdrawal failed',
+                'Flutterwave could not pay out $' . money_f((float)$tx['amount']) . '. The amount was returned to your withdrawable balance.',
+                'wallet'
+            );
+        }
+        $newNote = preg_replace('/\s*·\s*status\s+[A-Z_]+/i', '', $note);
+        $newNote = rtrim((string)$newNote, " ·") . ' · status ' . $status;
+        db()->prepare('UPDATE transactions SET status = \'failed\', note = ? WHERE id = ?')
+            ->execute([$newNote, $id]);
+        return ['ok' => true, 'status' => 'failed', 'refunded' => true];
+    }
+
+    // NEW / PENDING / processing — keep awaiting auto-update
+    $newNote = preg_replace('/\s*·\s*status\s+[A-Z_]+/i', '', $note);
+    $newNote = rtrim((string)$newNote, " ·");
+    if ($flwId !== '' && stripos($newNote, 'flw_payout=') === false) {
+        $newNote .= ' · flw_payout=' . $flwId;
+    }
+    $newNote .= ' · status ' . ($status !== '' ? $status : 'PENDING');
+    db()->prepare('UPDATE transactions SET note = ? WHERE id = ? AND status = \'pending\'')
+        ->execute([$newNote, $id]);
+    return ['ok' => true, 'status' => 'pending', 'flw' => $status];
+}
+
+/**
+ * Verify pending Flutterwave deposits / plan checkouts and flip status without owner Save.
+ */
+function reconcile_pending_flutterwave_charges(int $limit = 40): array {
+    ensure_tx_reference_column();
+    ensure_plan_tx_type();
+    $limit = max(1, min(80, $limit));
+    $stmt = db()->query(
+        "SELECT * FROM transactions
+         WHERE status = 'pending'
+           AND type IN ('deposit','plan')
+           AND reference IS NOT NULL AND reference != ''
+           AND (
+             method = 'flutterwave'
+             OR note LIKE 'Awaiting Flutterwave%'
+             OR note LIKE '%Flutterwave%'
+           )
+         ORDER BY id ASC
+         LIMIT {$limit}"
+    );
+    $rows = $stmt ? $stmt->fetchAll() : [];
+    $out = ['checked' => 0, 'completed' => 0, 'failed' => 0, 'pending' => 0, 'errors' => []];
+    $now = time();
+    foreach ($rows as $tx) {
+        $out['checked']++;
+        $ref = (string)($tx['reference'] ?? '');
+        if ($ref === '') {
+            $out['pending']++;
+            continue;
+        }
+        $verified = flw_verify_by_tx_ref($ref);
+        if (!empty($verified['ok']) && !empty($verified['data'])) {
+            $data = $verified['data'];
+            $flwStatus = strtolower((string)($data['status'] ?? ''));
+            if ($flwStatus === 'successful') {
+                $paid = (float)($data['amount'] ?? 0);
+                $flwId = (string)($data['id'] ?? '');
+                $paidCurrency = strtoupper((string)($data['currency'] ?? ''));
+                try {
+                    $settled = settle_flutterwave_payment($ref, $paid, $flwId, $paidCurrency);
+                    if (!empty($settled['ok'])) $out['completed']++;
+                    else {
+                        $out['errors'][] = $ref . ': ' . ($settled['error'] ?? 'settle failed');
+                        $out['pending']++;
+                    }
+                } catch (Throwable $e) {
+                    $out['errors'][] = $ref . ': ' . $e->getMessage();
+                    $out['pending']++;
+                }
+                continue;
+            }
+            if (in_array($flwStatus, ['failed', 'cancelled', 'canceled'], true)) {
+                db()->prepare('UPDATE transactions SET status = \'failed\', note = ? WHERE id = ? AND status = \'pending\'')
+                    ->execute([
+                        rtrim((string)$tx['note'], " ·") . ' · Flutterwave ' . $flwStatus,
+                        (int)$tx['id'],
+                    ]);
+                $out['failed']++;
+                continue;
+            }
+        }
+
+        // Abandoned checkout: no successful charge after 12h → auto-cancel (never credited)
+        $created = strtotime((string)($tx['created_at'] ?? '')) ?: 0;
+        if ($created > 0 && ($now - $created) > 12 * 3600) {
+            db()->prepare('UPDATE transactions SET status = \'cancelled\', note = ? WHERE id = ? AND status = \'pending\'')
+                ->execute([
+                    rtrim((string)$tx['note'], " ·") . ' · Auto-cancelled (checkout expired)',
+                    (int)$tx['id'],
+                ]);
+            $out['failed']++;
+            continue;
+        }
+        $out['pending']++;
+    }
+    return $out;
+}
+
+/**
+ * Poll Flutterwave for bank payouts that were approved but not yet SUCCESSFUL/FAILED.
+ */
+function reconcile_flutterwave_payouts(int $limit = 30): array {
+    $limit = max(1, min(60, $limit));
+    $stmt = db()->query(
+        "SELECT * FROM transactions
+         WHERE type = 'withdrawal'
+           AND (
+             (status = 'pending' AND note LIKE '%flw_payout=%')
+             OR (status = 'completed' AND note LIKE '%flw_payout=%' AND note NOT LIKE '%status SUCCESSFUL%' AND note LIKE '%status %')
+           )
+         ORDER BY id DESC
+         LIMIT {$limit}"
+    );
+    $rows = $stmt ? $stmt->fetchAll() : [];
+    $out = ['checked' => 0, 'completed' => 0, 'failed' => 0, 'pending' => 0];
+    foreach ($rows as $tx) {
+        $out['checked']++;
+        $flwId = flw_extract_payout_id((string)($tx['note'] ?? ''));
+        if ($flwId === '') {
+            $out['pending']++;
+            continue;
+        }
+        $verified = flw_verify_transfer_by_id($flwId);
+        if (empty($verified['ok'])) {
+            $out['pending']++;
+            continue;
+        }
+        $st = strtoupper((string)($verified['data']['status'] ?? ''));
+        $applied = apply_flutterwave_transfer_status($tx, $st, $flwId);
+        if (($applied['status'] ?? '') === 'completed') $out['completed']++;
+        elseif (($applied['status'] ?? '') === 'failed') $out['failed']++;
+        else $out['pending']++;
+    }
+    return $out;
+}
+
+/**
+ * Throttled sweep used by Owner Wallet, webhooks, and cron.
+ */
+function flw_reconcile_pending(bool $force = false, int $minSeconds = 90): array {
+    $last = (int)setting_get('flw_last_reconcile', '0');
+    if (!$force && $last > 0 && (time() - $last) < $minSeconds) {
+        return ['ok' => true, 'skipped' => true, 'last' => $last];
+    }
+    try {
+        setting_set('flw_last_reconcile', (string)time());
+    } catch (Throwable $e) {}
+    $charges = ['checked' => 0, 'completed' => 0, 'failed' => 0, 'pending' => 0];
+    $payouts = ['checked' => 0, 'completed' => 0, 'failed' => 0, 'pending' => 0];
+    try {
+        $charges = reconcile_pending_flutterwave_charges();
+    } catch (Throwable $e) {
+        $charges['error'] = $e->getMessage();
+    }
+    try {
+        $payouts = reconcile_flutterwave_payouts();
+    } catch (Throwable $e) {
+        $payouts['error'] = $e->getMessage();
+    }
+    return ['ok' => true, 'charges' => $charges, 'payouts' => $payouts];
 }

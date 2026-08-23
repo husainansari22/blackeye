@@ -778,6 +778,9 @@ try {
 
         case 'wallet.summary': {
             $u = require_user();
+            try { flw_reconcile_pending(false, 120); } catch (Throwable $e) {}
+            // reload user after possible credit
+            $u = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch() ?: $u;
             $stmt = db()->prepare('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 100');
             $stmt->execute([(int)$u['id']]);
             $rows = $stmt->fetchAll();
@@ -1028,22 +1031,88 @@ try {
 
         case 'webhook.flutterwave': {
             $payload = $body ?: read_json_body();
-            $event = $payload['event'] ?? '';
+            $event = (string)($payload['event'] ?? '');
             $data = $payload['data'] ?? [];
-            if ($event === 'charge.completed' && ($data['status'] ?? '') === 'successful') {
+            if (!is_array($data)) $data = [];
+
+            // Deposit / plan checkout confirmed
+            if ($event === 'charge.completed') {
                 $ref = (string)($data['tx_ref'] ?? '');
                 $paid = (float)($data['amount'] ?? 0);
                 $flwId = (string)($data['id'] ?? '');
                 $paidCurrency = strtoupper((string)($data['currency'] ?? ''));
-                if ($ref !== '') {
+                $chargeStatus = strtolower((string)($data['status'] ?? ''));
+                if ($ref !== '' && $chargeStatus === 'successful') {
                     try {
                         settle_flutterwave_payment($ref, $paid, $flwId, $paidCurrency);
                     } catch (Throwable $e) {
                         json_out(['ok' => false, 'error' => $e->getMessage()], 500);
                     }
+                } elseif ($ref !== '' && in_array($chargeStatus, ['failed', 'cancelled', 'canceled'], true)) {
+                    try {
+                        ensure_tx_reference_column();
+                        $row = db()->prepare("SELECT id, note FROM transactions WHERE reference = ? AND status = 'pending' AND type IN ('deposit','plan') LIMIT 1");
+                        $row->execute([$ref]);
+                        $tx = $row->fetch();
+                        if ($tx) {
+                            db()->prepare("UPDATE transactions SET status = 'failed', note = ? WHERE id = ?")
+                                ->execute([rtrim((string)$tx['note'], " ·") . ' · Flutterwave ' . $chargeStatus, (int)$tx['id']]);
+                        }
+                    } catch (Throwable $e) {}
                 }
             }
+
+            // Bank payout result (withdrawal)
+            if ($event === 'transfer.completed' || strpos($event, 'transfer.') === 0) {
+                $flwId = (string)($data['id'] ?? '');
+                $ref = (string)($data['reference'] ?? '');
+                $st = strtoupper((string)($data['status'] ?? ''));
+                try {
+                    ensure_tx_reference_column();
+                    $tx = null;
+                    if ($flwId !== '') {
+                        $q = db()->prepare("SELECT * FROM transactions WHERE type='withdrawal' AND note LIKE ? ORDER BY id DESC LIMIT 1");
+                        $q->execute(['%flw_payout=' . $flwId . '%']);
+                        $tx = $q->fetch() ?: null;
+                        if (!$tx) {
+                            $q = db()->prepare("SELECT * FROM transactions WHERE type='withdrawal' AND note LIKE ? ORDER BY id DESC LIMIT 1");
+                            $q->execute(['%Flutterwave transfer #' . $flwId . '%']);
+                            $tx = $q->fetch() ?: null;
+                        }
+                    }
+                    if (!$tx && $ref !== '') {
+                        $q = db()->prepare("SELECT * FROM transactions WHERE type='withdrawal' AND reference = ? LIMIT 1");
+                        $q->execute([$ref]);
+                        $tx = $q->fetch() ?: null;
+                    }
+                    if ($tx && $st !== '') {
+                        apply_flutterwave_transfer_status($tx, $st, $flwId);
+                    }
+                } catch (Throwable $e) {}
+            }
+
+            // Best-effort sweep so statuses keep catching up even if one webhook was missed
+            try {
+                flw_reconcile_pending(false, 120);
+            } catch (Throwable $e) {}
             json_out(['ok' => true]);
+        }
+
+        case 'cron.reconcile_payments': {
+            // Hostinger cron example:
+            // /api/index.php?action=cron.reconcile_payments&key=YOUR_KEY
+            $key = (string)($_GET['key'] ?? $body['key'] ?? '');
+            $expected = (string)(app_config()['cron_key'] ?? '');
+            if ($expected === '') {
+                $expected = (string)setting_get('cron_key', '');
+            }
+            if ($expected === '') {
+                $expected = substr(hash('sha256', (string)(app_config()['owner_password'] ?? 'owner') . '|acctventa-flw-cron'), 0, 32);
+            }
+            if ($key === '' || !hash_equals($expected, $key)) {
+                json_out(['ok' => false, 'error' => 'Unauthorized'], 401);
+            }
+            json_out(flw_reconcile_pending(true, 0));
         }
 
         case 'wallet.withdraw': {

@@ -199,7 +199,9 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         throw new RuntimeException('Payout failed: ' . ($pay['error'] ?? 'unknown error'));
                     }
                     $flash = (!empty($pay['mode']) && $pay['mode'] === 'flutterwave')
-                        ? ('Withdrawal sent via Flutterwave' . (!empty($pay['amountNgn']) ? ' (₦' . number_format((float)$pay['amountNgn']) . ')' : '') . '.')
+                        ? (!empty($pay['awaiting'])
+                            ? ('Withdrawal sent to Flutterwave' . (!empty($pay['amountNgn']) ? ' (₦' . number_format((float)$pay['amountNgn']) . ')' : '') . ' — status will update automatically when the bank confirms.')
+                            : ('Withdrawal paid via Flutterwave' . (!empty($pay['amountNgn']) ? ' (₦' . number_format((float)$pay['amountNgn']) . ')' : '') . '.'))
                         : 'Withdrawal marked paid manually.';
                     $skipGenericStatus = true;
                 }
@@ -327,7 +329,7 @@ $tab = $_GET['tab'] ?? 'overview';
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set3">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set4">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -1261,7 +1263,20 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php endif; ?>
 
     <?php if ($tab === 'wallet'):
-      $pendingWd = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='withdrawal' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
+      // Auto-sync Flutterwave deposit/plan/payout statuses so the table doesn't need manual Save
+      $flwSync = ['ok' => true, 'skipped' => true];
+      try {
+        $flwSync = flw_reconcile_pending(false, 60);
+      } catch (Throwable $e) {
+        $flwSync = ['ok' => false, 'error' => $e->getMessage()];
+      }
+      $pendingWdAll = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='withdrawal' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
+      $pendingWd = array_values(array_filter($pendingWdAll, static function ($t) {
+        return !tx_is_flutterwave_payout_inflight($t);
+      }));
+      $sendingWd = array_values(array_filter($pendingWdAll, static function ($t) {
+        return tx_is_flutterwave_payout_inflight($t);
+      }));
       $pendingDep = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='deposit' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
       $txs = db()->query('SELECT t.*, u.email FROM transactions t JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC LIMIT 200')->fetchAll();
     ?>
@@ -1269,17 +1284,21 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="av-page-head">
           <div>
             <h2 class="av-page-title">Wallet</h2>
-            <p class="av-page-sub">Approve withdrawals, credit crypto deposits, and browse recent transactions.</p>
+            <p class="av-page-sub">Approve withdrawals &amp; crypto deposits. Flutterwave deposits, plans, and payouts update their status automatically.</p>
           </div>
-          <div class="av-page-meta">
-            <span class="av-chip <?= $pendingWd ? 'is-hot' : '' ?>"><strong><?= count($pendingWd) ?></strong> withdrawals</span>
-            <span class="av-chip <?= $pendingDep ? 'is-hot' : '' ?>"><strong><?= count($pendingDep) ?></strong> deposits</span>
+          <div class="av-page-meta av-page-meta-static" aria-label="Pending counts">
+            <span class="av-stat-pill"><strong><?= count($pendingWd) ?></strong> need approval</span>
+            <span class="av-stat-pill"><strong><?= count($sendingWd) ?></strong> sending</span>
+            <span class="av-stat-pill"><strong><?= count($pendingDep) ?></strong> deposits</span>
           </div>
         </div>
+        <?php if (empty($flwSync['skipped'])): ?>
+          <p class="text-[11px] av-muted mb-2 px-1">Synced with Flutterwave<?= !empty($flwSync['charges']['completed']) || !empty($flwSync['payouts']['completed']) ? ' — statuses updated' : '' ?>.</p>
+        <?php endif; ?>
       <div class="av-panel mb-3">
         <div class="av-panel-head">Pending withdrawals</div>
         <div class="av-panel-body">
-        <p class="text-xs av-muted mb-3">Approve bank withdrawals to pay via Flutterwave (from your Flutterwave balance) when Withdraw gateway is set to Flutterwave. Crypto stays manual. Rejecting refunds the user’s wallet.</p>
+        <p class="text-xs av-muted mb-3">Approve bank withdrawals to pay via Flutterwave (from your Flutterwave balance) when Withdraw gateway is set to Flutterwave. Crypto stays manual. Rejecting refunds the user’s wallet. After you approve, Flutterwave status flips to completed/failed by itself.</p>
         <?php if (!$pendingWd): ?>
           <p class="text-sm">No pending withdrawals.</p>
         <?php else: ?>
@@ -1307,18 +1326,31 @@ $tab = $_GET['tab'] ?? 'overview';
           <?php endforeach; ?>
           </div>
         <?php endif; ?>
+        <?php if ($sendingWd): ?>
+          <div class="mt-4 space-y-2">
+            <p class="text-xs font-semibold av-muted">Sending via Flutterwave (auto-updates)</p>
+            <?php foreach ($sendingWd as $t): ?>
+              <div class="av-card p-3 text-xs space-y-1 opacity-90">
+                <p class="font-bold text-sm"><?= h($t['name']) ?> · $<?= number_format((float)$t['amount'], 2) ?></p>
+                <p class="break-all text-slate-500"><?= h($t['note']) ?></p>
+                <p class="text-[10px] text-amber-600 font-semibold">Waiting on Flutterwave — status updates automatically</p>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
         </div>
       </div>
       <div class="av-panel mb-3">
         <div class="av-panel-head">Pending deposits</div>
         <div class="av-panel-body">
-        <p class="text-xs av-muted mb-3">Crypto deposits show coin, network, and address. Approve only after on-chain confirmation.</p>
+        <p class="text-xs av-muted mb-3">Flutterwave card/bank deposits complete themselves after payment. Crypto still needs your on-chain confirmation.</p>
         <?php if (!$pendingDep): ?>
           <p class="text-sm">No pending deposits.</p>
         <?php else: ?>
           <div class="space-y-2">
           <?php foreach ($pendingDep as $t):
             $isCrypto = strtolower((string)($t['method'] ?? '')) === 'crypto';
+            $isFlw = !$isCrypto && (strtolower((string)($t['method'] ?? '')) === 'flutterwave' || stripos((string)($t['note'] ?? ''), 'Flutterwave') !== false);
           ?>
             <div class="av-card p-3 space-y-2 <?= $isCrypto ? 'border border-amber-400/50' : '' ?>">
               <div class="text-xs space-y-1">
@@ -1326,7 +1358,11 @@ $tab = $_GET['tab'] ?? 'overview';
                 <p class="text-base font-extrabold text-brand">$<?= number_format((float)$t['amount'], 2) ?> <span class="text-[10px] font-semibold uppercase tracking-wide <?= $isCrypto ? 'text-amber-600' : 'text-slate-500' ?>"><?= h($t['method'] ?: 'deposit') ?></span></p>
                 <p class="text-slate-600 dark:text-slate-300 break-all"><?= h($t['note']) ?></p>
                 <p class="font-mono text-[10px] text-slate-400">Ref <?= h($t['reference'] ?? '') ?> · <?= h($t['created_at'] ?? '') ?></p>
+                <?php if ($isFlw): ?>
+                  <p class="text-[10px] text-sky-500 font-semibold">Flutterwave — waiting for auto-confirm (no manual Save needed)</p>
+                <?php endif; ?>
               </div>
+              <?php if ($isCrypto || !$isFlw): ?>
               <div class="flex flex-wrap gap-2">
                 <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="completed"><button class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Credit wallet</button></form>
                 <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="cancelled"><button class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Reject</button></form>
@@ -1336,6 +1372,7 @@ $tab = $_GET['tab'] ?? 'overview';
                   <button class="bg-sky-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Open user account</button>
                 </form>
               </div>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
           </div>
@@ -1346,16 +1383,31 @@ $tab = $_GET['tab'] ?? 'overview';
         <table class="w-full text-left text-xs">
           <thead><tr><th class="p-3">ID</th><th class="p-3">User</th><th class="p-3">Type</th><th class="p-3">Amount</th><th class="p-3">Fee</th><th class="p-3">Status</th><th class="p-3">Note</th><th class="p-3">Update</th></tr></thead>
           <tbody>
-          <?php foreach ($txs as $t): ?>
+          <?php foreach ($txs as $t):
+            $autoFlw = (
+              in_array(($t['type'] ?? ''), ['deposit', 'plan', 'withdrawal'], true)
+              && (
+                strtolower((string)($t['method'] ?? '')) === 'flutterwave'
+                || stripos((string)($t['note'] ?? ''), 'Flutterwave') !== false
+                || stripos((string)($t['note'] ?? ''), 'flw_payout=') !== false
+                || stripos((string)($t['note'] ?? ''), 'Awaiting Flutterwave') !== false
+              )
+            );
+          ?>
             <tr class="border-t">
               <td class="p-3"><?= (int)$t['id'] ?></td>
               <td class="p-3"><?= h($t['email']) ?></td>
               <td class="p-3"><?= h($t['type']) ?></td>
               <td class="p-3">$<?= number_format((float)$t['amount'], 2) ?></td>
               <td class="p-3">$<?= number_format((float)$t['fee'], 2) ?></td>
-              <td class="p-3"><?= h($t['status']) ?></td>
-              <td class="p-3 max-w-[180px] truncate"><?= h($t['note']) ?></td>
               <td class="p-3">
+                <span class="av-status-badge av-status-<?= h($t['status']) ?>"><?= h($t['status']) ?></span>
+              </td>
+              <td class="p-3 max-w-[180px] truncate" title="<?= h($t['note']) ?>"><?= h($t['note']) ?></td>
+              <td class="p-3">
+                <?php if ($autoFlw && in_array(($t['status'] ?? ''), ['pending', 'completed', 'failed'], true)): ?>
+                  <span class="text-[10px] av-muted font-semibold">Auto · Flutterwave</span>
+                <?php else: ?>
                 <form method="post" class="flex gap-1">
                   <input type="hidden" name="form" value="tx_status">
                   <input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>">
@@ -1366,6 +1418,7 @@ $tab = $_GET['tab'] ?? 'overview';
                   </select>
                   <button class="bg-brand text-white px-2 rounded">Save</button>
                 </form>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

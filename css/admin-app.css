@@ -1169,3 +1169,45 @@ html.dark .av-app thead {
   letter-spacing: -0.02em;
   padding-right: 3.2rem; /* optical center against back link */
 }
+
+/* Non-clickable wallet counts (not pill tabs) */
+.av-page-meta-static {
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+.av-stat-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.28rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 8px;
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  color: var(--av-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.av-stat-pill strong {
+  color: var(--av-text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.av-status-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--av-border) 65%, transparent);
+  color: var(--av-muted);
+}
+.av-status-completed { color: #059669; background: rgba(16,185,129,0.15); }
+.av-status-pending { color: #d97706; background: rgba(245,158,11,0.15); }
+.av-status-failed,
+.av-status-cancelled { color: #dc2626; background: rgba(239,68,68,0.12); }
