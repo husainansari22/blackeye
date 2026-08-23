@@ -1083,3 +1083,89 @@ html.dark .av-app thead {
 .av-settings-row.is-static {
   cursor: default;
 }
+
+/* Compact non-clickable totals under Overview title */
+.av-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 1.05rem;
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 14px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+.av-mini-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.62rem 0.28rem;
+  text-align: center;
+  min-width: 0;
+  border-right: 1px solid var(--av-border);
+}
+.av-mini-stat:last-child { border-right: none; }
+.av-mini-stat .k {
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--av-muted);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.av-mini-stat .v {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--av-text);
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 379px) {
+  .av-mini-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .av-mini-stat:nth-child(3) { border-right: none; }
+  .av-mini-stat:nth-child(n+4) {
+    border-top: 1px solid var(--av-border);
+  }
+  .av-mini-stat:nth-child(5) { grid-column: span 2; }
+}
+
+/* Sub-page nav (replaces pill tabs) */
+.av-settings-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: 34rem;
+  margin: 0 auto 0.15rem;
+  padding: 0 0.15rem;
+}
+.av-settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: var(--av-brand) !important;
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-decoration: none !important;
+  padding: 0.35rem 0.15rem;
+  -webkit-tap-highlight-color: transparent;
+}
+.av-settings-back i { font-size: 0.72rem; }
+.av-settings-nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 750;
+  color: var(--av-text);
+  letter-spacing: -0.02em;
+  padding-right: 3.2rem; /* optical center against back link */
+}

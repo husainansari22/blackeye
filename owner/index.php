@@ -327,7 +327,7 @@ $tab = $_GET['tab'] ?? 'overview';
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set1">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set3">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -369,12 +369,39 @@ $tab = $_GET['tab'] ?? 'overview';
     'deposit_pending' => (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='deposit' AND status='pending'")->fetch()['c'],
     'volume' => (float)db()->query("SELECT COALESCE(SUM(price),0) s FROM orders WHERE status='completed'")->fetch()['s'],
     'kyc_pending' => 0,
+    'commission_total' => 0.0,
+    'deposits_total' => 0.0,
+    'withdrawals_total' => 0.0,
+    'uploads_total' => 0,
   ];
   try {
     ensure_kyc_tables();
     $stats['kyc_pending'] = (int)db()->query("SELECT COUNT(*) c FROM kyc_submissions WHERE status IN ('needs_review','blurry_review','pending')")->fetch()['c'];
   } catch (Throwable $e) {}
+  try {
+    ensure_marketplace_extras();
+    $stats['commission_total'] = (float)db()->query("SELECT COALESCE(SUM(platform_fee),0) s FROM orders WHERE status='completed' AND platform_fee IS NOT NULL")->fetch()['s'];
+  } catch (Throwable $e) {
+    try {
+      $rate = (float)setting_get('sales_commission_rate', 0.22);
+      $stats['commission_total'] = round($stats['volume'] * $rate, 2);
+    } catch (Throwable $e2) {}
+  }
+  try {
+    $stats['deposits_total'] = (float)db()->query("SELECT COALESCE(SUM(amount),0) s FROM transactions WHERE type='deposit' AND status='completed'")->fetch()['s'];
+  } catch (Throwable $e) {}
+  try {
+    $stats['withdrawals_total'] = (float)db()->query("SELECT COALESCE(SUM(amount),0) s FROM transactions WHERE type='withdrawal' AND status='completed'")->fetch()['s'];
+  } catch (Throwable $e) {}
+  try {
+    $stats['uploads_total'] = (int)db()->query('SELECT COUNT(*) c FROM ads')->fetch()['c'];
+  } catch (Throwable $e) {}
   $gw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
+  $tabLabels = [
+    'overview'=>'Overview','users'=>'Users','kyc'=>'KYC','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats',
+    'reports'=>'Reports','wallet'=>'Wallet','support'=>'Inbox','currencies'=>'Currencies','gateways'=>'Gateways',
+    'settings'=>'Settings','plans'=>'Plans',
+  ];
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
@@ -391,15 +418,39 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php if ($flash): ?><div class="av-ok text-sm px-4 py-3"><?= h($flash) ?></div><?php endif; ?>
     <?php if ($error): ?><div class="av-warn text-sm px-4 py-3"><?= h($error) ?></div><?php endif; ?>
 
-    <div class="av-tabs">
-      <?php foreach (['overview'=>'Overview','users'=>'Users','kyc'=>'KYC','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats','reports'=>'Reports','wallet'=>'Wallet','support'=>'Inbox','currencies'=>'Currencies','gateways'=>'Gateways','settings'=>'Settings','plans'=>'Plans'] as $k=>$label): ?>
-        <a href="?tab=<?= $k ?>" class="av-tab <?= $tab===$k?'av-tab-active':'' ?>"><?= $label ?></a>
-      <?php endforeach; ?>
-    </div>
+    <?php if ($tab !== 'overview'): ?>
+      <div class="av-settings-nav">
+        <a href="?tab=overview" class="av-settings-back"><i class="fa-solid fa-chevron-left"></i> Overview</a>
+        <span class="av-settings-nav-title"><?= h($tabLabels[$tab] ?? ucfirst($tab)) ?></span>
+      </div>
+    <?php endif; ?>
 
     <?php if ($tab === 'overview'): ?>
       <div class="av-page av-settings-page">
         <h2 class="av-settings-title">Overview</h2>
+
+        <div class="av-mini-stats" aria-label="Site totals">
+          <div class="av-mini-stat">
+            <span class="k">Commission</span>
+            <span class="v">$<?= number_format($stats['commission_total'], 2) ?></span>
+          </div>
+          <div class="av-mini-stat">
+            <span class="k">Deposits</span>
+            <span class="v">$<?= number_format($stats['deposits_total'], 2) ?></span>
+          </div>
+          <div class="av-mini-stat">
+            <span class="k">Withdrawals</span>
+            <span class="v">$<?= number_format($stats['withdrawals_total'], 2) ?></span>
+          </div>
+          <div class="av-mini-stat">
+            <span class="k">Sales</span>
+            <span class="v">$<?= number_format($stats['volume'], 2) ?></span>
+          </div>
+          <div class="av-mini-stat">
+            <span class="k">Uploads</span>
+            <span class="v"><?= (int)$stats['uploads_total'] ?></span>
+          </div>
+        </div>
 
         <div class="av-settings-group">
           <a class="av-settings-row" href="?tab=wallet">
@@ -481,13 +532,6 @@ $tab = $_GET['tab'] ?? 'overview';
           </a>
         </div>
 
-        <div class="av-settings-group">
-          <div class="av-settings-row is-static">
-            <span class="av-settings-icon" style="background:#22c55e"><i class="fa-solid fa-chart-line"></i></span>
-            <span class="av-settings-label">Completed volume</span>
-            <span class="av-settings-value">$<?= number_format($stats['volume'], 2) ?></span>
-          </div>
-        </div>
       </div>
     <?php endif; ?>
 
