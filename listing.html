@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Listing | Acctventa</title>
+  <meta name="description" content="View this digital product listing on Acctventa.">
+  <link rel="canonical" id="canonicalLink" href="https://acctventa.com/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta property="og:site_name" content="Acctventa">
+  <meta property="og:title" id="ogTitle" content="Acctventa Listing">
+  <meta property="og:description" id="ogDesc" content="Buy digital accounts securely with escrow on Acctventa.">
+  <meta property="og:url" id="ogUrl" content="https://acctventa.com/">
+  <meta property="og:image" content="https://acctventa.com/img/brand/og-cover.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{brandPrimary:'#0ea5e9',brandHover:'#0284c7',darkBg:'#0f172a'}}}}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/legal.css?v=20260823c1">
+  <script src="/js/api-client.js?v=20260823c1"></script>
+</head>
+<body class="av-pub bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+  <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/img/brand/icon-192.png" alt="Acctventa" class="w-8 h-8 rounded-lg">
+        <span class="font-extrabold tracking-tight">acctventa</span>
+      </a>
+      <div class="flex gap-3 text-sm font-semibold">
+        <a href="/dashboard.html#home" class="text-brandPrimary">Marketplace</a>
+        <a href="/login" class="text-slate-600 dark:text-slate-300">Login</a>
+      </div>
+    </div>
+  </header>
+  <main class="av-pub-wrap max-w-2xl mx-auto px-4 py-6" id="listingRoot">
+    <p class="text-sm text-slate-500">Loading listing…</p>
+  </main>
+  <script>
+  (async function () {
+    const root = document.getElementById('listingRoot');
+    const parts = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    const key = parts[parts.length - 1] || new URLSearchParams(location.search).get('id') || '';
+    if (!key) {
+      root.innerHTML = '<h1>Listing not found</h1><p><a href="/dashboard.html#home">Browse marketplace</a></p>';
+      return;
+    }
+    try {
+      let res;
+      if (window.AcctventaApi && typeof window.AcctventaApi.marketGet === 'function') {
+        res = await window.AcctventaApi.marketGet({ id: key, slug: key });
+      } else {
+        res = await fetch('/api/index.php?action=market.get&id=' + encodeURIComponent(key) + '&slug=' + encodeURIComponent(key)).then(r => r.json());
+      }
+      if (!res.ok) throw new Error(res.error || 'Not found');
+      const listing = res.listing || res.ad || res;
+      const title = listing.title || 'Listing';
+      const price = Number(listing.price || 0).toFixed(2);
+      const desc = listing.description || 'Digital product on Acctventa.';
+      const seller = listing.sellerName || listing.seller_name || 'Seller';
+      const sellerId = listing.sellerId || listing.seller_id || '';
+      const slug = listing.publicSlug || listing.public_slug || listing.id;
+      const url = 'https://acctventa.com/listing/' + encodeURIComponent(slug);
+      document.title = title + ' | Acctventa';
+      document.getElementById('canonicalLink').href = url;
+      document.getElementById('ogTitle').content = title;
+      document.getElementById('ogDesc').content = desc.slice(0, 140);
+      document.getElementById('ogUrl').content = url;
+      root.innerHTML = `
+        <p class="text-xs font-bold uppercase tracking-widest text-brandPrimary mb-2">${escapeHtml(listing.category || 'Digital product')}</p>
+        <h1 class="text-2xl font-extrabold tracking-tight mb-2">${escapeHtml(title)}</h1>
+        <p class="text-sm text-slate-500 mb-4">Sold by
+          <a class="text-brandPrimary font-semibold" href="/seller/${encodeURIComponent(sellerId || seller)}">${escapeHtml(seller)}</a>
+          ${listing.sellerRating ? ' · ★ ' + Number(listing.sellerRating).toFixed(1) : ''}
+        </p>
+        <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">${escapeHtml(desc)}</p>
+        ${listing.previewLink ? `<p class="mb-4"><a class="text-brandPrimary font-semibold underline" href="${escapeAttr(listing.previewLink)}" target="_blank" rel="noopener">Open preview link</a></p>` : ''}
+        <div class="flex items-end justify-between gap-4 mb-6">
+          <div>
+            <p class="text-xs text-slate-500">Price</p>
+            <p class="text-3xl font-extrabold text-brandPrimary">$${price}</p>
+          </div>
+          <p class="text-[11px] text-emerald-600 max-w-[12rem] text-right"><i class="fa-solid fa-shield-halved"></i> Escrow protected · 60‑min dispute window</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <a class="av-pub-cta !mt-0 text-center" href="/dashboard.html#home?buy=${encodeURIComponent(listing.id)}">Buy on Acctventa</a>
+          <button type="button" onclick="navigator.clipboard.writeText('${url}'); this.textContent='Link copied';" class="inline-flex items-center justify-center font-bold px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600">Share link</button>
+        </div>`;
+    } catch (e) {
+      root.innerHTML = '<h1>This listing is unavailable</h1><p class="text-sm text-slate-500">' + escapeHtml(e.message || 'Not found') + '</p><p class="mt-4"><a class="text-brandPrimary" href="/dashboard.html#home">Browse marketplace</a></p>';
+    }
+    function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));}
+    function escapeAttr(s){return escapeHtml(s).replace(/`/g,'');}
+  })();
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" defer></script>
+</body>
+</html>

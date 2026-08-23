@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Seller storefront | Acctventa</title>
+  <meta name="description" content="Browse this merchant’s listings on Acctventa.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0ea5e9">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{brandPrimary:'#0ea5e9',brandHover:'#0284c7',darkBg:'#0f172a'}}}}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/legal.css?v=20260823c1">
+  <script src="/js/api-client.js?v=20260823c1"></script>
+</head>
+<body class="av-pub bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+  <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/img/brand/icon-192.png" alt="Acctventa" class="w-8 h-8 rounded-lg">
+        <span class="font-extrabold tracking-tight">acctventa</span>
+      </a>
+      <a href="/dashboard.html#home" class="text-sm font-semibold text-brandPrimary">Marketplace</a>
+    </div>
+  </header>
+  <main class="max-w-2xl mx-auto px-4 py-6" id="sellerRoot">
+    <p class="text-sm text-slate-500">Loading storefront…</p>
+  </main>
+  <script>
+  (async function () {
+    const root = document.getElementById('sellerRoot');
+    const key = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '';
+    const esc = (s) => String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    try {
+      let res;
+      if (window.AcctventaApi && window.AcctventaApi.request) {
+        res = await window.AcctventaApi.request('sellers.storefront', { query: { id: key, sellerId: key } });
+      } else {
+        res = await fetch('/api/index.php?action=sellers.storefront&id=' + encodeURIComponent(key)).then(r => r.json());
+      }
+      if (!res.ok) throw new Error(res.error || 'Seller not found');
+      const seller = res.seller || res.profile || {};
+      const listings = res.listings || res.ads || [];
+      const name = seller.name || seller.business_username || 'Seller';
+      document.title = name + ' · Storefront | Acctventa';
+      root.innerHTML = `
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-14 h-14 rounded-full bg-brandPrimary text-white flex items-center justify-center text-xl font-bold overflow-hidden">
+            ${seller.avatar_url || seller.avatarUrl ? `<img src="${esc(seller.avatar_url||seller.avatarUrl)}" class="w-full h-full object-cover" alt="">` : esc(name).slice(0,1).toUpperCase()}
+          </div>
+          <div>
+            <h1 class="text-xl font-extrabold">${esc(name)}${seller.is_verified || seller.isVerified ? ' <span class="text-brandPrimary text-sm">✓ Verified</span>' : ''}</h1>
+            <p class="text-xs text-slate-500">${(() => { const r = seller.rating; const avg = r && typeof r === 'object' ? Number(r.average||0) : Number(r||0); return avg ? '★ ' + avg.toFixed(1) + ' · ' : ''; })()}${listings.length} live listing${listings.length===1?'':'s'}${seller.completedSales ? ' · ' + seller.completedSales + ' sales' : ''}</p>
+          </div>
+        </div>
+        <div class="space-y-3" id="sellerListings">
+          ${listings.length ? listings.map(l => {
+            const slug = l.publicSlug || l.public_slug || l.id;
+            return `<a href="/listing/${encodeURIComponent(slug)}" class="block rounded-2xl border border-slate-200 dark:border-slate-800 p-4 hover:border-brandPrimary/50 transition">
+              <div class="flex justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="font-bold truncate">${esc(l.title)}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">${esc(l.category||'')}</p>
+                </div>
+                <p class="font-extrabold text-brandPrimary shrink-0">$${Number(l.price||0).toFixed(2)}</p>
+              </div>
+            </a>`;
+          }).join('') : '<p class="text-sm text-slate-500">No live listings right now.</p>'}
+        </div>`;
+    } catch (e) {
+      root.innerHTML = '<h1 class="text-xl font-bold mb-2">Storefront unavailable</h1><p class="text-sm text-slate-500">' + esc(e.message) + '</p>';
+    }
+  })();
+  </script>
+</body>
+</html>

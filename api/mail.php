@@ -168,24 +168,54 @@ function email_order_notice(string $name, string $title, string $role, string $a
     $txLine = $safeTx !== ''
         ? '<p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#94a3b8;">Transaction ID: <strong style="color:#fff;font-family:monospace;">' . $safeTx . '</strong></p>'
         : '';
+    $dash = mail_cfg()['app_url'] . '/dashboard.html#orders';
     if ($role === 'seller') {
         $headline = 'Congratulations — you made a sale!';
-        $body = 'Great news! Someone just bought <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>.';
+        $body = 'Great news! A buyer just purchased <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>.';
         if ($releaseNote !== '') {
             $body .= ' ' . htmlspecialchars($releaseNote, ENT_QUOTES, 'UTF-8');
         }
-        $subject = 'Congratulations! Sale confirmed · ' . $title;
+        $subject = '🎉 Sale confirmed · ' . $title . ' · Acctventa';
+        $extra = '
+      <div style="margin:18px 0;padding:16px;border-radius:14px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.35);">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.04em;">What to do next</p>
+        <p style="margin:0;font-size:13px;line-height:1.55;color:#cbd5e1;">Open the order chat inside Acctventa only. Never share WhatsApp or Telegram contacts — off-platform messages are blocked. Deliver login details in chat so the buyer can confirm.</p>
+      </div>';
+        $btn = email_button('View your sale', $dash);
     } else {
         $headline = 'Purchase confirmed';
-        $body = 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>) is confirmed. Open Orders to view credentials or chat with the seller.';
-        $subject = $headline . ' · ' . $title;
+        $body = 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>) is confirmed. Open Orders to view credentials and chat with the seller.';
+        $subject = 'Purchase confirmed · ' . $title . ' · Acctventa';
+        $extra = '
+      <div style="margin:18px 0;padding:16px;border-radius:14px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.35);">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.04em;">Buyer protection</p>
+        <p style="margin:0;font-size:13px;line-height:1.55;color:#cbd5e1;">You have <strong style="color:#fff;">60 minutes</strong> to open a dispute if login fails or the seller stops responding. After that, contact Support for warranty review (24h).</p>
+      </div>';
+        $btn = email_button('Open your order', $dash);
     }
-    $dash = mail_cfg()['app_url'] . '/dashboard.html';
     $inner = '
       <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">' . $headline . '</h1>
       <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', ' . $body . '</p>
-      ' . $txLine . '
-      <div style="text-align:center;margin:24px 0;">' . email_button('View in dashboard', $dash) . '</div>';
+      ' . $txLine . $extra . '
+      <div style="text-align:center;margin:24px 0;">' . $btn . '</div>';
     $html = email_layout($headline, $inner, $headline . ' on Acctventa');
     return ['subject' => $subject, 'html' => $html, 'text' => strip_tags($body) . ($txid !== '' ? ' TXID: ' . $txid : '')];
+}
+
+function email_order_status_update(string $name, string $title, string $statusLabel, string $txid = '', string $detail = ''): array {
+    $safeName = htmlspecialchars($name !== '' ? $name : 'there', ENT_QUOTES, 'UTF-8');
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $safeStatus = htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8');
+    $safeTx = htmlspecialchars($txid, ENT_QUOTES, 'UTF-8');
+    $safeDetail = htmlspecialchars($detail, ENT_QUOTES, 'UTF-8');
+    $dash = mail_cfg()['app_url'] . '/dashboard.html#orders';
+    $subject = 'Order update · ' . $statusLabel . ' · ' . $title;
+    $inner = '
+      <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">Order update</h1>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', your order <strong style="color:#fff;">' . $safeTitle . '</strong> is now <strong style="color:#0ea5e9;">' . $safeStatus . '</strong>.</p>
+      ' . ($safeTx !== '' ? '<p style="margin:0 0 12px;font-size:13px;color:#94a3b8;">TXID: <strong style="color:#fff;font-family:monospace;">' . $safeTx . '</strong></p>' : '') . '
+      ' . ($safeDetail !== '' ? '<p style="margin:0 0 18px;font-size:13px;line-height:1.55;color:#cbd5e1;">' . $safeDetail . '</p>' : '') . '
+      <div style="text-align:center;margin:24px 0;">' . email_button('View order', $dash) . '</div>';
+    $html = email_layout('Order update', $inner, 'Order status: ' . $statusLabel);
+    return ['subject' => $subject, 'html' => $html, 'text' => 'Order ' . $title . ' is now ' . $statusLabel . ($txid !== '' ? ' TXID: ' . $txid : '')];
 }

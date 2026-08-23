@@ -151,6 +151,9 @@
     market(params) {
       return request('market.list', { query: params });
     },
+    marketGet(params) {
+      return request('market.get', { query: params });
+    },
     myAds() {
       return request('ads.mine');
     },
@@ -269,6 +272,58 @@
     },
     staffReports() {
       return request('staff.reports', { asStaff: true });
+    },
+    // -------- Cart --------
+    cartList() {
+      return request('cart.list');
+    },
+    cartAdd(payload) {
+      return request('cart.add', { method: 'POST', body: payload });
+    },
+    cartRemove(payload) {
+      return request('cart.remove', { method: 'POST', body: payload });
+    },
+    cartClear() {
+      return request('cart.clear', { method: 'POST', body: {} });
+    },
+    cartCheckout() {
+      return request('cart.checkout', { method: 'POST', body: {} });
+    },
+    // -------- Wishlist --------
+    wishlistList() {
+      return request('wishlist.list');
+    },
+    wishlistAdd(payload) {
+      return request('wishlist.add', { method: 'POST', body: payload });
+    },
+    wishlistRemove(payload) {
+      return request('wishlist.remove', { method: 'POST', body: payload });
+    },
+    // -------- Disputes --------
+    openDispute(payload) {
+      return request('disputes.open', { method: 'POST', body: payload });
+    },
+    myDisputes() {
+      return request('disputes.mine');
+    },
+    getDispute(query) {
+      return request('disputes.get', { query });
+    },
+    staffDisputesList(query) {
+      return request('staff.disputes.list', { asStaff: true, query });
+    },
+    staffDisputeResolve(payload) {
+      return request('staff.disputes.resolve', { method: 'POST', body: payload, asStaff: true });
+    },
+    staffDeductRefund(payload) {
+      return request('staff.orders.deduct_refund', { method: 'POST', body: payload, asStaff: true });
+    },
+    // -------- Social proof / storefronts --------
+    socialProof() {
+      return request('stats.social_proof');
+    },
+    sellerStorefront(query) {
+      return request('sellers.storefront', { query });
     },
   };
 

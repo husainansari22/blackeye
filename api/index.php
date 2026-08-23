@@ -488,6 +488,7 @@ try {
             }
             db()->prepare("UPDATE orders SET status = 'disputed', order_status_step = 'disputed' WHERE id = ?")->execute([$orderId]);
             notify_user((int)$o['seller_id'], 'Dispute opened', 'Buyer opened a dispute on order #' . $o['public_id'] . '.', 'dispute');
+            notify_order_parties_email($o, 'Dispute opened', 'The buyer opened a dispute within the 60-minute window. Our team will review the order chat. Keep all communication on Acctventa.');
             $d = db()->prepare('SELECT * FROM disputes WHERE order_id = ? LIMIT 1');
             $d->execute([$orderId]);
             json_out(['ok' => true, 'dispute' => dispute_public($d->fetch())]);
@@ -572,7 +573,9 @@ try {
                 }
                 db()->prepare("UPDATE disputes SET status = 'resolved_refund', admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?")
                     ->execute([$note, $staff['staff_name'] ?? 'admin', $disputeId]);
+                db()->prepare("UPDATE orders SET order_status_step = 'refunded' WHERE id = ?")->execute([(int)$order['id']]);
                 notify_user((int)$d['buyer_id'], 'Dispute resolved', 'Your dispute on order #' . $order['public_id'] . ' was resolved with a refund.', 'dispute');
+                notify_order_parties_email($order, 'Refunded after dispute', 'Admin resolved the dispute in the buyer’s favor. The purchase amount was refunded to the buyer and deducted from the seller (including platform commission clawback).' . ($note !== '' ? ' Note: ' . $note : ''));
             } elseif ($decision === 'deny') {
                 db()->prepare("UPDATE disputes SET status = 'resolved_denied', admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?")
                     ->execute([$note, $staff['staff_name'] ?? 'admin', $disputeId]);
@@ -580,10 +583,14 @@ try {
                     ->execute([(int)$order['id']]);
                 notify_user((int)$d['buyer_id'], 'Dispute resolved', 'Your dispute on order #' . $order['public_id'] . ' was reviewed and denied.' . ($note !== '' ? ' ' . $note : ''), 'dispute');
                 notify_user((int)$d['seller_id'], 'Dispute resolved', 'The dispute on order #' . $order['public_id'] . ' was denied — your funds are confirmed.', 'dispute');
+                notify_order_parties_email($order, 'Dispute denied', 'Admin reviewed and denied the dispute. Seller funds remain confirmed.' . ($note !== '' ? ' Note: ' . $note : ''));
             } elseif ($decision === 'note') {
                 $newStatus = ($d['status'] === 'open') ? 'under_review' : $d['status'];
                 db()->prepare('UPDATE disputes SET status = ?, admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
                     ->execute([$newStatus, $note, $staff['staff_name'] ?? 'admin', $disputeId]);
+                if ($newStatus === 'under_review') {
+                    notify_order_parties_email($order, 'Dispute under review', 'An admin is reviewing this dispute. Please stay available in the order chat.');
+                }
             } else {
                 json_out(['ok' => false, 'error' => 'Unknown decision. Use refund_buyer, deny, or note.'], 422);
             }
@@ -607,6 +614,8 @@ try {
             } catch (Throwable $e) {
                 json_out(['ok' => false, 'error' => $e->getMessage()], 400);
             }
+            db()->prepare("UPDATE orders SET order_status_step = 'warranty_refunded' WHERE id = ?")->execute([$orderId]);
+            notify_order_parties_email($o, 'Warranty refund', 'Admin approved a warranty refund (e.g. account banned within 24h without buyer edits). The sale amount was deducted from the seller and refunded to the buyer.' . ($note !== '' ? ' Note: ' . $note : ''));
             $sBal = db()->prepare('SELECT balance FROM users WHERE id = ?');
             $sBal->execute([(int)$o['seller_id']]);
             $sellerBal = (float)($sBal->fetch()['balance'] ?? 0);
@@ -1407,7 +1416,7 @@ try {
             ensure_marketplace_extras();
             ensure_commerce_features();
             ensure_user_avatar_column();
-            $sellerId = (int)($body['sellerId'] ?? $_GET['sellerId'] ?? 0);
+            $sellerId = (int)($body['sellerId'] ?? $body['id'] ?? $_GET['sellerId'] ?? $_GET['id'] ?? 0);
             $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
             $slug = trim((string)($body['slug'] ?? $_GET['slug'] ?? ''));
             if ($sellerId < 1 && $sellerEmail === '' && $slug !== '') {
@@ -1427,7 +1436,7 @@ try {
             if (!$seller) json_out(['ok' => false, 'error' => 'Seller not found'], 404);
             $sid = (int)$seller['id'];
             $ads = db()->prepare("SELECT id, title, category, description, price, preview_link AS previewLink, public_slug AS publicSlug, stock, status
-                FROM ads WHERE seller_id = ? AND status = 'active' AND stock > 0 ORDER BY created_at DESC LIMIT 60");
+                FROM ads WHERE seller_id = ? AND status = 'active' AND stock > 0 " . market_list_sql_order() . " LIMIT 60");
             $ads->execute([$sid]);
             $adsRows = $ads->fetchAll();
             foreach ($adsRows as &$ar) {

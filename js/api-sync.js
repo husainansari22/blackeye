@@ -55,6 +55,11 @@
       canReview: !!row.canReview,
       reviewed: !!row.reviewed,
       createdAt: row.created_at || row.createdAt,
+      orderStatusStep: row.order_status_step || row.orderStatusStep || null,
+      disputeDeadlineAt: row.dispute_deadline_at || row.disputeDeadlineAt || null,
+      disputeExpiredAt: row.dispute_expired_at || row.disputeExpiredAt || null,
+      fundsReleasedAt: row.funds_released_at || row.fundsReleasedAt || null,
+      warrantyUntil: row.warranty_until || row.warrantyUntil || null,
     };
   }
 
@@ -78,6 +83,7 @@
       sellerReviews: Number(row.sellerReviews) || 0,
       sellerInitials: initials,
       stock: row.stock != null ? Number(row.stock) : 1,
+      publicSlug: row.publicSlug || row.public_slug || '',
     };
   }
 
@@ -289,7 +295,7 @@
         await hydrateFromApi();
         return { ok: true };
       } catch (e) {
-        return { ok: false, error: e.message || 'Purchase failed' };
+        return { ok: false, error: e.message || 'Purchase failed', code: e.code || '' };
       }
     };
 
@@ -385,7 +391,7 @@
         }
         return { ok: true, fundsReleased: !!(res && res.fundsReleased), ai: res && res.ai };
       } catch (e) {
-        return { ok: false, error: e.message || 'Send failed' };
+        return { ok: false, error: e.message || 'Send failed', code: e.code || '' };
       }
     };
 

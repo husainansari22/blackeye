@@ -950,8 +950,21 @@ $tab = $_GET['tab'] ?? 'overview';
           <div class="av-chat-pane">
             <div id="orderChatHeader" class="av-chat-pane-head"></div>
             <div id="orderChatMsgs" class="av-chat-msgs"></div>
-            <div id="orderChatActions" class="p-2 border-t hidden" style="border-color:var(--av-border)">
-              <button type="button" id="orderChatRefundBtn" class="av-send" style="background:#ef4444">Refund buyer (allows seller debt)</button>
+            <div id="orderChatActions" class="p-3 border-t space-y-2 hidden" style="border-color:var(--av-border)">
+              <div id="orderDisputeBox" class="hidden rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] space-y-2">
+                <p class="font-bold text-amber-200">Dispute review</p>
+                <p id="orderDisputeMeta" class="text-slate-300"></p>
+                <textarea id="orderDisputeNote" rows="2" class="w-full rounded-lg bg-slate-900 border border-slate-700 p-2 text-xs" placeholder="Admin note (optional)"></textarea>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" id="orderDisputeRefundBtn" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Refund buyer (resolve)</button>
+                  <button type="button" id="orderDisputeDenyBtn" class="px-3 py-2 rounded-lg bg-slate-700 text-white text-[11px] font-bold">Deny dispute</button>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="orderChatRefundBtn" class="px-3 py-2 rounded-lg bg-red-500 text-white text-[11px] font-bold">Refund buyer (seller debt OK)</button>
+                <button type="button" id="orderWarrantyRefundBtn" class="px-3 py-2 rounded-lg bg-orange-600 text-white text-[11px] font-bold">24h warranty · deduct seller + refund</button>
+              </div>
+              <p class="text-[10px] text-slate-500">Use warranty deduct when a buyer proves the account was banned within 24h without their edits. Commission is also clawed back from the seller settlement.</p>
             </div>
           </div>
         </div>
@@ -1049,6 +1062,45 @@ $tab = $_GET['tab'] ?? 'overview';
             if(!confirm('Refund buyer and deduct seller (negative OK)?'))return;
             try{const r=await apiStaff('staff.orders.refund',{method:'POST',body:{orderId:id}});alert('Refunded. Seller balance: $'+Number(r.sellerBalance).toFixed(2)+(r.owing?' (owing $'+Number(r.owing).toFixed(2)+')':''));openOrderChat(id);}catch(e){alert(e.message);}
           };
+          document.getElementById('orderWarrantyRefundBtn').onclick=async()=>{
+            if(!confirm('24h warranty refund: deduct seller (incl. commission clawback) and refund buyer full price?'))return;
+            try{
+              await apiStaff('staff.orders.deduct_refund',{method:'POST',body:{orderId:id,note:'Owner warranty replacement'}});
+              alert('Warranty refund completed.');
+              openOrderChat(id);
+            }catch(e){alert(e.message);}
+          };
+          // Load open dispute for this order (if any)
+          (async()=>{
+            const box=document.getElementById('orderDisputeBox');
+            const meta=document.getElementById('orderDisputeMeta');
+            try{
+              const dres=await apiStaff('staff.disputes.list',{query:{status:'open'}});
+              const under=await apiStaff('staff.disputes.list',{query:{status:'under_review'}});
+              const all=[...(dres.disputes||[]),...(under.disputes||[])];
+              const d=all.find(x=>Number(x.order_id||x.orderId)===Number(id));
+              if(!d){ box.classList.add('hidden'); return; }
+              box.classList.remove('hidden');
+              meta.textContent='#'+(d.id)+' · '+ (d.status||'') +' · '+(d.reason||'No reason')+' · buyer '+(d.buyer_name||d.buyerName||'');
+              const noteEl=document.getElementById('orderDisputeNote');
+              document.getElementById('orderDisputeRefundBtn').onclick=async()=>{
+                if(!confirm('Resolve dispute with refund to buyer?'))return;
+                try{
+                  await apiStaff('staff.disputes.resolve',{method:'POST',body:{disputeId:d.id,decision:'refund_buyer',note:noteEl.value||''}});
+                  alert('Dispute resolved — buyer refunded.');
+                  openOrderChat(id);
+                }catch(e){alert(e.message);}
+              };
+              document.getElementById('orderDisputeDenyBtn').onclick=async()=>{
+                if(!confirm('Deny this dispute?'))return;
+                try{
+                  await apiStaff('staff.disputes.resolve',{method:'POST',body:{disputeId:d.id,decision:'deny',note:noteEl.value||''}});
+                  alert('Dispute denied.');
+                  openOrderChat(id);
+                }catch(e){alert(e.message);}
+              };
+            }catch(e){ box.classList.add('hidden'); }
+          })();
           renderOrderChats();
         }
         renderOrderHeader(null);

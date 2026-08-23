@@ -592,3 +592,22 @@ function dispute_public(array $d): array {
         'updatedAt' => $d['updated_at'] ?? null,
     ];
 }
+
+/** Email both buyer and seller a branded order-status update (best-effort). */
+function notify_order_parties_email(array $order, string $statusLabel, string $detail = ''): void {
+    try {
+        $title = (string)($order['title'] ?? 'Order');
+        $txid = (string)($order['public_id'] ?? '');
+        $buyerId = (int)($order['buyer_id'] ?? 0);
+        $sellerId = (int)($order['seller_id'] ?? 0);
+        $stmt = db()->prepare('SELECT id, name, email FROM users WHERE id IN (?, ?)');
+        $stmt->execute([$buyerId, $sellerId]);
+        foreach ($stmt->fetchAll() as $u) {
+            if (empty($u['email'])) continue;
+            $mail = email_order_status_update((string)$u['name'], $title, $statusLabel, $txid, $detail);
+            send_app_mail((string)$u['email'], $mail['subject'], $mail['html'], $mail['text']);
+        }
+    } catch (Throwable $e) {
+        // Never fail the request because mail failed.
+    }
+}

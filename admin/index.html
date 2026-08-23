@@ -171,8 +171,21 @@
             <div class="av-chat-pane">
               <div id="adminOrderChatHeader" class="av-chat-pane-head"></div>
               <div id="adminOrderChatMsgs" class="av-chat-msgs"></div>
-              <div class="p-2" style="border-top:1px solid var(--av-border)">
-                <button id="adminOrderRefundBtn" class="hidden av-send" style="background:#ef4444" type="button">Refund buyer</button>
+              <div id="adminOrderChatActions" class="p-3 space-y-2 hidden" style="border-top:1px solid var(--av-border)">
+                <div id="adminOrderDisputeBox" class="hidden rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] space-y-2">
+                  <p class="font-bold text-amber-700 dark:text-amber-200">Dispute review</p>
+                  <p id="adminOrderDisputeMeta" class="text-slate-600 dark:text-slate-300"></p>
+                  <textarea id="adminOrderDisputeNote" rows="2" class="w-full rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2 text-xs" placeholder="Admin note (optional)"></textarea>
+                  <div class="flex flex-wrap gap-2">
+                    <button type="button" id="adminOrderDisputeRefundBtn" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Refund buyer (resolve)</button>
+                    <button type="button" id="adminOrderDisputeDenyBtn" class="px-3 py-2 rounded-lg bg-slate-700 text-white text-[11px] font-bold">Deny dispute</button>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button id="adminOrderRefundBtn" class="av-send" style="background:#ef4444" type="button">Refund buyer (seller debt OK)</button>
+                  <button id="adminOrderWarrantyBtn" class="px-3 py-2 rounded-lg bg-orange-600 text-white text-[11px] font-bold" type="button">24h warranty · deduct seller + refund</button>
+                </div>
+                <p class="text-[10px] text-slate-500">Use warranty deduct when a buyer proves the account was banned within 24h without their edits. Commission is clawed back from the seller settlement.</p>
               </div>
             </div>
           </div>
@@ -318,7 +331,8 @@
         if (Inbox()) Inbox().setChatOpen(adminOrderShell(), false);
         renderAdminOrderHeader(null);
         document.getElementById('adminOrderChatMsgs').innerHTML = '<div class="av-empty-chat"><i class="fa-regular fa-comments"></i><p>Select a conversation</p></div>';
-        document.getElementById('adminOrderRefundBtn').classList.add('hidden');
+        const acts = document.getElementById('adminOrderChatActions');
+        if (acts) acts.classList.add('hidden');
         renderAdminOrderChats();
       };
     }
@@ -374,16 +388,61 @@
         ? msgs.map(m => `<div class="av-bubble av-bubble-in"><p class="who">${escHtml(m.fromName)}</p><p class="body">${escHtml(m.text || m.body || '')}</p>${renderAttachHtml(m)}</div>`).join('')
         : '<div class="av-empty-chat"><i class="fa-regular fa-comment-dots"></i><p>No messages</p></div>';
       box.scrollTop = box.scrollHeight;
+      const actions = document.getElementById('adminOrderChatActions');
+      if (actions) actions.classList.toggle('hidden', o.status === 'cancelled');
       const btn = document.getElementById('adminOrderRefundBtn');
-      btn.classList.toggle('hidden', o.status === 'cancelled');
-      btn.onclick = async () => {
-        if (!confirm('Refund buyer and deduct seller (negative OK)?')) return;
+      if (btn) {
+        btn.onclick = async () => {
+          if (!confirm('Refund buyer and deduct seller (negative OK)?')) return;
+          try {
+            const r = await Api.staffOrderRefund({ orderId: id });
+            alert('Refunded. Seller balance $' + Number(r.sellerBalance).toFixed(2));
+            openAdminOrderChat(id);
+          } catch (e) { alert(e.message); }
+        };
+      }
+      const warrantyBtn = document.getElementById('adminOrderWarrantyBtn');
+      if (warrantyBtn) {
+        warrantyBtn.onclick = async () => {
+          if (!confirm('24h warranty refund: deduct seller (incl. commission clawback) and refund buyer full price?')) return;
+          try {
+            await Api.staffDeductRefund({ orderId: id, note: 'Admin warranty replacement' });
+            alert('Warranty refund completed.');
+            openAdminOrderChat(id);
+          } catch (e) { alert(e.message); }
+        };
+      }
+      (async () => {
+        const dbox = document.getElementById('adminOrderDisputeBox');
+        const meta = document.getElementById('adminOrderDisputeMeta');
+        if (!dbox || !meta) return;
         try {
-          const r = await Api.staffOrderRefund({ orderId: id });
-          alert('Refunded. Seller balance $' + Number(r.sellerBalance).toFixed(2));
-          openAdminOrderChat(id);
-        } catch (e) { alert(e.message); }
-      };
+          const dres = await Api.staffDisputesList({ status: 'open' });
+          const under = await Api.staffDisputesList({ status: 'under_review' });
+          const all = [...(dres.disputes || []), ...(under.disputes || [])];
+          const d = all.find(x => Number(x.order_id || x.orderId) === Number(id));
+          if (!d) { dbox.classList.add('hidden'); return; }
+          dbox.classList.remove('hidden');
+          meta.textContent = '#' + d.id + ' · ' + (d.status || '') + ' · ' + (d.reason || 'No reason') + ' · buyer ' + (d.buyer_name || d.buyerName || '');
+          const noteEl = document.getElementById('adminOrderDisputeNote');
+          document.getElementById('adminOrderDisputeRefundBtn').onclick = async () => {
+            if (!confirm('Resolve dispute with refund to buyer?')) return;
+            try {
+              await Api.staffDisputeResolve({ disputeId: d.id, decision: 'refund_buyer', note: (noteEl && noteEl.value) || '' });
+              alert('Dispute resolved — buyer refunded.');
+              openAdminOrderChat(id);
+            } catch (e) { alert(e.message); }
+          };
+          document.getElementById('adminOrderDisputeDenyBtn').onclick = async () => {
+            if (!confirm('Deny this dispute?')) return;
+            try {
+              await Api.staffDisputeResolve({ disputeId: d.id, decision: 'deny', note: (noteEl && noteEl.value) || '' });
+              alert('Dispute denied.');
+              openAdminOrderChat(id);
+            } catch (e) { alert(e.message); }
+          };
+        } catch (e) { dbox.classList.add('hidden'); }
+      })();
       renderAdminOrderChats();
     }
     async function adminSearchTx() {

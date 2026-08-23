@@ -168,9 +168,9 @@
                     <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller">
                         <i class="fa-solid fa-desktop text-lg"></i>
                     </button>
-                    <button type="button" onclick="switchTab('orders')" class="relative hover:text-brandPrimary transition" title="Cart">
+                    <button type="button" id="headerCartBtn" onclick="openCartDrawer()" class="relative hover:text-brandPrimary transition" title="Cart">
                         <i class="fa-solid fa-cart-shopping text-lg"></i>
-                        <span class="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
+                        <span id="cartBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                     </button>
                     <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
                         <i class="fa-regular fa-bell text-lg"></i>
@@ -230,6 +230,9 @@
                 <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
 
+            <!-- Social proof (#11) -->
+            <p id="socialProofLine" class="hidden text-[11px] text-slate-500 dark:text-slate-400 px-1"></p>
+
             <!-- Trending Catalog -->
             <div>
                 <div class="flex justify-between items-center mb-2">
@@ -276,6 +279,7 @@
                 <button data-filter="completed" onclick="setOrdersFilter('completed')" class="orders-filter-btn flex-1 py-2 font-medium text-slate-400">Completed</button>
                 <button data-filter="cancelled" onclick="setOrdersFilter('cancelled')" class="orders-filter-btn flex-1 py-2 font-medium text-slate-400">Cancelled</button>
             </div>
+            <div id="disputesBanner" class="hidden"></div>
             <div class="space-y-3" id="ordersListContainer"></div>
         </div>
 
@@ -687,6 +691,12 @@
         </div>
     </div>
 
+    <!-- CART DRAWER (populated by js/commerce-ui.js) -->
+    <div id="cartDrawer" class="fixed inset-0 z-[145] hidden"></div>
+
+    <!-- DISPUTE MODAL (populated by js/commerce-ui.js) -->
+    <div id="disputeModal" class="fixed inset-0 z-[146] hidden"></div>
+
     <!-- GENERAL MODAL CONTAINER (above app header so back arrow is never covered) -->
     <div id="appModal" class="fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4">
         <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-scroll">
@@ -847,6 +857,9 @@
             <button type="button" id="chatReportBtn" onclick="reportSellerFromChat()" class="hidden text-[11px] font-bold text-red-500 border border-red-300 dark:border-red-800 px-2.5 py-1.5 rounded-lg shrink-0">Report</button>
             <span id="chatOnlineDot" class="hidden w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
         </div>
+        <div id="chatRulesBanner" class="hidden px-3 py-2 text-[11px] leading-snug bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300">
+            <i class="fa-solid fa-shield-halved mr-1"></i>Chat is only for this purchased order. Do not share WhatsApp, Telegram, or phone numbers. Off-platform contact is blocked.
+        </div>
         <div id="chatMessages" class="flex-1 overflow-y-auto px-4 py-4 space-y-2"></div>
         <p id="chatTyping" class="px-4 text-[11px] text-slate-400 h-5"></p>
         <div class="p-3 bg-lightCard dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center">
@@ -880,10 +893,11 @@
     </nav>
 
     <script src="/js/acctventa.js?v=20260822auth1"></script>
-    <script src="/js/api-client.js?v=20260822auth1"></script>
-    <script src="/js/api-sync.js?v=20260822auth1"></script>
+    <script src="/js/api-client.js?v=20260823c2"></script>
+    <script src="/js/api-sync.js?v=20260823c2"></script>
     <script src="/js/kyc-app.js?v=20260822kyc9"></script>
-    <script src="/js/dashboard-app.js?v=20260822nav1"></script>
+    <script src="/js/commerce-ui.js?v=20260823c2"></script>
+    <script src="/js/dashboard-app.js?v=20260823c2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

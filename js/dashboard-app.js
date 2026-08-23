@@ -243,8 +243,20 @@
     </div>`;
   }
 
+  function shuffleListings(arr) {
+    const a = (arr || []).slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
+
   function renderMarketplace() {
-    const list = A().getMarketplaceListings();
+    // Fresh shuffle on every render/refresh so filtered categories still feel fair.
+    const list = shuffleListings(A().getMarketplaceListings());
     const home = document.getElementById('homeListings');
     const market = document.getElementById('marketListings');
     const merchants = document.getElementById('topMerchantsRow');
@@ -355,7 +367,7 @@
         return `<button type="button" onclick="openOrderDetail('${o.id}')" class="w-full text-left bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm hover:border-brandPrimary transition">
         <div class="min-w-0">
           <h4 class="font-bold text-sm truncate">${escapeHtml(o.title)}</h4>
-          <p class="text-[10px] text-slate-500 mt-0.5">${role} · ${escapeHtml(o.status)}</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">${role} · ${escapeHtml(o.status)}${window.CommerceUI ? window.CommerceUI.disputeBadgeHtml(o) : ''}</p>
           <p class="text-[10px] font-mono text-slate-400 mt-0.5 flex items-center gap-1">TXID: ${escapeHtml(truncateTxId(tx))}
             <span role="button" tabindex="0" onclick="event.stopPropagation(); copyTxId('${escapeAttr(tx)}')" class="text-slate-500"><i class="fa-regular fa-copy"></i></span>
           </p>
@@ -1552,6 +1564,7 @@
       </div>
       <div class="flex justify-between items-center mb-4"><span class="text-slate-500 text-sm">Price</span><span class="text-2xl font-extrabold text-brandPrimary">${money(item.price)}</span></div>
       <p class="text-[11px] text-emerald-600 mb-3"><i class="fa-solid fa-shield-halved mr-1"></i>${item.releaseType === 'manual' ? 'Manual delivery — seller funds stay in escrow until login details are sent (AI release).' : 'Auto delivery — credentials unlock instantly after purchase.'}</p>
+      ${window.CommerceUI ? window.CommerceUI.listingActionButtonsHtml(item) : ''}
       <button onclick="buyListing('${item.id}')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Buy now · ${money(item.price)}</button>`;
     (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
   };
@@ -1564,6 +1577,10 @@
     }
     const res = await Promise.resolve(A().purchaseListing(u, id));
     if (!res.ok) {
+      if (res.code === 'insufficient_funds' && window.CommerceUI) {
+        window.CommerceUI.showInsufficientFundsModal();
+        return;
+      }
       alert(res.error);
       if (String(res.error).toLowerCase().includes('balance')) switchTab('wallet');
       return;
@@ -1594,6 +1611,7 @@
         <div class="flex justify-between"><span class="text-slate-500">${isSeller ? 'Buyer' : 'Seller'}</span><span class="font-medium">${escapeHtml(other)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Price</span><span class="font-bold text-brandPrimary">${money(order.price)}</span></div>
       </div>
+      ${window.CommerceUI ? window.CommerceUI.orderStatusExtrasHtml(order) : ''}
       ${
         order.status === 'pending' && isSeller
           ? `<p class="text-[11px] text-amber-600 mb-3">Manual sale: funds are on hold until you send login details in chat. AI releases escrow when credentials are detected.</p>`
@@ -1644,7 +1662,9 @@
       const q = String(sellerEmailOrId || '').includes('@')
         ? { sellerEmail: sellerEmailOrId }
         : { sellerId: sellerEmailOrId };
-      const res = await window.AcctventaApi.sellerProfile(q);
+      const res = window.AcctventaApi.sellerStorefront
+        ? await window.AcctventaApi.sellerStorefront(q)
+        : await window.AcctventaApi.sellerProfile(q);
       const s = res.seller || {};
       const reviews = res.reviews || [];
       const listings = res.listings || [];
@@ -1652,6 +1672,7 @@
       document.getElementById('modalBody').innerHTML = `
         <h3 class="font-bold text-lg mb-1">${escapeHtml(s.name || 'Seller')}</h3>
         <p class="text-xs text-slate-500 mb-3">${s.isVerified ? 'Verified · ' : ''}${s.completedSales || 0} completed sales · ★ ${stars} (${(s.rating && s.rating.count) || 0})</p>
+        ${s.id ? `<a href="/seller/${encodeURIComponent(s.id)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs font-bold text-brandPrimary underline mb-4"><i class="fa-solid fa-store"></i> View full storefront</a>` : ''}
         <h4 class="font-bold text-sm mb-2">Reviews</h4>
         <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
           ${
@@ -1668,11 +1689,16 @@
           }
         </div>
         <h4 class="font-bold text-sm mb-2">Live listings</h4>
-        <div class="space-y-1">
+        <div class="space-y-1.5">
           ${
             listings.length
               ? listings
-                  .map((l) => `<p class="text-xs flex justify-between gap-2"><span class="truncate">${escapeHtml(l.title)}</span><span class="text-brandPrimary font-bold">${money(l.price)}</span></p>`)
+                  .map((l) => {
+                    const slug = l.publicSlug || l.public_slug || l.id;
+                    return `<a href="/listing/${encodeURIComponent(slug)}" target="_blank" rel="noopener" class="text-xs flex justify-between gap-2 items-center border border-slate-200 dark:border-slate-800 rounded-lg p-2 hover:border-brandPrimary transition">
+                      <span class="truncate">${escapeHtml(l.title)}</span><span class="text-brandPrimary font-bold shrink-0">${money(l.price)}</span>
+                    </a>`;
+                  })
                   .join('')
               : '<p class="text-xs text-slate-400">No live listings.</p>'
           }
@@ -1731,6 +1757,7 @@
     }
     document.getElementById('chatOverlay').classList.remove('hidden');
     document.getElementById('chatOverlay').classList.add('flex');
+    if (window.CommerceUI) window.CommerceUI.showChatRulesBanner(true);
     if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi()) {
       await window.AcctventaApiSync.loadMessages(orderId);
     }
@@ -1751,6 +1778,7 @@
     if (reportBtn) reportBtn.classList.add('hidden');
     document.getElementById('chatOverlay').classList.remove('hidden');
     document.getElementById('chatOverlay').classList.add('flex');
+    if (window.CommerceUI) window.CommerceUI.showChatRulesBanner(false);
     try {
       if (window.AcctventaApi && (await window.AcctventaApi.isAvailable())) {
         const res = await window.AcctventaApi.supportOpen();
@@ -1964,7 +1992,11 @@
     const extra = attach ? { attachment: attach.dataUrl, fileName: attach.name } : null;
     const res = await Promise.resolve(A().sendMessage(u, activeOrderId, text || '', extra));
     if (res && res.ok === false) {
-      alert(res.error || 'Send failed');
+      if (res.code === 'external_contact_blocked' && window.CommerceUI) {
+        window.CommerceUI.handleBlockedChatMessage(res.error);
+      } else {
+        alert(res.error || 'Send failed');
+      }
       return;
     }
     input.value = '';
