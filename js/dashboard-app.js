@@ -99,6 +99,10 @@
       set('rightProfileBalance', money(0));
       set('rightProfileRefCode', '—');
       set('rightProfileJoined', '—');
+      ['leftProfileVerified', 'rightProfileVerified'].forEach((id) => {
+        const badge = document.getElementById(id);
+        if (badge) badge.classList.add('hidden');
+      });
       const notifBadge = document.getElementById('notifBadge');
       if (notifBadge) {
         notifBadge.classList.add('hidden');
@@ -119,6 +123,18 @@
     if (mailEl && mailEl.tagName === 'A') {
       mailEl.href = u.email ? 'mailto:' + u.email : '#';
     }
+    const showVerified = !!(u.isVerified || u.kycStatus === 'verified');
+    ['leftProfileVerified', 'rightProfileVerified'].forEach((id) => {
+      const badge = document.getElementById(id);
+      if (!badge) return;
+      if (showVerified) badge.classList.remove('hidden');
+      else badge.classList.add('hidden');
+    });
+    try {
+      if (window.AcctventaKyc && typeof window.AcctventaKyc.syncFromUser === 'function') {
+        window.AcctventaKyc.syncFromUser(u);
+      }
+    } catch (e) {}
     set('rightProfilePhone', u.phone || 'No phone added');
     set('rightProfileBalance', money(u.balance));
     set('rightProfileRefCode', u.referralCode || '—');
@@ -222,7 +238,7 @@
           <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
-        <p class="text-[10px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')}</p>
+        <p class="text-[10px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')}${item.sellerVerified ? ' <span class="text-emerald-500 font-semibold">✓ Verified</span>' : ''}</p>
         <div class="flex justify-between items-center mt-2">
           <span class="text-sm font-bold text-brandPrimary">${money(item.price)}</span>
           <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Buy</button>
@@ -233,7 +249,7 @@
       <img src="${escapeAttr(logo)}" alt="" class="w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0" loading="lazy" onerror="this.style.opacity=.3">
       <div class="min-w-0 flex-1">
         <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
-        <p class="text-[10px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')} · ${escapeHtml(cat)}</p>
+        <p class="text-[10px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')}${item.sellerVerified ? ' <span class="text-emerald-500 font-semibold">✓ Verified</span>' : ''} · ${escapeHtml(cat)}</p>
         <div class="mt-0.5">${previewBtn}</div>
       </div>
       <div class="text-right shrink-0">
@@ -1670,7 +1686,7 @@
       : `<p class="text-xs text-slate-500">No public preview link for this listing.</p>`;
     document.getElementById('modalBody').innerHTML = `
       <h3 class="font-bold text-xl mb-1">${escapeHtml(item.title)}</h3>
-      <p class="text-xs text-slate-500 mb-1">By <button type="button" class="text-brandPrimary font-semibold underline" onclick="openSellerProfile('${escapeAttr(item.sellerEmail || item.sellerId || '')}')">${escapeHtml(item.sellerName)}</button> · ${escapeHtml(item.category || '')}${item.sellerRating ? ` · ★ ${Number(item.sellerRating).toFixed(1)}` : ''}</p>
+      <p class="text-xs text-slate-500 mb-1">By <button type="button" class="text-brandPrimary font-semibold underline" onclick="openSellerProfile('${escapeAttr(item.sellerEmail || item.sellerId || '')}')">${escapeHtml(item.sellerName)}</button>${item.sellerVerified ? ' <span class="text-emerald-500 font-bold">✓ Verified</span>' : ''} · ${escapeHtml(item.category || '')}${item.sellerRating ? ` · ★ ${Number(item.sellerRating).toFixed(1)}` : ''}</p>
       <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">${escapeHtml(item.description || 'No description.')}</p>
       <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4">
         <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">Review product link</p>
@@ -1784,8 +1800,8 @@
       const listings = res.listings || [];
       const stars = s.rating && s.rating.average ? s.rating.average.toFixed(1) : '—';
       document.getElementById('modalBody').innerHTML = `
-        <h3 class="font-bold text-lg mb-1">${escapeHtml(s.name || 'Seller')}</h3>
-        <p class="text-xs text-slate-500 mb-3">${s.isVerified ? 'Verified · ' : ''}${s.completedSales || 0} completed sales · ★ ${stars} (${(s.rating && s.rating.count) || 0})</p>
+        <h3 class="font-bold text-lg mb-1">${escapeHtml(s.name || 'Seller')}${s.isVerified ? ' <span class="text-emerald-500 text-sm font-bold">✓ Verified</span>' : ''}</h3>
+        <p class="text-xs text-slate-500 mb-3">${s.completedSales || 0} completed sales · ★ ${stars} (${(s.rating && s.rating.count) || 0})</p>
         ${s.id ? `<a href="/seller/${encodeURIComponent(s.id)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs font-bold text-brandPrimary underline mb-4"><i class="fa-solid fa-store"></i> View full storefront</a>` : ''}
         <h4 class="font-bold text-sm mb-2">Reviews</h4>
         <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">

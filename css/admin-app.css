@@ -877,6 +877,82 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   font-weight: 800;
   flex-shrink: 0;
 }
+.av-avatar-sm {
+  width: 2.15rem;
+  height: 2.15rem;
+  font-size: 0.7rem;
+}
+.av-avatar-lg {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1rem;
+}
+.av-user-detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+  padding: 0 0.1rem;
+}
+.av-settings-row-form {
+  margin: 0;
+  display: block;
+}
+.av-settings-row-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.av-settings-row-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.av-balance-form {
+  padding: 0.9rem 1rem 1rem;
+}
+.av-balance-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.av-field-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  color: var(--av-muted);
+  line-height: 1.35;
+}
+.av-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--av-border);
+  border-radius: 12px;
+  background: var(--av-bg);
+  cursor: pointer;
+}
+.av-check-row input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+.av-check-row strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--av-text);
+}
+.av-check-row small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--av-muted);
+  line-height: 1.35;
+}
 .av-user-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1177,7 +1253,8 @@ html.dark .av-app thead {
 .av-settings-row:not(.is-static):active {
   background: color-mix(in srgb, var(--av-brand) 10%, var(--av-surface-2));
 }
-.av-settings-row:not(:last-child)::after {
+.av-settings-group > .av-settings-row:not(:last-child)::after,
+.av-settings-group > .av-settings-row-form:not(:last-child) .av-settings-row::after {
   content: "";
   position: absolute;
   left: 3.35rem;

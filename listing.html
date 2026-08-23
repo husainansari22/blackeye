@@ -70,7 +70,7 @@
         <p class="text-xs font-bold uppercase tracking-widest text-brandPrimary mb-2">${escapeHtml(listing.category || 'Digital product')}</p>
         <h1 class="text-2xl font-extrabold tracking-tight mb-2">${escapeHtml(title)}</h1>
         <p class="text-sm text-slate-500 mb-4">Sold by
-          <a class="text-brandPrimary font-semibold" href="/seller/${encodeURIComponent(sellerId || seller)}">${escapeHtml(seller)}</a>
+          <a class="text-brandPrimary font-semibold" href="/seller/${encodeURIComponent(sellerId || seller)}">${escapeHtml(seller)}</a>${(listing.sellerVerified || listing.seller_verified || listing.isVerified) ? ' <span class="text-emerald-500 font-bold">✓ Verified</span>' : ''}
           ${listing.sellerRating ? ' · ★ ' + Number(listing.sellerRating).toFixed(1) : ''}
         </p>
         <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">${escapeHtml(desc)}</p>

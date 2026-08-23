@@ -241,3 +241,27 @@
   background: rgba(244, 63, 94, 0.1);
   color: #e11d48;
 }
+
+.profile-verified-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.profile-verified-pill i {
+  font-size: 0.62rem;
+}
+.dark .profile-verified-pill {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(52, 211, 153, 0.35);
+}

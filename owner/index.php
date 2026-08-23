@@ -30,6 +30,10 @@ $authed = !empty($_SESSION['owner_ok']);
 if ($authed) {
     try { migrate_legacy_support_email(); } catch (Throwable $e) {}
 }
+if ($authed && !empty($_SESSION['owner_flash'])) {
+    $flash = (string)$_SESSION['owner_flash'];
+    unset($_SESSION['owner_flash']);
+}
 
 // Secure KYC document viewer (avoids /uploads 404 on some hosts)
 if ($authed && isset($_GET['kyc_doc'])) {
@@ -90,12 +94,27 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = 'Gateway settings saved.';
         }
         if ($form === 'ban_user') {
-            db()->prepare('UPDATE users SET is_banned = ? WHERE id = ?')->execute([(int)$_POST['banned'], (int)$_POST['user_id']]);
-            $flash = 'User ban status updated.';
+            $uid = (int)$_POST['user_id'];
+            db()->prepare('UPDATE users SET is_banned = ? WHERE id = ?')->execute([(int)$_POST['banned'], $uid]);
+            $flash = ((int)$_POST['banned'] === 1) ? 'User banned.' : 'User unbanned.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=users&id=' . $uid);
+            exit;
         }
         if ($form === 'verify_user') {
-            db()->prepare('UPDATE users SET is_verified = ? WHERE id = ?')->execute([(int)$_POST['verified'], (int)$_POST['user_id']]);
-            $flash = 'Verification updated.';
+            $uid = (int)$_POST['user_id'];
+            $verified = (int)$_POST['verified'] === 1 ? 1 : 0;
+            db()->prepare('UPDATE users SET is_verified = ? WHERE id = ?')->execute([$verified, $uid]);
+            if ($verified) {
+                notify_user($uid, 'Account verified', 'Your Acctventa profile now shows a verified badge. Buyers will see it on your storefront and listings.', 'kyc');
+                $flash = 'User verified — badge will show on their profile and listings.';
+            } else {
+                notify_user($uid, 'Verification removed', 'Your verified badge was removed by an admin.', 'kyc');
+                $flash = 'Verification removed.';
+            }
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=users&id=' . $uid);
+            exit;
         }
         if ($form === 'kyc_review') {
             ensure_kyc_tables();
@@ -158,6 +177,9 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     ->execute([$uid, money_f($abs), 'Owner adjust: ' . $note]);
             }
             $flash = 'Balance adjusted.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=users&id=' . $uid);
+            exit;
         }
         if ($form === 'ad_status') {
             $status = $_POST['status'];
@@ -329,7 +351,7 @@ $tab = $_GET['tab'] ?? 'overview';
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set5">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260823set6">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -404,6 +426,7 @@ $tab = $_GET['tab'] ?? 'overview';
     'reports'=>'Reports','wallet'=>'Wallet','support'=>'Inbox','currencies'=>'Currencies','gateways'=>'Gateways',
     'settings'=>'Settings','plans'=>'Plans',
   ];
+  $viewUserId = ($tab === 'users') ? (int)($_GET['id'] ?? $_GET['user_id'] ?? 0) : 0;
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
@@ -420,7 +443,12 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php if ($flash): ?><div class="av-ok text-sm px-4 py-3"><?= h($flash) ?></div><?php endif; ?>
     <?php if ($error): ?><div class="av-warn text-sm px-4 py-3"><?= h($error) ?></div><?php endif; ?>
 
-    <?php if ($tab !== 'overview'): ?>
+    <?php if ($tab === 'users' && $viewUserId > 0): ?>
+      <div class="av-settings-nav">
+        <a href="?tab=users" class="av-settings-back"><i class="fa-solid fa-chevron-left"></i> Users</a>
+        <span class="av-settings-nav-title">User</span>
+      </div>
+    <?php elseif ($tab !== 'overview'): ?>
       <div class="av-settings-nav">
         <a href="?tab=overview" class="av-settings-back"><i class="fa-solid fa-chevron-left"></i> Overview</a>
         <span class="av-settings-nav-title"><?= h($tabLabels[$tab] ?? ucfirst($tab)) ?></span>
@@ -854,19 +882,145 @@ $tab = $_GET['tab'] ?? 'overview';
 
     <?php if ($tab === 'users'):
       ensure_wallet_ledger_columns();
-      $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>
-      <div class="av-page">
-        <div class="av-page-head">
-          <div>
-            <h2 class="av-page-title">Users</h2>
-            <p class="av-page-sub">Ban, verify, login as, or adjust balances.</p>
-          </div>
-          <div class="av-page-meta av-page-meta-static">
-            <span class="av-stat-pill"><strong><?= count($users) ?></strong> shown</span>
+      $viewUserId = (int)($_GET['id'] ?? $_GET['user_id'] ?? 0);
+
+      if ($viewUserId > 0):
+        $ustmt = db()->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+        $ustmt->execute([$viewUserId]);
+        $u = $ustmt->fetch();
+        if (!$u): ?>
+          <div class="av-page"><div class="av-panel"><div class="av-empty">User not found. <a href="?tab=users" class="text-brand underline">Back to Users</a></div></div></div>
+        <?php else:
+          $banned = (int)$u['is_banned'] === 1;
+          $verified = (int)$u['is_verified'] === 1;
+          $parts = preg_split('/\s+/', trim((string)$u['name']));
+          $initials = '';
+          foreach ($parts as $p) { if ($p !== '') $initials .= strtoupper($p[0]); if (strlen($initials) >= 2) break; }
+          if ($initials === '') $initials = '?';
+          $recentTx = [];
+          try {
+            $txq = db()->prepare('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 12');
+            $txq->execute([$viewUserId]);
+            $recentTx = $txq->fetchAll();
+          } catch (Throwable $e) {}
+        ?>
+      <div class="av-page av-settings-page">
+        <div class="av-user-detail-hero">
+          <div class="av-avatar av-avatar-lg"><?= h($initials) ?></div>
+          <div class="min-w-0">
+            <h2 class="av-settings-title" style="margin:0"><?= h($u['name']) ?></h2>
+            <p class="av-row-sub"><?= h($u['email']) ?> · #<?= (int)$u['id'] ?></p>
           </div>
         </div>
-        <div class="av-panel">
-          <div class="av-panel-head"><span>Directory</span></div>
+
+        <p class="av-section-label">Account</p>
+        <div class="av-settings-group">
+          <div class="av-settings-row is-static">
+            <span class="av-settings-icon" style="background:#0ea5e9"><i class="fa-solid fa-wallet"></i></span>
+            <span class="av-settings-label">Spendable balance</span>
+            <span class="av-settings-value">$<?= number_format((float)$u['balance'], 2) ?></span>
+          </div>
+          <div class="av-settings-row is-static">
+            <span class="av-settings-icon" style="background:#10b981"><i class="fa-solid fa-money-bill-transfer"></i></span>
+            <span class="av-settings-label">Withdrawable balance</span>
+            <span class="av-settings-value">$<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?></span>
+          </div>
+          <div class="av-settings-row is-static">
+            <span class="av-settings-icon" style="background:#a855f7"><i class="fa-solid fa-crown"></i></span>
+            <span class="av-settings-label">Plan</span>
+            <span class="av-settings-value"><?= h($u['plan'] ?: 'free') ?></span>
+          </div>
+          <div class="av-settings-row is-static">
+            <span class="av-settings-icon" style="background:#64748b"><i class="fa-solid fa-calendar"></i></span>
+            <span class="av-settings-label">Joined</span>
+            <span class="av-settings-value"><?= h($u['created_at'] ?? '—') ?></span>
+          </div>
+        </div>
+
+        <p class="av-section-label">Actions</p>
+        <div class="av-settings-group">
+          <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" class="av-settings-row-form">
+            <input type="hidden" name="form" value="ban_user">
+            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+            <input type="hidden" name="banned" value="<?= $banned ? 0 : 1 ?>">
+            <button type="submit" class="av-settings-row av-settings-row-btn">
+              <span class="av-settings-icon" style="background:<?= $banned ? '#10b981' : '#ef4444' ?>"><i class="fa-solid <?= $banned ? 'fa-lock-open' : 'fa-ban' ?>"></i></span>
+              <span class="av-settings-label"><?= $banned ? 'Unban this user' : 'Ban this user' ?></span>
+              <span class="av-settings-value"><?= $banned ? 'Banned' : 'Active' ?></span>
+              <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+            </button>
+          </form>
+          <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" class="av-settings-row-form">
+            <input type="hidden" name="form" value="verify_user">
+            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+            <input type="hidden" name="verified" value="<?= $verified ? 0 : 1 ?>">
+            <button type="submit" class="av-settings-row av-settings-row-btn">
+              <span class="av-settings-icon" style="background:<?= $verified ? '#64748b' : '#22c55e' ?>"><i class="fa-solid fa-certificate"></i></span>
+              <span class="av-settings-label"><?= $verified ? 'Remove verified badge' : 'Add verified badge' ?></span>
+              <span class="av-settings-value<?= $verified ? ' is-hot' : '' ?>" style="<?= $verified ? 'color:#22c55e' : '' ?>"><?= $verified ? 'Verified' : 'Not verified' ?></span>
+              <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+            </button>
+          </form>
+          <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" target="_blank" class="av-settings-row-form">
+            <input type="hidden" name="form" value="login_as_user">
+            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+            <button type="submit" class="av-settings-row av-settings-row-btn" <?= $banned ? 'disabled' : '' ?>>
+              <span class="av-settings-icon" style="background:#0ea5e9"><i class="fa-solid fa-right-to-bracket"></i></span>
+              <span class="av-settings-label">Login as this user</span>
+              <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+            </button>
+          </form>
+        </div>
+
+        <p class="av-section-label">Adjust balance</p>
+        <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" class="av-settings-group av-balance-form">
+          <input type="hidden" name="form" value="adjust_balance">
+          <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+          <div class="av-balance-fields">
+            <div class="av-field-block">
+              <label for="adjAmount">Amount (USD)</label>
+              <input id="adjAmount" name="amount" type="number" step="0.01" required placeholder="e.g. 10 or -5" inputmode="decimal">
+              <p class="av-field-hint">Use a positive number to add funds, or a negative number to remove funds.</p>
+            </div>
+            <div class="av-field-block">
+              <label for="adjNote">Note (optional)</label>
+              <input id="adjNote" name="note" type="text" placeholder="Reason for this adjustment">
+            </div>
+            <label class="av-check-row">
+              <input type="checkbox" name="as_withdrawable" value="1">
+              <span>
+                <strong>Count as withdrawable earnings</strong>
+                <small>Only for positive amounts. Lets the user withdraw this credit (sales-style), not just spend it.</small>
+              </span>
+            </label>
+            <button type="submit" class="av-btn av-btn-primary" style="width:100%">Save balance change</button>
+          </div>
+        </form>
+
+        <?php if ($recentTx): ?>
+        <p class="av-section-label">Recent transactions</p>
+        <div class="av-settings-group">
+          <?php foreach ($recentTx as $t): ?>
+            <div class="av-settings-row is-static">
+              <span class="av-settings-icon" style="background:#475569"><i class="fa-solid fa-receipt"></i></span>
+              <span class="av-settings-label">
+                <?= h($t['type']) ?>
+                <span class="av-row-sub" style="display:block;font-weight:500"><?= h($t['note'] ?: $t['created_at']) ?></span>
+              </span>
+              <span class="av-settings-value">$<?= number_format((float)$t['amount'], 2) ?> · <?= h($t['status']) ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+      </div>
+        <?php endif; ?>
+
+      <?php else:
+        $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>
+      <div class="av-page av-settings-page">
+        <h2 class="av-settings-title">Users</h2>
+        <p class="av-page-sub" style="margin:-0.35rem 0 0.85rem">Tap a user to ban, verify, adjust balance, or login as them.</p>
+        <div class="av-settings-group">
           <?php if (!$users): ?>
             <div class="av-empty">No users yet.</div>
           <?php endif; ?>
@@ -878,52 +1032,23 @@ $tab = $_GET['tab'] ?? 'overview';
             $banned = (int)$u['is_banned'] === 1;
             $verified = (int)$u['is_verified'] === 1;
           ?>
-            <div class="av-user-card">
-              <div class="av-user-main">
-                <div class="av-avatar"><?= h($initials) ?></div>
-                <div class="min-w-0 flex-1">
-                  <p class="av-row-title"><?= h($u['name']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$u['id'] ?></span></p>
-                  <p class="av-row-sub"><?= h($u['email']) ?></p>
-                  <div class="av-user-meta">
-                    <span class="av-stat-pill"><strong>$<?= number_format((float)$u['balance'], 2) ?></strong> bal</span>
-                    <span class="av-stat-pill"><strong>$<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?></strong> WD</span>
-                    <span class="av-stat-pill"><?= h($u['plan'] ?: 'free') ?></span>
-                    <?php if ($banned): ?><span class="av-status-badge av-status-failed">banned</span><?php endif; ?>
-                    <?php if ($verified): ?><span class="av-status-badge av-status-completed">verified</span><?php endif; ?>
-                  </div>
-                </div>
-              </div>
-              <div class="av-user-actions">
-                <form method="post">
-                  <input type="hidden" name="form" value="ban_user">
-                  <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <input type="hidden" name="banned" value="<?= $banned ? 0 : 1 ?>">
-                  <button class="av-btn<?= $banned ? ' av-btn-success' : '' ?>"><?= $banned ? 'Unban' : 'Ban' ?></button>
-                </form>
-                <form method="post">
-                  <input type="hidden" name="form" value="verify_user">
-                  <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <input type="hidden" name="verified" value="<?= $verified ? 0 : 1 ?>">
-                  <button class="av-btn<?= $verified ? '' : ' av-btn-success' ?>"><?= $verified ? 'Unverify' : 'Verify' ?></button>
-                </form>
-                <form method="post" target="_blank">
-                  <input type="hidden" name="form" value="login_as_user">
-                  <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <button class="av-btn av-btn-primary">Login as</button>
-                </form>
-              </div>
-              <form method="post" class="av-user-adjust">
-                <input type="hidden" name="form" value="adjust_balance">
-                <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                <input name="amount" type="number" step="0.01" placeholder="+/- $" inputmode="decimal">
-                <input name="note" type="text" placeholder="Note">
-                <label class="av-wd-toggle"><input type="checkbox" name="as_withdrawable" value="1"> WD</label>
-                <button class="av-btn av-btn-primary">Adjust</button>
-              </form>
-            </div>
+            <a class="av-settings-row" href="?tab=users&amp;id=<?= (int)$u['id'] ?>">
+              <span class="av-avatar av-avatar-sm"><?= h($initials) ?></span>
+              <span class="av-settings-label">
+                <?= h($u['name']) ?>
+                <span class="av-row-sub" style="display:block;font-weight:500"><?= h($u['email']) ?></span>
+              </span>
+              <span class="av-settings-value">
+                $<?= number_format((float)$u['balance'], 2) ?>
+                <?php if ($verified): ?> · ✓<?php endif; ?>
+                <?php if ($banned): ?> · banned<?php endif; ?>
+              </span>
+              <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+            </a>
           <?php endforeach; ?>
         </div>
       </div>
+      <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($tab === 'ads'): $ads = db()->query('SELECT a.*, u.name seller_name, u.email seller_email FROM ads a JOIN users u ON u.id=a.seller_id ORDER BY a.created_at DESC LIMIT 200')->fetchAll(); ?>
@@ -1468,14 +1593,22 @@ $tab = $_GET['tab'] ?? 'overview';
     <?php endif; ?>
 
     <?php if ($tab === 'currencies'): $wc = wallet_currencies_get(); ?>
-      <form method="post" class="space-y-4">
+      <div class="av-page">
+        <div class="av-page-head">
+          <div>
+            <h2 class="av-page-title">Currencies</h2>
+            <p class="av-page-sub">Local rates and crypto deposit addresses.</p>
+          </div>
+        </div>
+      <form method="post" class="space-y-3">
         <input type="hidden" name="form" value="currencies">
-        <div class="av-card  p-5 space-y-3">
-          <h2 class="font-bold text-lg">Deposit & withdraw rates</h2>
-          <p class="text-xs text-slate-500">Edit the rate for each country (units per $1). These rates show on user Deposit and Withdraw screens.</p>
+        <div class="av-panel">
+          <div class="av-panel-head"><span>Local rates</span></div>
+          <div class="av-panel-body">
+          <p class="text-xs av-muted mb-3">Units per $1 — shown on Deposit and Withdraw screens.</p>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-              <thead class="text-xs text-slate-500 border-b">
+              <thead class="text-xs av-muted border-b" style="border-color:var(--av-border)">
                 <tr>
                   <th class="py-2 pr-2">Country</th>
                   <th class="py-2 pr-2">Code</th>
@@ -1485,7 +1618,7 @@ $tab = $_GET['tab'] ?? 'overview';
               </thead>
               <tbody>
               <?php foreach (($wc['local'] ?? []) as $i => $c): ?>
-                <tr class="border-b border-slate-100">
+                <tr class="border-b" style="border-color:var(--av-border)">
                   <td class="py-3 pr-2">
                     <div class="flex items-center gap-2">
                       <?php if (!empty($c['flag'])): ?>
@@ -1493,12 +1626,12 @@ $tab = $_GET['tab'] ?? 'overview';
                       <?php endif; ?>
                       <input type="hidden" name="local[<?= $i ?>][flag]" value="<?= h($c['flag'] ?? '') ?>">
                       <input type="hidden" name="local[<?= $i ?>][code]" value="<?= h($c['code'] ?? '') ?>">
-                      <input name="local[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>" class="border rounded-lg px-2 py-1.5 text-sm w-36 sm:w-44">
+                      <input name="local[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>" class="av-field" style="width:9rem">
                     </div>
                   </td>
                   <td class="py-3 pr-2 font-mono font-bold text-xs"><?= h($c['code'] ?? '') ?></td>
                   <td class="py-3 pr-2">
-                    <input name="local[<?= $i ?>][rate]" type="number" step="0.01" min="0.01" value="<?= h((string)($c['rate'] ?? 1)) ?>" class="border rounded-lg px-2 py-1.5 text-sm w-28 font-semibold" required>
+                    <input name="local[<?= $i ?>][rate]" type="number" step="0.01" min="0.01" value="<?= h((string)($c['rate'] ?? 1)) ?>" class="av-field" style="width:6.5rem" required>
                   </td>
                   <td class="py-3 pr-2 text-center">
                     <input type="checkbox" name="local[<?= $i ?>][enabled]" value="1" class="accent-sky-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
@@ -1508,51 +1641,52 @@ $tab = $_GET['tab'] ?? 'overview';
               </tbody>
             </table>
           </div>
+          </div>
         </div>
 
-        <div class="av-card  p-5 space-y-3">
-          <h2 class="font-bold text-lg">Crypto options + deposit addresses</h2>
-          <p class="text-xs text-slate-500">Add your receiving wallet address for each network. Users only see coins/networks that have an address filled in. Networks are comma-separated (e.g. TRC20, BEP20, ERC20) — save once to refresh address fields for new networks.</p>
-          <div class="space-y-4">
+        <div class="av-panel">
+          <div class="av-panel-head"><span>Crypto addresses</span></div>
+          <div class="av-panel-body space-y-3">
+          <p class="text-xs av-muted">Users only see coins/networks with an address filled in. Networks are comma-separated (e.g. TRC20, BEP20).</p>
               <?php foreach (($wc['crypto'] ?? []) as $i => $c):
                 $nets = $c['networks'] ?? [];
                 if (!is_array($nets)) $nets = [];
                 $addrs = is_array($c['addresses'] ?? null) ? $c['addresses'] : [];
               ?>
-                <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
-                  <div class="flex flex-wrap gap-3 items-end">
+                <div class="av-admin-card space-y-3">
+                  <div class="av-form-grid cols-3">
                     <div>
-                      <p class="text-[10px] uppercase text-slate-500 font-semibold">Coin</p>
+                      <p class="text-[10px] uppercase av-muted font-semibold">Coin</p>
                       <p class="font-mono font-bold text-sm"><?= h($c['code'] ?? '') ?></p>
                       <input type="hidden" name="crypto[<?= $i ?>][code]" value="<?= h($c['code'] ?? '') ?>">
                     </div>
-                    <div>
-                      <label class="text-[10px] uppercase text-slate-500 font-semibold">Name</label>
-                      <input name="crypto[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>" class="block border rounded-lg px-2 py-1.5 text-sm w-32">
+                    <div class="av-field-block">
+                      <label>Name</label>
+                      <input name="crypto[<?= $i ?>][name]" value="<?= h($c['name'] ?? '') ?>">
                     </div>
-                    <div class="flex-1 min-w-[180px]">
-                      <label class="text-[10px] uppercase text-slate-500 font-semibold">Networks</label>
-                      <input name="crypto[<?= $i ?>][networks]" value="<?= h(implode(', ', $nets)) ?>" class="block border rounded-lg px-2 py-1.5 text-sm w-full" placeholder="TRC20, BEP20, ERC20">
+                    <div class="av-field-block">
+                      <label>Networks</label>
+                      <input name="crypto[<?= $i ?>][networks]" value="<?= h(implode(', ', $nets)) ?>" placeholder="TRC20, BEP20, ERC20">
                     </div>
-                    <label class="text-xs flex items-center gap-1 pb-2">
-                      <input type="checkbox" name="crypto[<?= $i ?>][enabled]" value="1" class="accent-sky-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
-                      Enabled
-                    </label>
                   </div>
-                  <div class="grid sm:grid-cols-2 gap-2">
+                  <label class="av-wd-toggle" style="padding-left:0">
+                    <input type="checkbox" name="crypto[<?= $i ?>][enabled]" value="1" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
+                    Enabled
+                  </label>
+                  <div class="av-form-grid cols-2">
                     <?php if (!$nets): ?>
-                      <p class="text-[11px] text-amber-600">Add at least one network, then Save rates to enter addresses.</p>
+                      <p class="text-[11px]" style="color:#d97706">Add at least one network, then Save to enter addresses.</p>
                     <?php endif; ?>
                     <?php foreach ($nets as $net):
                       $nk = strtoupper(trim((string)$net));
                       if ($nk === '') continue;
                       $addrVal = (string)($addrs[$nk] ?? '');
                     ?>
-                      <div>
-                        <label class="text-[10px] font-semibold text-slate-500"><?= h($nk) ?> deposit address</label>
-                        <input name="crypto[<?= $i ?>][addr][<?= h($nk) ?>]" value="<?= h($addrVal) ?>" placeholder="Paste your <?= h($nk) ?> wallet address" class="mt-0.5 w-full border rounded-lg px-2 py-1.5 text-xs font-mono <?= $addrVal === '' ? 'border-amber-400' : '' ?>">
+                      <div class="av-field-block">
+                        <label><?= h($nk) ?> deposit address</label>
+                        <input name="crypto[<?= $i ?>][addr][<?= h($nk) ?>]" value="<?= h($addrVal) ?>" placeholder="Paste <?= h($nk) ?> wallet address" class="font-mono text-xs" style="<?= $addrVal === '' ? 'border-color:#f59e0b' : '' ?>">
                         <?php if ($addrVal === ''): ?>
-                          <p class="text-[10px] text-amber-600 mt-0.5">Empty — users cannot deposit this network until you add an address.</p>
+                          <p class="text-[10px] mt-0.5" style="color:#d97706">Empty — users cannot deposit this network yet.</p>
                         <?php endif; ?>
                       </div>
                     <?php endforeach; ?>
@@ -1562,8 +1696,9 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
 
-        <button class="bg-brand text-white font-bold px-5 py-2.5 rounded-xl text-sm">Save rates</button>
+        <button class="av-btn av-btn-primary">Save rates</button>
       </form>
+      </div>
     <?php endif; ?>
 
     <?php if ($tab === 'gateways'): ?>

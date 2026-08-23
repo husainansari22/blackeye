@@ -822,6 +822,25 @@
     document.body.style.overflow = '';
   }
 
+  function syncFromUser(u) {
+    if (!u) return;
+    if (u.isVerified || u.kycStatus === 'verified') {
+      statusCache = {
+        isVerified: true,
+        kycStatus: 'verified',
+        submission: (statusCache && statusCache.submission) || null,
+      };
+    } else if (statusCache && statusCache.isVerified && !(u.isVerified || u.kycStatus === 'verified')) {
+      // Keep pending KYC states from API if user object hasn't caught up
+    } else if (u.kycStatus) {
+      statusCache = Object.assign({}, statusCache || {}, {
+        isVerified: !!u.isVerified,
+        kycStatus: u.kycStatus,
+      });
+    }
+    updateSidebarButton();
+  }
+
   global.openBecomeVerified = function () {
     openKyc();
   };
@@ -831,6 +850,7 @@
     close: closeKyc,
     refreshStatus,
     updateSidebarButton,
+    syncFromUser,
   };
 
   document.addEventListener('DOMContentLoaded', () => {
