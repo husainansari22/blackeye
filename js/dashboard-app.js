@@ -14,11 +14,10 @@
     return A().formatMoney(n);
   }
 
-  /** Blue circle checkmark — sits beside a username like social verify badges */
+  /** Instagram / Facebook style verified badge beside a username */
   function verifyBadgeHtml(size) {
-    const s = size === 'lg' ? '1.2rem' : size === 'sm' ? '0.85rem' : '1.05rem';
-    const icon = size === 'lg' ? '0.62rem' : size === 'sm' ? '0.42rem' : '0.55rem';
-    return `<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:${s};height:${s};min-width:${s}"><i class="fa-solid fa-check" style="font-size:${icon}"></i></span>`;
+    const s = size === 'lg' ? '1.3rem' : size === 'sm' ? '0.9rem' : '1.1rem';
+    return `<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:${s};height:${s};min-width:${s}"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>`;
   }
 
   function nameWithVerify(name, isVerified, size) {

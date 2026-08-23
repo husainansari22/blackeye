@@ -954,7 +954,7 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   line-height: 1.35;
 }
 
-/* Blue verify checkmark beside names */
+/* Instagram / Facebook style verified badge */
 .av-verify-badge {
   display: inline-flex;
   align-items: center;
@@ -962,24 +962,27 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   width: 1.05rem;
   height: 1.05rem;
   min-width: 1.05rem;
-  border-radius: 999px;
-  background: #0ea5e9;
-  color: #fff !important;
+  margin: 0 0 0 0.28rem;
+  padding: 0;
+  border: 0;
+  background: transparent !important;
+  box-shadow: none !important;
   flex-shrink: 0;
   vertical-align: middle;
-  box-shadow: 0 0 0 1.5px rgba(14, 165, 233, 0.28);
+  line-height: 0;
+  overflow: visible;
 }
-.av-verify-badge i {
-  font-size: 0.55rem;
-  color: #fff !important;
-  line-height: 1;
+.av-verify-badge img,
+.av-verify-badge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .av-verify-badge-lg {
-  width: 1.25rem;
-  height: 1.25rem;
-  min-width: 1.25rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  min-width: 1.3rem;
 }
-.av-verify-badge-lg i { font-size: 0.65rem; }
 .av-user-meta {
   display: flex;
   flex-wrap: wrap;
