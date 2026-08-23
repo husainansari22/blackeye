@@ -257,16 +257,15 @@ wss.on("connection", (client, req) => {
       upstream.send(data);
       return;
     }
-    // Local echo / ack so the UI stays usable before GPU is wired
     try {
       const msg = JSON.parse(String(data));
       if (msg.type === "ping") {
         client.send(JSON.stringify({ type: "pong", t: Date.now() }));
       } else if (msg.type === "config") {
-        client.send(JSON.stringify({ type: "config_ack", ok: true, preview: true }));
+        client.send(JSON.stringify({ type: "config_ack", ok: true, needs_character: !msg.character_b64 }));
       }
     } catch {
-      // ignore binary frames until GPU is online
+      // ignore
     }
   });
 

@@ -6,3 +6,4 @@ uploads/
 .DS_Store
 dist/
 .build/
+runtime-config.json
