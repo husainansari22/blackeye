@@ -64,6 +64,23 @@
     </div>
   </section>
 
-  <script type="module" src="/assets/studio-free.js"></script>
+  <script type="module">
+    import("/assets/studio-free.js").catch((err) => {
+      const status = document.getElementById("status-text");
+      const out = document.getElementById("output-empty");
+      const pill = document.getElementById("gpu-pill");
+      const msg = err?.message || String(err);
+      if (status) status.textContent = `Script failed to load: ${msg}`;
+      if (out) {
+        out.textContent = `Script failed: ${msg}`;
+        out.classList.remove("is-hidden");
+      }
+      if (pill) {
+        pill.textContent = "Free local error";
+        pill.classList.add("pill-off");
+        pill.classList.remove("pill-on");
+      }
+    });
+  </script>
 </body>
 </html>
