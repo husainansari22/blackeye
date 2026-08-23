@@ -49406,7 +49406,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     let characterFile = null;
     let realtimeClient = null;
     let captureTimer = null;
+    let waitTimer = null;
+    let kickTimer = null;
     let lucyReady = false;
+    let gotRemote = false;
+    let lastState = "";
     obsUrl.value = `${location.origin}/obs`;
     function setStatus(text) {
       statusText.textContent = text;
@@ -49448,6 +49452,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       if (scene) parts.push(`Change the background/scene to: ${scene}`);
       return parts.join(" ");
     }
+    async function prepareCharacterBlob(file2) {
+      const bmp = await createImageBitmap(file2);
+      const maxSide = 768;
+      const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+      const w = Math.max(1, Math.round(bmp.width * scale));
+      const h2 = Math.max(1, Math.round(bmp.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h2;
+      canvas.getContext("2d").drawImage(bmp, 0, 0, w, h2);
+      bmp.close?.();
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+      if (!blob) throw new Error("Failed to prepare character photo");
+      return new File([blob], "character.jpg", { type: "image/jpeg" });
+    }
     function stopLocalTracks() {
       if (!localStream) return;
       localStream.getTracks().forEach((t) => {
@@ -49468,20 +49487,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           audio: false,
           video: {
             facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 }
+            frameRate: { ideal: resolveFpsNumber(model.fps), max: 30 },
+            width: { ideal: model.width },
+            height: { ideal: model.height }
           }
         });
       } catch (err) {
         const name = err?.name || "";
         if (name === "NotReadableError" || /video source|Could not start/i.test(err?.message || "")) {
-          throw new Error(
-            "Camera is busy. Close OBS / other apps using the webcam, then try Start live again."
-          );
+          throw new Error("Camera is busy. Close OBS webcam source, then retry Start live.");
         }
         if (name === "NotAllowedError") {
-          throw new Error("Camera permission blocked. Allow camera for kelvinoz.com and retry.");
+          throw new Error("Camera permission blocked for kelvinoz.com.");
         }
         throw new Error(err?.message || "Could not open camera");
       }
@@ -49490,6 +49507,43 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       camera.classList.add("is-on");
       cameraEmpty.classList.add("is-hidden");
       return localStream;
+    }
+    function attachRemote(remoteStream) {
+      const videoTracks = remoteStream?.getVideoTracks?.() || [];
+      if (!videoTracks.length) {
+        setStatus("Lucy stream arrived with no video track yet");
+        return;
+      }
+      gotRemote = true;
+      clearWaiters();
+      videoTracks.forEach((track) => {
+        track.addEventListener("unmute", () => {
+          output.play().catch(() => {
+          });
+        });
+      });
+      output.srcObject = remoteStream;
+      output.muted = true;
+      output.playsInline = true;
+      output.autoplay = true;
+      const play = () => output.play().catch(() => {
+      });
+      play();
+      output.onloadedmetadata = play;
+      output.classList.add("is-on");
+      outputEmpty.classList.add("is-hidden");
+      startObsCapture();
+      setStatus("Live \xB7 Lucy 2.5 generating");
+    }
+    function clearWaiters() {
+      if (waitTimer) {
+        clearTimeout(waitTimer);
+        waitTimer = null;
+      }
+      if (kickTimer) {
+        clearTimeout(kickTimer);
+        kickTimer = null;
+      }
     }
     function startObsCapture() {
       stopObsCapture();
@@ -49510,6 +49564,29 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       if (captureTimer) clearInterval(captureTimer);
       captureTimer = null;
     }
+    async function uploadCharacterRef(client, file2) {
+      const prepared = await prepareCharacterBlob(file2);
+      setStatus(`Uploading character (${Math.round(prepared.size / 1024)} KB)\u2026`);
+      const ref = await client.files.upload(prepared, { ttlSeconds: 3600 });
+      if (!ref?.id) throw new Error("Character upload returned no file id");
+      return ref.id;
+    }
+    async function kickGeneration(imageRef) {
+      if (!realtimeClient || gotRemote) return;
+      const promptText = buildPrompt();
+      setStatus("Starting Lucy generation\u2026");
+      setOutputMsg("Starting Lucy generation\u2026");
+      try {
+        await realtimeClient.set({
+          prompt: promptText,
+          image: imageRef,
+          enhance: false
+        });
+      } catch (err) {
+        setStatus(err?.message || "Lucy set() failed");
+        if (!gotRemote) setOutputMsg(err?.message || "Lucy set() failed");
+      }
+    }
     async function startLucy() {
       if (!characterFile) {
         setStatus("Choose a character photo first.");
@@ -49517,66 +49594,143 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         return;
       }
       if (!lucyReady) {
-        setStatus("Lucy is offline \u2014 Decart key missing.");
+        setStatus("Lucy offline \u2014 Decart key missing.");
         setOutputMsg("Lucy offline");
         return;
       }
       startBtn.disabled = true;
       stopBtn.disabled = false;
+      gotRemote = false;
+      lastState = "";
+      clearWaiters();
       setOutputMsg("Connecting Lucy 2.5\u2026");
       setStatus("Getting Lucy session\u2026");
+      let imageRef = null;
       try {
         const stream = await ensureCamera();
         const apiKey = await getClientToken();
-        setStatus("Opening Lucy realtime\u2026");
         const client = createDecartClient({ apiKey });
+        setStatus("Checking network for Lucy WebRTC\u2026");
+        try {
+          const preflight = await client.realtime.checkConnectivity();
+          if (preflight?.quality === "critical") {
+            const reason = preflight.reasons?.[0] || "WebRTC blocked on this network";
+            throw new Error(`Network cannot reach Lucy (WebRTC). ${reason}`);
+          }
+          if (preflight?.metrics?.transport === "relay") {
+            setStatus("Lucy via TURN relay (slower)\u2026");
+          }
+        } catch (err) {
+          if (/WebRTC|Network cannot reach/i.test(err?.message || "")) throw err;
+        }
+        imageRef = await uploadCharacterRef(client, characterFile);
         const promptText = buildPrompt();
+        setStatus("Opening Lucy realtime\u2026");
+        setOutputMsg("Opening Lucy realtime\u2026");
         realtimeClient = await client.realtime.connect(stream, {
           model,
-          mirror: "auto",
+          mirror: true,
           preferredVideoCodec: "vp8",
-          onRemoteStream: (remoteStream) => {
-            output.srcObject = remoteStream;
-            output.muted = true;
-            output.playsInline = true;
-            output.play().catch(() => {
-            });
-            output.classList.add("is-on");
-            outputEmpty.classList.add("is-hidden");
-            startObsCapture();
-            setStatus("Live \xB7 Lucy 2.5");
-          },
+          onRemoteStream: (remoteStream) => attachRemote(remoteStream),
           onConnectionChange: (state) => {
-            if (state && state !== "connected") setStatus(`Lucy connection: ${state}`);
+            lastState = state || "";
+            if (gotRemote) return;
+            if (state === "generating") {
+              setOutputMsg("Lucy generating video\u2026");
+              setStatus("Lucy generating\u2026");
+            } else if (state === "connected") {
+              setOutputMsg("Connected \u2014 waiting for Lucy video\u2026");
+              setStatus("Connected \u2014 waiting for Lucy video");
+            } else if (state === "reconnecting") {
+              setOutputMsg("Reconnecting to Lucy\u2026");
+              setStatus("Reconnecting\u2026");
+            } else if (state === "connecting") {
+              setOutputMsg("Connecting Lucy 2.5\u2026");
+            } else if (state) {
+              setStatus(`Lucy: ${state}`);
+            }
+          },
+          onConnectionQuality: (report) => {
+            if (gotRemote || !report) return;
+            if (report.quality === "critical" || report.quality === "poor") {
+              setStatus(`Lucy link ${report.quality}${report.limitingFactor ? ` (${report.limitingFactor})` : ""}`);
+            }
+          },
+          onQueuePosition: (qp) => {
+            const pos = qp?.position ?? qp;
+            setStatus(`Lucy queue #${pos}`);
+            setOutputMsg(`In Lucy queue (#${pos})\u2026`);
           },
           initialState: {
-            prompt: { text: promptText, enhance: true },
-            image: characterFile
+            prompt: { text: promptText, enhance: false },
+            image: imageRef
           }
         });
-        setStatus("Live \xB7 Lucy 2.5 connected");
+        realtimeClient.on("error", (error51) => {
+          const msg = error51?.message || String(error51);
+          const code = error51?.code ? ` [${error51.code}]` : "";
+          setStatus(`${msg}${code}`);
+          if (!gotRemote) setOutputMsg(`${msg}${code}`);
+        });
+        realtimeClient.on("generationTick", () => {
+          if (!gotRemote) {
+            setOutputMsg("Lucy generating frames\u2026");
+            setStatus("Lucy generating frames\u2026");
+          }
+        });
+        realtimeClient.on("generationEnded", (info) => {
+          if (gotRemote) return;
+          const reason = info?.reason || info?.message || "generation ended";
+          setStatus(`Lucy stopped: ${reason}`);
+          setOutputMsg(`Lucy stopped before video: ${reason}`);
+        });
+        realtimeClient.on("diagnostic", (event) => {
+          if (gotRemote) return;
+          const name = event?.name || event?.type || "";
+          if (/error|fail|timeout|ice|turn/i.test(name)) {
+            setStatus(`Lucy diagnostic: ${name}`);
+          }
+        });
+        kickTimer = setTimeout(() => {
+          kickGeneration(imageRef);
+        }, 1500);
+        waitTimer = setTimeout(async () => {
+          if (gotRemote) return;
+          await kickGeneration(imageRef);
+          setTimeout(() => {
+            if (gotRemote) return;
+            const stateHint = lastState ? ` (state: ${lastState})` : "";
+            setOutputMsg(
+              `No Lucy video yet${stateHint}. Top-up Decart credits at platform.decart.ai/billing, hard-refresh, close OBS webcam capture, retry.`
+            );
+            setStatus("No Lucy video \u2014 credits or WebRTC media path");
+          }, 8e3);
+        }, 1e4);
       } catch (err) {
         const msg = err?.message || String(err);
         setStatus(msg);
         setOutputMsg(msg);
         startBtn.disabled = false;
         stopBtn.disabled = true;
+        clearWaiters();
         try {
-          if (realtimeClient) await realtimeClient.disconnect();
+          if (realtimeClient) realtimeClient.disconnect();
         } catch {
         }
         realtimeClient = null;
         stopLocalTracks();
-        throw err;
       }
     }
     async function stopLucy() {
+      clearWaiters();
       stopObsCapture();
       try {
-        if (realtimeClient) await realtimeClient.disconnect();
+        if (realtimeClient) realtimeClient.disconnect();
       } catch {
       }
       realtimeClient = null;
+      gotRemote = false;
+      lastState = "";
       stopLocalTracks();
       output.srcObject = null;
       output.classList.remove("is-on");
@@ -49593,25 +49747,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       photoPreview.src = URL.createObjectURL(file2);
       photoPreview.hidden = false;
       setStatus("Character photo ready \u2014 click Start live");
-      if (realtimeClient) {
-        realtimeClient.set({ prompt: buildPrompt(), image: file2, enhance: true }).catch((err) => setStatus(err.message || "Failed to update character"));
-      }
     });
     let promptTimer = null;
     promptEl.addEventListener("input", () => {
-      if (!realtimeClient) return;
+      if (!realtimeClient || !characterFile) return;
       clearTimeout(promptTimer);
-      promptTimer = setTimeout(() => {
-        const opts = { prompt: buildPrompt(), enhance: true };
-        if (characterFile) opts.image = characterFile;
-        realtimeClient.set(opts).catch((err) => setStatus(err.message || "Failed to update prompt"));
-      }, 600);
+      promptTimer = setTimeout(async () => {
+        try {
+          await realtimeClient.set({
+            prompt: buildPrompt(),
+            enhance: false
+          });
+        } catch (err) {
+          setStatus(err.message || "Failed to update prompt");
+        }
+      }, 700);
     });
-    startBtn.addEventListener("click", async () => {
-      try {
-        await startLucy();
-      } catch {
-      }
+    startBtn.addEventListener("click", () => {
+      startLucy();
     });
     stopBtn.addEventListener("click", () => {
       stopLucy();
