@@ -78,7 +78,8 @@
       sellerId: row.sellerId != null ? String(row.sellerId) : '',
       sellerName: name,
       sellerEmail: row.sellerEmail || '',
-      sellerVerified: !!(row.sellerVerified || row.seller_verified),
+      sellerVerified: row.sellerVerified === true || row.sellerVerified === 1 || row.sellerVerified === '1'
+        || row.seller_verified === true || row.seller_verified === 1 || row.seller_verified === '1',
       sellerRating: Number(row.sellerRating) || 0,
       sellerReviews: Number(row.sellerReviews) || 0,
       sellerInitials: initials,
