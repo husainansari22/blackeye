@@ -2,7 +2,8 @@
   const camera = document.getElementById("camera");
   const output = document.getElementById("output");
   const ctx = output.getContext("2d");
-  const stageEmpty = document.getElementById("stage-empty");
+  const cameraEmpty = document.getElementById("camera-empty");
+  const outputEmpty = document.getElementById("output-empty");
   const photoInput = document.getElementById("photo");
   const photoPreview = document.getElementById("photo-preview");
   const promptEl = document.getElementById("prompt");
@@ -41,11 +42,10 @@
     try {
       const res = await fetch("/api/status");
       const data = await res.json();
-      setGpu(Boolean(data.gpu?.online), data.gpu?.detail || (data.gpu?.online ? "GPU ready" : "GPU offline"));
-      if (!data.gpu?.online) {
-        setStatus(
-          "Studio is ready. GPU worker is offline — deploy L40S and share SSH so live full-character AI can attach. Local camera preview still works."
-        );
+      if (data.gpu?.online) {
+        setGpu(true, data.gpu.detail || "GPU ready");
+      } else {
+        setGpu(false, data.gpu?.detail || "GPU offline — camera preview still works");
       }
     } catch {
       setGpu(false, "Could not reach status API");
@@ -62,6 +62,8 @@
     await camera.play();
     output.width = camera.videoWidth || 1280;
     output.height = camera.videoHeight || 720;
+    camera.classList.add("is-on");
+    cameraEmpty.classList.add("is-hidden");
   }
 
   function drawPreviewFrame() {
@@ -69,20 +71,16 @@
     const w = output.width;
     const h = output.height;
     ctx.clearRect(0, 0, w, h);
-
-    // Base camera
     ctx.drawImage(camera, 0, 0, w, h);
 
-    // Soft scene wash driven by prompt keywords (local preview only)
     const prompt = (promptEl.value || "").toLowerCase();
-    let wash = "rgba(20, 40, 35, 0.18)";
-    if (prompt.includes("neon") || prompt.includes("night")) wash = "rgba(80, 20, 120, 0.28)";
-    if (prompt.includes("beach") || prompt.includes("day")) wash = "rgba(255, 200, 120, 0.18)";
-    if (prompt.includes("studio") || prompt.includes("white")) wash = "rgba(240, 240, 240, 0.2)";
+    let wash = "rgba(0, 0, 0, 0.12)";
+    if (prompt.includes("neon") || prompt.includes("night")) wash = "rgba(70, 20, 110, 0.28)";
+    if (prompt.includes("beach") || prompt.includes("day")) wash = "rgba(255, 190, 110, 0.18)";
+    if (prompt.includes("studio") || prompt.includes("white")) wash = "rgba(240, 240, 240, 0.18)";
     ctx.fillStyle = wash;
     ctx.fillRect(0, 0, w, h);
 
-    // Character reference overlay — full-frame presence (preview until GPU worker takes over)
     if (characterImg) {
       const targetH = h * 0.92;
       const scale = targetH / characterImg.height;
@@ -95,12 +93,8 @@
       ctx.restore();
     }
 
-    // Label so it's clear this is preview until GPU AI is attached
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(12, 12, gpuOnline ? 150 : 210, 28);
-    ctx.fillStyle = "#c8f26d";
-    ctx.font = "600 13px Manrope, sans-serif";
-    ctx.fillText(gpuOnline ? "GPU LIVE" : "LOCAL PREVIEW", 22, 31);
+    output.classList.add("is-on");
+    outputEmpty.classList.add("is-hidden");
 
     try {
       bc.postMessage({ type: "frame", dataUrl: output.toDataURL("image/jpeg", 0.7) });
@@ -112,7 +106,11 @@
   }
 
   function connectWs() {
-    if (ws) try { ws.close(); } catch {}
+    if (ws) {
+      try {
+        ws.close();
+      } catch {}
+    }
     const proto = location.protocol === "https:" ? "wss" : "ws";
     ws = new WebSocket(`${proto}://${location.host}/ws/live`);
     ws.onopen = () => {
@@ -130,7 +128,7 @@
         if (msg.type === "status") setStatus(msg.message || "Connected");
         if (msg.type === "error") setStatus(msg.error);
       } catch {
-        // binary frames from GPU would be handled here later
+        // binary frames later
       }
     };
   }
@@ -160,17 +158,12 @@
   startBtn.addEventListener("click", async () => {
     try {
       await ensureCamera();
-      stageEmpty.hidden = true;
       running = true;
       startBtn.disabled = true;
       stopBtn.disabled = false;
       connectWs();
       drawPreviewFrame();
-      setStatus(
-        gpuOnline
-          ? "Live with GPU worker."
-          : "Live in local preview. Full AI character transform starts after L40S worker is connected."
-      );
+      setStatus(gpuOnline ? "Live with GPU worker." : "Live preview running.");
     } catch (err) {
       setStatus(err.message || "Camera permission denied");
     }
@@ -182,6 +175,15 @@
     startBtn.disabled = false;
     stopBtn.disabled = true;
     if (ws) ws.close();
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+    camera.srcObject = null;
+    camera.classList.remove("is-on");
+    output.classList.remove("is-on");
+    cameraEmpty.classList.remove("is-hidden");
+    outputEmpty.classList.remove("is-hidden");
     setStatus("Stopped.");
   });
 

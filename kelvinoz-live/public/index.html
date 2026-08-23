@@ -6,69 +6,62 @@
   <title>KelvinOz Live</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/assets/studio.css" />
 </head>
 <body>
   <header class="topbar">
-    <div>
+    <div class="brand-wrap">
       <p class="brand">KelvinOz Live</p>
-      <p class="tagline">Full-character live transform</p>
     </div>
     <div class="topbar-actions">
       <span id="gpu-pill" class="pill pill-off">GPU offline</span>
+      <button id="start-btn" type="button">Start camera</button>
+      <button id="stop-btn" type="button" class="ghost" disabled>Stop</button>
       <button id="logout" type="button" class="ghost">Log out</button>
     </div>
   </header>
 
-  <main class="studio">
-    <section class="stage">
-      <div class="stage-frame">
+  <main class="dual-stage">
+    <section class="feed-panel">
+      <h2 class="feed-label">Webcam Source</h2>
+      <div class="feed-box">
         <video id="camera" playsinline muted autoplay></video>
-        <canvas id="output"></canvas>
-        <div id="stage-empty" class="stage-empty">
-          <p>Allow camera access, add a character photo, then go live.</p>
-        </div>
-      </div>
-      <div class="stage-controls">
-        <button id="start-btn" type="button">Go live</button>
-        <button id="stop-btn" type="button" class="ghost" disabled>Stop</button>
+        <div id="camera-empty" class="feed-placeholder">Camera off</div>
       </div>
     </section>
 
-    <aside class="panel">
-      <div class="panel-block">
-        <h2>Character photo</h2>
-        <p class="hint">Upload any preferred photo. The live stream should follow that full look — not face-only paste.</p>
-        <label class="file-btn">
-          Choose photo
-          <input id="photo" type="file" accept="image/png,image/jpeg,image/webp" hidden />
-        </label>
-        <img id="photo-preview" alt="" hidden />
+    <section class="feed-panel">
+      <h2 class="feed-label">Live Output</h2>
+      <div class="feed-box">
+        <canvas id="output"></canvas>
+        <div id="output-empty" class="feed-placeholder">Waiting</div>
       </div>
-
-      <div class="panel-block">
-        <h2>Background / scene</h2>
-        <p class="hint">Describe how you want the background to look.</p>
-        <textarea id="prompt" rows="4" placeholder="Example: cinematic neon alley at night, wet asphalt reflections, soft fog"></textarea>
-      </div>
-
-      <div class="panel-block">
-        <h2>OBS connect</h2>
-        <p class="hint">Add a Browser Source in OBS and paste this URL.</p>
-        <div class="obs-row">
-          <input id="obs-url" readonly />
-          <button id="copy-obs" type="button" class="ghost">Copy</button>
-        </div>
-        <p class="tiny">Suggested Browser Source size: 1280 × 720</p>
-      </div>
-
-      <div class="panel-block status-block">
-        <h2>Status</h2>
-        <p id="status-text">Starting…</p>
-      </div>
-    </aside>
+    </section>
   </main>
+
+  <section class="controls">
+    <div class="control-card">
+      <h3>Character photo</h3>
+      <label class="file-btn">
+        Choose photo
+        <input id="photo" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+      </label>
+      <img id="photo-preview" alt="" hidden />
+    </div>
+    <div class="control-card">
+      <h3>Background / scene</h3>
+      <textarea id="prompt" rows="3" placeholder="Describe how you want the background to look"></textarea>
+    </div>
+    <div class="control-card">
+      <h3>OBS connect</h3>
+      <div class="obs-row">
+        <input id="obs-url" readonly />
+        <button id="copy-obs" type="button" class="ghost">Copy</button>
+      </div>
+      <p id="status-text" class="status-text">Ready</p>
+    </div>
+  </section>
 
   <script src="/assets/studio.js"></script>
 </body>
