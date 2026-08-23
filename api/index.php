@@ -192,17 +192,53 @@ try {
 
         case 'market.list': {
             ensure_marketplace_extras();
+            ensure_commerce_features();
             $rows = db()->query("SELECT a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
+                a.public_slug AS publicSlug,
                 a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified
                 FROM ads a JOIN users u ON u.id = a.seller_id
                 WHERE a.status = 'active' AND a.stock > 0 AND u.is_banned = 0
-                ORDER BY a.created_at DESC LIMIT 200")->fetchAll();
+                " . market_list_sql_order() . " LIMIT 200")->fetchAll();
             foreach ($rows as &$r) {
+                if (empty($r['publicSlug'])) {
+                    $r['publicSlug'] = ensure_ad_public_slug(['id' => $r['id'], 'title' => $r['title'], 'public_slug' => $r['publicSlug']]);
+                }
                 $sum = seller_rating_summary((int)$r['sellerId']);
                 $r['sellerRating'] = $sum['average'];
                 $r['sellerReviews'] = $sum['count'];
             }
             json_out(['ok' => true, 'listings' => $rows]);
+        }
+
+        case 'market.get': {
+            ensure_marketplace_extras();
+            ensure_commerce_features();
+            $id = (int)($body['id'] ?? $body['listingId'] ?? $_GET['id'] ?? 0);
+            $slug = trim((string)($body['slug'] ?? $_GET['slug'] ?? ''));
+            $cols = "a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
+                a.public_slug AS publicSlug, a.created_at,
+                a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified,
+                u.avatar_url AS sellerAvatar, u.created_at AS sellerMemberSince";
+            if ($id > 0) {
+                $stmt = db()->prepare("SELECT {$cols} FROM ads a JOIN users u ON u.id = a.seller_id
+                    WHERE a.id = ? AND a.status = 'active' AND u.is_banned = 0 LIMIT 1");
+                $stmt->execute([$id]);
+            } elseif ($slug !== '') {
+                $stmt = db()->prepare("SELECT {$cols} FROM ads a JOIN users u ON u.id = a.seller_id
+                    WHERE a.public_slug = ? AND a.status = 'active' AND u.is_banned = 0 LIMIT 1");
+                $stmt->execute([$slug]);
+            } else {
+                json_out(['ok' => false, 'error' => 'id or slug required'], 422);
+            }
+            $row = $stmt->fetch();
+            if (!$row) json_out(['ok' => false, 'error' => 'Listing not found'], 404);
+            if (empty($row['publicSlug'])) {
+                $row['publicSlug'] = ensure_ad_public_slug(['id' => $row['id'], 'title' => $row['title'], 'public_slug' => $row['publicSlug']]);
+            }
+            $sum = seller_rating_summary((int)$row['sellerId']);
+            $row['sellerRating'] = $sum['average'];
+            $row['sellerReviews'] = $sum['count'];
+            json_out(['ok' => true, 'listing' => $row]);
         }
 
         case 'ads.mine': {
@@ -291,72 +327,102 @@ try {
             $u = require_user();
             ensure_wallet_ledger_columns();
             ensure_marketplace_extras();
+            ensure_commerce_features();
             $listingId = (int)($body['listingId'] ?? $body['id'] ?? 0);
-            $stmt = db()->prepare("SELECT a.*, u.email AS seller_email, u.name AS seller_name FROM ads a JOIN users u ON u.id = a.seller_id WHERE a.id = ? AND a.status = 'active' AND a.stock > 0 LIMIT 1");
-            $stmt->execute([$listingId]);
-            $ad = $stmt->fetch();
-            if (!$ad) json_out(['ok' => false, 'error' => 'Listing unavailable'], 404);
-            if ((int)$ad['seller_id'] === (int)$u['id']) json_out(['ok' => false, 'error' => 'Cannot buy your own listing'], 400);
-            $price = (float)$ad['price'];
-            if ((float)$u['balance'] < $price) json_out(['ok' => false, 'error' => 'Insufficient balance'], 400);
+            try {
+                $result = purchase_listing((int)$u['id'], $listingId);
+            } catch (MarketplaceException $e) {
+                json_out(['ok' => false, 'error' => $e->getMessage(), 'code' => $e->errorCode], $e->httpStatus);
+            }
+            json_out([
+                'ok' => true,
+                'orderId' => $result['orderId'],
+                'publicId' => $result['publicId'],
+                'txid' => $result['publicId'],
+                'status' => $result['status'],
+                'sellerNet' => $result['sellerNet'],
+                'platformFee' => $result['platformFee'],
+            ]);
+        }
 
-            $pdo = db();
-            $pdo->beginTransaction();
-            $saleSplit = null;
+        case 'cart.list': {
+            $u = require_user();
+            ensure_commerce_features();
+            json_out(['ok' => true, 'items' => cart_list_for_user((int)$u['id'])]);
+        }
+
+        case 'cart.add': {
+            $u = require_user();
+            ensure_commerce_features();
+            $listingId = (int)($body['listingId'] ?? $body['id'] ?? 0);
+            $qty = max(1, (int)($body['qty'] ?? 1));
+            if ($listingId < 1) json_out(['ok' => false, 'error' => 'listingId required'], 422);
             try {
-                debit_user_for_purchase($pdo, (int)$u['id'], $price);
-                $creds = json_encode([
-                    'username' => $ad['username'],
-                    'password' => $ad['password_plain'],
-                    'previewLink' => $ad['preview_link'],
-                    'attachedEmail' => $ad['attached_email'],
-                    'attachedEmailPassword' => $ad['attached_email_password'],
-                    'twoFA' => $ad['two_fa'],
-                    'extraInfo' => $ad['extra_info'],
-                ]);
-                $status = $ad['release_type'] === 'manual' ? 'pending' : 'completed';
-                $publicId = uuid_txid();
-                $pdo->prepare('INSERT INTO orders (public_id, listing_id, buyer_id, seller_id, title, category, price, status, credentials_json, completed_at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?)')->execute([
-                    $publicId, $listingId, (int)$u['id'], (int)$ad['seller_id'], $ad['title'], $ad['category'], money_f($price), $status, $creds,
-                    $status === 'completed' ? date('Y-m-d H:i:s') : null
-                ]);
-                $orderId = (int)$pdo->lastInsertId();
-                if ($status === 'completed') {
-                    $saleSplit = credit_seller_balance($pdo, (int)$ad['seller_id'], $price, 'Sold #' . $publicId);
-                    record_order_sale_split($pdo, $orderId, $saleSplit);
-                } else {
-                    $pdo->prepare('UPDATE users SET escrow_balance = escrow_balance + ? WHERE id = ?')->execute([money_f($price), (int)$ad['seller_id']]);
-                }
-                $pdo->prepare('UPDATE ads SET stock = stock - 1, status = IF(stock - 1 <= 0, \'removed\', status) WHERE id = ?')->execute([$listingId]);
-                $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'purchase\', ?, \'completed\', ?)')
-                    ->execute([(int)$u['id'], money_f($price), 'Bought #' . $publicId]);
-                $pdo->commit();
-            } catch (Throwable $e) {
-                $pdo->rollBack();
-                throw $e;
+                cart_add_item((int)$u['id'], $listingId, $qty);
+            } catch (MarketplaceException $e) {
+                json_out(['ok' => false, 'error' => $e->getMessage(), 'code' => $e->errorCode], $e->httpStatus);
             }
-            notify_user((int)$u['id'], 'Order placed', 'You purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order');
-            $sellerNetNote = '';
-            if ($saleSplit) {
-                $sellerNetNote = ' AI deducted ' . round(($saleSplit['rate'] ?? 0) * 100, 2) . '% ($' . money_f($saleSplit['commission']) . '); $' . money_f($saleSplit['net']) . ' added to withdrawable balance.';
-                notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $u['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId . '.' . $sellerNetNote, 'order');
-            } else {
-                notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $u['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order');
+            json_out(['ok' => true, 'items' => cart_list_for_user((int)$u['id'])]);
+        }
+
+        case 'cart.remove': {
+            $u = require_user();
+            ensure_commerce_features();
+            $listingId = (int)($body['listingId'] ?? $body['id'] ?? 0);
+            cart_remove_item((int)$u['id'], $listingId);
+            json_out(['ok' => true, 'items' => cart_list_for_user((int)$u['id'])]);
+        }
+
+        case 'cart.clear': {
+            $u = require_user();
+            ensure_commerce_features();
+            cart_clear_items((int)$u['id']);
+            json_out(['ok' => true, 'items' => []]);
+        }
+
+        case 'cart.checkout': {
+            $u = require_user();
+            ensure_commerce_features();
+            try {
+                $result = cart_checkout((int)$u['id']);
+            } catch (MarketplaceException $e) {
+                json_out(['ok' => false, 'error' => $e->getMessage(), 'code' => $e->errorCode], $e->httpStatus);
             }
-            $sellerReleaseNote = $status === 'pending'
-                ? 'Funds are on hold in escrow until you send the buyer the login details in order chat. AI will release funds when credentials are detected (platform sales commission applies on release).'
-                : ('AI sales settlement credited $' . money_f($saleSplit['net'] ?? 0) . ' to your withdrawable balance after platform commission (any seller debt was repaid first).');
+            $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
+            json_out([
+                'ok' => true,
+                'orders' => $result['orders'],
+                'errors' => $result['errors'],
+                'total' => $result['total'],
+                'user' => public_user($fresh),
+            ]);
+        }
+
+        case 'wishlist.list': {
+            $u = require_user();
+            ensure_commerce_features();
+            json_out(['ok' => true, 'items' => wishlist_list_for_user((int)$u['id'])]);
+        }
+
+        case 'wishlist.add': {
+            $u = require_user();
+            ensure_commerce_features();
+            $listingId = (int)($body['listingId'] ?? $body['id'] ?? 0);
+            if ($listingId < 1) json_out(['ok' => false, 'error' => 'listingId required'], 422);
             try {
-                $buyerMail = email_order_notice($u['name'], $ad['title'], 'buyer', money_f($price), $publicId);
-                send_app_mail($u['email'], $buyerMail['subject'], $buyerMail['html'], $buyerMail['text']);
-                $sellerMail = email_order_notice($ad['seller_name'], $ad['title'], 'seller', money_f($price), $publicId, $sellerReleaseNote);
-                send_app_mail($ad['seller_email'], $sellerMail['subject'], $sellerMail['html'], $sellerMail['text']);
-            } catch (Throwable $e) {}
-            try {
-                maybe_credit_referral_reward((int)$u['id']);
-            } catch (Throwable $e) {}
-            json_out(['ok' => true, 'orderId' => $orderId, 'publicId' => $publicId, 'txid' => $publicId, 'status' => $status, 'sellerNet' => $saleSplit['net'] ?? null, 'platformFee' => $saleSplit['commission'] ?? null]);
+                wishlist_add_item((int)$u['id'], $listingId);
+            } catch (MarketplaceException $e) {
+                json_out(['ok' => false, 'error' => $e->getMessage(), 'code' => $e->errorCode], $e->httpStatus);
+            }
+            json_out(['ok' => true, 'items' => wishlist_list_for_user((int)$u['id'])]);
+        }
+
+        case 'wishlist.remove': {
+            $u = require_user();
+            ensure_commerce_features();
+            $listingId = (int)($body['listingId'] ?? $body['id'] ?? 0);
+            wishlist_remove_item((int)$u['id'], $listingId);
+            json_out(['ok' => true, 'items' => wishlist_list_for_user((int)$u['id'])]);
         }
 
         case 'orders.refund': {
@@ -379,6 +445,7 @@ try {
 
         case 'orders.release': {
             $u = require_user();
+            ensure_commerce_features();
             $orderId = (int)($body['orderId'] ?? 0);
             $stmt = db()->prepare('SELECT * FROM orders WHERE id = ? AND seller_id = ? AND status = \'pending\' LIMIT 1');
             $stmt->execute([$orderId, (int)$u['id']]);
@@ -386,10 +453,171 @@ try {
             if (!$o) json_out(['ok' => false, 'error' => 'Pending order not found'], 404);
             try {
                 release_pending_order_to_seller($o, 'Seller confirmed delivery');
+                db()->prepare("UPDATE orders SET order_status_step = 'delivered' WHERE id = ?")->execute([$orderId]);
+                order_set_dispute_window(db(), $orderId);
             } catch (Throwable $e) {
                 json_out(['ok' => false, 'error' => $e->getMessage()], 400);
             }
             json_out(['ok' => true]);
+        }
+
+        case 'disputes.open': {
+            $u = require_user();
+            ensure_commerce_features();
+            $orderId = (int)($body['orderId'] ?? 0);
+            $reason = trim((string)($body['reason'] ?? ''));
+            $evidence = $body['evidence'] ?? null;
+            if ($reason === '') json_out(['ok' => false, 'error' => 'Reason is required'], 422);
+            $stmt = db()->prepare('SELECT * FROM orders WHERE id = ? AND buyer_id = ? LIMIT 1');
+            $stmt->execute([$orderId, (int)$u['id']]);
+            $o = $stmt->fetch();
+            if (!$o) json_out(['ok' => false, 'error' => 'Order not found'], 404);
+            order_mark_dispute_expired_if_needed($o);
+            if (!dispute_window_open($o)) {
+                json_out(['ok' => false, 'error' => 'The 60-minute dispute window for this order has closed.', 'code' => 'dispute_window_closed'], 400);
+            }
+            $existing = db()->prepare('SELECT id FROM disputes WHERE order_id = ?');
+            $existing->execute([$orderId]);
+            if ($existing->fetch()) json_out(['ok' => false, 'error' => 'A dispute already exists for this order'], 409);
+            $evidenceJson = $evidence !== null ? json_encode($evidence) : null;
+            try {
+                db()->prepare('INSERT INTO disputes (order_id, buyer_id, seller_id, reason, evidence_json) VALUES (?, ?, ?, ?, ?)')
+                    ->execute([$orderId, (int)$u['id'], (int)$o['seller_id'], $reason, $evidenceJson]);
+            } catch (Throwable $e) {
+                json_out(['ok' => false, 'error' => 'A dispute already exists for this order'], 409);
+            }
+            db()->prepare("UPDATE orders SET status = 'disputed', order_status_step = 'disputed' WHERE id = ?")->execute([$orderId]);
+            notify_user((int)$o['seller_id'], 'Dispute opened', 'Buyer opened a dispute on order #' . $o['public_id'] . '.', 'dispute');
+            $d = db()->prepare('SELECT * FROM disputes WHERE order_id = ? LIMIT 1');
+            $d->execute([$orderId]);
+            json_out(['ok' => true, 'dispute' => dispute_public($d->fetch())]);
+        }
+
+        case 'disputes.mine': {
+            $u = require_user();
+            ensure_commerce_features();
+            $stmt = db()->prepare('SELECT d.*, o.public_id, o.title AS order_title FROM disputes d
+                JOIN orders o ON o.id = d.order_id
+                WHERE d.buyer_id = ? OR d.seller_id = ?
+                ORDER BY d.created_at DESC');
+            $stmt->execute([(int)$u['id'], (int)$u['id']]);
+            json_out(['ok' => true, 'disputes' => array_map('dispute_public', $stmt->fetchAll())]);
+        }
+
+        case 'disputes.get': {
+            ensure_commerce_features();
+            $staff = staff_from_token();
+            $disputeId = (int)($body['disputeId'] ?? $_GET['disputeId'] ?? 0);
+            $stmt = db()->prepare('SELECT d.*, o.public_id, o.title AS order_title FROM disputes d
+                JOIN orders o ON o.id = d.order_id WHERE d.id = ? LIMIT 1');
+            $stmt->execute([$disputeId]);
+            $d = $stmt->fetch();
+            if (!$d) json_out(['ok' => false, 'error' => 'Dispute not found'], 404);
+            if (!$staff) {
+                $u = require_user();
+                if ((int)$d['buyer_id'] !== (int)$u['id'] && (int)$d['seller_id'] !== (int)$u['id']) {
+                    json_out(['ok' => false, 'error' => 'Not authorized'], 403);
+                }
+            }
+            json_out(['ok' => true, 'dispute' => dispute_public($d)]);
+        }
+
+        case 'staff.disputes.list': {
+            require_staff();
+            ensure_commerce_features();
+            $status = trim((string)($body['status'] ?? $_GET['status'] ?? ''));
+            if ($status !== '') {
+                $stmt = db()->prepare('SELECT d.*, o.public_id, o.title AS order_title, b.name AS buyer_name, s.name AS seller_name
+                    FROM disputes d
+                    JOIN orders o ON o.id = d.order_id
+                    JOIN users b ON b.id = d.buyer_id
+                    JOIN users s ON s.id = d.seller_id
+                    WHERE d.status = ?
+                    ORDER BY d.created_at DESC LIMIT 200');
+                $stmt->execute([$status]);
+            } else {
+                $stmt = db()->query("SELECT d.*, o.public_id, o.title AS order_title, b.name AS buyer_name, s.name AS seller_name
+                    FROM disputes d
+                    JOIN orders o ON o.id = d.order_id
+                    JOIN users b ON b.id = d.buyer_id
+                    JOIN users s ON s.id = d.seller_id
+                    ORDER BY d.created_at DESC LIMIT 200");
+            }
+            json_out(['ok' => true, 'disputes' => array_map('dispute_public', $stmt->fetchAll())]);
+        }
+
+        case 'staff.disputes.resolve': {
+            $staff = require_staff();
+            ensure_commerce_features();
+            $disputeId = (int)($body['disputeId'] ?? 0);
+            // Note: the resolve verb is read from "decision" (not "action") because "action"
+            // is already used at the top level for API routing (e.g. "staff.disputes.resolve").
+            $decision = trim((string)($body['decision'] ?? $body['resolution'] ?? ''));
+            $note = trim((string)($body['note'] ?? ''));
+            $stmt = db()->prepare('SELECT * FROM disputes WHERE id = ? LIMIT 1');
+            $stmt->execute([$disputeId]);
+            $d = $stmt->fetch();
+            if (!$d) json_out(['ok' => false, 'error' => 'Dispute not found'], 404);
+            $orderStmt = db()->prepare('SELECT * FROM orders WHERE id = ? LIMIT 1');
+            $orderStmt->execute([(int)$d['order_id']]);
+            $order = $orderStmt->fetch();
+            if (!$order) json_out(['ok' => false, 'error' => 'Order not found'], 404);
+            $actorName = 'Staff ' . ($staff['staff_name'] ?? 'admin');
+
+            if ($decision === 'refund_buyer') {
+                try {
+                    admin_deduct_seller_refund_buyer($order, $actorName . ($note !== '' ? ' · ' . $note : ''));
+                } catch (Throwable $e) {
+                    json_out(['ok' => false, 'error' => $e->getMessage()], 400);
+                }
+                db()->prepare("UPDATE disputes SET status = 'resolved_refund', admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?")
+                    ->execute([$note, $staff['staff_name'] ?? 'admin', $disputeId]);
+                notify_user((int)$d['buyer_id'], 'Dispute resolved', 'Your dispute on order #' . $order['public_id'] . ' was resolved with a refund.', 'dispute');
+            } elseif ($decision === 'deny') {
+                db()->prepare("UPDATE disputes SET status = 'resolved_denied', admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?")
+                    ->execute([$note, $staff['staff_name'] ?? 'admin', $disputeId]);
+                db()->prepare("UPDATE orders SET status = 'completed', order_status_step = 'completed' WHERE id = ? AND status = 'disputed'")
+                    ->execute([(int)$order['id']]);
+                notify_user((int)$d['buyer_id'], 'Dispute resolved', 'Your dispute on order #' . $order['public_id'] . ' was reviewed and denied.' . ($note !== '' ? ' ' . $note : ''), 'dispute');
+                notify_user((int)$d['seller_id'], 'Dispute resolved', 'The dispute on order #' . $order['public_id'] . ' was denied — your funds are confirmed.', 'dispute');
+            } elseif ($decision === 'note') {
+                $newStatus = ($d['status'] === 'open') ? 'under_review' : $d['status'];
+                db()->prepare('UPDATE disputes SET status = ?, admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+                    ->execute([$newStatus, $note, $staff['staff_name'] ?? 'admin', $disputeId]);
+            } else {
+                json_out(['ok' => false, 'error' => 'Unknown decision. Use refund_buyer, deny, or note.'], 422);
+            }
+
+            $fresh = db()->prepare('SELECT * FROM disputes WHERE id = ?');
+            $fresh->execute([$disputeId]);
+            json_out(['ok' => true, 'dispute' => dispute_public($fresh->fetch())]);
+        }
+
+        case 'staff.orders.deduct_refund': {
+            $staff = require_staff();
+            ensure_commerce_features();
+            $orderId = (int)($body['orderId'] ?? 0);
+            $note = trim((string)($body['note'] ?? 'Warranty replacement/refund'));
+            $stmt = db()->prepare('SELECT * FROM orders WHERE id = ? LIMIT 1');
+            $stmt->execute([$orderId]);
+            $o = $stmt->fetch();
+            if (!$o) json_out(['ok' => false, 'error' => 'Order not found'], 404);
+            try {
+                admin_deduct_seller_refund_buyer($o, 'Staff ' . ($staff['staff_name'] ?? 'admin') . ' · warranty · ' . $note);
+            } catch (Throwable $e) {
+                json_out(['ok' => false, 'error' => $e->getMessage()], 400);
+            }
+            $sBal = db()->prepare('SELECT balance FROM users WHERE id = ?');
+            $sBal->execute([(int)$o['seller_id']]);
+            $sellerBal = (float)($sBal->fetch()['balance'] ?? 0);
+            json_out(['ok' => true, 'sellerBalance' => $sellerBal, 'owing' => $sellerBal < 0 ? abs($sellerBal) : 0]);
+        }
+
+        case 'stats.social_proof': {
+            ensure_commerce_features();
+            $orders24h = (int)(db()->query("SELECT COUNT(*) c FROM orders WHERE status = 'completed' AND completed_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")->fetch()['c'] ?? 0);
+            $activeListings = (int)(db()->query("SELECT COUNT(*) c FROM ads WHERE status = 'active' AND stock > 0")->fetch()['c'] ?? 0);
+            json_out(['ok' => true, 'completedOrders24h' => $orders24h, 'activeListings' => $activeListings]);
         }
 
         case 'messages.list': {
@@ -414,11 +642,20 @@ try {
 
         case 'messages.send': {
             ensure_marketplace_extras();
+            ensure_commerce_features();
             $u = require_user();
             $orderId = (int)($body['orderId'] ?? 0);
             $text = trim((string)($body['text'] ?? $body['body'] ?? ''));
             $attachData = (string)($body['attachment'] ?? $body['file'] ?? '');
             $attachName = trim((string)($body['fileName'] ?? $body['filename'] ?? 'attachment'));
+
+            if ($text !== '') {
+                $guard = ai_blocks_external_contact($text);
+                if (!empty($guard['blocked'])) {
+                    // Block the whole message (and any attached file) — do not save it.
+                    json_out(['ok' => false, 'error' => $guard['reason'], 'code' => 'external_contact_blocked'], 422);
+                }
+            }
             $att = null;
             if ($attachData !== '') {
                 try {
@@ -453,6 +690,8 @@ try {
                 if (!empty($ai['ok'])) {
                     try {
                         release_pending_order_to_seller($o, 'AI confirmed credential delivery');
+                        db()->prepare("UPDATE orders SET order_status_step = 'delivered' WHERE id = ?")->execute([$orderId]);
+                        order_set_dispute_window(db(), $orderId);
                         $released = true;
                     } catch (Throwable $e) {
                         $ai['releaseError'] = $e->getMessage();
@@ -1160,6 +1399,59 @@ try {
                     'rating' => seller_rating_summary($sid),
                 ],
                 'listings' => $ads->fetchAll(),
+                'reviews' => $rev->fetchAll(),
+            ]);
+        }
+
+        case 'sellers.storefront': {
+            ensure_marketplace_extras();
+            ensure_commerce_features();
+            ensure_user_avatar_column();
+            $sellerId = (int)($body['sellerId'] ?? $_GET['sellerId'] ?? 0);
+            $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
+            $slug = trim((string)($body['slug'] ?? $_GET['slug'] ?? ''));
+            if ($sellerId < 1 && $sellerEmail === '' && $slug !== '') {
+                $s0 = db()->prepare('SELECT seller_id FROM ads WHERE public_slug = ? LIMIT 1');
+                $s0->execute([$slug]);
+                $row0 = $s0->fetch();
+                $sellerId = $row0 ? (int)$row0['seller_id'] : 0;
+            }
+            if ($sellerId < 1 && $sellerEmail !== '') {
+                $s = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
+                $s->execute([$sellerEmail]);
+            } else {
+                $s = db()->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+                $s->execute([$sellerId]);
+            }
+            $seller = $s->fetch();
+            if (!$seller) json_out(['ok' => false, 'error' => 'Seller not found'], 404);
+            $sid = (int)$seller['id'];
+            $ads = db()->prepare("SELECT id, title, category, description, price, preview_link AS previewLink, public_slug AS publicSlug, stock, status
+                FROM ads WHERE seller_id = ? AND status = 'active' AND stock > 0 ORDER BY created_at DESC LIMIT 60");
+            $ads->execute([$sid]);
+            $adsRows = $ads->fetchAll();
+            foreach ($adsRows as &$ar) {
+                if (empty($ar['publicSlug'])) {
+                    $ar['publicSlug'] = ensure_ad_public_slug(['id' => $ar['id'], 'title' => $ar['title'], 'public_slug' => $ar['publicSlug']]);
+                }
+            }
+            unset($ar);
+            $rev = db()->prepare('SELECT r.rating, r.comment, r.created_at, u.name AS buyer_name FROM seller_reviews r JOIN users u ON u.id = r.buyer_id WHERE r.seller_id = ? ORDER BY r.created_at DESC LIMIT 30');
+            $rev->execute([$sid]);
+            $sales = (int)db()->query("SELECT COUNT(*) c FROM orders WHERE seller_id = {$sid} AND status = 'completed'")->fetch()['c'];
+            json_out([
+                'ok' => true,
+                'seller' => [
+                    'id' => $sid,
+                    'name' => $seller['name'],
+                    'email' => $seller['email'],
+                    'isVerified' => (int)$seller['is_verified'] === 1,
+                    'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
+                    'memberSince' => $seller['created_at'],
+                    'completedSales' => $sales,
+                    'rating' => seller_rating_summary($sid),
+                ],
+                'listings' => $adsRows,
                 'reviews' => $rev->fetchAll(),
             ]);
         }

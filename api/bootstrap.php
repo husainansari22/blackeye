@@ -696,6 +696,7 @@ require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/flutterwave.php';
 require_once __DIR__ . '/support.php';
 require_once __DIR__ . '/marketplace_extras.php';
+require_once __DIR__ . '/commerce_features.php';
 require_once __DIR__ . '/kyc.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
