@@ -1097,14 +1097,14 @@ try {
             if ($bankCode !== '') $note .= ' · bankCode=' . $bankCode;
             if ($currency !== '') $note .= ' · ' . $currency;
 
-            // Save bank details on first bank withdraw (editable until first successful payout)
+            // Save + lock bank details on first bank withdraw (one account only; support unlocks).
             if ($method === 'bank' && !$locked) {
                 ensure_user_payout_columns();
                 try {
-                    db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ?, payout_bank_code = ? WHERE id = ?')
+                    db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ?, payout_bank_code = ?, payout_bank_locked = 1 WHERE id = ?')
                         ->execute([$bankName, $destination, $accountName, $currency, $bankCode, (int)$u['id']]);
                 } catch (Throwable $e) {
-                    db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ? WHERE id = ?')
+                    db()->prepare('UPDATE users SET payout_bank = ?, payout_account = ?, payout_account_name = ?, payout_currency = ?, payout_bank_locked = 1 WHERE id = ?')
                         ->execute([$bankName, $destination, $accountName, $currency, (int)$u['id']]);
                 }
             }
