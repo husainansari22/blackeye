@@ -1202,7 +1202,7 @@
             <p id="withdrawLocalConvert" class="text-sm text-slate-400 mt-1 min-h-[1.25rem]"></p>
           </div>
           <div class="flex justify-between gap-2 text-[11px] mt-2"><span class="text-brandPrimary font-semibold shrink-0">Min. withdrawal is ${money(cfg.minWithdraw)}</span><span class="text-slate-400 text-right">Withdrawable balance: <span class="text-brandPrimary font-semibold">${bal}</span></span></div>
-          <p class="text-[10px] text-slate-400 mt-1">Wallet total ${walletBal}. Only sales &amp; referral earnings are withdrawable — deposits are for buying.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Wallet total ${walletBal}. Only sales &amp; referral earnings are withdrawable — deposits are for buying. Payouts are sent by admin after review.</p>
         </div>
         <div class="pt-1 border-t border-slate-200 dark:border-slate-800">
           <p class="text-xs font-bold mb-2 mt-3">Withdraw to</p>

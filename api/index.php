@@ -643,28 +643,21 @@ try {
             ensure_wallet_ledger_columns();
             ensure_user_payout_columns();
             try { flw_reconcile_pending(false, 60); } catch (Throwable $e) {}
-            $wdAll = db()->query("SELECT t.*, u.email, u.name, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
+            $wd = db()->query("SELECT t.*, u.email, u.name, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
                 FROM transactions t JOIN users u ON u.id = t.user_id
                 WHERE t.type = 'withdrawal' AND t.status = 'pending'
                 ORDER BY t.created_at ASC LIMIT 200")->fetchAll();
-            $wd = [];
-            $sending = [];
-            foreach ($wdAll as $row) {
-                if (tx_is_flutterwave_payout_inflight($row)) $sending[] = $row;
-                else $wd[] = $row;
-            }
             $dep = db()->query("SELECT t.*, u.email, u.name
                 FROM transactions t JOIN users u ON u.id = t.user_id
                 WHERE t.type = 'deposit' AND t.status = 'pending'
                 ORDER BY t.created_at ASC LIMIT 200")->fetchAll();
-            json_out(['ok' => true, 'withdrawals' => $wd, 'sending' => $sending, 'deposits' => $dep]);
+            json_out(['ok' => true, 'withdrawals' => $wd, 'sending' => [], 'deposits' => $dep]);
         }
 
         case 'staff.wallet.approve_withdrawal': {
             $staff = require_staff();
             ensure_user_payout_columns();
             $txId = (int)($body['txId'] ?? $body['id'] ?? 0);
-            $forceManual = !empty($body['forceManual']);
             $noteEdit = trim((string)($body['note'] ?? ''));
             $stmt = db()->prepare('SELECT t.*, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
                 FROM transactions t LEFT JOIN users u ON u.id = t.user_id WHERE t.id = ? LIMIT 1');
@@ -672,15 +665,12 @@ try {
             $row = $stmt->fetch();
             if (!$row || ($row['type'] ?? '') !== 'withdrawal') json_out(['ok' => false, 'error' => 'Withdrawal not found'], 404);
             if (($row['status'] ?? '') !== 'pending') json_out(['ok' => false, 'error' => 'Already processed'], 400);
-            if (tx_is_flutterwave_payout_inflight($row)) {
-                json_out(['ok' => false, 'error' => 'Already sent to Flutterwave — waiting for automatic status update'], 400);
-            }
             if ($noteEdit !== '') {
                 db()->prepare('UPDATE transactions SET note = ? WHERE id = ?')->execute([$noteEdit, $txId]);
                 $row['note'] = $noteEdit;
             }
             $actor = 'Staff ' . ($staff['staff_name'] ?? 'admin');
-            $pay = approve_withdrawal_payout($row, $actor . ' approved', $forceManual);
+            $pay = approve_withdrawal_payout($row, $actor . ' approved', true);
             if (empty($pay['ok'])) {
                 json_out(['ok' => false, 'error' => $pay['error'] ?? 'Payout failed', 'code' => $pay['code'] ?? ''], 400);
             }
@@ -1192,7 +1182,7 @@ try {
                 ->execute([money_f($amount), money_f($amount), money_f($amount), (int)$u['id']]);
             db()->prepare('INSERT INTO transactions (user_id, type, amount, fee, payout, status, method, note, reference) VALUES (?, \'withdrawal\', ?, ?, ?, \'pending\', ?, ?, ?)')
                 ->execute([(int)$u['id'], money_f($amount), money_f($fee), money_f($payout), $method, $note, $txRef]);
-            notify_user((int)$u['id'], 'Withdrawal requested', 'Your withdrawal of $' . money_f($amount) . ' is pending review.', 'wallet');
+            notify_user((int)$u['id'], 'Withdrawal requested', 'Your withdrawal of $' . money_f($amount) . ' is pending admin payment.', 'wallet');
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
             json_out([
                 'ok' => true,
@@ -1201,7 +1191,7 @@ try {
                 'reference' => $txRef,
                 'status' => 'pending',
                 'user' => public_user($fresh),
-                'message' => 'Withdrawal submitted. You’ll be paid after approval.',
+                'message' => 'Withdrawal submitted. Admin will pay you from the platform bank after review.',
             ]);
         }
 
