@@ -52,18 +52,44 @@
       const res = await fetch("/api/status");
       const data = await res.json();
       if (data.gpu?.online) setGpu(true, data.gpu.detail || "GPU ready");
-      else setGpu(false, data.gpu?.detail || "GPU offline");
+      else setGpu(false, data.gpu?.detail || "GPU offline — set GPU_WORKER_URL");
     } catch {
       setGpu(false, "Could not reach status API");
     }
   }
 
-  async function ensureCamera() {
-    if (stream) return;
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 540 } },
+  function stopCamera() {
+    if (!stream) return;
+    stream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch {
+        // ignore
+      }
     });
+    stream = null;
+    camera.srcObject = null;
+    camera.classList.remove("is-on");
+    cameraEmpty.classList.remove("is-hidden");
+  }
+
+  async function ensureCamera() {
+    stopCamera();
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 540 } },
+      });
+    } catch (err) {
+      const name = err?.name || "";
+      if (name === "NotReadableError" || /video source|Could not start/i.test(err?.message || "")) {
+        throw new Error("Camera is busy. Close OBS webcam source, then retry.");
+      }
+      if (name === "NotAllowedError") {
+        throw new Error("Camera permission blocked for kelvinoz.com.");
+      }
+      throw new Error(err?.message || "Could not open camera");
+    }
     camera.srcObject = stream;
     await camera.play();
     await new Promise((r) => setTimeout(r, 250));
@@ -109,7 +135,7 @@
           prompt: promptEl.value || "",
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.ok && data.data) {
         drawOutputFrame(data.data);
         setStatus(`Live · ${data.pipeline || "gpu"} · ${data.elapsed_ms || "?"}ms`);
@@ -149,18 +175,22 @@
     const file = photoInput.files?.[0];
     if (!file) return;
     setStatus("Loading character photo…");
-    const fd = new FormData();
-    fd.append("photo", file);
-    const res = await fetch("/api/character", { method: "POST", body: fd });
-    const data = await res.json();
-    if (!res.ok) {
-      setStatus(data.error || "Upload failed");
-      return;
+    try {
+      const fd = new FormData();
+      fd.append("photo", file);
+      const res = await fetch("/api/character", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStatus(data.error || "Upload failed");
+        return;
+      }
+      characterB64 = await fileToB64(file);
+      photoPreview.src = characterB64;
+      photoPreview.hidden = false;
+      setStatus("Character ready — click Start live");
+    } catch (err) {
+      setStatus(err.message || "Upload failed");
     }
-    characterB64 = await fileToB64(file);
-    photoPreview.src = data.path;
-    photoPreview.hidden = false;
-    setStatus("Character ready — click Start camera");
   });
 
   startBtn.addEventListener("click", async () => {
@@ -171,7 +201,7 @@
         return;
       }
       if (!gpuOnline) {
-        setStatus("GPU is offline.");
+        setStatus("GPU is offline. Start Hostinger GPU worker + set GPU_WORKER_URL.");
         setOutputWaiting("GPU offline");
         return;
       }
@@ -181,10 +211,11 @@
       startBtn.disabled = true;
       stopBtn.disabled = false;
       setOutputWaiting("Sending to GPU…");
-      setStatus("Transforming on GPU…");
+      setStatus("Transforming on Hostinger GPU…");
       startLoop();
     } catch (err) {
-      setStatus(err.message || "Camera permission denied");
+      setStatus(err.message || "Camera failed");
+      setOutputWaiting(err.message || "Camera failed");
     }
   });
 
@@ -193,14 +224,8 @@
     stopLoop();
     startBtn.disabled = false;
     stopBtn.disabled = true;
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      stream = null;
-    }
-    camera.srcObject = null;
-    camera.classList.remove("is-on");
+    stopCamera();
     output.classList.remove("is-on");
-    cameraEmpty.classList.remove("is-hidden");
     outputEmpty.textContent = "Waiting";
     outputEmpty.classList.remove("is-hidden");
     ctx.clearRect(0, 0, output.width, output.height);
@@ -214,6 +239,9 @@
   });
 
   logoutBtn.addEventListener("click", async () => {
+    running = false;
+    stopLoop();
+    stopCamera();
     await fetch("/api/logout", { method: "POST" });
     location.href = "/login";
   });

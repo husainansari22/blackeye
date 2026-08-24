@@ -3,6 +3,7 @@
 const path = require("path");
 const fs = require("fs");
 const http = require("http");
+const https = require("https");
 const crypto = require("crypto");
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -26,7 +27,7 @@ const PORT = Number(process.env.PORT || 3000);
 const ACCESS_CODE = process.env.ACCESS_CODE || runtimeConfig.accessCode || "@535846.oZ";
 const SESSION_SECRET =
   process.env.SESSION_SECRET || runtimeConfig.sessionSecret || crypto.randomBytes(32).toString("hex");
-const DECART_API_KEY = process.env.DECART_API_KEY || runtimeConfig.decartApiKey || "";
+const GPU_WORKER_URL = String(process.env.GPU_WORKER_URL || runtimeConfig.gpuWorkerUrl || "").replace(/\/$/, "");
 const COOKIE_NAME = "kelvinoz_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
@@ -35,7 +36,6 @@ const uploadsDir = path.join(dataDir, "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 const sessions = new Map();
-let decartClientPromise = null;
 
 function sign(value) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(value).digest("hex");
@@ -73,14 +73,50 @@ function requireAuth(req, res, next) {
   next();
 }
 
-async function getDecartClient() {
-  if (!DECART_API_KEY) throw new Error("DECART_API_KEY not configured");
-  if (!decartClientPromise) {
-    decartClientPromise = import("@decartai/sdk").then(({ createDecartClient }) =>
-      createDecartClient({ apiKey: DECART_API_KEY })
-    );
+function fetchJson(url, options = {}, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith("https") ? https : http;
+    const req = lib.request(url, options, (resp) => {
+      const chunks = [];
+      resp.on("data", (c) => chunks.push(c));
+      resp.on("end", () => {
+        const raw = Buffer.concat(chunks).toString("utf8");
+        let data = {};
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch {
+          data = { raw };
+        }
+        resolve({ status: resp.statusCode || 0, data });
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error("GPU request timeout"));
+    });
+    if (options.body) req.write(options.body);
+    req.end();
+  });
+}
+
+async function gpuHealth() {
+  if (!GPU_WORKER_URL) {
+    return { online: false, detail: "Set GPU_WORKER_URL to your Hostinger GPU worker" };
   }
-  return decartClientPromise;
+  try {
+    const { status, data } = await fetchJson(`${GPU_WORKER_URL}/health`, { method: "GET" }, 6000);
+    if (status >= 200 && status < 300 && data) {
+      return {
+        online: Boolean(data.model_ready || data.ok),
+        detail: data.detail || data.pipeline || "GPU ready",
+        pipeline: data.pipeline,
+        hasCharacter: data.has_character,
+      };
+    }
+    return { online: false, detail: `GPU health HTTP ${status}` };
+  } catch (err) {
+    return { online: false, detail: err.message || "GPU unreachable" };
+  }
 }
 
 const upload = multer({
@@ -102,7 +138,7 @@ const upload = multer({
 
 const app = express();
 app.disable("x-powered-by");
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "12mb" }));
 app.use(cookieParser());
 app.use("/assets", express.static(path.join(__dirname, "public", "assets"), { maxAge: 0 }));
 
@@ -134,20 +170,15 @@ app.post("/api/logout", (req, res) => {
 });
 
 app.get("/api/status", requireAuth, async (_req, res) => {
-  const lucyConfigured = Boolean(DECART_API_KEY);
+  const gpu = await gpuHealth();
   res.json({
     ok: true,
-    mode: "free-local",
-    freeLocal: {
-      configured: true,
-      detail: "Free on-device mode — MediaPipe in your browser (no Decart, no Hostinger GPU)",
-    },
-    lucy: {
-      configured: lucyConfigured,
-      model: "lucy-2.5",
-      detail: lucyConfigured
-        ? "Optional paid Lucy 2.5 available (Decart credits)"
-        : "Lucy 2.5 is paid Decart API — free local mode does not need it",
+    mode: "hostinger-gpu",
+    gpu: {
+      online: gpu.online,
+      detail: gpu.detail,
+      pipeline: gpu.pipeline,
+      configured: Boolean(GPU_WORKER_URL),
     },
     obsBrowserSource: "/obs",
     features: {
@@ -155,34 +186,37 @@ app.get("/api/status", requireAuth, async (_req, res) => {
       backgroundPrompt: true,
       liveCamera: true,
       obsLink: true,
-      freeLocal: true,
-      lucy25: lucyConfigured,
+      hostingerGpu: true,
     },
   });
 });
 
-app.post("/api/realtime-token", requireAuth, async (_req, res) => {
-  if (!DECART_API_KEY) {
-    return res.status(503).json({
-      ok: false,
-      error: "DECART_API_KEY missing. Create a key at https://platform.decart.ai/api-keys",
-    });
+app.post("/api/transform", requireAuth, async (req, res) => {
+  if (!GPU_WORKER_URL) {
+    return res.status(503).json({ ok: false, error: "GPU_WORKER_URL not configured" });
   }
   try {
-    const client = await getDecartClient();
-    // Unscoped token — origin locks can close the Lucy signaling socket
-    // immediately and surface as "WebSocket is not open" in the browser.
-    const token = await client.tokens.create({
-      expiresIn: 900,
-      allowedModels: ["lucy-2.5"],
+    const body = JSON.stringify({
+      frame_b64: req.body?.frame_b64 || null,
+      character_b64: req.body?.character_b64 || null,
+      prompt: req.body?.prompt || "",
     });
-    return res.json({
-      ok: true,
-      apiKey: token.apiKey || token.api_key,
-      expiresAt: token.expiresAt || token.expires_at,
-    });
+    const { status, data } = await fetchJson(
+      `${GPU_WORKER_URL}/transform`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+        body,
+      },
+      20000
+    );
+    if (status >= 200 && status < 300) return res.status(status).json(data);
+    return res.status(status || 502).json(data?.error ? data : { ok: false, error: `GPU HTTP ${status}` });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: String(err.message || err) });
+    return res.status(502).json({ ok: false, error: err.message || "GPU transform failed" });
   }
 });
 
@@ -211,5 +245,5 @@ app.get("/", requireAuth, (_req, res) => {
 });
 
 http.createServer(app).listen(PORT, () => {
-  console.log(`KelvinOz Live (Lucy 2.5) on :${PORT} key=${DECART_API_KEY ? "set" : "MISSING"}`);
+  console.log(`KelvinOz Live (Hostinger GPU) on :${PORT} worker=${GPU_WORKER_URL || "MISSING"}`);
 });

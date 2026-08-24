@@ -15,7 +15,7 @@
       <p class="brand">KelvinOz Live</p>
     </div>
     <div class="topbar-actions">
-      <span id="gpu-pill" class="pill pill-on">Free local ready</span>
+      <span id="gpu-pill" class="pill pill-off">GPU offline</span>
       <button id="start-btn" type="button">Start live</button>
       <button id="stop-btn" type="button" class="ghost" disabled>Stop</button>
       <button id="logout" type="button" class="ghost">Log out</button>
@@ -34,7 +34,7 @@
     <section class="feed-panel">
       <h2 class="feed-label">Live Output</h2>
       <div class="feed-box">
-        <video id="output" playsinline autoplay muted></video>
+        <canvas id="output"></canvas>
         <div id="output-empty" class="feed-placeholder">Waiting</div>
       </div>
     </section>
@@ -43,7 +43,7 @@
   <section class="controls">
     <div class="control-card">
       <h3>Character photo</h3>
-      <p class="tiny">Free local face overlay (runs in your browser — not Decart Lucy)</p>
+      <p class="tiny">Your own GPU pipeline — character reference for live swap</p>
       <label class="file-btn">
         Choose photo
         <input id="photo" type="file" accept="image/png,image/jpeg,image/webp" hidden />
@@ -60,27 +60,10 @@
         <input id="obs-url" readonly />
         <button id="copy-obs" type="button" class="ghost">Copy</button>
       </div>
-      <p id="status-text" class="status-text">Free local · no Decart credits · no Hostinger GPU</p>
+      <p id="status-text" class="status-text">KelvinOz Live · Hostinger GPU — close OBS webcam before Start</p>
     </div>
   </section>
 
-  <script type="module">
-    import("/assets/studio-free.js").catch((err) => {
-      const status = document.getElementById("status-text");
-      const out = document.getElementById("output-empty");
-      const pill = document.getElementById("gpu-pill");
-      const msg = err?.message || String(err);
-      if (status) status.textContent = `Script failed to load: ${msg}`;
-      if (out) {
-        out.textContent = `Script failed: ${msg}`;
-        out.classList.remove("is-hidden");
-      }
-      if (pill) {
-        pill.textContent = "Free local error";
-        pill.classList.add("pill-off");
-        pill.classList.remove("pill-on");
-      }
-    });
-  </script>
+  <script src="/assets/studio.js"></script>
 </body>
 </html>

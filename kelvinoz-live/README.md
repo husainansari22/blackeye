@@ -1,39 +1,52 @@
 # KelvinOz Live
 
-Private live studio for **kelvinoz.com**.
+Private live studio for **kelvinoz.com** — **your** app on **your** Hostinger GPU.
 
-## Default: Free local (no Decart, no Hostinger GPU)
+## What this is
 
-Runs in the visitor’s browser:
+Original KelvinOz software (not Decart Lucy code):
 
-- Camera → Live Output
-- Scene/background from the text prompt (free image fetch)
-- Optional character photo face overlay
+- Access-code gate
+- Webcam Source / Live Output
+- Character photo + scene prompt
+- Frames sent to your GPU worker (`/transform`)
 - OBS Browser Source at `/obs`
 
-This is **not** Decart Lucy 2.5. Lucy is proprietary and billed by Decart. There is no free Lucy clone.
+## Honest quality note
 
-## Optional paid: Decart Lucy 2.5
+This is **not** Lucy 2.5. Lucy’s model is proprietary. On Hostinger GPU we run open pipelines (InsightFace / LivePortrait when installed). Same product shape — different model.
 
-Only if you add credits + `DECART_API_KEY`. Legacy client: `public/assets/studio-lucy.js` / `studio.bundle.js`.
-
-## Environment
+## Website env
 
 ```bash
 ACCESS_CODE=@535846.oZ
 SESSION_SECRET=change-me
+GPU_WORKER_URL=https://your-gpu-worker-public-url
 PORT=3000
 NODE_ENV=production
-# Optional only:
-# DECART_API_KEY=
 ```
 
-## Local run
+Or `runtime-config.json`:
+
+```json
+{
+  "accessCode": "@535846.oZ",
+  "gpuWorkerUrl": "https://your-gpu-worker-public-url"
+}
+```
+
+## GPU worker (Hostinger)
+
+1. Start a Hostinger GPU instance
+2. Copy `kelvinoz-live/gpu-worker/` onto the machine
+3. Run `bash setup.sh` (or start uvicorn on port 8000)
+4. Expose port 8000 (Hostinger Exposed Services or a tunnel)
+5. Set that public URL as `GPU_WORKER_URL` on the website and restart Node
+
+## Local website
 
 ```bash
 cd kelvinoz-live
 npm install
-ACCESS_CODE='@535846.oZ' npm start
+ACCESS_CODE='@535846.oZ' GPU_WORKER_URL='http://127.0.0.1:8000' npm start
 ```
-
-Open the site, log in with the access code, click **Start live**.
