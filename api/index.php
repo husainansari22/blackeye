@@ -288,6 +288,9 @@ try {
             $upd = db()->prepare('UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?');
             $upd->execute([$review['status'], $review['reason'], $review['reviewed_by'], $adId]);
             notify_user((int)$u['id'], $review['status'] === 'active' ? 'Ad Approved' : 'Ad Denied', $review['status'] === 'active' ? 'Your listing is live.' : $review['reason'], 'ad_review');
+            if ($review['status'] === 'active') {
+                try { notify_new_listing_launch($adId); } catch (Throwable $e) {}
+            }
             $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
             json_out(['ok' => true, 'ad' => $row, 'ai' => $review]);
         }

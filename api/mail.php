@@ -219,3 +219,99 @@ function email_order_status_update(string $name, string $title, string $statusLa
     $html = email_layout('Order update', $inner, 'Order status: ' . $statusLabel);
     return ['subject' => $subject, 'html' => $html, 'text' => 'Order ' . $title . ' is now ' . $statusLabel . ($txid !== '' ? ' TXID: ' . $txid : '')];
 }
+
+function email_new_listing(string $name, string $title, string $category, string $priceUsd, string $sellerName, string $listingUrl): array {
+    $m = mail_cfg();
+    $safeName = htmlspecialchars($name !== '' ? explode(' ', $name)[0] : 'there', ENT_QUOTES, 'UTF-8');
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $safeCategory = htmlspecialchars($category, ENT_QUOTES, 'UTF-8');
+    $safePrice = htmlspecialchars($priceUsd, ENT_QUOTES, 'UTF-8');
+    $safeSeller = htmlspecialchars($sellerName, ENT_QUOTES, 'UTF-8');
+    $marketUrl = $m['app_url'] . '/marketplace';
+    $subject = 'New on Acctventa · ' . $title;
+    $inner = '
+      <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">A new product just launched</h1>
+      <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', a seller just listed something new on Acctventa. Check it out before it sells.</p>
+      <div style="margin:0 0 20px;padding:16px;border-radius:14px;background:#0b1220;border:1px solid #1f2937;">
+        <p style="margin:0 0 6px;font-size:11px;font-weight:800;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.04em;">' . $safeCategory . '</p>
+        <p style="margin:0 0 8px;font-size:18px;font-weight:800;color:#fff;line-height:1.35;">' . $safeTitle . '</p>
+        <p style="margin:0;font-size:14px;color:#94a3b8;">$' . $safePrice . ' · Sold by ' . $safeSeller . '</p>
+      </div>
+      <div style="text-align:center;margin:24px 0 12px;">' . email_button('View listing', $listingUrl) . '</div>
+      <p style="margin:0;text-align:center;font-size:12px;color:#64748b;"><a href="' . htmlspecialchars($marketUrl, ENT_QUOTES, 'UTF-8') . '" style="color:#0ea5e9;text-decoration:none;">Browse marketplace</a></p>';
+    $html = email_layout('New listing on Acctventa', $inner, 'New product: ' . $title);
+    $text = "Hi {$name},\n\nA new product just launched on Acctventa: {$title} ({$category}) — \${$priceUsd} by {$sellerName}.\n\nView: {$listingUrl}\nMarketplace: {$marketUrl}";
+    return ['subject' => $subject, 'html' => $html, 'text' => $text];
+}
+
+/**
+ * Email + in-app alert when a listing goes live (once per ad).
+ * Skips the seller and banned users. Respects setting listing_launch_emails.
+ */
+function notify_new_listing_launch(int $adId): array {
+    $out = ['ok' => true, 'adId' => $adId, 'emailed' => 0, 'notify' => 0, 'skipped' => 0, 'failed' => 0, 'reason' => ''];
+    if ($adId < 1) {
+        return ['ok' => false, 'reason' => 'invalid_ad'];
+    }
+    if (setting_get('listing_launch_emails', '1') !== '1') {
+        $out['reason'] = 'disabled';
+        return $out;
+    }
+    if (setting_get('listing_email_sent_' . $adId, '') !== '') {
+        $out['reason'] = 'already_sent';
+        return $out;
+    }
+
+    ensure_marketplace_extras();
+    $stmt = db()->prepare('SELECT a.*, u.name AS seller_name, u.email AS seller_email FROM ads a JOIN users u ON u.id = a.seller_id WHERE a.id = ? LIMIT 1');
+    $stmt->execute([$adId]);
+    $ad = $stmt->fetch();
+    if (!$ad || ($ad['status'] ?? '') !== 'active') {
+        return ['ok' => false, 'reason' => 'not_active'];
+    }
+    if ((int)($ad['stock'] ?? 0) <= 0) {
+        return ['ok' => false, 'reason' => 'no_stock'];
+    }
+
+    $sellerId = (int)$ad['seller_id'];
+    $slug = ensure_ad_public_slug(['id' => $ad['id'], 'title' => $ad['title'], 'public_slug' => $ad['public_slug'] ?? '']);
+    $listingUrl = rtrim(mail_cfg()['app_url'], '/') . '/listing/' . rawurlencode($slug);
+    $title = (string)$ad['title'];
+    $category = (string)($ad['category'] ?? 'Digital product');
+    $price = money_f((float)($ad['price'] ?? 0));
+    $sellerName = (string)($ad['seller_name'] ?? 'Seller');
+
+    $users = db()->query("SELECT id, name, email FROM users WHERE is_banned = 0 AND email != '' ORDER BY id ASC")->fetchAll();
+    $inAppBody = 'A new product has launched: ' . $title . ' ($' . $price . '). Check it out on the marketplace.';
+    $emailSubject = 'New on Acctventa · ' . $title;
+
+    foreach ($users as $u) {
+        $uid = (int)$u['id'];
+        if ($uid === $sellerId) {
+            $out['skipped']++;
+            continue;
+        }
+        $email = strtolower(trim((string)$u['email']));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $out['skipped']++;
+            continue;
+        }
+
+        try {
+            notify_user($uid, 'New listing', $inAppBody, 'listing');
+            $out['notify']++;
+        } catch (Throwable $e) {
+            // continue — email may still work
+        }
+
+        $mail = email_new_listing((string)$u['name'], $title, $category, $price, $sellerName, $listingUrl);
+        if (send_app_mail($email, $mail['subject'], $mail['html'], $mail['text'])) {
+            $out['emailed']++;
+        } else {
+            $out['failed']++;
+        }
+    }
+
+    setting_set('listing_email_sent_' . $adId, date('c'));
+    return $out;
+}

@@ -55,6 +55,7 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('support_email', trim((string)$_POST['support_email']));
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
+            setting_set('listing_launch_emails', isset($_POST['listing_launch_emails']) ? '1' : '0');
             $flash = 'Platform settings saved.';
         }
         if ($form === 'plan') {
@@ -190,10 +191,18 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if ($form === 'ad_status') {
             $status = $_POST['status'];
             $reason = trim((string)($_POST['reason'] ?? ''));
+            $adId = (int)$_POST['ad_id'];
+            $prev = db()->prepare('SELECT status, seller_id, title FROM ads WHERE id = ? LIMIT 1');
+            $prev->execute([$adId]);
+            $prevRow = $prev->fetch() ?: [];
+            $wasActive = ($prevRow['status'] ?? '') === 'active';
             db()->prepare('UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
-                ->execute([$status, $reason, 'Owner', (int)$_POST['ad_id']]);
-            $ad = db()->query('SELECT seller_id, title FROM ads WHERE id=' . (int)$_POST['ad_id'])->fetch();
+                ->execute([$status, $reason, 'Owner', $adId]);
+            $ad = db()->query('SELECT seller_id, title FROM ads WHERE id=' . $adId)->fetch();
             if ($ad) notify_user((int)$ad['seller_id'], 'Ad ' . $status, $reason !== '' ? $reason : ('Your listing "' . $ad['title'] . '" is now ' . $status), 'ad_review');
+            if ($status === 'active' && !$wasActive) {
+                try { notify_new_listing_launch($adId); } catch (Throwable $e) {}
+            }
             $flash = 'Ad status updated.';
         }
         if ($form === 'tx_status') {
@@ -1806,6 +1815,13 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block"><label>Referral min deposit ($)</label><input name="referral_min_deposit" type="number" step="0.01" value="<?= h(setting_get('referral_min_deposit',50)) ?>"></div>
               <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>"></div>
               <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>"></div>
+              <div class="av-field-block" style="grid-column:1/-1">
+                <label class="av-wd-toggle" style="padding-left:0">
+                  <input type="checkbox" name="listing_launch_emails" value="1" <?= setting_get('listing_launch_emails', '1') === '1' ? 'checked' : '' ?>>
+                  Email all users when a new listing goes live
+                </label>
+                <p class="text-[11px] av-muted mt-1">Sends a branded email plus an in-app notification. The seller is not emailed. Each listing only triggers once.</p>
+              </div>
             </div>
             <button class="av-btn av-btn-primary">Save settings</button>
           </div>
