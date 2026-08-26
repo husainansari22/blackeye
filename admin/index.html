@@ -200,7 +200,7 @@
           <div class="av-page-head">
             <div>
               <h2 class="av-page-title">Withdrawals</h2>
-              <p class="av-page-sub">Send the money from your bank/OPay, then mark paid. Flutterwave does not pay withdrawals.</p>
+              <p class="av-page-sub">Approve to pay via Flutterwave (when enabled in Owner → Gateways), or mark paid manually / reject to refund.</p>
             </div>
             <div class="av-page-meta">
               <button onclick="loadAdminWithdrawals()" class="av-btn" type="button">Refresh</button>
@@ -503,9 +503,10 @@
             <p>$${Number(t.amount||0).toFixed(2)} · fee $${Number(t.fee||0).toFixed(2)} · payout <strong>$${Number(t.payout||0).toFixed(2)}</strong> · ${escHtml(t.method||'')}</p>
             <p class="break-all text-slate-500">${escHtml(t.note||'')}</p>
             <p class="font-mono text-[10px] text-slate-400">${escHtml(t.reference||'')}</p>
-            <textarea id="wdNote_${id}" rows="2" class="w-full av-input px-2 py-1.5 text-xs" placeholder="Optional note after you send the payout">${escHtml(t.note||'')}</textarea>
+            <textarea id="wdNote_${id}" rows="2" class="w-full av-input px-2 py-1.5 text-xs" placeholder="Optional note / bankCode=044">${escHtml(t.note||'')}</textarea>
+            <label class="flex items-center gap-2 text-[11px] text-slate-500"><input type="checkbox" id="wdManual_${id}"> Mark paid manually (skip Flutterwave)</label>
             <div class="flex flex-wrap gap-2">
-              <button type="button" class="av-send" style="background:#059669" onclick="adminApproveWd(${id})">Mark paid</button>
+              <button type="button" class="av-send" style="background:#059669" onclick="adminApproveWd(${id})">Approve &amp; pay</button>
               <button type="button" class="av-send" style="background:#ef4444" onclick="adminRejectWd(${id})">Reject + refund</button>
             </div>
           </div></div>`;
@@ -517,14 +518,16 @@
     async function adminApproveWd(id) {
       const Api = window.AcctventaApi;
       const noteEl = document.getElementById('wdNote_' + id);
-      if (!(await AcctventaConfirm({ title: 'Mark withdrawal paid', message: 'Confirm you have sent this payout from your bank/OPay. Flutterwave will not send the money.', okText: 'Mark paid', icon: 'fa-circle-check' }))) return;
+      const manEl = document.getElementById('wdManual_' + id);
+      if (!(await AcctventaConfirm({ title: 'Approve withdrawal', message: manEl && manEl.checked ? 'Mark this withdrawal paid manually (you already sent the money)?' : 'Approve this withdrawal? Flutterwave will pay the bank if Withdraw gateway is set to Flutterwave.', okText: 'Approve', icon: 'fa-circle-check' }))) return;
       try {
         const r = await Api.staffApproveWithdrawal({
           txId: id,
           note: noteEl ? noteEl.value : '',
-          forceManual: true,
+          forceManual: !!(manEl && manEl.checked),
         });
-        alert((r.result && r.result.mode === 'manual') ? 'Marked paid. Send the money from your bank if you have not already.' : 'Withdrawal updated.');
+        const mode = (r.result && r.result.mode) || '';
+        alert(mode === 'flutterwave' ? (r.result.awaiting ? 'Sent via Flutterwave — waiting on bank.' : 'Sent via Flutterwave.') : 'Marked paid manually.');
         loadAdminWithdrawals();
       } catch (e) { alert(e.message); }
     }

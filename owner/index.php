@@ -83,21 +83,38 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = 'Naira rate saved. New deposits & withdraws will use this rate.';
         }
         if ($form === 'gateway') {
-            $curGw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
+            $webhookDefault = rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/') . '/api/index.php?action=webhook.flutterwave';
+            $depositWebhook = trim((string)($_POST['deposit_webhook'] ?? ''));
+            if ($depositWebhook === '' || !str_contains($depositWebhook, 'webhook.flutterwave')) {
+                $depositWebhook = $webhookDefault;
+            }
+            $depositSecret = trim((string)($_POST['deposit_secret_key'] ?? ''));
+            $withdrawProvider = strtolower(trim((string)($_POST['withdraw_provider'] ?? 'manual')));
+            if (!in_array($withdrawProvider, ['none', 'paystack', 'flutterwave', 'stripe', 'nowpayments', 'manual'], true)) {
+                $withdrawProvider = 'manual';
+            }
             $stmt = db()->prepare('UPDATE gateway_settings SET
                 deposit_provider=?, deposit_enabled=?, deposit_public_key=?, deposit_secret_key=?, deposit_webhook=?, deposit_notes=?,
                 withdraw_provider=?, withdraw_enabled=?, withdraw_public_key=?, withdraw_secret_key=?, withdraw_webhook=?, withdraw_notes=?
                 WHERE id=1');
             $stmt->execute([
-                $_POST['deposit_provider'], isset($_POST['deposit_enabled']) ? 1 : 0, $_POST['deposit_public_key'], $_POST['deposit_secret_key'], $_POST['deposit_webhook'], $_POST['deposit_notes'],
-                'manual',
+                $_POST['deposit_provider'], isset($_POST['deposit_enabled']) ? 1 : 0, trim((string)$_POST['deposit_public_key']), $depositSecret, $depositWebhook, $_POST['deposit_notes'],
+                $withdrawProvider,
                 isset($_POST['withdraw_enabled']) ? 1 : 0,
-                (string)($curGw['withdraw_public_key'] ?? ''),
-                (string)($curGw['withdraw_secret_key'] ?? ''),
-                (string)($curGw['withdraw_webhook'] ?? ''),
+                trim((string)($_POST['withdraw_public_key'] ?? '')),
+                trim((string)($_POST['withdraw_secret_key'] ?? '')),
+                trim((string)($_POST['withdraw_webhook'] ?? '')),
                 (string)($_POST['withdraw_notes'] ?? ''),
             ]);
-            $flash = 'Gateway settings saved. Withdrawals stay admin-paid (not Flutterwave).';
+            $flash = 'Gateway settings saved.';
+            if (strtolower((string)$_POST['deposit_provider']) === 'flutterwave' && !empty($_POST['deposit_enabled'])) {
+                $ping = flw_ping_secret($depositSecret);
+                if (!empty($ping['ok'])) {
+                    $flash .= ' Flutterwave secret key verified.';
+                } else {
+                    $flash .= ' Warning: ' . ($ping['error'] ?? 'Flutterwave key check failed') . ' Deposits will not credit until this is fixed.';
+                }
+            }
         }
         if ($form === 'ban_user') {
             $uid = (int)$_POST['user_id'];
@@ -213,6 +230,7 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     notify_user((int)$row['user_id'], 'Withdrawal declined', 'Your withdrawal of $' . money_f($row['amount']) . ' was declined and refunded to your withdrawable balance.', 'wallet');
                 }
                 if ($row['type'] === 'withdrawal' && $old === 'pending' && $newStatus === 'completed') {
+                    $forceManual = !empty($_POST['force_manual']);
                     if (!empty($_POST['note_edit'])) {
                         db()->prepare('UPDATE transactions SET note = ? WHERE id = ?')->execute([trim((string)$_POST['note_edit']), $txId]);
                         $row['note'] = trim((string)$_POST['note_edit']);
@@ -221,11 +239,15 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $urow->execute([(int)$row['user_id']]);
                     $urow = $urow->fetch() ?: [];
                     $merged = array_merge($row, $urow);
-                    $pay = approve_withdrawal_payout($merged, 'Owner approved', true);
+                    $pay = approve_withdrawal_payout($merged, 'Owner approved', $forceManual);
                     if (empty($pay['ok'])) {
-                        throw new RuntimeException('Could not mark paid: ' . ($pay['error'] ?? 'unknown error'));
+                        throw new RuntimeException('Payout failed: ' . ($pay['error'] ?? 'unknown error'));
                     }
-                    $flash = 'Withdrawal marked paid. Send the money from your bank/OPay if you have not already.';
+                    $flash = (!empty($pay['mode']) && $pay['mode'] === 'flutterwave')
+                        ? (!empty($pay['awaiting'])
+                            ? ('Withdrawal sent to Flutterwave' . (!empty($pay['amountNgn']) ? ' (₦' . number_format((float)$pay['amountNgn']) . ')' : '') . ' — status will update automatically when the bank confirms.')
+                            : ('Withdrawal paid via Flutterwave' . (!empty($pay['amountNgn']) ? ' (₦' . number_format((float)$pay['amountNgn']) . ')' : '') . '.'))
+                        : 'Withdrawal marked paid manually.';
                     $skipGenericStatus = true;
                 }
                 // Approving a pending deposit credits the wallet (crypto / manual)
@@ -1441,7 +1463,13 @@ $tab = $_GET['tab'] ?? 'overview';
       } catch (Throwable $e) {
         $flwSync = ['ok' => false, 'error' => $e->getMessage()];
       }
-      $pendingWd = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='withdrawal' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
+      $pendingWdAll = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='withdrawal' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
+      $pendingWd = array_values(array_filter($pendingWdAll, static function ($t) {
+        return !tx_is_flutterwave_payout_inflight($t);
+      }));
+      $sendingWd = array_values(array_filter($pendingWdAll, static function ($t) {
+        return tx_is_flutterwave_payout_inflight($t);
+      }));
       $pendingDep = db()->query("SELECT t.*, u.email, u.name FROM transactions t JOIN users u ON u.id=t.user_id WHERE t.type='deposit' AND t.status='pending' ORDER BY t.created_at ASC")->fetchAll();
       $txs = db()->query('SELECT t.*, u.email FROM transactions t JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC LIMIT 200')->fetchAll();
     ?>
@@ -1449,10 +1477,11 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="av-page-head">
           <div>
             <h2 class="av-page-title">Wallet</h2>
-            <p class="av-page-sub">Approve withdrawals after you send money from your bank/OPay. Flutterwave deposits and plans still credit automatically.</p>
+            <p class="av-page-sub">Approve withdrawals (Flutterwave auto-pay or mark paid manually). Stuck deposits can be credited here if auto-confirm fails.</p>
           </div>
           <div class="av-page-meta av-page-meta-static" aria-label="Pending counts">
             <span class="av-stat-pill"><strong><?= count($pendingWd) ?></strong> need approval</span>
+            <span class="av-stat-pill"><strong><?= count($sendingWd) ?></strong> sending</span>
             <span class="av-stat-pill"><strong><?= count($pendingDep) ?></strong> deposits</span>
           </div>
         </div>
@@ -1462,7 +1491,7 @@ $tab = $_GET['tab'] ?? 'overview';
       <div class="av-panel mb-3">
         <div class="av-panel-head">Pending withdrawals</div>
         <div class="av-panel-body">
-        <p class="text-xs av-muted mb-3">Flutterwave already sends deposits to your bank. Pay each withdrawal yourself from that account, then tap <strong>Mark paid</strong>. Rejecting refunds the user’s wallet. Crypto is the same: send the coins, then mark paid.</p>
+        <p class="text-xs av-muted mb-3">With Withdraw provider = flutterwave, <strong>Approve &amp; pay</strong> sends the bank transfer from Flutterwave. Check <strong>Mark paid manually</strong> to skip Flutterwave (pay from your bank yourself). Rejecting refunds the user’s wallet.</p>
         <?php if (!$pendingWd): ?>
           <p class="text-sm">No pending withdrawals.</p>
         <?php else: ?>
@@ -1479,9 +1508,10 @@ $tab = $_GET['tab'] ?? 'overview';
               <form method="post" class="space-y-2">
                 <input type="hidden" name="form" value="tx_status">
                 <input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>">
-                <textarea name="note_edit" rows="2" class="w-full border rounded-lg px-2 py-1.5 text-xs" placeholder="Optional note after you send the payout"><?= h($t['note']) ?></textarea>
+                <textarea name="note_edit" rows="2" class="w-full border rounded-lg px-2 py-1.5 text-xs" placeholder="Payout note / bank details (include bankCode=044 if needed)"><?= h($t['note']) ?></textarea>
+                <label class="flex items-center gap-2 text-[11px] text-slate-500"><input type="checkbox" name="force_manual" value="1"> Mark paid manually (skip Flutterwave)</label>
                 <div class="flex flex-wrap gap-2">
-                  <button name="status" value="completed" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Mark paid</button>
+                  <button name="status" value="completed" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Approve &amp; pay</button>
                   <button name="status" value="cancelled" class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Reject + refund</button>
                 </div>
               </form>
@@ -1489,12 +1519,24 @@ $tab = $_GET['tab'] ?? 'overview';
           <?php endforeach; ?>
           </div>
         <?php endif; ?>
+        <?php if ($sendingWd): ?>
+          <div class="mt-4 space-y-2">
+            <p class="text-xs font-semibold av-muted">Sending via Flutterwave (auto-updates)</p>
+            <?php foreach ($sendingWd as $t): ?>
+              <div class="av-card p-3 text-xs space-y-1 opacity-90">
+                <p class="font-bold text-sm"><?= h($t['name']) ?> · $<?= number_format((float)$t['amount'], 2) ?></p>
+                <p class="break-all text-slate-500"><?= h($t['note']) ?></p>
+                <p class="text-[10px] text-amber-600 font-semibold">Waiting on Flutterwave — status updates automatically</p>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
         </div>
       </div>
       <div class="av-panel mb-3">
         <div class="av-panel-head">Pending deposits</div>
         <div class="av-panel-body">
-        <p class="text-xs av-muted mb-3">Flutterwave card/bank deposits complete themselves after payment. Crypto still needs your on-chain confirmation.</p>
+        <p class="text-xs av-muted mb-3">Flutterwave deposits usually credit themselves. If a payment is stuck after you changed API keys, use <strong>Credit wallet</strong> here. Crypto always needs your confirmation.</p>
         <?php if (!$pendingDep): ?>
           <p class="text-sm">No pending deposits.</p>
         <?php else: ?>
@@ -1510,10 +1552,9 @@ $tab = $_GET['tab'] ?? 'overview';
                 <p class="text-slate-600 dark:text-slate-300 break-all"><?= h($t['note']) ?></p>
                 <p class="font-mono text-[10px] text-slate-400">Ref <?= h($t['reference'] ?? '') ?> · <?= h($t['created_at'] ?? '') ?></p>
                 <?php if ($isFlw): ?>
-                  <p class="text-[10px] text-sky-500 font-semibold">Flutterwave — waiting for auto-confirm (no manual Save needed)</p>
+                  <p class="text-[10px] text-sky-500 font-semibold">Flutterwave — auto-confirm preferred. Use Credit wallet if it stays pending after payment.</p>
                 <?php endif; ?>
               </div>
-              <?php if ($isCrypto || !$isFlw): ?>
               <div class="flex flex-wrap gap-2">
                 <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="completed"><button class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Credit wallet</button></form>
                 <form method="post"><input type="hidden" name="form" value="tx_status"><input type="hidden" name="tx_id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="status" value="cancelled"><button class="bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg">Reject</button></form>
@@ -1523,7 +1564,6 @@ $tab = $_GET['tab'] ?? 'overview';
                   <button class="bg-sky-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Open user account</button>
                 </form>
               </div>
-              <?php endif; ?>
             </div>
           <?php endforeach; ?>
           </div>
@@ -1536,13 +1576,16 @@ $tab = $_GET['tab'] ?? 'overview';
           <tbody>
           <?php foreach ($txs as $t):
             $autoFlw = (
-              in_array(($t['type'] ?? ''), ['deposit', 'plan'], true)
+              in_array(($t['type'] ?? ''), ['deposit', 'plan', 'withdrawal'], true)
               && (
                 strtolower((string)($t['method'] ?? '')) === 'flutterwave'
                 || stripos((string)($t['note'] ?? ''), 'Flutterwave') !== false
+                || stripos((string)($t['note'] ?? ''), 'flw_payout=') !== false
                 || stripos((string)($t['note'] ?? ''), 'Awaiting Flutterwave') !== false
               )
             );
+            // Never lock pending rows behind "Auto" — owner must be able to credit stuck deposits after key changes
+            $lockAuto = $autoFlw && in_array(($t['status'] ?? ''), ['completed', 'failed'], true);
           ?>
             <tr class="border-t">
               <td class="p-3"><?= (int)$t['id'] ?></td>
@@ -1555,7 +1598,7 @@ $tab = $_GET['tab'] ?? 'overview';
               </td>
               <td class="p-3 max-w-[180px] truncate" title="<?= h($t['note']) ?>"><?= h($t['note']) ?></td>
               <td class="p-3">
-                <?php if ($autoFlw && in_array(($t['status'] ?? ''), ['pending', 'completed', 'failed'], true)): ?>
+                <?php if ($lockAuto): ?>
                   <span class="text-[10px] av-muted font-semibold">Auto · Flutterwave</span>
                 <?php else: ?>
                 <form method="post" class="flex gap-1">
@@ -1731,6 +1774,7 @@ $tab = $_GET['tab'] ?? 'overview';
           <div class="av-panel-body space-y-4">
             <div class="av-admin-card">
               <h3 class="av-row-title" style="margin-bottom:0.55rem">Deposit</h3>
+              <p class="text-[11px] av-muted mb-2">Business account: paste <strong>LIVE</strong> keys from Flutterwave → Settings → API Keys. Secret must start with <code>FLWSECK_LIVE-</code> (full key, not truncated). Webhook must end with <code>action=webhook.flutterwave</code>.</p>
               <div class="av-form-grid space-y-2">
                 <div class="av-field-block">
                   <label>Provider</label>
@@ -1741,23 +1785,29 @@ $tab = $_GET['tab'] ?? 'overview';
                   </select>
                 </div>
                 <label class="av-wd-toggle" style="padding-left:0"><input type="checkbox" name="deposit_enabled" <?= !empty($gw['deposit_enabled'])?'checked':'' ?>> Enabled</label>
-                <div class="av-field-block"><label>Public key</label><input name="deposit_public_key" value="<?= h($gw['deposit_public_key']??'') ?>" placeholder="FLWPUBK_..."></div>
-                <div class="av-field-block"><label>Secret key</label><input name="deposit_secret_key" value="<?= h($gw['deposit_secret_key']??'') ?>" placeholder="FLWSECK_..."></div>
-                <div class="av-field-block"><label>Webhook</label><input name="deposit_webhook" value="<?= h($gw['deposit_webhook']??'') ?>" placeholder="https://acctventa.com/api/index.php?action=webhook.flutterwave"></div>
-                <div class="av-field-block"><label>Notes</label><textarea name="deposit_notes" rows="2" placeholder="Optional notes"><?= h($gw['deposit_notes']??'') ?></textarea></div>
+                <div class="av-field-block"><label>Public key</label><input name="deposit_public_key" value="<?= h($gw['deposit_public_key']??'') ?>" placeholder="FLWPUBK_LIVE-..." autocomplete="off"></div>
+                <div class="av-field-block"><label>Secret key</label><input name="deposit_secret_key" value="<?= h($gw['deposit_secret_key']??'') ?>" placeholder="FLWSECK_LIVE-..." autocomplete="off"></div>
+                <div class="av-field-block"><label>Webhook</label><input name="deposit_webhook" value="<?= h(($gw['deposit_webhook']??'') !== '' ? $gw['deposit_webhook'] : 'https://acctventa.com/api/index.php?action=webhook.flutterwave') ?>" placeholder="https://acctventa.com/api/index.php?action=webhook.flutterwave"></div>
+                <div class="av-field-block"><label>Notes</label><textarea name="deposit_notes" rows="2" placeholder="Optional notes (not the encryption key)"><?= h($gw['deposit_notes']??'') ?></textarea></div>
               </div>
             </div>
             <div class="av-admin-card">
               <h3 class="av-row-title" style="margin-bottom:0.55rem">Withdraw / payout</h3>
-              <p class="text-[11px] av-muted mb-2">Withdrawals are paid by admin from your bank/OPay — not by Flutterwave. Deposits still settle to that same bank; keep Flutterwave on for deposits only.</p>
+              <p class="text-[11px] av-muted mb-2">Set provider to <strong>flutterwave</strong> and enable — Approve pays via Flutterwave. Or set <strong>manual</strong> and tick “Mark paid manually” when you pay from your bank. Leave secret blank to reuse the Deposit secret key.</p>
               <div class="av-form-grid space-y-2">
                 <div class="av-field-block">
                   <label>Provider</label>
-                  <input type="hidden" name="withdraw_provider" value="manual">
-                  <input value="Admin (pay from your bank)" disabled>
+                  <select name="withdraw_provider">
+                    <?php foreach (['none','paystack','flutterwave','stripe','nowpayments','manual'] as $p): ?>
+                      <option value="<?= $p ?>" <?= ($gw['withdraw_provider']??'')===$p?'selected':'' ?>><?= $p ?></option>
+                    <?php endforeach; ?>
+                  </select>
                 </div>
-                <label class="av-wd-toggle" style="padding-left:0"><input type="checkbox" name="withdraw_enabled" <?= !empty($gw['withdraw_enabled'])?'checked':'' ?>> Users can request withdrawals</label>
-                <div class="av-field-block"><label>Notes</label><textarea name="withdraw_notes" rows="2" placeholder="Optional internal notes"><?= h($gw['withdraw_notes']??'') ?></textarea></div>
+                <label class="av-wd-toggle" style="padding-left:0"><input type="checkbox" name="withdraw_enabled" <?= !empty($gw['withdraw_enabled'])?'checked':'' ?>> Enabled</label>
+                <div class="av-field-block"><label>Public key</label><input name="withdraw_public_key" value="<?= h($gw['withdraw_public_key']??'') ?>" placeholder="Optional — usually same as deposit" autocomplete="off"></div>
+                <div class="av-field-block"><label>Secret key</label><input name="withdraw_secret_key" value="<?= h($gw['withdraw_secret_key']??'') ?>" placeholder="Optional — blank uses deposit secret" autocomplete="off"></div>
+                <div class="av-field-block"><label>Webhook</label><input name="withdraw_webhook" value="<?= h($gw['withdraw_webhook']??'') ?>" placeholder="Same webhook URL is fine"></div>
+                <div class="av-field-block"><label>Notes</label><textarea name="withdraw_notes" rows="2" placeholder="Notes"><?= h($gw['withdraw_notes']??'') ?></textarea></div>
               </div>
             </div>
             <button class="av-btn av-btn-primary">Save gateways</button>

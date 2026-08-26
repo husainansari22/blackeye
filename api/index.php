@@ -643,21 +643,28 @@ try {
             ensure_wallet_ledger_columns();
             ensure_user_payout_columns();
             try { flw_reconcile_pending(false, 60); } catch (Throwable $e) {}
-            $wd = db()->query("SELECT t.*, u.email, u.name, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
+            $wdAll = db()->query("SELECT t.*, u.email, u.name, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
                 FROM transactions t JOIN users u ON u.id = t.user_id
                 WHERE t.type = 'withdrawal' AND t.status = 'pending'
                 ORDER BY t.created_at ASC LIMIT 200")->fetchAll();
+            $wd = [];
+            $sending = [];
+            foreach ($wdAll as $row) {
+                if (tx_is_flutterwave_payout_inflight($row)) $sending[] = $row;
+                else $wd[] = $row;
+            }
             $dep = db()->query("SELECT t.*, u.email, u.name
                 FROM transactions t JOIN users u ON u.id = t.user_id
                 WHERE t.type = 'deposit' AND t.status = 'pending'
                 ORDER BY t.created_at ASC LIMIT 200")->fetchAll();
-            json_out(['ok' => true, 'withdrawals' => $wd, 'sending' => [], 'deposits' => $dep]);
+            json_out(['ok' => true, 'withdrawals' => $wd, 'sending' => $sending, 'deposits' => $dep]);
         }
 
         case 'staff.wallet.approve_withdrawal': {
             $staff = require_staff();
             ensure_user_payout_columns();
             $txId = (int)($body['txId'] ?? $body['id'] ?? 0);
+            $forceManual = !empty($body['forceManual']);
             $noteEdit = trim((string)($body['note'] ?? ''));
             $stmt = db()->prepare('SELECT t.*, u.payout_bank, u.payout_account, u.payout_account_name, u.payout_bank_code
                 FROM transactions t LEFT JOIN users u ON u.id = t.user_id WHERE t.id = ? LIMIT 1');
@@ -665,12 +672,15 @@ try {
             $row = $stmt->fetch();
             if (!$row || ($row['type'] ?? '') !== 'withdrawal') json_out(['ok' => false, 'error' => 'Withdrawal not found'], 404);
             if (($row['status'] ?? '') !== 'pending') json_out(['ok' => false, 'error' => 'Already processed'], 400);
+            if (tx_is_flutterwave_payout_inflight($row)) {
+                json_out(['ok' => false, 'error' => 'Already sent to Flutterwave — waiting for automatic status update'], 400);
+            }
             if ($noteEdit !== '') {
                 db()->prepare('UPDATE transactions SET note = ? WHERE id = ?')->execute([$noteEdit, $txId]);
                 $row['note'] = $noteEdit;
             }
             $actor = 'Staff ' . ($staff['staff_name'] ?? 'admin');
-            $pay = approve_withdrawal_payout($row, $actor . ' approved', true);
+            $pay = approve_withdrawal_payout($row, $actor . ' approved', $forceManual);
             if (empty($pay['ok'])) {
                 json_out(['ok' => false, 'error' => $pay['error'] ?? 'Payout failed', 'code' => $pay['code'] ?? ''], 400);
             }
@@ -778,13 +788,21 @@ try {
 
         case 'wallet.summary': {
             $u = require_user();
-            try { flw_reconcile_pending(false, 120); } catch (Throwable $e) {}
-            // reload user after possible credit
-            $u = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch() ?: $u;
+            // Always return history first — never let Flutterwave sync wipe/blank the wallet UI
             $stmt = db()->prepare('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 100');
             $stmt->execute([(int)$u['id']]);
             $rows = $stmt->fetchAll();
             $txs = array_map('map_public_transaction', $rows);
+            // Best-effort sync (short). Failures must not break history.
+            try {
+                if (flw_secret_looks_valid()) {
+                    flw_reconcile_pending(false, 180);
+                    $u = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch() ?: $u;
+                    $stmt->execute([(int)$u['id']]);
+                    $rows = $stmt->fetchAll();
+                    $txs = array_map('map_public_transaction', $rows);
+                }
+            } catch (Throwable $e) {}
             json_out(['ok' => true, 'user' => public_user($u), 'transactions' => $txs]);
         }
 

@@ -176,7 +176,7 @@
         Api.myAds().catch(() => ({ ads: [] })),
         Api.myOrders().catch(() => ({ orders: [] })),
         Api.market().catch(() => ({ listings: [] })),
-        Api.wallet().catch(() => ({ transactions: [] })),
+        Api.wallet().then((r) => Object.assign({ __walletOk: true }, r || {})).catch((e) => ({ __walletOk: false, transactions: null, error: e && e.message })),
         Api.notifications().catch(() => ({ notifications: [] })),
         Api.publicConfig().catch(() => null),
       ]);
@@ -187,6 +187,20 @@
         const d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       })();
+
+      // Keep previous history if wallet.summary failed (e.g. Flutterwave timeout after key change)
+      let txs = [];
+      if (walletRes && walletRes.__walletOk) {
+        txs = (walletRes.transactions || []).map(mapTx);
+      } else {
+        try {
+          const prev = A.getCurrentUser && A.getCurrentUser();
+          if (prev && Array.isArray(prev.transactions)) txs = prev.transactions;
+        } catch (e) {}
+        if (walletRes && walletRes.error) {
+          console.warn('Wallet history sync failed', walletRes.error);
+        }
+      }
 
       const local = {
         id: user.id,
@@ -214,7 +228,7 @@
         avatarUrl: user.avatarUrl || '',
         ads: (adsRes.ads || []).map(mapAd),
         orders: (ordersRes.orders || []).map(mapOrder),
-        transactions: (walletRes.transactions || []).map(mapTx),
+        transactions: txs,
         notifications: (notesRes.notifications || []).map(mapNotif),
         messages: {},
         uploadsByDay: { [dayKey]: uploadsToday },
