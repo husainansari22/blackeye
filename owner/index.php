@@ -85,7 +85,7 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if ($form === 'gateway') {
             $webhookDefault = rtrim((string)(app_config()['app_url'] ?? 'https://acctventa.com'), '/') . '/api/index.php?action=webhook.flutterwave';
             $depositWebhook = trim((string)($_POST['deposit_webhook'] ?? ''));
-            if ($depositWebhook === '' || !str_contains($depositWebhook, 'webhook.flutterwave')) {
+            if ($depositWebhook === '' || strpos($depositWebhook, 'webhook.flutterwave') === false) {
                 $depositWebhook = $webhookDefault;
             }
             $depositSecret = trim((string)($_POST['deposit_secret_key'] ?? ''));
