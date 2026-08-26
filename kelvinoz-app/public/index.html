@@ -234,15 +234,15 @@
   <main class="shell">
     <section class="panel copy">
       <div class="brand"><strong>KelvinOz</strong> · Photo Feed</div>
-      <h1>Upload once. Open on your phone. Zoom the feed.</h1>
+      <h1>Upload a photo. See it on kelvinoz.com Phone Feed.</h1>
       <p>
-        Upload a photo on this website. Then open <strong>kelvinoz.com</strong> on your phone and that same photo
-        becomes your phone feed view. It stays zoomable with pinch, slider, and buttons.
+        This website stores your uploaded photo and shows it in the <strong>Phone Feed</strong> tab.
+        It does <strong>not</strong> replace your iPhone Camera app, FaceTime, WhatsApp, or banking camera.
       </p>
       <div class="steps">
-        <div class="step"><span>1</span><div><strong>Upload</strong><p>Use a computer or phone to upload the photo to this site.</p></div></div>
-        <div class="step"><span>2</span><div><strong>Open on phone</strong><p>Visit kelvinoz.com on your phone and switch to Phone Feed.</p></div></div>
-        <div class="step"><span>3</span><div><strong>Zoom</strong><p>Pinch or use the zoom controls to move around the photo feed.</p></div></div>
+        <div class="step"><span>1</span><div><strong>Upload</strong><p>Tap Upload photo and choose an image. Wait until you see “Uploaded”.</p></div></div>
+        <div class="step"><span>2</span><div><strong>Phone Feed</strong><p>The site switches to Phone Feed automatically and shows that photo.</p></div></div>
+        <div class="step"><span>3</span><div><strong>Zoom</strong><p>Pinch or use the zoom controls on the website feed.</p></div></div>
       </div>
     </section>
 
@@ -258,7 +258,7 @@
         <label class="file-btn primary" for="photoInput">Choose photo to upload</label>
         <input id="photoInput" type="file" accept="image/*">
         <button id="clearBtn" class="secondary" type="button">Clear current photo</button>
-        <p>After uploading, open this same website on your phone to see the photo as the feed.</p>
+        <p>After a successful upload, this page opens Phone Feed with your photo. Pull down to refresh if Safari looks stuck.</p>
       </div>
 
       <div id="feedPanel" class="hidden">
@@ -266,8 +266,8 @@
           <img id="feedImage" alt="Phone feed photo" hidden>
           <div id="emptyState" class="empty">
             <div>
-              <strong>No photo on the feed yet.</strong>
-              <p>Upload a photo first, then come back to Phone Feed.</p>
+              <strong>No photo on the website feed yet.</strong>
+              <p>Go to Upload photo, choose an image, wait for success, then this feed will show it.</p>
             </div>
           </div>
         </div>
@@ -341,12 +341,29 @@
       renderZoom();
     }
 
+    function showFeedImage(url, name) {
+      currentUrl = url;
+      feedImage.onload = () => {
+        feedImage.hidden = false;
+        emptyState.hidden = true;
+        setZoom(1);
+        setStatus(`Website feed is showing <strong>${name || 'your photo'}</strong>. Pinch or use zoom controls.`);
+      };
+      feedImage.onerror = () => {
+        feedImage.hidden = true;
+        emptyState.hidden = false;
+        setStatus('Photo uploaded, but the image could not be displayed. Try a JPG/PNG and upload again.');
+      };
+      feedImage.src = url;
+    }
+
     async function refreshFeed(force) {
       try {
-        const response = await fetch('/api/current', { cache: 'no-store' });
+        const response = await fetch(`/api/current?ts=${Date.now()}`, { cache: 'no-store' });
         const data = await response.json();
 
         if (!data.exists) {
+          feedImage.removeAttribute('src');
           feedImage.hidden = true;
           emptyState.hidden = false;
           currentUrl = null;
@@ -355,12 +372,7 @@
         }
 
         if (force || data.url !== currentUrl) {
-          currentUrl = data.url;
-          feedImage.src = data.url;
-          feedImage.hidden = false;
-          emptyState.hidden = true;
-          setZoom(1);
-          setStatus(`Phone feed is showing <strong>${data.name}</strong>. Pinch or use zoom controls.`);
+          showFeedImage(data.url, data.name);
         }
       } catch (error) {
         setStatus('Could not load the current photo feed. Check your connection and try again.');
@@ -370,16 +382,22 @@
     async function uploadPhoto(file) {
       const body = new FormData();
       body.append('photo', file);
-      setStatus('Uploading photo to kelvinoz.com...');
+      setStatus(`Uploading <strong>${file.name}</strong>… please wait.`);
 
       const response = await fetch('/api/upload', { method: 'POST', body });
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (_error) {
+        data = {};
+      }
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
       }
 
-      setStatus(`Uploaded <strong>${data.name}</strong>. Open Phone Feed on your phone to see it.`);
-      await refreshFeed(true);
+      setMode('feed');
+      showFeedImage(data.url, data.name || file.name);
+      setStatus(`Uploaded <strong>${data.name || file.name}</strong>. Showing it in Phone Feed now.`);
     }
 
     function startPolling() {

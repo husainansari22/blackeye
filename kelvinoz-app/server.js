@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const UPLOAD_DIR = path.join(ROOT, 'uploads');
 const META_PATH = path.join(UPLOAD_DIR, 'current.json');
-const IMAGE_PATH = path.join(UPLOAD_DIR, 'current.jpg');
+const IMAGE_PATH = path.join(UPLOAD_DIR, 'current.bin');
 
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -16,12 +16,12 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, _file, cb) => cb(null, 'current.jpg')
+  filename: (_req, _file, cb) => cb(null, 'current.bin')
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 12 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
       return cb(new Error('Only image uploads are allowed'));
@@ -30,9 +30,16 @@ const upload = multer({
   }
 });
 
+function noStore(_req, res, next) {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+}
+
+app.use(noStore);
 app.use(express.json({ limit: '1mb' }));
-app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: 0, etag: false, lastModified: true }));
-app.use(express.static(path.join(ROOT, 'public'), { maxAge: 0 }));
+app.use(express.static(path.join(ROOT, 'public'), { maxAge: 0, etag: false }));
 
 function readMeta() {
   if (!fs.existsSync(META_PATH) || !fs.existsSync(IMAGE_PATH)) {
@@ -58,11 +65,23 @@ app.get('/api/current', (_req, res) => {
 
   return res.json({
     exists: true,
-    url: `/uploads/current.jpg?v=${encodeURIComponent(meta.updatedAt)}`,
+    url: `/api/photo?v=${encodeURIComponent(meta.updatedAt)}`,
     name: meta.name,
     updatedAt: meta.updatedAt,
-    size: meta.size
+    size: meta.size,
+    mime: meta.mime || 'image/jpeg'
   });
+});
+
+app.get('/api/photo', (req, res) => {
+  const meta = readMeta();
+  if (!meta || !fs.existsSync(IMAGE_PATH)) {
+    return res.status(404).json({ error: 'No photo uploaded yet' });
+  }
+
+  res.set('Content-Type', meta.mime || 'image/jpeg');
+  res.set('Cache-Control', 'no-store');
+  return res.sendFile(IMAGE_PATH);
 });
 
 app.post('/api/upload', upload.single('photo'), (req, res) => {
@@ -73,17 +92,19 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
   const meta = {
     name: req.file.originalname || 'photo.jpg',
     updatedAt: new Date().toISOString(),
-    size: req.file.size
+    size: req.file.size,
+    mime: req.file.mimetype || 'image/jpeg'
   };
 
   writeMeta(meta);
   return res.json({
     ok: true,
     exists: true,
-    url: `/uploads/current.jpg?v=${encodeURIComponent(meta.updatedAt)}`,
+    url: `/api/photo?v=${encodeURIComponent(meta.updatedAt)}`,
     name: meta.name,
     updatedAt: meta.updatedAt,
-    size: meta.size
+    size: meta.size,
+    mime: meta.mime
   });
 });
 
@@ -92,6 +113,12 @@ app.delete('/api/current', (_req, res) => {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
+  }
+
+  // Clean any old filenames from earlier deploys
+  for (const oldName of ['current.jpg', 'current.png']) {
+    const oldPath = path.join(UPLOAD_DIR, oldName);
+    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
   }
 
   return res.json({ ok: true, exists: false });
