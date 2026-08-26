@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Camera Zoom Viewer</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #081120;
+            --panel: rgba(15, 23, 42, 0.92);
+            --muted: #9fb0c9;
+            --border: rgba(148, 163, 184, 0.2);
+            --accent: #38bdf8;
+            --accent-strong: #0ea5e9;
+            --text: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(14, 165, 233, 0.25), transparent 35%),
+                linear-gradient(180deg, #06101d 0%, #0f172a 100%);
+            color: var(--text);
+        }
+
+        .page {
+            width: min(1080px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0 48px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(14px);
+        }
+
+        .copy {
+            padding: 28px;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.8rem);
+            line-height: 1.05;
+            margin: 0 0 16px;
+        }
+
+        p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .bullet-list {
+            margin-top: 18px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .bullet {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .bullet strong {
+            color: var(--text);
+        }
+
+        .app-card {
+            padding: 20px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .controls .file-label:nth-child(3) {
+            grid-column: 1 / -1;
+        }
+
+        button,
+        .file-label {
+            border: 0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
+            color: #032033;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+            text-align: center;
+        }
+
+        button:hover,
+        .file-label:hover {
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .status {
+            margin: 0 0 16px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            min-height: 48px;
+        }
+
+        .viewer {
+            position: relative;
+            aspect-ratio: 9 / 16;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 22px;
+            background: #020617;
+            border: 1px solid var(--border);
+            touch-action: none;
+        }
+
+        .viewer video,
+        .viewer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform-origin: center center;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .placeholder {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            text-align: center;
+            color: var(--muted);
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.55));
+        }
+
+        .zoom-panel {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border);
+        }
+
+        .zoom-header,
+        .zoom-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .zoom-actions {
+            margin-top: 14px;
+        }
+
+        .zoom-actions button {
+            flex: 1;
+            padding: 12px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-top: 14px;
+            accent-color: var(--accent);
+        }
+
+        .tips {
+            margin-top: 18px;
+            font-size: 0.95rem;
+        }
+
+        .tips strong {
+            color: var(--text);
+        }
+
+        code {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2px 6px;
+            color: #bae6fd;
+        }
+
+        @media (max-width: 860px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <article class="panel copy">
+                <p style="text-transform: uppercase; letter-spacing: 0.16em; font-size: 0.78rem; color: #7dd3fc; margin-bottom: 14px;">
+                    Phone camera website
+                </p>
+                <h1>Use your phone camera live, or upload a photo and zoom it.</h1>
+                <p>
+                    This page opens your phone camera directly in the browser with the rear camera preferred.
+                    If camera access is blocked, you can still upload any photo and zoom in with buttons, the slider,
+                    a mouse wheel, or pinch gestures on touch devices.
+                </p>
+
+                <div class="bullet-list">
+                    <div class="bullet"><strong>Live feed:</strong><span>Uses <code>getUserMedia()</code> to show the phone camera in the page.</span></div>
+                    <div class="bullet"><strong>Zoom:</strong><span>Works with pinch, slider, and plus/minus controls.</span></div>
+                    <div class="bullet"><strong>Fallback:</strong><span>Image upload still works if camera permission is denied.</span></div>
+                </div>
+            </article>
+
+            <section class="panel app-card">
+                <div class="controls">
+                    <button id="startCameraBtn" type="button">Start phone camera</button>
+                    <label class="file-label" for="photoInput">Upload photo</label>
+                    <label class="file-label" for="captureInput">Take photo</label>
+                    <button id="switchCameraBtn" class="secondary" type="button">Switch camera</button>
+                    <button id="stopCameraBtn" class="secondary" type="button">Stop camera</button>
+                </div>
+
+                <input id="photoInput" type="file" accept="image/*">
+                <input id="captureInput" type="file" accept="image/*" capture="environment">
+
+                <div id="status" class="status">
+                    Tap <strong>Start phone camera</strong> on your phone, allow camera permission, and the live feed will appear here.
+                </div>
+
+                <div id="viewer" class="viewer">
+                    <video id="cameraFeed" autoplay playsinline muted hidden></video>
+                    <img id="photoPreview" alt="Uploaded preview" hidden>
+                    <div id="placeholder" class="placeholder">
+                        <div>
+                            <strong>No media selected yet.</strong>
+                            <p class="tips">Start the phone camera or upload a photo to begin.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zoom-panel">
+                    <div class="zoom-header">
+                        <strong>Zoom control</strong>
+                        <span id="zoomValue">1.0x</span>
+                    </div>
+                    <input id="zoomSlider" type="range" min="1" max="4" step="0.1" value="1">
+                    <div class="zoom-actions">
+                        <button id="zoomOutBtn" class="secondary" type="button">- Zoom out</button>
+                        <button id="resetZoomBtn" class="secondary" type="button">Reset</button>
+                        <button id="zoomInBtn" class="secondary" type="button">+ Zoom in</button>
+                    </div>
+                    <p class="tips">
+                        <strong>Tip:</strong> on a phone, use two fingers to pinch in and out on the preview.
+                    </p>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const photoInput = document.getElementById('photoInput');
+        const captureInput = document.getElementById('captureInput');
+        const statusBox = document.getElementById('status');
+        const viewer = document.getElementById('viewer');
+        const cameraFeed = document.getElementById('cameraFeed');
+        const photoPreview = document.getElementById('photoPreview');
+        const placeholder = document.getElementById('placeholder');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValue = document.getElementById('zoomValue');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const resetZoomBtn = document.getElementById('resetZoomBtn');
+
+        let stream = null;
+        let facingMode = 'environment';
+        let zoomLevel = 1;
+        let pinchDistance = null;
+        let objectUrl = null;
+
+        function setStatus(message) {
+            statusBox.innerHTML = message;
+        }
+
+        function activeElement() {
+            if (!cameraFeed.hidden) return cameraFeed;
+            if (!photoPreview.hidden) return photoPreview;
+            return null;
+        }
+
+        function renderZoom() {
+            const element = activeElement();
+            if (element) {
+                element.style.transform = `scale(${zoomLevel})`;
+            }
+
+            zoomSlider.value = String(zoomLevel);
+            zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
+        }
+
+        function setZoom(nextZoom) {
+            const clamped = Math.min(4, Math.max(1, Number(nextZoom) || 1));
+            zoomLevel = Math.round(clamped * 10) / 10;
+            renderZoom();
+        }
+
+        function resetZoom() {
+            setZoom(1);
+        }
+
+        function showElement(mode) {
+            const isVideo = mode === 'video';
+            const isImage = mode === 'image';
+
+            cameraFeed.hidden = !isVideo;
+            photoPreview.hidden = !isImage;
+            placeholder.hidden = isVideo || isImage;
+            renderZoom();
+        }
+
+        function stopStream() {
+            if (!stream) return;
+
+            stream.getTracks().forEach((track) => track.stop());
+            stream = null;
+            cameraFeed.srcObject = null;
+        }
+
+        async function startCamera() {
+            stopStream();
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setStatus('Your browser does not support direct camera access. Use <strong>Upload photo</strong> or <strong>Take photo</strong> instead.');
+                return;
+            }
+
+            try {
+                setStatus('Requesting camera permission...');
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: facingMode },
+                        width: { ideal: 1080 },
+                        height: { ideal: 1920 }
+                    },
+                    audio: false
+                });
+
+                cameraFeed.srcObject = stream;
+                showElement('video');
+                resetZoom();
+                setStatus(`Live ${facingMode === 'environment' ? 'rear' : 'front'} camera feed is active. Use the zoom controls below.`);
+            } catch (error) {
+                console.error(error);
+                showElement('none');
+                setStatus('Camera access was blocked or failed. You can still use <strong>Upload photo</strong> / <strong>Take photo</strong> and zoom the image.');
+            }
+        }
+
+        function switchCamera() {
+            facingMode = facingMode === 'environment' ? 'user' : 'environment';
+            startCamera();
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            stopStream();
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+
+            objectUrl = URL.createObjectURL(file);
+            photoPreview.src = objectUrl;
+            showElement('image');
+            resetZoom();
+            setStatus(`Loaded photo: <strong>${file.name}</strong>. You can zoom the image now.`);
+        }
+
+        function wheelZoom(event) {
+            event.preventDefault();
+            setZoom(zoomLevel + (event.deltaY < 0 ? 0.1 : -0.1));
+        }
+
+        function distanceBetweenTouches(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.hypot(dx, dy);
+        }
+
+        viewer.addEventListener('touchstart', (event) => {
+            if (event.touches.length === 2) {
+                pinchDistance = distanceBetweenTouches(event.touches);
+            }
+        }, { passive: true });
+
+        viewer.addEventListener('touchmove', (event) => {
+            if (event.touches.length !== 2 || pinchDistance === null) return;
+
+            const nextDistance = distanceBetweenTouches(event.touches);
+            const zoomDelta = (nextDistance - pinchDistance) / 180;
+            setZoom(zoomLevel + zoomDelta);
+            pinchDistance = nextDistance;
+        }, { passive: true });
+
+        viewer.addEventListener('touchend', () => {
+            pinchDistance = null;
+        });
+
+        viewer.addEventListener('wheel', wheelZoom, { passive: false });
+        zoomSlider.addEventListener('input', (event) => setZoom(Number(event.target.value)));
+        zoomInBtn.addEventListener('click', () => setZoom(zoomLevel + 0.1));
+        zoomOutBtn.addEventListener('click', () => setZoom(zoomLevel - 0.1));
+        resetZoomBtn.addEventListener('click', resetZoom);
+        startCameraBtn.addEventListener('click', startCamera);
+        switchCameraBtn.addEventListener('click', switchCamera);
+        stopCameraBtn.addEventListener('click', () => {
+            stopStream();
+            showElement('none');
+            setStatus('Camera stopped. Start it again, upload a photo, or take a photo.');
+        });
+        photoInput.addEventListener('change', handlePhotoUpload);
+        captureInput.addEventListener('change', handlePhotoUpload);
+
+        renderZoom();
+    </script>
+</body>
+</html>
