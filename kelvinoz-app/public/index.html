@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>KelvinOz Photo Feed</title>
+  <style>
+    :root {
+      --ink: #102018;
+      --muted: #5f7367;
+      --panel: rgba(255, 252, 246, 0.92);
+      --line: rgba(16, 32, 24, 0.12);
+      --accent: #0f7a4c;
+      --accent-2: #c6a15b;
+      --feed: #07150f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(198, 161, 91, 0.28), transparent 28%),
+        linear-gradient(160deg, #f7f1e6 0%, #e7efe8 48%, #d9ebe1 100%);
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: 0 18px 50px rgba(16, 32, 24, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .copy { padding: 28px; }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      color: var(--accent);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(2.1rem, 5vw, 4rem);
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    .steps {
+      margin-top: 22px;
+      display: grid;
+      gap: 12px;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .step span {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(15, 122, 76, 0.12);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .app { padding: 18px; }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    button, .file-btn {
+      border: 0;
+      border-radius: 16px;
+      padding: 14px 16px;
+      cursor: pointer;
+      font: 700 0.95rem "Avenir Next", "Segoe UI", sans-serif;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover, .file-btn:hover { transform: translateY(-1px); }
+
+    .tabs button {
+      background: rgba(16, 32, 24, 0.05);
+      color: var(--ink);
+    }
+
+    .tabs button.active {
+      background: linear-gradient(180deg, #14965d, var(--accent));
+      color: #fff;
+    }
+
+    .primary {
+      background: linear-gradient(180deg, #14965d, var(--accent));
+      color: #fff;
+    }
+
+    .secondary {
+      background: rgba(16, 32, 24, 0.05);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .status {
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--line);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--muted);
+      min-height: 48px;
+    }
+
+    .upload-box {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border: 1px dashed rgba(15, 122, 76, 0.35);
+      border-radius: 22px;
+      background: rgba(15, 122, 76, 0.04);
+      margin-bottom: 16px;
+    }
+
+    input[type="file"] { display: none; }
+
+    .feed-shell {
+      position: relative;
+      aspect-ratio: 9 / 16;
+      width: 100%;
+      max-height: 72vh;
+      overflow: hidden;
+      border-radius: 24px;
+      background: var(--feed);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      touch-action: none;
+    }
+
+    .feed-shell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform-origin: center center;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.72);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    .zoom {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid var(--line);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    .zoom-top, .zoom-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .zoom-actions { margin-top: 12px; }
+    .zoom-actions button { flex: 1; }
+    input[type="range"] {
+      width: 100%;
+      margin-top: 12px;
+      accent-color: var(--accent);
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 900px) {
+      .shell {
+        grid-template-columns: 1fr;
+        padding-top: 18px;
+      }
+
+      .copy { order: 2; }
+      .app { order: 1; }
+      .feed-shell { max-height: 68vh; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="panel copy">
+      <div class="brand"><strong>KelvinOz</strong> · Photo Feed</div>
+      <h1>Upload once. Open on your phone. Zoom the feed.</h1>
+      <p>
+        Upload a photo on this website. Then open <strong>kelvinoz.com</strong> on your phone and that same photo
+        becomes your phone feed view. It stays zoomable with pinch, slider, and buttons.
+      </p>
+      <div class="steps">
+        <div class="step"><span>1</span><div><strong>Upload</strong><p>Use a computer or phone to upload the photo to this site.</p></div></div>
+        <div class="step"><span>2</span><div><strong>Open on phone</strong><p>Visit kelvinoz.com on your phone and switch to Phone Feed.</p></div></div>
+        <div class="step"><span>3</span><div><strong>Zoom</strong><p>Pinch or use the zoom controls to move around the photo feed.</p></div></div>
+      </div>
+    </section>
+
+    <section class="panel app">
+      <div class="tabs">
+        <button id="tabUpload" class="active" type="button">Upload photo</button>
+        <button id="tabFeed" type="button">Phone feed</button>
+      </div>
+
+      <div id="status" class="status">Ready. Upload a photo, then open this page on your phone to view the feed.</div>
+
+      <div id="uploadPanel" class="upload-box">
+        <label class="file-btn primary" for="photoInput">Choose photo to upload</label>
+        <input id="photoInput" type="file" accept="image/*">
+        <button id="clearBtn" class="secondary" type="button">Clear current photo</button>
+        <p>After uploading, open this same website on your phone to see the photo as the feed.</p>
+      </div>
+
+      <div id="feedPanel" class="hidden">
+        <div id="viewer" class="feed-shell">
+          <img id="feedImage" alt="Phone feed photo" hidden>
+          <div id="emptyState" class="empty">
+            <div>
+              <strong>No photo on the feed yet.</strong>
+              <p>Upload a photo first, then come back to Phone Feed.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="zoom">
+          <div class="zoom-top">
+            <strong>Zoom</strong>
+            <span id="zoomValue">1.0x</span>
+          </div>
+          <input id="zoomSlider" type="range" min="1" max="4" step="0.1" value="1">
+          <div class="zoom-actions">
+            <button id="zoomOutBtn" class="secondary" type="button">−</button>
+            <button id="resetZoomBtn" class="secondary" type="button">Reset</button>
+            <button id="zoomInBtn" class="secondary" type="button">+</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const statusBox = document.getElementById('status');
+    const tabUpload = document.getElementById('tabUpload');
+    const tabFeed = document.getElementById('tabFeed');
+    const uploadPanel = document.getElementById('uploadPanel');
+    const feedPanel = document.getElementById('feedPanel');
+    const photoInput = document.getElementById('photoInput');
+    const clearBtn = document.getElementById('clearBtn');
+    const viewer = document.getElementById('viewer');
+    const feedImage = document.getElementById('feedImage');
+    const emptyState = document.getElementById('emptyState');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const resetZoomBtn = document.getElementById('resetZoomBtn');
+
+    let zoomLevel = 1;
+    let pinchDistance = null;
+    let pollTimer = null;
+    let currentUrl = null;
+
+    function setStatus(message) {
+      statusBox.innerHTML = message;
+    }
+
+    function setMode(mode) {
+      const isFeed = mode === 'feed';
+      tabUpload.classList.toggle('active', !isFeed);
+      tabFeed.classList.toggle('active', isFeed);
+      uploadPanel.classList.toggle('hidden', isFeed);
+      feedPanel.classList.toggle('hidden', !isFeed);
+
+      if (isFeed) {
+        refreshFeed(true);
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    function renderZoom() {
+      feedImage.style.transform = `scale(${zoomLevel})`;
+      zoomSlider.value = String(zoomLevel);
+      zoomValue.textContent = `${zoomLevel.toFixed(1)}x`;
+    }
+
+    function setZoom(next) {
+      const clamped = Math.min(4, Math.max(1, Number(next) || 1));
+      zoomLevel = Math.round(clamped * 10) / 10;
+      renderZoom();
+    }
+
+    async function refreshFeed(force) {
+      try {
+        const response = await fetch('/api/current', { cache: 'no-store' });
+        const data = await response.json();
+
+        if (!data.exists) {
+          feedImage.hidden = true;
+          emptyState.hidden = false;
+          currentUrl = null;
+          if (force) setStatus('No photo uploaded yet. Use Upload photo first.');
+          return;
+        }
+
+        if (force || data.url !== currentUrl) {
+          currentUrl = data.url;
+          feedImage.src = data.url;
+          feedImage.hidden = false;
+          emptyState.hidden = true;
+          setZoom(1);
+          setStatus(`Phone feed is showing <strong>${data.name}</strong>. Pinch or use zoom controls.`);
+        }
+      } catch (error) {
+        setStatus('Could not load the current photo feed. Check your connection and try again.');
+      }
+    }
+
+    async function uploadPhoto(file) {
+      const body = new FormData();
+      body.append('photo', file);
+      setStatus('Uploading photo to kelvinoz.com...');
+
+      const response = await fetch('/api/upload', { method: 'POST', body });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      setStatus(`Uploaded <strong>${data.name}</strong>. Open Phone Feed on your phone to see it.`);
+      await refreshFeed(true);
+    }
+
+    function startPolling() {
+      stopPolling();
+      pollTimer = setInterval(() => refreshFeed(false), 2500);
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    function distance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    tabUpload.addEventListener('click', () => setMode('upload'));
+    tabFeed.addEventListener('click', () => setMode('feed'));
+
+    photoInput.addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try {
+        await uploadPhoto(file);
+      } catch (error) {
+        setStatus(error.message || 'Upload failed');
+      } finally {
+        photoInput.value = '';
+      }
+    });
+
+    clearBtn.addEventListener('click', async () => {
+      const response = await fetch('/api/current', { method: 'DELETE' });
+      if (!response.ok) {
+        setStatus('Could not clear the photo.');
+        return;
+      }
+      currentUrl = null;
+      feedImage.hidden = true;
+      emptyState.hidden = false;
+      setStatus('Photo cleared from the feed.');
+    });
+
+    zoomSlider.addEventListener('input', (event) => setZoom(Number(event.target.value)));
+    zoomInBtn.addEventListener('click', () => setZoom(zoomLevel + 0.1));
+    zoomOutBtn.addEventListener('click', () => setZoom(zoomLevel - 0.1));
+    resetZoomBtn.addEventListener('click', () => setZoom(1));
+
+    viewer.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      setZoom(zoomLevel + (event.deltaY < 0 ? 0.1 : -0.1));
+    }, { passive: false });
+
+    viewer.addEventListener('touchstart', (event) => {
+      if (event.touches.length === 2) pinchDistance = distance(event.touches);
+    }, { passive: true });
+
+    viewer.addEventListener('touchmove', (event) => {
+      if (event.touches.length !== 2 || pinchDistance === null) return;
+      const next = distance(event.touches);
+      setZoom(zoomLevel + (next - pinchDistance) / 180);
+      pinchDistance = next;
+    }, { passive: true });
+
+    viewer.addEventListener('touchend', () => { pinchDistance = null; });
+
+    const preferFeed = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    setMode(preferFeed ? 'feed' : 'upload');
+    refreshFeed(true);
+    renderZoom();
+  </script>
+</body>
+</html>
