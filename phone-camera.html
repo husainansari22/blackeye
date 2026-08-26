@@ -94,6 +94,10 @@
             margin-bottom: 16px;
         }
 
+        .controls .file-label:nth-child(3) {
+            grid-column: 1 / -1;
+        }
+
         button,
         .file-label {
             border: 0;
@@ -244,11 +248,13 @@
                 <div class="controls">
                     <button id="startCameraBtn" type="button">Start phone camera</button>
                     <label class="file-label" for="photoInput">Upload photo</label>
+                    <label class="file-label" for="captureInput">Take photo</label>
                     <button id="switchCameraBtn" class="secondary" type="button">Switch camera</button>
                     <button id="stopCameraBtn" class="secondary" type="button">Stop camera</button>
                 </div>
 
                 <input id="photoInput" type="file" accept="image/*">
+                <input id="captureInput" type="file" accept="image/*" capture="environment">
 
                 <div id="status" class="status">
                     Tap <strong>Start phone camera</strong> on your phone, allow camera permission, and the live feed will appear here.
@@ -289,6 +295,7 @@
         const switchCameraBtn = document.getElementById('switchCameraBtn');
         const stopCameraBtn = document.getElementById('stopCameraBtn');
         const photoInput = document.getElementById('photoInput');
+        const captureInput = document.getElementById('captureInput');
         const statusBox = document.getElementById('status');
         const viewer = document.getElementById('viewer');
         const cameraFeed = document.getElementById('cameraFeed');
@@ -304,6 +311,7 @@
         let facingMode = 'environment';
         let zoomLevel = 1;
         let pinchDistance = null;
+        let objectUrl = null;
 
         function setStatus(message) {
             statusBox.innerHTML = message;
@@ -326,7 +334,8 @@
         }
 
         function setZoom(nextZoom) {
-            zoomLevel = Math.min(4, Math.max(1, Number(nextZoom.toFixed(2))));
+            const clamped = Math.min(4, Math.max(1, Number(nextZoom) || 1));
+            zoomLevel = Math.round(clamped * 10) / 10;
             renderZoom();
         }
 
@@ -356,7 +365,7 @@
             stopStream();
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                setStatus('Your browser does not support direct camera access. Use <strong>Upload photo</strong> instead.');
+                setStatus('Your browser does not support direct camera access. Use <strong>Upload photo</strong> or <strong>Take photo</strong> instead.');
                 return;
             }
 
@@ -378,7 +387,7 @@
             } catch (error) {
                 console.error(error);
                 showElement('none');
-                setStatus('Camera access was blocked or failed. You can still use <strong>Upload photo</strong> and zoom the image.');
+                setStatus('Camera access was blocked or failed. You can still use <strong>Upload photo</strong> / <strong>Take photo</strong> and zoom the image.');
             }
         }
 
@@ -392,15 +401,18 @@
             if (!file) return;
 
             stopStream();
-            const url = URL.createObjectURL(file);
-            photoPreview.src = url;
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+
+            objectUrl = URL.createObjectURL(file);
+            photoPreview.src = objectUrl;
             showElement('image');
             resetZoom();
             setStatus(`Loaded photo: <strong>${file.name}</strong>. You can zoom the image now.`);
         }
 
         function wheelZoom(event) {
-            if (!activeElement()) return;
             event.preventDefault();
             setZoom(zoomLevel + (event.deltaY < 0 ? 0.1 : -0.1));
         }
@@ -418,7 +430,7 @@
         }, { passive: true });
 
         viewer.addEventListener('touchmove', (event) => {
-            if (event.touches.length !== 2 || pinchDistance === null || !activeElement()) return;
+            if (event.touches.length !== 2 || pinchDistance === null) return;
 
             const nextDistance = distanceBetweenTouches(event.touches);
             const zoomDelta = (nextDistance - pinchDistance) / 180;
@@ -440,9 +452,10 @@
         stopCameraBtn.addEventListener('click', () => {
             stopStream();
             showElement('none');
-            setStatus('Camera stopped. Start it again or upload a photo.');
+            setStatus('Camera stopped. Start it again, upload a photo, or take a photo.');
         });
         photoInput.addEventListener('change', handlePhotoUpload);
+        captureInput.addEventListener('change', handlePhotoUpload);
 
         renderZoom();
     </script>
