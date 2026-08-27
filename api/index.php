@@ -285,8 +285,12 @@ try {
             // Always start pending, then apply AI result immediately (under review → active/denied)
             $adId = (int)db()->lastInsertId();
             bump_upload((int)$u['id']);
-            $upd = db()->prepare('UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?');
+            $upd = db()->prepare('UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW(), stock = IF(stock < 1, 1, stock) WHERE id = ?');
             $upd->execute([$review['status'], $review['reason'], $review['reviewed_by'], $adId]);
+            if ($review['status'] === 'active') {
+                // ensure listable
+                db()->prepare('UPDATE ads SET stock = GREATEST(stock, 1) WHERE id = ?')->execute([$adId]);
+            }
             notify_user((int)$u['id'], $review['status'] === 'active' ? 'Ad Approved' : 'Ad Denied', $review['status'] === 'active' ? 'Your listing is live.' : $review['reason'], 'ad_review');
             $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
             json_out(['ok' => true, 'ad' => $row, 'ai' => $review]);

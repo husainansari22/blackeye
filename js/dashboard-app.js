@@ -335,26 +335,51 @@
     const box = document.getElementById('adsListContainer');
     if (!box) return;
     let ads = u.ads || [];
-    if (adsFilter !== 'all') ads = ads.filter((a) => a.status === adsFilter);
+    if (adsFilter !== 'all') {
+      if (adsFilter === 'active') {
+        // Live on market only
+        ads = ads.filter((a) => a.status === 'active' && Number(a.stock) > 0);
+      } else if (adsFilter === 'removed') {
+        ads = ads.filter(
+          (a) => a.status === 'removed' || (a.status === 'active' && !(Number(a.stock) > 0))
+        );
+      } else {
+        ads = ads.filter((a) => a.status === adsFilter);
+      }
+    }
     if (!ads.length) {
       box.innerHTML = `<div class="text-center py-12 space-y-2">
         <i class="fa-solid fa-bullhorn text-4xl text-slate-300 dark:text-slate-700"></i>
         <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No ads in this tab</p>
-        <p class="text-xs text-slate-400">Tap + to list a product. New uploads start Under Review.</p>
+        <p class="text-xs text-slate-400">${
+          adsFilter === 'pending'
+            ? 'Nothing under review right now. New uploads appear here until AI/Owner approve them.'
+            : adsFilter === 'active'
+              ? 'No live listings. Sold-out ads move to Removed — list a new product or ask Owner to restock.'
+              : 'Tap + to list a product. New uploads start Under Review.'
+        }</p>
       </div>`;
       return;
     }
     box.innerHTML = ads
       .map((a) => {
+        const stock = Number(a.stock);
+        const soldOut = a.status === 'active' && !(stock > 0);
         const statusColor =
-          a.status === 'active'
+          a.status === 'active' && !soldOut
             ? 'text-emerald-500'
             : a.status === 'pending'
               ? 'text-amber-500'
               : a.status === 'denied'
                 ? 'text-red-500'
                 : 'text-slate-400';
-        const statusLabel = a.status === 'pending' ? 'Under Review' : (a.status || '').charAt(0).toUpperCase() + (a.status || '').slice(1);
+        let statusLabel =
+          a.status === 'pending'
+            ? 'Under Review'
+            : soldOut
+              ? 'Sold out'
+              : (a.status || '').charAt(0).toUpperCase() + (a.status || '').slice(1);
+        if (a.status === 'active' && !soldOut) statusLabel = 'Live · stock ' + (stock || 1);
         return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm space-y-2">
         <div class="flex justify-between gap-3">
           <div class="min-w-0">
@@ -368,6 +393,7 @@
         </div>
         ${a.status === 'denied' && a.denyReason ? `<div class="text-xs bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-lg p-2"><strong>Reason for denied:</strong> ${escapeHtml(a.denyReason)}</div>` : ''}
         ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">AI is reviewing credentials & preview link…</p>` : ''}
+        ${soldOut ? `<p class="text-[11px] text-amber-600">This unit sold. It will not show on Market until restocked with new login details.</p>` : ''}
       </div>`;
       })
       .join('');

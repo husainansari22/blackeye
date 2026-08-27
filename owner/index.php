@@ -205,13 +205,59 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             exit;
         }
         if ($form === 'ad_status') {
-            $status = $_POST['status'];
+            $status = (string)($_POST['status'] ?? '');
             $reason = trim((string)($_POST['reason'] ?? ''));
-            db()->prepare('UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
-                ->execute([$status, $reason, 'Owner', (int)$_POST['ad_id']]);
-            $ad = db()->query('SELECT seller_id, title FROM ads WHERE id=' . (int)$_POST['ad_id'])->fetch();
-            if ($ad) notify_user((int)$ad['seller_id'], 'Ad ' . $status, $reason !== '' ? $reason : ('Your listing "' . $ad['title'] . '" is now ' . $status), 'ad_review');
-            $flash = 'Ad status updated.';
+            $adId = (int)($_POST['ad_id'] ?? 0);
+            $allowed = ['active', 'denied', 'removed', 'pending'];
+            if ($adId < 1 || !in_array($status, $allowed, true)) {
+                throw new RuntimeException('Invalid ad update');
+            }
+            $cur = db()->prepare('SELECT * FROM ads WHERE id = ? LIMIT 1');
+            $cur->execute([$adId]);
+            $adRow = $cur->fetch();
+            if (!$adRow) throw new RuntimeException('Ad not found');
+
+            // Approving / restocking must put stock back on the market
+            if ($status === 'active') {
+                $stock = (int)($adRow['stock'] ?? 0);
+                if ($stock < 1) $stock = 1;
+                db()->prepare('UPDATE ads SET status = ?, stock = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+                    ->execute(['active', $stock, '', 'Owner', $adId]);
+                try {
+                    if (function_exists('notify_new_listing_launch') && (string)($adRow['status'] ?? '') !== 'active') {
+                        notify_new_listing_launch($adId);
+                    }
+                } catch (Throwable $e) {}
+                $flash = 'Ad approved and listed on the marketplace (stock ' . $stock . ').';
+            } elseif ($status === 'removed') {
+                db()->prepare('UPDATE ads SET status = ?, stock = 0, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+                    ->execute(['removed', $reason, 'Owner', $adId]);
+                $flash = 'Ad removed from marketplace.';
+            } else {
+                db()->prepare('UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+                    ->execute([$status, $reason, 'Owner', $adId]);
+                $flash = 'Ad status updated.';
+            }
+            $ad = db()->query('SELECT seller_id, title FROM ads WHERE id=' . $adId)->fetch();
+            if ($ad) {
+                $msg = $reason !== '' ? $reason : ('Your listing "' . $ad['title'] . '" is now ' . $status);
+                if ($status === 'active') $msg = 'Your listing "' . $ad['title'] . '" is live on the marketplace.';
+                notify_user((int)$ad['seller_id'], 'Ad ' . $status, $msg, 'ad_review');
+            }
+        }
+        if ($form === 'ad_restock') {
+            $adId = (int)($_POST['ad_id'] ?? 0);
+            $qty = max(1, (int)($_POST['qty'] ?? 1));
+            $cur = db()->prepare('SELECT * FROM ads WHERE id = ? LIMIT 1');
+            $cur->execute([$adId]);
+            $adRow = $cur->fetch();
+            if (!$adRow) throw new RuntimeException('Ad not found');
+            db()->prepare("UPDATE ads SET stock = ?, status = 'active', deny_reason = '', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?")
+                ->execute([$qty, 'Owner', $adId]);
+            if ($adRow) {
+                notify_user((int)$adRow['seller_id'], 'Ad restocked', 'Your listing "' . $adRow['title'] . '" is live again with stock ' . $qty . '.', 'ad_review');
+            }
+            $flash = 'Ad restocked and set active (stock ' . $qty . ').';
         }
         if ($form === 'tx_status') {
             $txId = (int)$_POST['tx_id'];
@@ -1100,28 +1146,49 @@ $tab = $_GET['tab'] ?? 'overview';
             <div class="av-panel-head"><span>Listings</span></div>
             <?php foreach ($ads as $a):
               $st = (string)$a['status'];
+              $stock = (int)($a['stock'] ?? 0);
+              $live = ($st === 'active' && $stock > 0);
+              $soldOut = ($st === 'active' && $stock <= 0) || ($st === 'removed' && $stock <= 0);
               $badge = 'av-badge-muted';
-              if ($st === 'active') $badge = 'av-badge-ok';
+              if ($live) $badge = 'av-badge-ok';
               elseif ($st === 'pending') $badge = 'av-badge-warn';
               elseif ($st === 'denied') $badge = 'av-badge-danger';
+              elseif ($soldOut) $badge = 'av-badge-muted';
+              $statusLabel = $live ? 'LIVE' : ($soldOut && $st === 'active' ? 'SOLD OUT' : strtoupper($st));
             ?>
               <article class="av-user-card">
                 <div class="av-admin-card-top">
                   <div class="min-w-0 flex-1">
                     <p class="av-row-title"><?= h($a['title']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$a['id'] ?></span></p>
-                    <p class="av-row-sub"><?= h($a['seller_name']) ?> · <?= h($a['category']) ?></p>
+                    <p class="av-row-sub"><?= h($a['seller_name']) ?> · <?= h($a['category']) ?> · stock <?= $stock ?></p>
                     <p class="av-row-sub" style="word-break:break-all"><?= h($a['preview_link']) ?></p>
                     <?php if ($a['deny_reason']): ?><p class="av-row-sub" style="color:#e11d48"><?= h($a['deny_reason']) ?></p><?php endif; ?>
+                    <?php if ($soldOut && $st === 'active'): ?>
+                      <p class="av-row-sub" style="color:#f59e0b">Sold out — not shown on Home/Market until restocked.</p>
+                    <?php endif; ?>
                   </div>
                   <div style="text-align:right;flex-shrink:0">
-                    <span class="av-badge <?= $badge ?>"><?= h($st) ?></span>
+                    <span class="av-badge <?= $badge ?>"><?= h($statusLabel) ?></span>
                     <p class="av-row-title" style="margin-top:0.4rem;color:var(--av-brand)">$<?= number_format((float)$a['price'], 2) ?></p>
                   </div>
                 </div>
                 <div class="av-admin-card-actions">
-                  <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Approve</button></form>
-                  <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="Deny reason" class="av-field"><button class="av-btn av-btn-danger">Deny</button></form>
-                  <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="removed"><button class="av-btn">Remove</button></form>
+                  <?php if ($st === 'pending'): ?>
+                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Approve</button></form>
+                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="Deny reason" class="av-field"><button class="av-btn av-btn-danger">Deny</button></form>
+                  <?php elseif ($st === 'denied' || $st === 'removed'): ?>
+                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Re-approve &amp; list</button></form>
+                  <?php elseif ($soldOut): ?>
+                    <form method="post" class="flex flex-wrap items-center gap-2">
+                      <input type="hidden" name="form" value="ad_restock">
+                      <input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>">
+                      <input type="number" name="qty" value="1" min="1" max="99" class="av-field" style="width:4.5rem" title="Stock qty">
+                      <button class="av-btn av-btn-success">Restock &amp; go live</button>
+                    </form>
+                  <?php endif; ?>
+                  <?php if ($st !== 'removed'): ?>
+                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="removed"><button class="av-btn">Remove</button></form>
+                  <?php endif; ?>
                 </div>
               </article>
             <?php endforeach; ?>

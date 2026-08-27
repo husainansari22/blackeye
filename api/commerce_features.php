@@ -392,7 +392,9 @@ function purchase_listing(int $buyerId, int $listingId): array {
         } else {
             $pdo->prepare('UPDATE users SET escrow_balance = escrow_balance + ? WHERE id = ?')->execute([money_f($price), (int)$ad['seller_id']]);
         }
-        $pdo->prepare('UPDATE ads SET stock = stock - 1, status = IF(stock - 1 <= 0, \'removed\', status) WHERE id = ?')->execute([$listingId]);
+        $newStock = max(0, (int)$ad['stock'] - 1);
+        $newAdStatus = $newStock <= 0 ? 'removed' : (string)$ad['status'];
+        $pdo->prepare('UPDATE ads SET stock = ?, status = ? WHERE id = ?')->execute([$newStock, $newAdStatus, $listingId]);
         $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'purchase\', ?, \'completed\', ?)')
             ->execute([$buyerId, money_f($price), 'Bought #' . $publicId]);
         $pdo->commit();

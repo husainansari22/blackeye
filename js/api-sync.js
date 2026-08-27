@@ -173,7 +173,9 @@
     try {
       const [me, adsRes, ordersRes, marketRes, walletRes, notesRes, cfgRes] = await Promise.all([
         Api.me(),
-        Api.myAds().catch(() => ({ ads: [] })),
+        Api.myAds()
+          .then((r) => Object.assign({ __adsOk: true }, r || {}))
+          .catch((e) => ({ __adsOk: false, ads: null, error: e && e.message })),
         Api.myOrders()
           .then((r) => Object.assign({ __ordersOk: true }, r || {}))
           .catch((e) => ({ __ordersOk: false, orders: null, error: e && e.message })),
@@ -217,6 +219,16 @@
         }
       }
 
+      let ads = [];
+      if (adsRes && adsRes.__adsOk) {
+        ads = (adsRes.ads || []).map(mapAd);
+      } else {
+        if (prevUser && Array.isArray(prevUser.ads)) ads = prevUser.ads;
+        if (adsRes && adsRes.error) {
+          console.warn('Ads sync failed', adsRes.error);
+        }
+      }
+
       const local = {
         id: user.id,
         name: user.name,
@@ -241,7 +253,7 @@
         payoutBankLocked: !!user.payoutBankLocked,
         payoutBankCode: user.payoutBankCode || '',
         avatarUrl: user.avatarUrl || '',
-        ads: (adsRes.ads || []).map(mapAd),
+        ads: ads,
         orders: orders,
         transactions: txs,
         notifications: (notesRes.notifications || []).map(mapNotif),
