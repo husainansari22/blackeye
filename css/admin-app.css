@@ -1192,6 +1192,256 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   padding: 0 1rem 1rem 1rem;
 }
 
+/* Foldable owner Ads list (compact pending queue) */
+.av-ad-panel .av-panel-head.av-ad-panel-head {
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+.av-ad-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--av-border);
+  background: var(--av-surface-2);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.av-ad-bulk-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--av-text);
+  cursor: pointer;
+  user-select: none;
+}
+.av-ad-bulk-select-all input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--av-brand);
+}
+.av-ad-bulk-count {
+  font-size: 0.72rem;
+  color: var(--av-muted);
+  font-weight: 600;
+}
+.av-ad-list .av-ad-line {
+  border-bottom: 1px solid var(--av-border);
+}
+.av-ad-list .av-ad-line:last-child {
+  border-bottom: 0;
+}
+.av-ad-line-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+  min-height: 3.1rem;
+}
+.av-ad-check {
+  display: flex;
+  align-items: center;
+  padding-left: 0.65rem;
+  flex-shrink: 0;
+}
+.av-ad-check input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--av-brand);
+}
+.av-ad-line-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.35rem 0.65rem 0.15rem;
+  background: transparent;
+  border: 0;
+  color: var(--av-text);
+  text-align: left;
+  cursor: pointer;
+}
+.av-ad-line-btn:hover,
+.av-ad-line.is-open .av-ad-line-btn {
+  background: color-mix(in srgb, var(--av-brand) 8%, transparent);
+}
+.av-ad-line-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.av-ad-line-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-ad-line-sub {
+  font-size: 0.68rem;
+  color: var(--av-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-ad-line-badge {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+}
+.av-ad-quick-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 0.55rem;
+  flex-shrink: 0;
+}
+.av-ad-icon-btn {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--av-border);
+  background: var(--av-surface);
+  color: var(--av-brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+.av-ad-icon-btn:hover {
+  background: color-mix(in srgb, var(--av-brand) 12%, var(--av-surface));
+}
+.av-ad-icon-btn.is-disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.av-ad-line-body {
+  padding: 0 0.85rem 0.9rem 0.85rem;
+  border-top: 1px dashed var(--av-border);
+  background: var(--av-surface-2);
+}
+.av-ad-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.75rem;
+  padding: 0.75rem 0 0.65rem;
+  font-size: 0.75rem;
+}
+.av-ad-detail-span2 {
+  grid-column: 1 / -1;
+}
+.av-ad-detail-k {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--av-muted);
+  margin-bottom: 0.12rem;
+}
+.av-ad-detail-price {
+  color: var(--av-brand);
+  font-weight: 800;
+}
+.av-ad-link {
+  color: var(--av-brand);
+  word-break: break-all;
+  font-size: 0.72rem;
+}
+.av-ad-line-actions {
+  margin-top: 0.15rem;
+}
+.av-ad-deny-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  flex: 1 1 12rem;
+}
+.av-ad-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+}
+.av-ad-modal.hidden {
+  display: none;
+}
+.av-ad-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.55);
+}
+.av-ad-modal-card {
+  position: relative;
+  width: min(100%, 28rem);
+  max-height: min(85vh, 32rem);
+  overflow: auto;
+  background: var(--av-surface);
+  border: 1px solid var(--av-border);
+  border-radius: 1rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+.av-ad-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--av-border);
+}
+.av-ad-modal-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0;
+}
+.av-ad-modal-close {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--av-border);
+  background: transparent;
+  color: var(--av-muted);
+  cursor: pointer;
+}
+.av-ad-modal-body {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.av-ad-login-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.av-ad-modal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--av-border);
+}
+@media (min-width: 640px) {
+  .av-ad-modal {
+    align-items: center;
+  }
+  .av-ad-line-body {
+    padding-left: 2.35rem;
+  }
+}
+
 /* Remap leftover Tailwind light surfaces so dark mode never shows white-on-white */
 html.dark .av-app .bg-white,
 html.dark .av-app .bg-slate-50,

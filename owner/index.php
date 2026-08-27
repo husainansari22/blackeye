@@ -244,6 +244,57 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 if ($status === 'active') $msg = 'Your listing "' . $ad['title'] . '" is live on the marketplace.';
                 notify_user((int)$ad['seller_id'], 'Ad ' . $status, $msg, 'ad_review');
             }
+            $_SESSION['owner_flash'] = $flash;
+            $retFilter = preg_replace('/[^a-z]/', '', strtolower((string)($_POST['return_filter'] ?? 'pending')));
+            if (!in_array($retFilter, ['all', 'pending', 'active', 'denied', 'removed'], true)) $retFilter = 'pending';
+            header('Location: ?tab=ads&filter=' . rawurlencode($retFilter));
+            exit;
+        }
+        if ($form === 'ad_status_bulk') {
+            $status = (string)($_POST['status'] ?? 'active');
+            $allowed = ['active', 'denied', 'removed'];
+            if (!in_array($status, $allowed, true)) {
+                throw new RuntimeException('Invalid bulk ad update');
+            }
+            $ids = $_POST['ad_ids'] ?? [];
+            if (!is_array($ids)) $ids = [];
+            $approved = 0;
+            $skipped = 0;
+            foreach ($ids as $rawId) {
+                $adId = (int)$rawId;
+                if ($adId < 1) continue;
+                $cur = db()->prepare('SELECT * FROM ads WHERE id = ? LIMIT 1');
+                $cur->execute([$adId]);
+                $adRow = $cur->fetch();
+                if (!$adRow) {
+                    $skipped++;
+                    continue;
+                }
+                if ($status === 'active') {
+                    if ((string)($adRow['status'] ?? '') !== 'pending') {
+                        $skipped++;
+                        continue;
+                    }
+                    $stock = (int)($adRow['stock'] ?? 0);
+                    if ($stock < 1) $stock = 1;
+                    db()->prepare('UPDATE ads SET status = ?, stock = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+                        ->execute(['active', $stock, '', 'Owner', $adId]);
+                    try {
+                        if (function_exists('notify_new_listing_launch')) {
+                            notify_new_listing_launch($adId);
+                        }
+                    } catch (Throwable $e) {}
+                    notify_user((int)$adRow['seller_id'], 'Ad active', 'Your listing "' . $adRow['title'] . '" is live on the marketplace.', 'ad_review');
+                    $approved++;
+                }
+            }
+            $flash = $approved > 0
+                ? ('Approved ' . $approved . ' listing' . ($approved === 1 ? '' : 's') . ' on the marketplace.')
+                : 'No pending listings were approved.';
+            if ($skipped > 0) $flash .= ' (' . $skipped . ' skipped.)';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=ads&filter=pending');
+            exit;
         }
         if ($form === 'ad_restock') {
             $adId = (int)($_POST['ad_id'] ?? 0);
@@ -422,7 +473,7 @@ $tab = $_GET['tab'] ?? 'overview';
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260823badge3">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260827adsfold1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -1158,10 +1209,28 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
         <?php if (!$ads): ?>
-          <div class="av-panel"><div class="av-empty"><?= $adsFilter === 'pending' ? 'No pending ads. When sellers upload, they appear here for approval.' : 'No ads in this filter.' ?></div></div>
+          <div class="av-panel"><div class="av-empty"><?= $adsFilter === 'pending' ? 'No pending listings.' : 'No ads in this filter.' ?></div></div>
         <?php else: ?>
-          <div class="av-panel">
-            <div class="av-panel-head"><span>Listings</span></div>
+          <div class="av-panel av-ad-panel">
+            <div class="av-panel-head av-ad-panel-head">
+              <span>Listings</span>
+              <?php if ($adsFilter === 'pending' && count($ads) > 0): ?>
+                <span class="av-muted text-xs">Tap a row to expand · use checkboxes to approve many at once</span>
+              <?php endif; ?>
+            </div>
+            <?php if ($adsFilter === 'pending'): ?>
+              <form method="post" id="ownerAdsBulkForm" class="av-ad-bulk-bar" onsubmit="return ownerAdsBulkConfirm(event)">
+                <input type="hidden" name="form" value="ad_status_bulk">
+                <input type="hidden" name="status" value="active">
+                <label class="av-ad-bulk-select-all">
+                  <input type="checkbox" id="ownerAdSelectAll" onchange="ownerAdSelectAll(this.checked)">
+                  <span>Select all</span>
+                </label>
+                <span id="ownerAdSelectedCount" class="av-ad-bulk-count">0 selected</span>
+                <button type="submit" class="av-btn av-btn-success" id="ownerAdBulkApproveBtn" disabled>Approve selected</button>
+              </form>
+            <?php endif; ?>
+            <div class="av-ad-list" id="ownerAdsList">
             <?php foreach ($ads as $a):
               $st = (string)$a['status'];
               $stock = (int)($a['stock'] ?? 0);
@@ -1173,44 +1242,195 @@ $tab = $_GET['tab'] ?? 'overview';
               elseif ($st === 'denied') $badge = 'av-badge-danger';
               elseif ($soldOut) $badge = 'av-badge-muted';
               $statusLabel = $live ? 'LIVE' : ($soldOut && $st === 'active' ? 'SOLD OUT' : strtoupper($st));
+              $adId = (int)$a['id'];
+              $preview = trim((string)($a['preview_link'] ?? ''));
+              $loginPayload = [
+                'title' => (string)$a['title'],
+                'username' => (string)($a['username'] ?? ''),
+                'password' => (string)($a['password_plain'] ?? ''),
+                'attached_email' => (string)($a['attached_email'] ?? ''),
+                'attached_email_password' => (string)($a['attached_email_password'] ?? ''),
+                'two_fa' => (string)($a['two_fa'] ?? ''),
+                'extra_info' => (string)($a['extra_info'] ?? ''),
+                'preview_link' => $preview,
+              ];
             ?>
-              <article class="av-user-card">
-                <div class="av-admin-card-top">
-                  <div class="min-w-0 flex-1">
-                    <p class="av-row-title"><?= h($a['title']) ?> <span class="av-muted" style="font-weight:500;font-size:0.7rem">#<?= (int)$a['id'] ?></span></p>
-                    <p class="av-row-sub"><?= h($a['seller_name']) ?> · <?= h($a['category']) ?> · stock <?= $stock ?></p>
-                    <p class="av-row-sub" style="word-break:break-all"><?= h($a['preview_link']) ?></p>
-                    <?php if ($a['deny_reason']): ?><p class="av-row-sub" style="color:#e11d48"><?= h($a['deny_reason']) ?></p><?php endif; ?>
+              <div class="av-ad-line" data-ad-line="<?= $adId ?>" data-ad-login="<?= h(json_encode($loginPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?>">
+                <div class="av-ad-line-row">
+                  <?php if ($st === 'pending'): ?>
+                    <label class="av-ad-check" onclick="event.stopPropagation()" title="Select for bulk approve">
+                      <input type="checkbox" form="ownerAdsBulkForm" name="ad_ids[]" value="<?= $adId ?>" class="owner-ad-cb" onchange="ownerAdSelectionChanged()">
+                    </label>
+                  <?php endif; ?>
+                  <button type="button" class="av-ad-line-btn" onclick="toggleAdLine(<?= $adId ?>)" aria-expanded="false">
+                    <div class="av-ad-line-main">
+                      <span class="av-ad-line-title"><?= h($a['title']) ?> <span class="av-muted">#<?= $adId ?></span></span>
+                      <span class="av-ad-line-sub"><?= h($a['seller_name']) ?> · <?= h($a['category']) ?> · $<?= number_format((float)$a['price'], 2) ?></span>
+                    </div>
+                    <span class="av-badge <?= $badge ?> av-ad-line-badge"><?= h($statusLabel) ?></span>
+                    <i class="av-kyc-chevron" aria-hidden="true">›</i>
+                  </button>
+                  <div class="av-ad-quick-icons">
+                    <?php if ($preview !== ''): ?>
+                      <a href="<?= h($preview) ?>" target="_blank" rel="noopener noreferrer" class="av-ad-icon-btn" title="View account link" onclick="event.stopPropagation()"><i class="fa-solid fa-eye"></i></a>
+                    <?php else: ?>
+                      <span class="av-ad-icon-btn is-disabled" title="No preview link"><i class="fa-solid fa-eye"></i></span>
+                    <?php endif; ?>
+                    <button type="button" class="av-ad-icon-btn" title="View login details" onclick="event.stopPropagation(); ownerAdShowLogin(<?= $adId ?>)"><i class="fa-solid fa-key"></i></button>
+                  </div>
+                </div>
+                <div class="av-ad-line-body" hidden>
+                  <div class="av-ad-detail-grid">
+                    <div><span class="av-ad-detail-k">Seller</span><span><?= h($a['seller_name']) ?> · <?= h($a['seller_email']) ?></span></div>
+                    <div><span class="av-ad-detail-k">Category</span><span><?= h($a['category']) ?></span></div>
+                    <div><span class="av-ad-detail-k">Price</span><span class="av-ad-detail-price">$<?= number_format((float)$a['price'], 2) ?></span></div>
+                    <div><span class="av-ad-detail-k">Stock</span><span><?= $stock ?></span></div>
+                    <?php if ($preview !== ''): ?>
+                      <div class="av-ad-detail-span2"><span class="av-ad-detail-k">Preview link</span><a href="<?= h($preview) ?>" target="_blank" rel="noopener" class="av-ad-link"><?= h($preview) ?></a></div>
+                    <?php endif; ?>
+                    <div><span class="av-ad-detail-k">Username</span><span class="font-mono text-xs"><?= h($a['username'] ?? '') ?></span></div>
+                    <div><span class="av-ad-detail-k">Password</span><span class="font-mono text-xs"><?= h($a['password_plain'] ?? '') ?></span></div>
+                    <?php if (trim((string)($a['attached_email'] ?? '')) !== ''): ?>
+                      <div><span class="av-ad-detail-k">Email</span><span class="font-mono text-xs"><?= h($a['attached_email']) ?></span></div>
+                    <?php endif; ?>
+                    <?php if (trim((string)($a['attached_email_password'] ?? '')) !== ''): ?>
+                      <div><span class="av-ad-detail-k">Email pass</span><span class="font-mono text-xs"><?= h($a['attached_email_password']) ?></span></div>
+                    <?php endif; ?>
+                    <?php if (trim((string)($a['two_fa'] ?? '')) !== ''): ?>
+                      <div><span class="av-ad-detail-k">2FA</span><span class="font-mono text-xs"><?= h($a['two_fa']) ?></span></div>
+                    <?php endif; ?>
+                    <?php if (trim((string)($a['extra_info'] ?? '')) !== ''): ?>
+                      <div class="av-ad-detail-span2"><span class="av-ad-detail-k">Extra</span><span class="text-xs"><?= nl2br(h($a['extra_info'])) ?></span></div>
+                    <?php endif; ?>
+                    <?php if ($a['deny_reason']): ?><div class="av-ad-detail-span2" style="color:#e11d48"><span class="av-ad-detail-k">Denied</span><span><?= h($a['deny_reason']) ?></span></div><?php endif; ?>
                     <?php if ($soldOut && $st === 'active'): ?>
-                      <p class="av-row-sub" style="color:#f59e0b">Sold out — not shown on Home/Market until restocked.</p>
+                      <div class="av-ad-detail-span2" style="color:#f59e0b">Sold out — not shown on Home/Market until restocked.</div>
                     <?php endif; ?>
                   </div>
-                  <div style="text-align:right;flex-shrink:0">
-                    <span class="av-badge <?= $badge ?>"><?= h($statusLabel) ?></span>
-                    <p class="av-row-title" style="margin-top:0.4rem;color:var(--av-brand)">$<?= number_format((float)$a['price'], 2) ?></p>
+                  <div class="av-admin-card-actions av-ad-line-actions">
+                    <?php if ($st === 'pending'): ?>
+                      <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="return_filter" value="<?= h($adsFilter) ?>"><input type="hidden" name="ad_id" value="<?= $adId ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Approve</button></form>
+                      <form method="post" class="av-ad-deny-form"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="return_filter" value="<?= h($adsFilter) ?>"><input type="hidden" name="ad_id" value="<?= $adId ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="Deny reason" class="av-field"><button class="av-btn av-btn-danger">Deny</button></form>
+                    <?php elseif ($st === 'denied' || $st === 'removed'): ?>
+                      <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="return_filter" value="<?= h($adsFilter) ?>"><input type="hidden" name="ad_id" value="<?= $adId ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Re-approve &amp; list</button></form>
+                    <?php elseif ($soldOut): ?>
+                      <form method="post" class="flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="form" value="ad_restock">
+                        <input type="hidden" name="ad_id" value="<?= $adId ?>">
+                        <input type="number" name="qty" value="1" min="1" max="99" class="av-field" style="width:4.5rem" title="Stock qty">
+                        <button class="av-btn av-btn-success">Restock &amp; go live</button>
+                      </form>
+                    <?php endif; ?>
+                    <?php if ($st !== 'removed'): ?>
+                      <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="return_filter" value="<?= h($adsFilter) ?>"><input type="hidden" name="ad_id" value="<?= $adId ?>"><input type="hidden" name="status" value="removed"><button class="av-btn">Remove</button></form>
+                    <?php endif; ?>
                   </div>
                 </div>
-                <div class="av-admin-card-actions">
-                  <?php if ($st === 'pending'): ?>
-                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Approve</button></form>
-                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="denied"><input name="reason" placeholder="Deny reason" class="av-field"><button class="av-btn av-btn-danger">Deny</button></form>
-                  <?php elseif ($st === 'denied' || $st === 'removed'): ?>
-                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="active"><button class="av-btn av-btn-success">Re-approve &amp; list</button></form>
-                  <?php elseif ($soldOut): ?>
-                    <form method="post" class="flex flex-wrap items-center gap-2">
-                      <input type="hidden" name="form" value="ad_restock">
-                      <input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>">
-                      <input type="number" name="qty" value="1" min="1" max="99" class="av-field" style="width:4.5rem" title="Stock qty">
-                      <button class="av-btn av-btn-success">Restock &amp; go live</button>
-                    </form>
-                  <?php endif; ?>
-                  <?php if ($st !== 'removed'): ?>
-                    <form method="post"><input type="hidden" name="form" value="ad_status"><input type="hidden" name="ad_id" value="<?= (int)$a['id'] ?>"><input type="hidden" name="status" value="removed"><button class="av-btn">Remove</button></form>
-                  <?php endif; ?>
-                </div>
-              </article>
+              </div>
             <?php endforeach; ?>
+            </div>
           </div>
+          <div id="ownerAdLoginModal" class="av-ad-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ownerAdLoginTitle">
+            <div class="av-ad-modal-backdrop" onclick="ownerAdCloseLogin()"></div>
+            <div class="av-ad-modal-card">
+              <div class="av-ad-modal-head">
+                <h3 id="ownerAdLoginTitle" class="av-ad-modal-title">Login details</h3>
+                <button type="button" class="av-ad-modal-close" onclick="ownerAdCloseLogin()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div id="ownerAdLoginBody" class="av-ad-modal-body"></div>
+              <div class="av-ad-modal-foot">
+                <button type="button" class="av-btn av-btn-primary" id="ownerAdLoginOpenLink" style="display:none"><i class="fa-solid fa-eye mr-1"></i> Open account link</button>
+                <button type="button" class="av-btn" onclick="ownerAdCloseLogin()">Close</button>
+              </div>
+            </div>
+          </div>
+          <script>
+            function toggleAdLine(id) {
+              var row = document.querySelector('[data-ad-line="' + id + '"]');
+              if (!row) return;
+              var open = !row.classList.contains('is-open');
+              document.querySelectorAll('[data-ad-line].is-open').forEach(function (other) {
+                if (other !== row) {
+                  other.classList.remove('is-open');
+                  var ob = other.querySelector('.av-ad-line-body');
+                  var obtn = other.querySelector('.av-ad-line-btn');
+                  if (ob) ob.hidden = true;
+                  if (obtn) obtn.setAttribute('aria-expanded', 'false');
+                }
+              });
+              row.classList.toggle('is-open', open);
+              var body = row.querySelector('.av-ad-line-body');
+              var btn = row.querySelector('.av-ad-line-btn');
+              if (body) body.hidden = !open;
+              if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+            function ownerAdSelectAll(on) {
+              document.querySelectorAll('.owner-ad-cb').forEach(function (cb) { cb.checked = !!on; });
+              ownerAdSelectionChanged();
+            }
+            function ownerAdSelectionChanged() {
+              var boxes = Array.prototype.slice.call(document.querySelectorAll('.owner-ad-cb'));
+              var n = boxes.filter(function (b) { return b.checked; }).length;
+              var countEl = document.getElementById('ownerAdSelectedCount');
+              var btn = document.getElementById('ownerAdBulkApproveBtn');
+              var all = document.getElementById('ownerAdSelectAll');
+              if (countEl) countEl.textContent = n + ' selected';
+              if (btn) btn.disabled = n < 1;
+              if (all && boxes.length) all.checked = n > 0 && n === boxes.length;
+            }
+            function ownerAdsBulkConfirm(ev) {
+              var n = document.querySelectorAll('.owner-ad-cb:checked').length;
+              if (n < 1) {
+                ev.preventDefault();
+                return false;
+              }
+              return confirm('Approve ' + n + ' selected listing' + (n === 1 ? '' : 's') + ' and publish on Market?');
+            }
+            function ownerAdShowLogin(id) {
+              var row = document.querySelector('[data-ad-line="' + id + '"]');
+              if (!row) return;
+              var raw = row.getAttribute('data-ad-login') || '{}';
+              var data;
+              try { data = JSON.parse(raw); } catch (e) { data = {}; }
+              var modal = document.getElementById('ownerAdLoginModal');
+              var body = document.getElementById('ownerAdLoginBody');
+              var title = document.getElementById('ownerAdLoginTitle');
+              var linkBtn = document.getElementById('ownerAdLoginOpenLink');
+              if (!modal || !body) return;
+              if (title) title.textContent = data.title ? ('Login · ' + data.title) : 'Login details';
+              function rowHtml(label, val) {
+                if (!val) return '';
+                return '<div class="av-ad-login-row"><span class="av-ad-detail-k">' + label + '</span><span class="font-mono text-xs break-all">' + String(val).replace(/</g, '&lt;') + '</span></div>';
+              }
+              body.innerHTML =
+                rowHtml('Username', data.username) +
+                rowHtml('Password', data.password) +
+                rowHtml('Email', data.attached_email) +
+                rowHtml('Email password', data.attached_email_password) +
+                rowHtml('2FA', data.two_fa) +
+                (data.extra_info ? '<div class="av-ad-login-row"><span class="av-ad-detail-k">Extra</span><span class="text-xs">' + String(data.extra_info).replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</span></div>' : '') +
+                (data.preview_link ? '<div class="av-ad-login-row"><span class="av-ad-detail-k">Link</span><a href="' + String(data.preview_link).replace(/"/g, '&quot;') + '" target="_blank" rel="noopener" class="av-ad-link break-all">' + String(data.preview_link).replace(/</g, '&lt;') + '</a></div>' : '');
+              if (linkBtn) {
+                if (data.preview_link) {
+                  linkBtn.style.display = '';
+                  linkBtn.onclick = function () { window.open(data.preview_link, '_blank', 'noopener,noreferrer'); };
+                } else {
+                  linkBtn.style.display = 'none';
+                  linkBtn.onclick = null;
+                }
+              }
+              modal.classList.remove('hidden');
+              document.body.classList.add('overflow-hidden');
+            }
+            function ownerAdCloseLogin() {
+              var modal = document.getElementById('ownerAdLoginModal');
+              if (modal) modal.classList.add('hidden');
+              document.body.classList.remove('overflow-hidden');
+            }
+            document.addEventListener('keydown', function (e) {
+              if (e.key === 'Escape') ownerAdCloseLogin();
+            });
+          </script>
         <?php endif; ?>
       </div>
     <?php endif; ?>
