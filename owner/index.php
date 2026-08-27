@@ -574,7 +574,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <span class="av-settings-value<?= $stats['kyc_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['kyc_pending'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
-          <a class="av-settings-row" href="?tab=ads">
+          <a class="av-settings-row" href="?tab=ads&filter=pending">
             <span class="av-settings-icon" style="background:#ef4444"><i class="fa-solid fa-rectangle-ad"></i></span>
             <span class="av-settings-label">Pending ads</span>
             <span class="av-settings-value<?= $stats['ads_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['ads_pending'] ?></span>
@@ -1128,19 +1128,37 @@ $tab = $_GET['tab'] ?? 'overview';
       <?php endif; ?>
     <?php endif; ?>
 
-    <?php if ($tab === 'ads'): $ads = db()->query('SELECT a.*, u.name seller_name, u.email seller_email FROM ads a JOIN users u ON u.id=a.seller_id ORDER BY a.created_at DESC LIMIT 200')->fetchAll(); ?>
+    <?php if ($tab === 'ads'):
+      $adsFilter = strtolower(trim((string)($_GET['filter'] ?? 'pending')));
+      if (!in_array($adsFilter, ['all', 'pending', 'active', 'denied', 'removed'], true)) $adsFilter = 'pending';
+      $adsSql = 'SELECT a.*, u.name seller_name, u.email seller_email FROM ads a JOIN users u ON u.id=a.seller_id';
+      if ($adsFilter !== 'all') {
+        $adsSql .= ' WHERE a.status = ' . db()->quote($adsFilter);
+      }
+      $adsSql .= " ORDER BY FIELD(a.status,'pending','denied','active','removed'), a.created_at DESC LIMIT 200";
+      $ads = db()->query($adsSql)->fetchAll();
+      $pendingAdsCount = (int)db()->query("SELECT COUNT(*) c FROM ads WHERE status='pending'")->fetch()['c'];
+    ?>
       <div class="av-page">
         <div class="av-page-head">
           <div>
             <h2 class="av-page-title">Ads</h2>
-            <p class="av-page-sub">Approve, deny, or remove marketplace listings.</p>
+            <p class="av-page-sub">Approve, deny, or remove marketplace listings. New uploads wait here as Pending until you approve.</p>
           </div>
           <div class="av-page-meta av-page-meta-static">
-            <span class="av-stat-pill"><strong><?= count($ads) ?></strong> listings</span>
+            <span class="av-stat-pill<?= $pendingAdsCount ? ' is-hot' : '' ?>"><strong><?= $pendingAdsCount ?></strong> pending</span>
+            <span class="av-stat-pill"><strong><?= count($ads) ?></strong> shown</span>
+          </div>
+        </div>
+        <div class="av-panel mb-3">
+          <div class="av-admin-card-actions" style="padding:0.75rem">
+            <?php foreach (['pending' => 'Pending', 'active' => 'Active', 'denied' => 'Denied', 'removed' => 'Removed', 'all' => 'All'] as $fk => $fl): ?>
+              <a class="av-btn<?= $adsFilter === $fk ? ' av-btn-success' : '' ?>" href="?tab=ads&filter=<?= h($fk) ?>"><?= h($fl) ?></a>
+            <?php endforeach; ?>
           </div>
         </div>
         <?php if (!$ads): ?>
-          <div class="av-panel"><div class="av-empty">No ads yet.</div></div>
+          <div class="av-panel"><div class="av-empty"><?= $adsFilter === 'pending' ? 'No pending ads. When sellers upload, they appear here for approval.' : 'No ads in this filter.' ?></div></div>
         <?php else: ?>
           <div class="av-panel">
             <div class="av-panel-head"><span>Listings</span></div>

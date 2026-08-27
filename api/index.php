@@ -250,10 +250,17 @@ try {
 
         case 'ads.create': {
             $u = require_user();
-            $plan = plan_limits($u['plan']);
+            $plan = plan_limits($u['plan'] ?? 'free');
             $used = uploads_today((int)$u['id']);
-            if ($used >= (int)$plan['daily_uploads']) {
-                json_out(['ok' => false, 'error' => 'Daily upload limit reached. Upgrade your plan.'], 429);
+            $dailyLimit = (int)($plan['daily_uploads'] ?? 5);
+            if ($used >= $dailyLimit) {
+                json_out([
+                    'ok' => false,
+                    'error' => 'Daily upload limit reached (' . $dailyLimit . '). Upgrade your plan to upload more today.',
+                    'code' => 'daily_limit',
+                    'used' => $used,
+                    'limit' => $dailyLimit,
+                ], 429);
             }
             $ad = [
                 'category' => trim((string)($body['category'] ?? '')),
@@ -270,30 +277,64 @@ try {
                 'extra_info' => trim((string)($body['extraInfo'] ?? '')),
             ];
             if ($ad['category'] === '' || $ad['title'] === '' || $ad['username'] === '' || $ad['password'] === '' || $ad['price'] <= 0) {
-                json_out(['ok' => false, 'error' => 'Missing required listing fields'], 422);
+                json_out(['ok' => false, 'error' => 'Missing required listing fields (category, title, username, password, price).', 'code' => 'validation'], 422);
             }
+            // Soft AI pre-check: hard-deny bad listings; good ones stay pending for Owner approval
             $review = ai_review_listing($ad);
-            $stmt = db()->prepare('INSERT INTO ads
-                (seller_id, category, title, description, price, release_type, username, password_plain, preview_link, attached_email, attached_email_password, two_fa, extra_info, status, deny_reason, reviewed_by, reviewed_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-            $stmt->execute([
-                (int)$u['id'], $ad['category'], $ad['title'], $ad['description'], money_f($ad['price']), $ad['release_type'],
-                $ad['username'], $ad['password'], $ad['preview_link'], $ad['attached_email'], $ad['attached_email_password'],
-                $ad['two_fa'], $ad['extra_info'], $review['status'] === 'active' ? 'pending' : 'pending', '',
-                '', null
-            ]);
-            // Always start pending, then apply AI result immediately (under review → active/denied)
-            $adId = (int)db()->lastInsertId();
-            bump_upload((int)$u['id']);
-            $upd = db()->prepare('UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW(), stock = IF(stock < 1, 1, stock) WHERE id = ?');
-            $upd->execute([$review['status'], $review['reason'], $review['reviewed_by'], $adId]);
-            if ($review['status'] === 'active') {
-                // ensure listable
-                db()->prepare('UPDATE ads SET stock = GREATEST(stock, 1) WHERE id = ?')->execute([$adId]);
+            $finalStatus = 'pending';
+            $denyReason = '';
+            $reviewedBy = '';
+            $reviewedAt = null;
+            if (($review['status'] ?? '') === 'denied') {
+                $finalStatus = 'denied';
+                $denyReason = (string)($review['reason'] ?? 'Failed AI checks.');
+                $reviewedBy = (string)($review['reviewed_by'] ?? 'AI Review');
+                $reviewedAt = date('Y-m-d H:i:s');
+            } else {
+                // Pass AI → wait for Owner (do not auto-publish)
+                $finalStatus = 'pending';
+                $reviewedBy = 'AI Precheck';
+                $reviewedAt = date('Y-m-d H:i:s');
             }
-            notify_user((int)$u['id'], $review['status'] === 'active' ? 'Ad Approved' : 'Ad Denied', $review['status'] === 'active' ? 'Your listing is live.' : $review['reason'], 'ad_review');
+            try {
+                $stmt = db()->prepare('INSERT INTO ads
+                    (seller_id, category, title, description, price, release_type, username, password_plain, preview_link, attached_email, attached_email_password, two_fa, extra_info, status, deny_reason, stock, reviewed_by, reviewed_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+                $stmt->execute([
+                    (int)$u['id'], $ad['category'], $ad['title'], $ad['description'], money_f($ad['price']), $ad['release_type'],
+                    $ad['username'], $ad['password'], $ad['preview_link'], $ad['attached_email'], $ad['attached_email_password'],
+                    $ad['two_fa'], $ad['extra_info'], $finalStatus, $denyReason, 1,
+                    $reviewedBy, $reviewedAt,
+                ]);
+            } catch (Throwable $e) {
+                json_out(['ok' => false, 'error' => 'Could not save listing: ' . $e->getMessage(), 'code' => 'insert_failed'], 500);
+            }
+            $adId = (int)db()->lastInsertId();
+            if ($adId < 1) {
+                json_out(['ok' => false, 'error' => 'Listing was not saved. Please try again.', 'code' => 'insert_failed'], 500);
+            }
+            bump_upload((int)$u['id']);
+            // Ensure slug exists for public links
+            try {
+                ensure_commerce_features();
+                ensure_ad_public_slug(['id' => $adId, 'title' => $ad['title'], 'public_slug' => null]);
+            } catch (Throwable $e) {}
+
+            if ($finalStatus === 'denied') {
+                notify_user((int)$u['id'], 'Ad Denied', $denyReason !== '' ? $denyReason : 'Your listing did not pass review.', 'ad_review');
+            } else {
+                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $ad['title'] . '" is pending Owner approval. You will be notified when it goes live.', 'ad_review');
+            }
             $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
-            json_out(['ok' => true, 'ad' => $row, 'ai' => $review]);
+            json_out([
+                'ok' => true,
+                'ad' => $row,
+                'ai' => $review,
+                'status' => $finalStatus,
+                'message' => $finalStatus === 'pending'
+                    ? 'Listing submitted for Owner approval.'
+                    : 'Listing denied by AI checks.',
+            ]);
         }
 
         case 'orders.mine': {

@@ -324,11 +324,45 @@
 
     A.createAd = async function (_user, draft) {
       try {
+        // Token may live only in httponly cookie; request() still sends credentials
+        if (!Api.getToken() && !usingApi()) {
+          return { ok: false, error: 'You are offline from the server. Log out and sign in again, then retry.' };
+        }
         const res = await Api.createAd(draft);
-        await hydrateFromApi();
-        return { ok: true, ad: mapAd(res.ad || {}), ai: res.ai };
+        const mapped = mapAd(res.ad || {});
+        // Merge immediately so My Ads never looks empty if hydrate glitches
+        try {
+          const cur = A.getCurrentUser && A.getCurrentUser();
+          if (cur) {
+            const rest = (cur.ads || []).filter((a) => String(a.id) !== String(mapped.id));
+            cur.ads = [mapped].concat(rest);
+            if (typeof cur.uploadsToday === 'number') cur.uploadsToday += 1;
+            try {
+              const d = new Date();
+              const dayKey =
+                d.getFullYear() +
+                '-' +
+                String(d.getMonth() + 1).padStart(2, '0') +
+                '-' +
+                String(d.getDate()).padStart(2, '0');
+              cur.uploadsByDay = cur.uploadsByDay || {};
+              cur.uploadsByDay[dayKey] = (Number(cur.uploadsByDay[dayKey]) || 0) + 1;
+            } catch (e2) {}
+            A.persistUser(cur);
+          }
+        } catch (e) {}
+        try {
+          await hydrateFromApi();
+        } catch (e) {}
+        return {
+          ok: true,
+          ad: mapped,
+          ai: res.ai,
+          status: res.status || mapped.status || 'pending',
+          message: res.message || '',
+        };
       } catch (e) {
-        return { ok: false, error: e.message || 'Failed to create listing' };
+        return { ok: false, error: e.message || 'Failed to create listing', code: e.code || '' };
       }
     };
 
@@ -520,11 +554,29 @@
     }
   }
 
+  async function refreshAdsFromApi() {
+    const Api = global.AcctventaApi;
+    const A = global.Acctventa;
+    if (!Api || !A) return false;
+    try {
+      const res = await Api.myAds();
+      const cur = A.getCurrentUser && A.getCurrentUser();
+      if (!cur) return false;
+      cur.ads = (res.ads || []).map(mapAd);
+      A.persistUser(cur);
+      return true;
+    } catch (e) {
+      console.warn('refreshAdsFromApi failed', e);
+      return false;
+    }
+  }
+
   global.AcctventaApiSync = {
     hydrateFromApi,
     hydratePublicMarket,
     loadMessages,
     refreshOrdersFromApi,
+    refreshAdsFromApi,
     usingApi,
     patchAcctventaForApi,
     mapOrder,

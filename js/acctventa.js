@@ -584,6 +584,25 @@
   }
 
   function createAd(user, draft) {
+    // Never write ads only to localStorage when the user is on the live API
+    try {
+      if (
+        global.AcctventaApi &&
+        (global.AcctventaApi.getToken() ||
+          (global.AcctventaApiSync && global.AcctventaApiSync.usingApi()))
+      ) {
+        if (global.AcctventaApiSync && typeof global.AcctventaApiSync.patchAcctventaForApi === 'function') {
+          global.AcctventaApiSync.patchAcctventaForApi();
+        }
+        if (global.Acctventa && global.Acctventa.__apiPatched && global.Acctventa.createAd !== createAd) {
+          return global.Acctventa.createAd(user, draft);
+        }
+        return {
+          ok: false,
+          error: 'Still connecting to the server. Wait a moment and try again, or refresh the page.',
+        };
+      }
+    } catch (e) {}
     if (!canUploadToday(user)) {
       return { ok: false, error: 'Daily upload limit reached. Upgrade your plan to upload more today.' };
     }

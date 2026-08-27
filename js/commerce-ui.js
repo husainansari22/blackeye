@@ -651,6 +651,22 @@
           } catch (e) {}
         })();
       }
+      if (tabId === 'ads') {
+        (async function () {
+          try {
+            if (global.AcctventaApiSync && typeof global.AcctventaApiSync.refreshAdsFromApi === 'function') {
+              await global.AcctventaApiSync.refreshAdsFromApi();
+            } else if (global.AcctventaApiSync && global.AcctventaApiSync.hydrateFromApi) {
+              await global.AcctventaApiSync.hydrateFromApi();
+            }
+            if (global.AcctventaUI && typeof global.AcctventaUI.onAdsUpdated === 'function') {
+              global.AcctventaUI.onAdsUpdated();
+            } else if (global.AcctventaUI && typeof global.AcctventaUI.refreshAll === 'function') {
+              global.AcctventaUI.refreshAll();
+            }
+          } catch (e) {}
+        })();
+      }
       refreshCartBadge();
     };
     wrapped.__commercePatched = true;

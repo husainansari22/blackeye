@@ -353,10 +353,12 @@
         <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No ads in this tab</p>
         <p class="text-xs text-slate-400">${
           adsFilter === 'pending'
-            ? 'Nothing under review right now. New uploads appear here until AI/Owner approve them.'
+            ? 'Nothing under review right now. New uploads stay here until Owner approves them.'
             : adsFilter === 'active'
               ? 'No live listings. Sold-out ads move to Removed — list a new product or ask Owner to restock.'
-              : 'Tap + to list a product. New uploads start Under Review.'
+              : adsFilter === 'denied'
+                ? 'No denied listings.'
+                : 'Tap + to list a product. New uploads start Under Review (Pending).'
         }</p>
       </div>`;
       return;
@@ -392,7 +394,7 @@
           </div>
         </div>
         ${a.status === 'denied' && a.denyReason ? `<div class="text-xs bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-lg p-2"><strong>Reason for denied:</strong> ${escapeHtml(a.denyReason)}</div>` : ''}
-        ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">AI is reviewing credentials & preview link…</p>` : ''}
+        ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">Passed AI checks — waiting for Owner approval before Market.</p>` : ''}
         ${soldOut ? `<p class="text-[11px] text-amber-600">This unit sold. It will not show on Market until restocked with new login details.</p>` : ''}
       </div>`;
       })
@@ -1702,9 +1704,21 @@
     alert(res.message || 'Withdrawal requested. Pending approval.');
   };
 
-  window.openSellProductWizard = function () {
-    const u = requireAuth({ message: 'You are not logged in. Sign in first to sell.' });
-    if (!u) return;
+  window.openSellProductWizard = async function () {
+    const u0 = requireAuth({ message: 'You are not logged in. Sign in first to sell.' });
+    if (!u0) return;
+    // Always sync server limits / ads before Sell (never trust stale localStorage alone)
+    try {
+      if (window.AcctventaApiSync) {
+        if (typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
+          window.AcctventaApiSync.patchAcctventaForApi();
+        }
+        if (window.AcctventaApiSync.usingApi() || (window.AcctventaApi && window.AcctventaApi.getToken())) {
+          await window.AcctventaApiSync.hydrateFromApi();
+        }
+      }
+    } catch (_) {}
+    const u = refreshUser() || u0;
     if (!A().canUploadToday(u)) {
       alert('Daily upload limit reached (' + A().getPlan(u).dailyUploads + '). Upgrade your plan to upload more today.');
       switchTab('plans');
@@ -1812,25 +1826,61 @@
       showSellStep(3);
       return;
     }
-    // submit
+    // submit — must hit MySQL when logged into API (never localStorage-only)
     const u = refreshUser();
-    const res = await Promise.resolve(A().createAd(u, sellDraft));
+    if (window.AcctventaApiSync && typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
+      window.AcctventaApiSync.patchAcctventaForApi();
+    }
+    const btn = document.getElementById('sellWizardBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+    }
+    let res;
+    try {
+      res = await Promise.resolve(A().createAd(u, sellDraft));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Submit for AI Review';
+      }
+    }
     if (!res.ok) {
-      alert(res.error);
+      alert(res.error || 'Could not create listing.');
       return;
     }
-    alert('Listing submitted. Status: Under Review — AI will approve or deny based on credentials & preview link.');
+    try {
+      if (window.AcctventaApiSync && window.AcctventaApiSync.refreshAdsFromApi) {
+        await window.AcctventaApiSync.refreshAdsFromApi();
+      } else if (window.AcctventaApiSync && window.AcctventaApiSync.hydrateFromApi) {
+        await window.AcctventaApiSync.hydrateFromApi();
+      }
+    } catch (_) {}
+    const status = String(res.status || res.ad?.status || 'pending').toLowerCase();
     document.getElementById('sellWizardOverlay').classList.remove('flex');
     document.getElementById('sellWizardOverlay').classList.add('hidden');
-    // clear fields
     ['wizardTitle', 'wizardDesc', 'wizardPrice', 'wizardUser', 'wizardPass', 'wizardPreview', 'wizardEmail', 'wizardEmailPass', 'wizard2fa', 'wizardExtra'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
     applyProfileChrome(refreshUser());
-    renderAds();
     switchTab('ads');
-    setAdsFilter('pending');
+    const filter =
+      status === 'denied' ? 'denied' : status === 'active' ? 'active' : 'pending';
+    setAdsFilter(filter);
+    renderAds();
+    const msg =
+      status === 'denied'
+        ? res.message || 'Listing denied by AI review. Open My Ads → Denied.'
+        : status === 'active'
+          ? 'Listing is live. Open My Ads → Active.'
+          : res.message ||
+            'Listing submitted. Open My Ads → Pending — Owner must approve before it appears on Market/Home.';
+    if (window.AcctventaToast) {
+      window.AcctventaToast[status === 'denied' ? 'error' : 'success'](msg);
+    } else {
+      alert(msg);
+    }
   };
 
   function fillSellReview() {
@@ -1846,7 +1896,7 @@
         <div class="flex justify-between gap-2"><span class="text-slate-500 shrink-0">Preview link</span><span class="font-mono text-[10px] text-right break-all">${escapeHtml(sellDraft.previewLink || '—')}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">2FA</span><span class="font-medium">${escapeHtml(sellDraft.twoFA || '—')}</span></div>
       </div>
-      <p class="text-[11px] text-amber-600 mt-3">After submit, listing stays <strong>Under Review</strong> until AI checks that the preview link matches the account type and required fields are valid.</p>`;
+      <p class="text-[11px] text-amber-600 mt-3">After submit, AI checks credentials &amp; preview link. Valid listings stay <strong>Under Review (Pending)</strong> until Owner approves them for Market.</p>`;
   }
 
   // -------- Listing detail / buy --------
@@ -2691,14 +2741,26 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (window.AcctventaApiSync) {
+      // Patch createAd/buy onto Acctventa before any Sell click (avoids localStorage-only ads)
+      try {
+        if (
+          typeof window.AcctventaApiSync.patchAcctventaForApi === 'function' &&
+          (window.AcctventaApiSync.usingApi() || (window.AcctventaApi && window.AcctventaApi.getToken()))
+        ) {
+          window.AcctventaApiSync.patchAcctventaForApi();
+        }
+      } catch (e) {}
       const hydrated = await window.AcctventaApiSync.hydrateFromApi();
       if (!hydrated && window.AcctventaApiSync.hydratePublicMarket) {
         await window.AcctventaApiSync.hydratePublicMarket();
       }
-      // Always re-pull orders after hydrate so Purchase is never stuck empty
+      // Always re-pull orders/ads after hydrate so lists are never stuck empty
       try {
         if (hydrated && window.AcctventaApiSync.refreshOrdersFromApi) {
           await window.AcctventaApiSync.refreshOrdersFromApi();
+        }
+        if (hydrated && window.AcctventaApiSync.refreshAdsFromApi) {
+          await window.AcctventaApiSync.refreshAdsFromApi();
         }
       } catch (e) {}
     }
