@@ -1735,6 +1735,10 @@
     if (search) search.value = '';
     if (selected) { selected.classList.add('hidden'); selected.innerHTML = ''; }
     if (picker) picker.classList.add('hidden');
+    ['wizardTitle', 'wizardDesc', 'wizardPrice', 'wizardUser', 'wizardPass', 'wizardPreview', 'wizardEmail', 'wizardEmailPass', 'wizard2fa', 'wizardExtra'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     document.getElementById('sellWizardOverlay').classList.remove('hidden');
     document.getElementById('sellWizardOverlay').classList.add('flex');
     const banner = document.getElementById('uploadLimitBannerText');
@@ -1783,17 +1787,32 @@
     }
   };
 
+  function parseListingPrice(raw) {
+    if (raw == null || raw === '') return NaN;
+    const s = String(raw).trim().replace(/,/g, '.').replace(/[^\d.]/g, '');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+  }
+
   window.handleSellWizardNext = async function () {
     if (sellStep === 1) {
       const category = document.getElementById('wizardCat').value;
       const title = document.getElementById('wizardTitle').value.trim();
       const description = document.getElementById('wizardDesc').value.trim();
-      const price = document.getElementById('wizardPrice').value;
-      if (!category || !title || !price) {
-        alert('Please fill category, name, and price.');
+      const price = parseListingPrice(document.getElementById('wizardPrice').value);
+      if (!category || !title) {
+        alert('Please fill category and name.');
         return;
       }
-      sellDraft = { ...sellDraft, category, platform: category, title, description, price: Number(price) };
+      if (!Number.isFinite(price) || price <= 0) {
+        alert('Enter a valid price (e.g. 8.00).');
+        return;
+      }
+      if (price > 99999) {
+        alert('Price is too high. Enter a realistic listing price.');
+        return;
+      }
+      sellDraft = { ...sellDraft, category, platform: category, title, description, price };
       const uploadOk = window.AcctventaConfirm
         ? await window.AcctventaConfirm({
             title: 'Upload policy',
@@ -1831,6 +1850,13 @@
     if (window.AcctventaApiSync && typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
       window.AcctventaApiSync.patchAcctventaForApi();
     }
+    // Re-read price from review step so it always matches what the seller entered
+    const finalPrice = parseListingPrice(sellDraft.price != null ? sellDraft.price : document.getElementById('wizardPrice')?.value);
+    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+      alert('Price is missing or invalid. Go back and enter your listing price (e.g. 8.00).');
+      return;
+    }
+    sellDraft = { ...sellDraft, price: finalPrice };
     const btn = document.getElementById('sellWizardBtn');
     if (btn) {
       btn.disabled = true;

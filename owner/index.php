@@ -545,7 +545,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <span class="v">$<?= number_format($stats['withdrawals_total'], 2) ?></span>
           </div>
           <div class="av-mini-stat">
-            <span class="k">Sales</span>
+            <span class="k">Sales (GMV)</span>
             <span class="v">$<?= number_format($stats['volume'], 2) ?></span>
           </div>
           <div class="av-mini-stat">

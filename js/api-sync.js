@@ -328,7 +328,26 @@
         if (!Api.getToken() && !usingApi()) {
           return { ok: false, error: 'You are offline from the server. Log out and sign in again, then retry.' };
         }
-        const res = await Api.createAd(draft);
+        const priceRaw = draft && draft.price;
+        const priceNum = Number(String(priceRaw ?? '').replace(/,/g, '.'));
+        if (!Number.isFinite(priceNum) || priceNum <= 0) {
+          return { ok: false, error: 'Invalid listing price. Enter a valid amount (e.g. 8.00).', code: 'validation' };
+        }
+        const payload = {
+          category: draft.category,
+          title: draft.title,
+          description: draft.description || '',
+          price: Math.round(priceNum * 100) / 100,
+          releaseType: draft.releaseType || 'auto',
+          username: draft.username,
+          password: draft.password,
+          previewLink: draft.previewLink || '',
+          attachedEmail: draft.attachedEmail || '',
+          attachedEmailPassword: draft.attachedEmailPassword || '',
+          twoFA: draft.twoFA || '',
+          extraInfo: draft.extraInfo || '',
+        };
+        const res = await Api.createAd(payload);
         const mapped = mapAd(res.ad || {});
         // Merge immediately so My Ads never looks empty if hydrate glitches
         try {

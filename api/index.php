@@ -266,7 +266,7 @@ try {
                 'category' => trim((string)($body['category'] ?? '')),
                 'title' => trim((string)($body['title'] ?? '')),
                 'description' => trim((string)($body['description'] ?? '')),
-                'price' => (float)($body['price'] ?? 0),
+                'price' => round((float)($body['price'] ?? 0), 2),
                 'release_type' => (($body['releaseType'] ?? 'auto') === 'manual') ? 'manual' : 'auto',
                 'username' => trim((string)($body['username'] ?? '')),
                 'password' => (string)($body['password'] ?? ''),
@@ -278,6 +278,9 @@ try {
             ];
             if ($ad['category'] === '' || $ad['title'] === '' || $ad['username'] === '' || $ad['password'] === '' || $ad['price'] <= 0) {
                 json_out(['ok' => false, 'error' => 'Missing required listing fields (category, title, username, password, price).', 'code' => 'validation'], 422);
+            }
+            if ($ad['price'] > 99999) {
+                json_out(['ok' => false, 'error' => 'Listing price is too high.', 'code' => 'validation'], 422);
             }
             // Soft AI pre-check: hard-deny bad listings; good ones stay pending for Owner approval
             $review = ai_review_listing($ad);
