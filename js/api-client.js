@@ -108,6 +108,97 @@
     } catch (e) {}
   }
 
+  /** True when the app should talk to the live API (token, or logged-in API session). */
+  function hasApiSession() {
+    try {
+      if (getToken()) return true;
+      if (localStorage.getItem('acctventa_backend') === 'api' && localStorage.getItem('isLoggedIn') === 'true') {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  /** Push a fresh wallet balance into every client-side store (localStorage + Acctventa user). */
+  function applyWalletBalance(balance, userExtra) {
+    if (balance == null || isNaN(Number(balance))) return;
+    const bal = Number(balance);
+    try {
+      localStorage.setItem('walletBalance', String(bal));
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('acctventa_backend', 'api');
+    } catch (e) {}
+    try {
+      const session = (
+        localStorage.getItem('acctventa_session') ||
+        localStorage.getItem('userEmail') ||
+        (userExtra && userExtra.email) ||
+        ''
+      ).toLowerCase();
+      if (session) {
+        const raw = localStorage.getItem('acctventa_users');
+        const users = raw ? JSON.parse(raw) : {};
+        if (users[session]) {
+          users[session].balance = bal;
+          if (userExtra) {
+            if (userExtra.withdrawableBalance != null) users[session].withdrawableBalance = userExtra.withdrawableBalance;
+            if (userExtra.escrowBalance != null) users[session].escrowBalance = userExtra.escrowBalance;
+            if (userExtra.totalDeposits != null) users[session].totalDeposits = userExtra.totalDeposits;
+            if (userExtra.totalWithdrawals != null) users[session].totalWithdrawals = userExtra.totalWithdrawals;
+          }
+          localStorage.setItem('acctventa_users', JSON.stringify(users));
+        }
+      }
+    } catch (e) {}
+    try {
+      if (global.Acctventa && global.Acctventa.getCurrentUser && global.Acctventa.persistUser) {
+        const cur = global.Acctventa.getCurrentUser();
+        if (cur) {
+          cur.balance = bal;
+          if (userExtra) {
+            if (userExtra.withdrawableBalance != null) cur.withdrawableBalance = userExtra.withdrawableBalance;
+            if (userExtra.escrowBalance != null) cur.escrowBalance = userExtra.escrowBalance;
+            if (userExtra.totalDeposits != null) cur.totalDeposits = userExtra.totalDeposits;
+            if (userExtra.totalWithdrawals != null) cur.totalWithdrawals = userExtra.totalWithdrawals;
+          }
+          global.Acctventa.persistUser(cur);
+        } else if (userExtra && userExtra.email) {
+          global.Acctventa.persistUser({
+            id: userExtra.id,
+            name: userExtra.name || '',
+            email: userExtra.email,
+            phone: userExtra.phone || '',
+            balance: bal,
+            withdrawableBalance: userExtra.withdrawableBalance,
+            escrowBalance: userExtra.escrowBalance,
+            totalDeposits: userExtra.totalDeposits,
+            totalWithdrawals: userExtra.totalWithdrawals,
+            plan: userExtra.plan || 'free',
+            referralCode: userExtra.referralCode,
+            isVerified: !!userExtra.isVerified,
+            ads: [],
+            orders: [],
+            transactions: [],
+            notifications: [],
+          });
+        }
+      }
+    } catch (e) {}
+    try {
+      global.dispatchEvent(new CustomEvent('acctventa:wallet-updated', { detail: { balance: bal } }));
+    } catch (e) {}
+  }
+
+  /** After orders.buy or cart.checkout — sync wallet from API response immediately. */
+  function applyPurchaseResult(res) {
+    if (!res) return;
+    const user = res.user || null;
+    const balance = res.balance != null ? res.balance : (user && user.balance);
+    if (balance == null || isNaN(Number(balance))) return;
+    applyWalletBalance(Number(balance), user || undefined);
+    if (user) applySessionUser(user);
+  }
+
   const Api = {
     request,
     isAvailable,
@@ -115,6 +206,9 @@
     getToken,
     setToken,
     applySessionUser,
+    hasApiSession,
+    applyWalletBalance,
+    applyPurchaseResult,
     register(payload) {
       return request('auth.register', { method: 'POST', body: payload }).then((data) => {
         if (data.token) setToken(data.token);
@@ -187,7 +281,10 @@
       return request('ads.create', { method: 'POST', body: payload });
     },
     createOrder(payload) {
-      return request('orders.buy', { method: 'POST', body: payload });
+      return request('orders.buy', { method: 'POST', body: payload }).then((data) => {
+        applyPurchaseResult(data);
+        return data;
+      });
     },
     myOrders() {
       return request('orders.mine');
@@ -319,7 +416,10 @@
       return request('cart.clear', { method: 'POST', body: {} });
     },
     cartCheckout() {
-      return request('cart.checkout', { method: 'POST', body: {} });
+      return request('cart.checkout', { method: 'POST', body: {} }).then((data) => {
+        applyPurchaseResult(data);
+        return data;
+      });
     },
     // -------- Wishlist --------
     wishlistList() {

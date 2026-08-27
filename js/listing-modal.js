@@ -336,6 +336,13 @@
     }
     try {
       var res = await Api.createOrder({ listingId: Number(listingId) });
+      if (Api.applyPurchaseResult) Api.applyPurchaseResult(res);
+      if (global.AcctventaApiSync && global.AcctventaApiSync.hydrateFromApi) {
+        try { await global.AcctventaApiSync.hydrateFromApi(); } catch (syncErr) {}
+      }
+      if (global.AcctventaUI && global.AcctventaUI.refreshAll) {
+        try { global.AcctventaUI.refreshAll(); } catch (uiErr) {}
+      }
       close();
       var orderId = res && (res.orderId || res.id);
       var msg = 'Purchase successful!';

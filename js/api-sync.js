@@ -7,10 +7,32 @@
 
   function usingApi() {
     try {
-      return localStorage.getItem('acctventa_backend') === 'api' && !!(localStorage.getItem(TOKEN_KEY) || document.cookie.indexOf('acctventa_token=') !== -1);
+      if (global.AcctventaApi && global.AcctventaApi.hasApiSession) {
+        return global.AcctventaApi.hasApiSession();
+      }
+      return localStorage.getItem('acctventa_backend') === 'api' &&
+        !!(localStorage.getItem(TOKEN_KEY) || localStorage.getItem('isLoggedIn') === 'true');
     } catch (e) {
       return false;
     }
+  }
+
+  async function ensureApiSession(Api) {
+    if (!Api) return false;
+    if (Api.getToken && Api.getToken()) return true;
+    if (usingApi()) return true;
+    try {
+      const me = await Api.me();
+      if (me && me.user) {
+        try {
+          localStorage.setItem('acctventa_backend', 'api');
+          localStorage.setItem('isLoggedIn', 'true');
+        } catch (e) {}
+        if (Api.applySessionUser) Api.applySessionUser(me.user);
+        return true;
+      }
+    } catch (e) {}
+    return false;
   }
 
   function mapAd(row) {
@@ -171,7 +193,8 @@
       return false;
     }
     if (!ok) return false;
-    if (!Api.getToken() && !usingApi()) return false;
+    const sessionOk = await ensureApiSession(Api);
+    if (!sessionOk) return false;
 
     try {
       const [me, adsRes, ordersRes, marketRes, walletRes, notesRes, cfgRes] = await Promise.all([
@@ -393,6 +416,7 @@
     A.purchaseListing = async function (_user, listingId) {
       try {
         const res = await Api.createOrder({ listingId: Number(listingId) });
+        if (Api.applyPurchaseResult) Api.applyPurchaseResult(res);
         // Merge the new order immediately so Orders is never empty if hydrate/myOrders glitches
         try {
           const cur = A.getCurrentUser && A.getCurrentUser();
@@ -602,6 +626,7 @@
     refreshOrdersFromApi,
     refreshAdsFromApi,
     usingApi,
+    ensureApiSession,
     patchAcctventaForApi,
     mapOrder,
     mapListing,

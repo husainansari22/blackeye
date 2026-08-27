@@ -2947,16 +2947,24 @@
     }
   };
 
+  window.addEventListener('acctventa:wallet-updated', () => {
+    try {
+      applyProfileChrome(refreshUser());
+    } catch (e) {}
+  });
+
   document.addEventListener('DOMContentLoaded', async () => {
     if (window.AcctventaApiSync) {
       // Patch createAd/buy onto Acctventa before any Sell click (avoids localStorage-only ads)
       try {
-        if (
+        const Api = window.AcctventaApi;
+        let shouldPatch =
           typeof window.AcctventaApiSync.patchAcctventaForApi === 'function' &&
-          (window.AcctventaApiSync.usingApi() || (window.AcctventaApi && window.AcctventaApi.getToken()))
-        ) {
-          window.AcctventaApiSync.patchAcctventaForApi();
+          (window.AcctventaApiSync.usingApi() || (Api && Api.getToken && Api.getToken()));
+        if (!shouldPatch && Api && window.AcctventaApiSync.ensureApiSession) {
+          shouldPatch = await window.AcctventaApiSync.ensureApiSession(Api);
         }
+        if (shouldPatch) window.AcctventaApiSync.patchAcctventaForApi();
       } catch (e) {}
       const hydrated = await window.AcctventaApiSync.hydrateFromApi();
       if (!hydrated && window.AcctventaApiSync.hydratePublicMarket) {
