@@ -2,3 +2,5 @@ api/config.php
 api/*.local.php
 .env
 .env.*
+node_modules/
+npm-debug.log*

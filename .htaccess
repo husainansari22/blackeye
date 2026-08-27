@@ -1,5 +1,15 @@
 RewriteEngine On
 
+# Long-cache static assets (filenames are versioned with ?v= query where needed)
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "public, max-age=60, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
 # Never rewrite uploaded files
 RewriteRule ^uploads/ - [L]
 
