@@ -168,7 +168,7 @@ function email_order_notice(string $name, string $title, string $role, string $a
     $txLine = $safeTx !== ''
         ? '<p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#94a3b8;">Transaction ID: <strong style="color:#fff;font-family:monospace;">' . $safeTx . '</strong></p>'
         : '';
-    $dash = mail_cfg()['app_url'] . '/dashboard.html#orders' . ($txid !== '' ? '?txid=' . rawurlencode($txid) : '');
+    $dash = mail_cfg()['app_url'] . '/dashboard.html#' . ($role === 'seller' ? 'orders' : 'purchase') . ($txid !== '' ? '?txid=' . rawurlencode($txid) : '');
     if ($role === 'seller') {
         $headline = 'Congratulations — you made a sale!';
         $body = 'Great news! A buyer just purchased <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>.';
@@ -184,14 +184,14 @@ function email_order_notice(string $name, string $title, string $role, string $a
         $btn = email_button('View your sale', $dash);
     } else {
         $headline = 'Purchase confirmed';
-        $body = 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>) is confirmed. Open Orders to view credentials and chat with the seller.';
+        $body = 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>) is confirmed. Open <strong style="color:#fff;">My Purchase</strong> to view credentials and chat with the seller.';
         $subject = 'Purchase confirmed · ' . $title . ' · Acctventa';
         $extra = '
       <div style="margin:18px 0;padding:16px;border-radius:14px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.35);">
         <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.04em;">Buyer protection</p>
         <p style="margin:0;font-size:13px;line-height:1.55;color:#cbd5e1;">You have <strong style="color:#fff;">60 minutes</strong> to open a dispute if login fails or the seller stops responding. After that, contact Support for warranty review (24h).</p>
       </div>';
-        $btn = email_button('Open your order', $dash);
+        $btn = email_button('Open My Purchase', $dash);
     }
     $inner = '
       <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">' . $headline . '</h1>
@@ -208,7 +208,7 @@ function email_order_status_update(string $name, string $title, string $statusLa
     $safeStatus = htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8');
     $safeTx = htmlspecialchars($txid, ENT_QUOTES, 'UTF-8');
     $safeDetail = htmlspecialchars($detail, ENT_QUOTES, 'UTF-8');
-    $dash = mail_cfg()['app_url'] . '/dashboard.html#orders';
+    $dash = mail_cfg()['app_url'] . '/dashboard.html#purchase' . ($txid !== '' ? '?txid=' . rawurlencode($txid) : '');
     $subject = 'Order update · ' . $statusLabel . ' · ' . $title;
     $inner = '
       <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">Order update</h1>

@@ -324,7 +324,7 @@
       var bought = (res.orders || []).length;
       if (bought) {
         toast(bought + ' item' + (bought === 1 ? '' : 's') + ' purchased successfully.', { type: 'success' });
-        if (typeof global.switchTab === 'function') global.switchTab('orders');
+        if (typeof global.switchTab === 'function') global.switchTab('purchase');
       } else {
         toast('Nothing in your cart could be purchased right now.', { type: 'warn' });
       }
@@ -633,9 +633,9 @@
       if (tabId === 'home') {
         loadSocialProof();
       }
-      if (tabId === 'orders') {
+      if (tabId === 'orders' || tabId === 'purchase') {
         refreshDisputesBanner();
-        // Re-pull purchase orders so credentials appear after buy / email deep-link
+        // Re-pull purchase/sales so credentials appear after buy / email deep-link
         (async function () {
           try {
             if (global.AcctventaApiSync && typeof global.AcctventaApiSync.refreshOrdersFromApi === 'function') {

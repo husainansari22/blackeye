@@ -8,6 +8,9 @@
   let sellStep = 1;
   let adsFilter = 'all';
   let ordersFilter = 'all';
+  let purchaseFilter = 'all';
+  let ordersSearch = '';
+  let purchaseSearch = '';
   let activeOrderId = null;
 
   function money(n) {
@@ -370,38 +373,138 @@
       .join('');
   }
 
+  function formatOrderWhen(iso) {
+    try {
+      const d = new Date(iso);
+      if (!d.getTime()) return '';
+      const day = d.getDate();
+      const j = day % 10;
+      const k = day % 100;
+      let suf = 'th';
+      if (j === 1 && k !== 11) suf = 'st';
+      else if (j === 2 && k !== 12) suf = 'nd';
+      else if (j === 3 && k !== 13) suf = 'rd';
+      const month = d.toLocaleDateString(undefined, { month: 'short' });
+      const year = d.getFullYear();
+      const time = d.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      return day + suf + ' ' + month + ' ' + year + ', ' + time;
+    } catch (e) {
+      return relativeTime(iso);
+    }
+  }
+
+  function orderStatusBadge(status) {
+    const s = String(status || '').toLowerCase();
+    let cls = 'bg-slate-500/15 text-slate-400';
+    if (s === 'completed') cls = 'bg-emerald-500/15 text-emerald-500';
+    else if (s === 'pending') cls = 'bg-amber-500/15 text-amber-500';
+    else if (s === 'cancelled' || s === 'refunded') cls = 'bg-red-500/15 text-red-400';
+    else if (s === 'disputed') cls = 'bg-orange-500/15 text-orange-400';
+    return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${cls}">${escapeHtml(status || '—')}</span>`;
+  }
+
+  function orderCardHtml(o, side) {
+    const isSeller = side === 'seller';
+    const tx = o.txid || o.publicId || displayTxId({ id: o.id, reference: o.publicId });
+    const when = formatOrderWhen(o.createdAt);
+    const roleLabel = isSeller ? 'Sell' : 'Buy';
+    const roleCls = isSeller ? 'text-red-400' : 'text-emerald-500';
+    const cat = o.category || o.title || 'Order';
+    let logo = '';
+    try {
+      const prod =
+        window.AcctventaCatalog &&
+        (window.AcctventaCatalog.findProduct(cat) || window.AcctventaCatalog.findProduct(o.title));
+      if (prod && prod.logo) logo = prod.logo;
+    } catch (e) {}
+    const icon = logo
+      ? `<img src="${escapeAttr(logo)}" alt="" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'">`
+      : `<i class="fa-solid fa-box text-slate-400 text-xs"></i>`;
+    return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-sm space-y-2.5">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0 flex items-center gap-2">
+          <span class="text-[11px] font-bold ${roleCls}">${roleLabel}</span>
+          ${icon}
+          <span class="font-semibold text-sm truncate">${escapeHtml(o.title || cat)}</span>
+        </div>
+        ${orderStatusBadge(o.status)}${window.CommerceUI ? window.CommerceUI.disputeBadgeHtml(o) : ''}
+      </div>
+      <div class="flex justify-between gap-2 text-[11px] text-slate-500">
+        <p class="font-mono flex items-center gap-1.5 min-w-0">
+          <span class="shrink-0">Order No:</span>
+          <span class="truncate">${escapeHtml(truncateTxId(tx))}</span>
+          <button type="button" onclick="copyTxId('${escapeAttr(tx)}')" class="text-slate-400 hover:text-brandPrimary shrink-0" aria-label="Copy order id"><i class="fa-regular fa-copy"></i></button>
+        </p>
+        <span class="shrink-0 text-right">${escapeHtml(when)}</span>
+      </div>
+      <div class="flex items-center justify-between gap-2 pt-0.5">
+        <span class="font-extrabold text-base">${money(o.price)}</span>
+        <div class="flex items-center gap-3">
+          <button type="button" onclick="openOrderDetail('${escapeAttr(String(o.id))}')" class="text-xs font-semibold text-brandPrimary hover:underline">View Order</button>
+          <button type="button" onclick="openOrderChat('${escapeAttr(String(o.id))}')" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:border-brandPrimary hover:text-brandPrimary" aria-label="Chat"><i class="fa-regular fa-comment-dots"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function filterOrdersList(orders, role, statusFilter, search) {
+    let list = (orders || []).filter((o) => (role === 'seller' ? o.role === 'seller' : o.role !== 'seller'));
+    if (statusFilter && statusFilter !== 'all') {
+      list = list.filter((o) => String(o.status || '').toLowerCase() === statusFilter);
+    }
+    const q = String(search || '')
+      .trim()
+      .toLowerCase();
+    if (q) {
+      list = list.filter((o) => {
+        const hay = [o.title, o.category, o.txid, o.publicId, o.status, o.sellerName, o.buyerName]
+          .map((x) => String(x || '').toLowerCase())
+          .join(' ');
+        return hay.indexOf(q) !== -1;
+      });
+    }
+    return list;
+  }
+
+  function renderPurchase() {
+    const u = refreshUser();
+    if (!u) return;
+    const box = document.getElementById('purchaseListContainer');
+    if (!box) return;
+    const orders = filterOrdersList(u.orders, 'buyer', purchaseFilter, purchaseSearch);
+    if (!orders.length) {
+      box.innerHTML = `<div class="text-center py-12 space-y-2">
+        <i class="fa-regular fa-clipboard text-4xl text-slate-300 dark:text-slate-700"></i>
+        <p class="font-bold text-sm">No purchases</p>
+        <p class="text-xs text-slate-400">Accounts you buy will show here with login details.</p>
+        <button onclick="switchTab('market')" class="mt-2 text-xs border border-brandPrimary text-brandPrimary px-4 py-2 rounded-lg">Explore marketplace</button>
+      </div>`;
+      return;
+    }
+    box.innerHTML = orders.map((o) => orderCardHtml(o, 'buyer')).join('');
+  }
+
   function renderOrders() {
     const u = refreshUser();
     if (!u) return;
     const box = document.getElementById('ordersListContainer');
     if (!box) return;
-    let orders = u.orders || [];
-    if (ordersFilter !== 'all') orders = orders.filter((o) => o.status === ordersFilter);
+    const orders = filterOrdersList(u.orders, 'seller', ordersFilter, ordersSearch);
     if (!orders.length) {
       box.innerHTML = `<div class="text-center py-12 space-y-2">
-        <i class="fa-regular fa-clipboard text-4xl text-slate-300 dark:text-slate-700"></i>
-        <p class="font-bold text-sm">No orders</p>
-        <p class="text-xs text-slate-400">Buy and sell orders will be shown here.</p>
-        <button onclick="switchTab('market')" class="mt-2 text-xs border border-brandPrimary text-brandPrimary px-4 py-2 rounded-lg">Explore marketplace</button>
+        <i class="fa-solid fa-bag-shopping text-4xl text-slate-300 dark:text-slate-700"></i>
+        <p class="font-bold text-sm">No sales yet</p>
+        <p class="text-xs text-slate-400">When buyers purchase your listings, sales appear here.</p>
+        <button onclick="openSellProductWizard()" class="mt-2 text-xs border border-brandPrimary text-brandPrimary px-4 py-2 rounded-lg">Sell Product</button>
       </div>`;
       return;
     }
-    box.innerHTML = orders
-      .map((o) => {
-        const role = o.role === 'seller' ? 'Sold' : 'Bought';
-        const tx = o.txid || o.publicId || displayTxId({ id: o.id, reference: o.publicId });
-        return `<button type="button" onclick="openOrderDetail('${o.id}')" class="w-full text-left bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm hover:border-brandPrimary transition">
-        <div class="min-w-0">
-          <h4 class="font-bold text-sm truncate">${escapeHtml(o.title)}</h4>
-          <p class="text-[10px] text-slate-500 mt-0.5">${role} · ${escapeHtml(o.status)}${window.CommerceUI ? window.CommerceUI.disputeBadgeHtml(o) : ''}</p>
-          <p class="text-[10px] font-mono text-slate-400 mt-0.5 flex items-center gap-1">TXID: ${escapeHtml(truncateTxId(tx))}
-            <span role="button" tabindex="0" onclick="event.stopPropagation(); copyTxId('${escapeAttr(tx)}')" class="text-slate-500"><i class="fa-regular fa-copy"></i></span>
-          </p>
-        </div>
-        <span class="font-bold text-sm text-brandPrimary">${money(o.price)}</span>
-      </button>`;
-      })
-      .join('');
+    box.innerHTML = orders.map((o) => orderCardHtml(o, 'seller')).join('');
   }
 
   function renderNotifications() {
@@ -1771,9 +1874,10 @@
     } catch (e) {}
     applyProfileChrome(refreshUser());
     renderOrders();
+    renderPurchase();
     renderMarketplace();
-    alert('Purchase successful. Open Orders to view credentials and message the seller.');
-    switchTab('orders');
+    alert('Purchase successful. Open My Purchase to view credentials and message the seller.');
+    switchTab('purchase');
     if (res.orderId) {
       try {
         openOrderDetail(String(res.orderId));
@@ -1874,6 +1978,7 @@
       if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
       closeModal();
       renderOrders();
+      renderPurchase();
       alert('Thanks for your review!');
     } catch (e) {
       alert(e.message || 'Could not submit review');
@@ -1956,6 +2061,7 @@
     closeModal();
     applyProfileChrome(refreshUser());
     renderOrders();
+    renderPurchase();
     alert('Buyer refunded.' + (res.owing ? ' You now owe $' + Number(res.owing).toFixed(2) + '.' : ''));
   };
 
@@ -1969,6 +2075,7 @@
     closeModal();
     applyProfileChrome(refreshUser());
     renderOrders();
+    renderPurchase();
     alert('Order completed. Funds moved from escrow to your balance.');
   };
 
@@ -2386,6 +2493,27 @@
     renderOrders();
   };
 
+  window.setPurchaseFilter = function (f) {
+    purchaseFilter = f;
+    document.querySelectorAll('.purchase-filter-btn').forEach((b) => {
+      b.classList.toggle('text-brandPrimary', b.dataset.filter === f);
+      b.classList.toggle('border-brandPrimary', b.dataset.filter === f);
+      b.classList.toggle('border-b-2', b.dataset.filter === f);
+      b.classList.toggle('text-slate-400', b.dataset.filter !== f);
+    });
+    renderPurchase();
+  };
+
+  window.setOrdersSearch = function (q) {
+    ordersSearch = q || '';
+    renderOrders();
+  };
+
+  window.setPurchaseSearch = function (q) {
+    purchaseSearch = q || '';
+    renderPurchase();
+  };
+
   window.copyReferralLink = function () {
     const el = document.getElementById('referralLinkText');
     const link = (el && el.dataset.full) || '';
@@ -2486,6 +2614,7 @@
       if (!u) return;
       renderAds();
       renderOrders();
+      renderPurchase();
       renderPlans();
       renderTxHistory();
       renderNotifications();
@@ -2555,7 +2684,7 @@
     try {
       if (typeof window.restoreDashTab === 'function') window.restoreDashTab();
     } catch (e) {}
-    // Open a specific order from email deep-link: #orders?txid=...
+    // Open a specific order from email deep-link: #purchase?txid=... or #orders?txid=...
     try {
       const hash = String(location.hash || '');
       const qIdx = hash.indexOf('?');

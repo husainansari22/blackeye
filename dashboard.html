@@ -264,14 +264,40 @@
             </div>
         </div>
 
-        <!-- TAB: ORDERS -->
+        <!-- TAB: PURCHASE (buyer — left menu only) -->
+        <div id="tab_purchase" class="app-tab hidden space-y-4">
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                <div>
+                    <h2 class="text-xl font-bold">My Purchase</h2>
+                    <p class="text-xs text-slate-500">Accounts and products you bought.</p>
+                </div>
+            </div>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input id="purchaseSearchInput" type="search" placeholder="Search" oninput="setPurchaseSearch(this.value)" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brandPrimary" />
+            </div>
+            <div class="flex border-b border-slate-200 dark:border-slate-800 text-xs">
+                <button data-filter="all" onclick="setPurchaseFilter('all')" class="purchase-filter-btn flex-1 py-2 font-medium text-brandPrimary border-b-2 border-brandPrimary">All</button>
+                <button data-filter="pending" onclick="setPurchaseFilter('pending')" class="purchase-filter-btn flex-1 py-2 font-medium text-slate-400">Pending</button>
+                <button data-filter="completed" onclick="setPurchaseFilter('completed')" class="purchase-filter-btn flex-1 py-2 font-medium text-slate-400">Completed</button>
+                <button data-filter="cancelled" onclick="setPurchaseFilter('cancelled')" class="purchase-filter-btn flex-1 py-2 font-medium text-slate-400">Cancelled</button>
+            </div>
+            <div class="space-y-3" id="purchaseListContainer"></div>
+        </div>
+
+        <!-- TAB: ORDERS (seller — bottom nav only) -->
         <div id="tab_orders" class="app-tab hidden space-y-4">
             <div class="flex items-center gap-3">
                 <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
                 <div>
                     <h2 class="text-xl font-bold">My Orders</h2>
-                    <p class="text-xs text-slate-500">All orders placed on your platform.</p>
+                    <p class="text-xs text-slate-500">Sales on your listings — seller side.</p>
                 </div>
+            </div>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input id="ordersSearchInput" type="search" placeholder="Search" oninput="setOrdersSearch(this.value)" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brandPrimary" />
             </div>
             <div class="flex border-b border-slate-200 dark:border-slate-800 text-xs">
                 <button data-filter="all" onclick="setOrdersFilter('all')" class="orders-filter-btn flex-1 py-2 font-medium text-brandPrimary border-b-2 border-brandPrimary">All</button>
@@ -589,7 +615,7 @@
                 <a href="#" data-auth-only onclick="switchTab('plans'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-award w-5 text-center"></i> Plans
                 </a>
-                <a href="#" data-auth-only onclick="switchTab('orders'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                <a href="#" data-auth-only onclick="switchTab('purchase'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
                     <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Purchase
                 </a>
                 <a href="#" data-auth-only onclick="openAccountSettings(); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
@@ -681,8 +707,8 @@
                 <a href="#" onclick="switchTab('wallet'); toggleRightMenu(); return false;">
                     <i class="fa-solid fa-wallet"></i> Wallet
                 </a>
-                <a href="#" onclick="switchTab('orders'); toggleRightMenu(); return false;">
-                    <i class="fa-solid fa-clipboard-check"></i> My purchases
+                <a href="#" onclick="switchTab('purchase'); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-clipboard-check"></i> My Purchase
                 </a>
                 <a href="#" onclick="switchTab('referral'); toggleRightMenu(); return false;">
                     <i class="fa-solid fa-users"></i> Referral
@@ -898,20 +924,20 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260827ord1"></script>
-    <script src="/js/api-client.js?v=20260827ord1"></script>
-    <script src="/js/api-sync.js?v=20260827ord1"></script>
+    <script src="/js/acctventa.js?v=20260827ord2"></script>
+    <script src="/js/api-client.js?v=20260827ord2"></script>
+    <script src="/js/api-sync.js?v=20260827ord2"></script>
     <script src="/js/kyc-app.js?v=20260823ver1"></script>
     <script src="/js/av-confirm.js?v=20260823confirm1"></script>
-    <script src="/js/commerce-ui.js?v=20260827ord1"></script>
-    <script src="/js/dashboard-app.js?v=20260827ord1"></script>
+    <script src="/js/commerce-ui.js?v=20260827ord2"></script>
+    <script src="/js/dashboard-app.js?v=20260827ord2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
-            'home', 'market', 'orders', 'ads', 'wallet',
+            'home', 'market', 'orders', 'purchase', 'ads', 'wallet',
             'account_dashboard', 'referral', 'plans', 'support'
         ];
-        const AUTH_TABS = ['orders', 'ads', 'wallet', 'account_dashboard', 'referral', 'plans'];
+        const AUTH_TABS = ['orders', 'purchase', 'ads', 'wallet', 'account_dashboard', 'referral', 'plans'];
         const DASH_TAB_KEY = 'acctventa_dash_tab';
 
         function dashIsLoggedIn() {
