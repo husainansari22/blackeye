@@ -122,7 +122,7 @@
   function buildHtml(item, opts) {
     opts = opts || {};
     var onSellerStore = !!opts.onSellerStore;
-    var walletBal = opts.walletBalance != null ? money(opts.walletBalance) : '$0.00';
+    var walletBal = walletDisplayLabel(opts.walletBalance, opts.loggedIn);
     var logo = productLogo(item);
     var stock = Math.max(1, Number(item.stock) || 1);
     var sel = selectedAccount[item.id] != null ? selectedAccount[item.id] : 0;
@@ -256,24 +256,82 @@
     });
   }
 
-  async function fetchWalletBalance() {
-    var Api = global.AcctventaApi;
-    if (!Api || !Api.getToken()) return null;
+  function readCachedWalletBalance() {
     try {
-      var me = await Api.me();
-      return me && me.user ? Number(me.user.balance) : null;
+      if (localStorage.getItem('isLoggedIn') !== 'true') return null;
+      var wb = localStorage.getItem('walletBalance');
+      if (wb == null || wb === '') return null;
+      var n = Number(wb);
+      return isNaN(n) ? null : n;
     } catch (e) {
       return null;
     }
   }
 
+  function isProbablyLoggedIn() {
+    try {
+      if (localStorage.getItem('isLoggedIn') === 'true') return true;
+      if (global.AcctventaApi && global.AcctventaApi.getToken && global.AcctventaApi.getToken()) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  async function fetchWalletBalance() {
+    var Api = global.AcctventaApi;
+    if (Api && Api.me) {
+      try {
+        var me = await Api.me();
+        if (me && me.user && me.user.balance != null) {
+          try {
+            localStorage.setItem('walletBalance', String(me.user.balance));
+            localStorage.setItem('isLoggedIn', 'true');
+          } catch (e) {}
+          return Number(me.user.balance);
+        }
+      } catch (e) {
+        console.warn('wallet balance fetch failed', e);
+      }
+    }
+    var cached = readCachedWalletBalance();
+    if (cached != null) return cached;
+    if (global.Acctventa && global.Acctventa.getCurrentUser) {
+      var u = global.Acctventa.getCurrentUser();
+      if (u && u.balance != null) return Number(u.balance);
+    }
+    return null;
+  }
+
+  function walletDisplayLabel(balance, loggedIn) {
+    if (balance != null && !isNaN(balance)) return money(balance);
+    if (loggedIn) return '—';
+    return 'Sign in';
+  }
+
   async function purchase(listingId) {
     var Api = global.AcctventaApi;
-    if (!Api || !Api.getToken()) {
-      if (confirm('Sign in to complete your purchase?')) {
-        var next = encodeURIComponent(global.location.pathname + global.location.search);
-        global.location.href = '/login?next=' + next;
+    var loggedIn = isProbablyLoggedIn();
+    if (Api && Api.me) {
+      try {
+        await Api.me();
+        loggedIn = true;
+      } catch (e) {
+        if (!loggedIn) {
+          if (confirm('Sign in to complete your purchase?')) {
+            var next = encodeURIComponent(global.location.pathname + global.location.search);
+            global.location.href = '/login?next=' + next;
+          }
+          return;
+        }
       }
+    } else if (!loggedIn) {
+      if (confirm('Sign in to complete your purchase?')) {
+        var next2 = encodeURIComponent(global.location.pathname + global.location.search);
+        global.location.href = '/login?next=' + next2;
+      }
+      return;
+    }
+    if (!Api || !Api.createOrder) {
+      alert('Checkout unavailable. Open the dashboard to buy.');
       return;
     }
     try {
@@ -346,8 +404,9 @@
     }
 
     currentItem = item;
+    var loggedIn = isProbablyLoggedIn();
     var walletBal = await fetchWalletBalance();
-    render({ onSellerStore: onSellerStore, walletBalance: walletBal });
+    render({ onSellerStore: onSellerStore, walletBalance: walletBal, loggedIn: loggedIn || walletBal != null });
   }
 
   global.AcctventaListingModal = {
