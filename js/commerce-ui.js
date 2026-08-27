@@ -49,11 +49,17 @@
 
   function requireLogin(message) {
     var u = currentUser();
-    if (!u) {
-      toast(message || 'You are not logged in. Sign in first.', { type: 'warn' });
-      return null;
-    }
-    return u;
+    if (u) return u;
+    try {
+      if (localStorage.getItem('isLoggedIn') === 'true') {
+        return {
+          email: localStorage.getItem('userEmail') || '',
+          name: localStorage.getItem('userName') || 'User',
+        };
+      }
+    } catch (e) {}
+    toast(message || 'You are not logged in. Sign in first.', { type: 'warn' });
+    return null;
   }
 
   // ---------------------------------------------------------------------
@@ -172,7 +178,15 @@
   async function refreshCartBadge() {
     var badge = document.getElementById('cartBadge');
     if (!badge) return;
-    if (!currentUser() || !usingApi() || !Api()) {
+    if (!Api()) {
+      badge.classList.add('hidden');
+      badge.classList.remove('flex');
+      return;
+    }
+    var loggedIn = currentUser() || (function () {
+      try { return localStorage.getItem('isLoggedIn') === 'true'; } catch (e) { return false; }
+    })();
+    if (!loggedIn) {
       badge.classList.add('hidden');
       badge.classList.remove('flex');
       return;
@@ -678,7 +692,18 @@
     refreshCartBadge();
     loadSocialProof();
     refreshDisputesBanner();
+    var cartBtn = document.getElementById('headerCartBtn');
+    if (cartBtn && !cartBtn.__cartBound) {
+      cartBtn.__cartBound = true;
+      cartBtn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        openCartDrawer();
+      });
+    }
   });
+
+  global.openCartDrawer = openCartDrawer;
+  global.closeCartDrawer = closeCartDrawer;
 
   global.CommerceUI = {
     // cart

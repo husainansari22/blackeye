@@ -151,7 +151,7 @@
                     <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller">
                         <i class="fa-solid fa-desktop text-lg"></i>
                     </button>
-                    <button type="button" id="headerCartBtn" onclick="openCartDrawer()" class="relative hover:text-brandPrimary transition" title="Cart">
+                    <button type="button" id="headerCartBtn" onclick="window.CommerceUI ? window.CommerceUI.openCartDrawer() : (typeof openCartDrawer==='function'&&openCartDrawer())" class="relative hover:text-brandPrimary transition" title="Cart">
                         <i class="fa-solid fa-cart-shopping text-lg"></i>
                         <span id="cartBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                     </button>
