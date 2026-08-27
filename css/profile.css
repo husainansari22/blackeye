@@ -904,4 +904,11 @@
   color: #fff;
   cursor: pointer;
   white-space: nowrap;
+  position: relative;
+  z-index: 2;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.av-storefront-ad__buy:active {
+  filter: brightness(1.08);
 }
