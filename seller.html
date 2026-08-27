@@ -20,6 +20,7 @@
   </style>
   <script src="/js/api-client.js?v=20260823c1"></script>
   <script src="/js/marketplace-catalog.js?v=20260823c1"></script>
+  <script src="/js/listing-modal.js?v=20260827buy2"></script>
 </head>
 <body class="bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
   <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
@@ -35,11 +36,6 @@
     <p class="text-sm text-slate-500 text-center py-12">Loading storefront…</p>
   </main>
   <script>
-  window.openStoreBuy = function (listingId) {
-    try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (e) {}
-    window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(String(listingId || ''));
-  };
-
   (async function () {
     const root = document.getElementById('sellerRoot');
     const key = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '';
@@ -57,10 +53,6 @@
       const hit = Cat.findProduct(cat || title || '');
       return hit ? hit.logo : Cat.logoUrl({ domain: '' });
     };
-    function openStoreBuy(listingId) {
-      window.openStoreBuy(listingId);
-    }
-
     if (!key) {
       root.innerHTML = '<div class="av-storefront"><h1 class="text-center font-bold px-4">Store not found</h1></div>';
       return;
@@ -159,7 +151,9 @@
         const btn = ev.target.closest('[data-buy-listing]');
         if (!btn) return;
         ev.preventDefault();
-        window.openStoreBuy(btn.getAttribute('data-buy-listing'));
+        if (window.AcctventaListingModal) {
+          window.AcctventaListingModal.open(btn.getAttribute('data-buy-listing'), { onSellerStore: true });
+        }
       });
     } catch (e) {
       root.innerHTML = '<div class="av-storefront px-4"><h1 class="text-xl font-bold mb-2">Storefront unavailable</h1><p class="text-sm text-slate-500">' + esc(e.message) + '</p><p class="mt-4"><a class="text-brandPrimary font-semibold" href="/dashboard.html#home">Browse marketplace</a></p></div>';

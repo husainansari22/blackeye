@@ -46,10 +46,14 @@
   <main class="av-pub-wrap max-w-2xl mx-auto px-4 py-6" id="listingRoot">
     <p class="text-sm text-slate-500">Loading listing…</p>
   </main>
+  <script src="/js/api-client.js?v=20260823c1"></script>
+  <script src="/js/marketplace-catalog.js?v=20260823c1"></script>
+  <script src="/js/listing-modal.js?v=20260827buy2"></script>
   <script>
   window.openListingBuy = function (listingId) {
-    try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (err) {}
-    window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(String(listingId || ''));
+    if (window.AcctventaListingModal) {
+      window.AcctventaListingModal.open(listingId, { onSellerStore: false });
+    }
   };
 
   (async function () {
@@ -205,7 +209,9 @@
         var btn = ev.target.closest('[data-buy-listing]');
         if (!btn) return;
         ev.preventDefault();
-        window.openListingBuy(btn.getAttribute('data-buy-listing'));
+        if (window.AcctventaListingModal) {
+          window.AcctventaListingModal.open(btn.getAttribute('data-buy-listing'));
+        }
       });
     } catch (e) {
       root.innerHTML = '<h1>This listing is unavailable</h1><p class="text-sm text-slate-500">' + escapeHtml(e.message || 'Not found') + '</p><p class="mt-4"><a class="text-brandPrimary" href="/dashboard.html#home">Browse marketplace</a></p>';
