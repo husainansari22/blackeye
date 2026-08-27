@@ -491,3 +491,113 @@ function seller_rating_summary(int $sellerId): array {
         'average' => round((float)$row['avg_rating'], 2),
     ];
 }
+
+function ensure_merchant_slug_column(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->query('SELECT merchant_slug FROM users LIMIT 1');
+    } catch (Throwable $e) {
+        try {
+            db()->exec("ALTER TABLE users ADD COLUMN merchant_slug VARCHAR(64) NULL AFTER referral_code");
+        } catch (Throwable $e2) {}
+    }
+    try {
+        $hasIndex = db()->query("SHOW INDEX FROM users WHERE Key_name = 'uniq_users_merchant_slug'")->fetchAll();
+        if (!$hasIndex) {
+            db()->exec("ALTER TABLE users ADD UNIQUE KEY uniq_users_merchant_slug (merchant_slug)");
+        }
+    } catch (Throwable $e) {}
+}
+
+/** Assign a permanent merchant slug once the seller has uploaded at least one listing. */
+function ensure_merchant_slug(int $userId): ?string {
+    if ($userId < 1) return null;
+    ensure_merchant_slug_column();
+    $stmt = db()->prepare('SELECT merchant_slug FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $existing = trim((string)($stmt->fetchColumn() ?: ''));
+    if ($existing !== '') return $existing;
+
+    $cnt = db()->prepare('SELECT COUNT(*) FROM ads WHERE seller_id = ?');
+    $cnt->execute([$userId]);
+    if ((int)$cnt->fetchColumn() < 1) return null;
+
+    for ($i = 0; $i < 10; $i++) {
+        $slug = sprintf(
+            '%s-%s-%s-%s-%s',
+            bin2hex(random_bytes(4)),
+            bin2hex(random_bytes(2)),
+            bin2hex(random_bytes(2)),
+            bin2hex(random_bytes(2)),
+            bin2hex(random_bytes(6))
+        );
+        try {
+            $upd = db()->prepare("UPDATE users SET merchant_slug = ? WHERE id = ? AND (merchant_slug IS NULL OR merchant_slug = '')");
+            $upd->execute([$slug, $userId]);
+            if ($upd->rowCount() > 0) return $slug;
+        } catch (Throwable $e) {}
+        $chk = db()->prepare('SELECT merchant_slug FROM users WHERE id = ? LIMIT 1');
+        $chk->execute([$userId]);
+        $got = trim((string)($chk->fetchColumn() ?: ''));
+        if ($got !== '') return $got;
+    }
+    return null;
+}
+
+function user_has_uploaded_ads(int $userId): bool {
+    if ($userId < 1) return false;
+    $cnt = db()->prepare('SELECT COUNT(*) FROM ads WHERE seller_id = ?');
+    $cnt->execute([$userId]);
+    return (int)$cnt->fetchColumn() >= 1;
+}
+
+function user_merchant_link(array $u): array {
+    $sid = (int)($u['id'] ?? 0);
+    if ($sid < 1 || !user_has_uploaded_ads($sid)) {
+        return ['merchantSlug' => null, 'merchantLink' => null];
+    }
+    $slug = ensure_merchant_slug($sid);
+    if (!$slug) {
+        return ['merchantSlug' => null, 'merchantLink' => null];
+    }
+    return [
+        'merchantSlug' => $slug,
+        'merchantLink' => 'https://acctventa.com/seller/' . $slug,
+    ];
+}
+
+function seller_storefront_stats(int $sellerId): array {
+    ensure_marketplace_extras();
+    $rating = seller_rating_summary($sellerId);
+    $totalReviews = (int)$rating['count'];
+    $posStmt = db()->prepare('SELECT COUNT(*) FROM seller_reviews WHERE seller_id = ? AND rating >= 4');
+    $posStmt->execute([$sellerId]);
+    $positive = (int)$posStmt->fetchColumn();
+    $negative = max(0, $totalReviews - $positive);
+    $posPct = $totalReviews > 0 ? (int)round($positive / $totalReviews * 100) : 0;
+    $negPct = $totalReviews > 0 ? 100 - $posPct : 0;
+
+    $salesStmt = db()->prepare("SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'completed'");
+    $salesStmt->execute([$sellerId]);
+    $totalSold = (int)$salesStmt->fetchColumn();
+
+    $adsStmt = db()->prepare("SELECT COUNT(*) FROM ads WHERE seller_id = ? AND status = 'active' AND stock > 0");
+    $adsStmt->execute([$sellerId]);
+    $activeAds = (int)$adsStmt->fetchColumn();
+
+    $cancelStmt = db()->prepare("SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'cancelled'");
+    $cancelStmt->execute([$sellerId]);
+    $cancelledOrders = (int)$cancelStmt->fetchColumn();
+
+    return [
+        'totalReviews' => $totalReviews,
+        'positivePct' => $posPct,
+        'negativePct' => $negPct,
+        'totalSold' => $totalSold,
+        'activeAds' => $activeAds,
+        'cancelledOrders' => $cancelledOrders,
+        'ratingAverage' => $rating['average'],
+    ];
+}

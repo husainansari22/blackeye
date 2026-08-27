@@ -221,6 +221,21 @@
     set('dashTotalAccounts', String(ads.length));
     set('dashAccountsSold', String((u.orders || []).filter((o) => o.role === 'seller' && o.status === 'completed').length));
     set('dashAccountsApproved', String(ads.filter((a) => a.status === 'active').length));
+
+    const merchantBox = document.getElementById('profileMerchantLink');
+    const merchantUrlEl = document.getElementById('profileMerchantUrl');
+    if (merchantBox && merchantUrlEl) {
+      const mlink = u.merchantLink || '';
+      if (mlink) {
+        merchantBox.classList.remove('hidden');
+        merchantUrlEl.textContent = mlink.replace(/^https?:\/\//, '');
+        merchantUrlEl.dataset.full = mlink;
+      } else {
+        merchantBox.classList.add('hidden');
+        merchantUrlEl.textContent = '';
+        merchantUrlEl.dataset.full = '';
+      }
+    }
   }
 
   function productLogoFor(item) {
@@ -309,8 +324,9 @@
     if (merchants) {
       const map = {};
       list.forEach((i) => {
-        if (!map[i.sellerEmail]) map[i.sellerEmail] = { name: i.sellerName, email: i.sellerEmail, initials: i.sellerInitials, sales: 0 };
+        if (!map[i.sellerEmail]) map[i.sellerEmail] = { name: i.sellerName, email: i.sellerEmail, merchantSlug: i.sellerMerchantSlug || '', initials: i.sellerInitials, sales: 0 };
         map[i.sellerEmail].sales += 1;
+        if (!map[i.sellerEmail].merchantSlug && i.sellerMerchantSlug) map[i.sellerEmail].merchantSlug = i.sellerMerchantSlug;
       });
       const arr = Object.values(map).slice(0, 10);
       if (!arr.length) {
@@ -318,7 +334,7 @@
       } else {
         merchants.innerHTML = arr
           .map(
-            (m) => `<button type="button" onclick="openSellerProfile('${escapeAttr(m.email)}')" class="flex flex-col items-center shrink-0 text-center w-16">
+            (m) => `<button type="button" onclick="goToSellerStore('${escapeAttr(m.merchantSlug || m.email)}')" class="flex flex-col items-center shrink-0 text-center w-16">
           <div class="w-14 h-14 rounded-full border-2 border-brandPrimary mb-1 bg-brandPrimary/20 text-brandPrimary flex items-center justify-center font-bold">${escapeHtml(m.initials)}</div>
           <span class="text-xs font-bold truncate w-full">${escapeHtml(m.name)}</span>
           <span class="text-[10px] text-slate-500">${m.sales} live</span>
@@ -1993,7 +2009,7 @@
     const salesLabel = formatSalesLabel(item.sellerCompletedSales);
     const added = formatTimeAgo(item.createdAt);
     const isAuto = item.releaseType !== 'manual';
-    const sellerKey = escapeAttr(item.sellerEmail || item.sellerId || '');
+    const storeKey = escapeAttr(item.sellerMerchantSlug || item.sellerId || item.sellerEmail || '');
 
     const accountRows = [];
     for (let i = 0; i < stock; i++) {
@@ -2034,7 +2050,7 @@
             <p class="av-listing-seller__name inline-flex items-center gap-0.5 flex-wrap">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</p>
             <p class="av-listing-seller__stats">${escapeHtml(salesLabel)}</p>
           </div>
-          <button type="button" class="av-listing-seller__link" onclick="openSellerProfile('${sellerKey}')">View store →</button>
+          <button type="button" class="av-listing-seller__link" onclick="goToSellerStore('${storeKey}')">View store →</button>
         </div>
         <div class="av-listing-desc">
           <p id="listingDescText" class="av-listing-desc__text${descLong ? ' is-clamped' : ''}">${escapeHtml(desc)}</p>
@@ -2255,56 +2271,27 @@
     }
   };
 
-  window.openSellerProfile = async function (sellerEmailOrId) {
-    try {
-      if (!window.AcctventaApi) throw new Error('API unavailable');
-      const q = String(sellerEmailOrId || '').includes('@')
-        ? { sellerEmail: sellerEmailOrId }
-        : { sellerId: sellerEmailOrId };
-      const res = window.AcctventaApi.sellerStorefront
-        ? await window.AcctventaApi.sellerStorefront(q)
-        : await window.AcctventaApi.sellerProfile(q);
-      const s = res.seller || {};
-      const reviews = res.reviews || [];
-      const listings = res.listings || [];
-      const stars = s.rating && s.rating.average ? s.rating.average.toFixed(1) : '—';
-      document.getElementById('modalBody').innerHTML = `
-        <h3 class="font-bold text-lg mb-1 inline-flex items-center gap-0.5 flex-wrap">${nameWithVerify(s.name || 'Seller', s.isVerified, 'lg')}</h3>
-        <p class="text-xs text-slate-500 mb-3">${s.completedSales || 0} completed sales · ★ ${stars} (${(s.rating && s.rating.count) || 0})</p>
-        ${s.id ? `<a href="/seller/${encodeURIComponent(s.id)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs font-bold text-brandPrimary underline mb-4"><i class="fa-solid fa-store"></i> View full storefront</a>` : ''}
-        <h4 class="font-bold text-sm mb-2">Reviews</h4>
-        <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
-          ${
-            reviews.length
-              ? reviews
-                  .map(
-                    (r) => `<div class="text-xs border border-slate-200 dark:border-slate-800 rounded-lg p-2">
-            <p class="font-semibold">${'★'.repeat(Number(r.rating) || 0)} <span class="text-slate-400 font-normal">· ${escapeHtml(r.buyer_name || '')}</span></p>
-            <p class="text-slate-500 mt-0.5">${escapeHtml(r.comment || 'No comment')}</p>
-          </div>`
-                  )
-                  .join('')
-              : '<p class="text-xs text-slate-400">No reviews yet.</p>'
-          }
-        </div>
-        <h4 class="font-bold text-sm mb-2">Live listings</h4>
-        <div class="space-y-1.5">
-          ${
-            listings.length
-              ? listings
-                  .map((l) => {
-                    const slug = l.publicSlug || l.public_slug || l.id;
-                    return `<a href="/listing/${encodeURIComponent(slug)}" target="_blank" rel="noopener" class="text-xs flex justify-between gap-2 items-center border border-slate-200 dark:border-slate-800 rounded-lg p-2 hover:border-brandPrimary transition">
-                      <span class="truncate">${escapeHtml(l.title)}</span><span class="text-brandPrimary font-bold shrink-0">${money(l.price)}</span>
-                    </a>`;
-                  })
-                  .join('')
-              : '<p class="text-xs text-slate-400">No live listings.</p>'
-          }
-        </div>`;
-      (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
-    } catch (e) {
-      alert(e.message || 'Could not load seller profile');
+  window.goToSellerStore = function (sellerKey) {
+    const key = String(sellerKey || '').trim();
+    if (!key) {
+      alert('Store unavailable.');
+      return;
+    }
+    if (typeof closeModal === 'function') closeModal();
+    window.location.href = '/seller/' + encodeURIComponent(key);
+  };
+
+  window.openSellerProfile = window.goToSellerStore;
+
+  window.copyMerchantLink = function () {
+    const el = document.getElementById('profileMerchantUrl');
+    const url = (el && el.dataset.full) || '';
+    if (!url) return;
+    const done = () => {
+      if (window.AcctventaToast) window.AcctventaToast.show('Merchant link copied', { type: 'success' });
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => {});
     }
   };
 

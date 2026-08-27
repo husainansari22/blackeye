@@ -193,9 +193,11 @@ try {
         case 'market.list': {
             ensure_marketplace_extras();
             ensure_commerce_features();
+            ensure_merchant_slug_column();
             $rows = db()->query("SELECT a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
                 a.public_slug AS publicSlug, a.created_at,
                 a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified,
+                u.merchant_slug AS sellerMerchantSlug,
                 (SELECT COUNT(*) FROM orders o WHERE o.seller_id = a.seller_id AND o.status = 'completed') AS sellerCompletedSales
                 FROM ads a JOIN users u ON u.id = a.seller_id
                 WHERE a.status = 'active' AND a.stock > 0 AND u.is_banned = 0
@@ -203,6 +205,9 @@ try {
             foreach ($rows as &$r) {
                 if (empty($r['publicSlug'])) {
                     $r['publicSlug'] = ensure_ad_public_slug(['id' => $r['id'], 'title' => $r['title'], 'public_slug' => $r['publicSlug']]);
+                }
+                if (empty($r['sellerMerchantSlug']) && !empty($r['sellerId'])) {
+                    $r['sellerMerchantSlug'] = ensure_merchant_slug((int)$r['sellerId']);
                 }
                 $sum = seller_rating_summary((int)$r['sellerId']);
                 $r['sellerRating'] = $sum['average'];
@@ -214,12 +219,13 @@ try {
         case 'market.get': {
             ensure_marketplace_extras();
             ensure_commerce_features();
+            ensure_merchant_slug_column();
             $id = (int)($body['id'] ?? $body['listingId'] ?? $_GET['id'] ?? 0);
             $slug = trim((string)($body['slug'] ?? $_GET['slug'] ?? ''));
             $cols = "a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
                 a.public_slug AS publicSlug, a.created_at,
                 a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified,
-                u.avatar_url AS sellerAvatar, u.created_at AS sellerMemberSince,
+                u.merchant_slug AS sellerMerchantSlug, u.avatar_url AS sellerAvatar, u.created_at AS sellerMemberSince,
                 (SELECT COUNT(*) FROM orders o WHERE o.seller_id = a.seller_id AND o.status = 'completed') AS sellerCompletedSales";
             if ($id > 0) {
                 $stmt = db()->prepare("SELECT {$cols} FROM ads a JOIN users u ON u.id = a.seller_id
@@ -236,6 +242,9 @@ try {
             if (!$row) json_out(['ok' => false, 'error' => 'Listing not found'], 404);
             if (empty($row['publicSlug'])) {
                 $row['publicSlug'] = ensure_ad_public_slug(['id' => $row['id'], 'title' => $row['title'], 'public_slug' => $row['publicSlug']]);
+            }
+            if (empty($row['sellerMerchantSlug'])) {
+                $row['sellerMerchantSlug'] = ensure_merchant_slug((int)$row['sellerId']);
             }
             $sum = seller_rating_summary((int)$row['sellerId']);
             $row['sellerRating'] = $sum['average'];
@@ -323,6 +332,9 @@ try {
             try {
                 ensure_commerce_features();
                 ensure_ad_public_slug(['id' => $adId, 'title' => $ad['title'], 'public_slug' => null]);
+            } catch (Throwable $e) {}
+            try {
+                ensure_merchant_slug((int)$u['id']);
             } catch (Throwable $e) {}
 
             if ($finalStatus === 'denied') {
@@ -1694,26 +1706,38 @@ try {
             ensure_marketplace_extras();
             ensure_commerce_features();
             ensure_user_avatar_column();
+            ensure_merchant_slug_column();
             $sellerId = (int)($body['sellerId'] ?? $body['id'] ?? $_GET['sellerId'] ?? $_GET['id'] ?? 0);
             $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
-            $slug = trim((string)($body['slug'] ?? $_GET['slug'] ?? ''));
-            if ($sellerId < 1 && $sellerEmail === '' && $slug !== '') {
-                $s0 = db()->prepare('SELECT seller_id FROM ads WHERE public_slug = ? LIMIT 1');
-                $s0->execute([$slug]);
-                $row0 = $s0->fetch();
-                $sellerId = $row0 ? (int)$row0['seller_id'] : 0;
+            $key = trim((string)($body['slug'] ?? $_GET['slug'] ?? ''));
+            $seller = null;
+            if ($key !== '') {
+                $s = db()->prepare('SELECT * FROM users WHERE merchant_slug = ? LIMIT 1');
+                $s->execute([$key]);
+                $seller = $s->fetch() ?: null;
+                if (!$seller && ctype_digit($key)) {
+                    $s = db()->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+                    $s->execute([(int)$key]);
+                    $seller = $s->fetch() ?: null;
+                }
             }
-            if ($sellerId < 1 && $sellerEmail !== '') {
+            if (!$seller && $sellerEmail !== '') {
                 $s = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
                 $s->execute([$sellerEmail]);
-            } else {
+                $seller = $s->fetch() ?: null;
+            }
+            if (!$seller && $sellerId > 0) {
                 $s = db()->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
                 $s->execute([$sellerId]);
+                $seller = $s->fetch() ?: null;
             }
-            $seller = $s->fetch();
             if (!$seller) json_out(['ok' => false, 'error' => 'Seller not found'], 404);
             $sid = (int)$seller['id'];
-            $ads = db()->prepare("SELECT id, title, category, description, price, preview_link AS previewLink, public_slug AS publicSlug, stock, status
+            if (!user_has_uploaded_ads($sid)) {
+                json_out(['ok' => false, 'error' => 'Storefront not available'], 404);
+            }
+            $merchantSlug = ensure_merchant_slug($sid);
+            $ads = db()->prepare("SELECT id, title, category, description, price, preview_link AS previewLink, public_slug AS publicSlug, stock, release_type AS releaseType, status
                 FROM ads WHERE seller_id = ? AND status = 'active' AND stock > 0 " . market_list_sql_order() . " LIMIT 60");
             $ads->execute([$sid]);
             $adsRows = $ads->fetchAll();
@@ -1725,7 +1749,7 @@ try {
             unset($ar);
             $rev = db()->prepare('SELECT r.rating, r.comment, r.created_at, u.name AS buyer_name FROM seller_reviews r JOIN users u ON u.id = r.buyer_id WHERE r.seller_id = ? ORDER BY r.created_at DESC LIMIT 30');
             $rev->execute([$sid]);
-            $sales = (int)db()->query("SELECT COUNT(*) c FROM orders WHERE seller_id = {$sid} AND status = 'completed'")->fetch()['c'];
+            $stats = seller_storefront_stats($sid);
             json_out([
                 'ok' => true,
                 'seller' => [
@@ -1735,8 +1759,11 @@ try {
                     'isVerified' => (int)$seller['is_verified'] === 1,
                     'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
                     'memberSince' => $seller['created_at'],
-                    'completedSales' => $sales,
+                    'completedSales' => $stats['totalSold'],
                     'rating' => seller_rating_summary($sid),
+                    'merchantSlug' => $merchantSlug,
+                    'merchantLink' => $merchantSlug ? ('https://acctventa.com/seller/' . $merchantSlug) : null,
+                    'stats' => $stats,
                 ],
                 'listings' => $adsRows,
                 'reviews' => $rev->fetchAll(),

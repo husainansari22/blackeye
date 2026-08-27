@@ -112,6 +112,7 @@
       const desc = listing.description || 'Digital product on Acctventa.';
       const seller = listing.sellerName || listing.seller_name || 'Seller';
       const sellerId = listing.sellerId || listing.seller_id || '';
+      const sellerSlug = listing.sellerMerchantSlug || listing.seller_merchant_slug || sellerId || seller;
       const slug = listing.publicSlug || listing.public_slug || listing.id;
       const url = 'https://acctventa.com/listing/' + encodeURIComponent(slug);
       const stock = Math.max(1, Number(listing.stock) || 1);
@@ -167,7 +168,7 @@
             '<p class="av-listing-seller__name">' + escapeHtml(seller) + (verified ? verifyBadge() : '') + '</p>' +
             '<p class="av-listing-seller__stats">' + escapeHtml(sales) + '</p>' +
           '</div>' +
-          '<a class="av-listing-seller__link" href="/seller/' + encodeURIComponent(sellerId || seller) + '">View store →</a>' +
+          '<a class="av-listing-seller__link" href="/seller/' + encodeURIComponent(sellerSlug) + '">View store →</a>' +
         '</div>' +
         '<div class="av-listing-desc">' +
           '<p id="listingDescText" class="av-listing-desc__text' + (descLong ? ' is-clamped' : '') + '">' + escapeHtml(desc) + '</p>' +

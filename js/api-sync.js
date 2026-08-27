@@ -78,6 +78,7 @@
       sellerId: row.sellerId != null ? String(row.sellerId) : '',
       sellerName: name,
       sellerEmail: row.sellerEmail || '',
+      sellerMerchantSlug: row.sellerMerchantSlug || row.seller_merchant_slug || row.merchant_slug || '',
       sellerVerified: row.sellerVerified === true || row.sellerVerified === 1 || row.sellerVerified === '1'
         || row.seller_verified === true || row.seller_verified === 1 || row.seller_verified === '1',
       sellerRating: Number(row.sellerRating) || 0,
@@ -255,6 +256,8 @@
         payoutBankLocked: !!user.payoutBankLocked,
         payoutBankCode: user.payoutBankCode || '',
         avatarUrl: user.avatarUrl || '',
+        merchantSlug: user.merchantSlug || null,
+        merchantLink: user.merchantLink || null,
         ads: ads,
         orders: orders,
         transactions: txs,

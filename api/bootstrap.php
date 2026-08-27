@@ -308,7 +308,7 @@ function public_user(array $u): array {
         'payoutCurrency' => (string)($u['payout_currency'] ?? ''),
         'payoutBankLocked' => (int)($u['payout_bank_locked'] ?? 0) === 1,
         'payoutBankCode' => (string)($u['payout_bank_code'] ?? ''),
-    ];
+    ] + (function_exists('user_merchant_link') ? user_merchant_link($u) : ['merchantSlug' => null, 'merchantLink' => null]);
 }
 
 function ensure_user_avatar_column(): void {
