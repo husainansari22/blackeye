@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script src="/js/theme-init.js?v=20260827theme1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>A cctventa — Marketplace Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -920,7 +921,7 @@
     <script src="/js/kyc-app.js?v=20260823ver1"></script>
     <script src="/js/av-confirm.js?v=20260823confirm1"></script>
     <script src="/js/commerce-ui.js?v=20260827ads2"></script>
-    <script src="/js/dashboard-app.js?v=20260827store1"></script>
+    <script src="/js/dashboard-app.js?v=20260827theme1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
@@ -1359,7 +1360,7 @@
         }
         function openMerchantStore(name) { alert('Merchant store: ' + name); }
         function toggleDarkMode() {
-            const isDark = document.documentElement.classList.toggle('dark');
+            const isDark = window.AcctventaTheme ? window.AcctventaTheme.toggle() : document.documentElement.classList.toggle('dark');
             const headerIcon = document.getElementById('headerThemeIcon');
             const thumb = document.getElementById('themeThumb');
             const text = document.getElementById('themeText');
@@ -1382,8 +1383,13 @@
             }
         }
         function applyThemeFromStorage() {
-            const dark = localStorage.getItem('theme') === 'dark';
-            document.documentElement.classList.toggle('dark', dark);
+            if (window.AcctventaTheme) {
+                window.AcctventaTheme.apply();
+            } else {
+                const dark = localStorage.getItem('theme') === 'dark';
+                document.documentElement.classList.toggle('dark', dark);
+            }
+            const dark = window.AcctventaTheme ? window.AcctventaTheme.isDark() : localStorage.getItem('theme') === 'dark';
             const headerIcon = document.getElementById('headerThemeIcon');
             const thumb = document.getElementById('themeThumb');
             const text = document.getElementById('themeText');
@@ -1409,6 +1415,7 @@
             try {
                 const tab = (location.hash || '').replace(/^#/, '').split(/[?&]/)[0];
                 if (DASH_TABS.includes(tab)) switchTab(tab);
+                if (typeof window.handleBuyDeepLink === 'function') window.handleBuyDeepLink();
             } catch (e) {}
         });
         window.addEventListener('pageshow', () => {

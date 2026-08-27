@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script src="/js/theme-init.js?v=20260827theme1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Seller storefront | Acctventa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,6 +52,11 @@
       const hit = Cat.findProduct(cat || title || '');
       return hit ? hit.logo : Cat.logoUrl({ domain: '' });
     };
+    function openStoreBuy(listingId) {
+      try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (e) {}
+      window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(listingId);
+    }
+
     if (!key) {
       root.innerHTML = '<div class="av-storefront"><h1 class="text-center font-bold px-4">Store not found</h1></div>';
       return;
@@ -78,10 +84,9 @@
 
       const adsHtml = listings.length
         ? listings.map((l) => {
-            const slug = l.publicSlug || l.public_slug || l.id;
             const logo = productLogo(l.category, l.title);
             const desc = String(l.description || l.category || '').slice(0, 80);
-            return `<a href="/dashboard.html#home?buy=${encodeURIComponent(l.id)}" class="av-storefront-ad">
+            return `<div class="av-storefront-ad">
               <img src="${esc(logo)}" alt="" class="av-storefront-ad__logo" loading="lazy" onerror="this.style.opacity=.35">
               <div class="av-storefront-ad__body">
                 <p class="av-storefront-ad__title">${esc(l.title)}</p>
@@ -89,9 +94,9 @@
               </div>
               <div class="av-storefront-ad__side">
                 <p class="av-storefront-ad__price">${money(l.price)}</p>
-                <span class="av-storefront-ad__buy">Buy now</span>
+                <button type="button" class="av-storefront-ad__buy" onclick="openStoreBuy('${esc(String(l.id))}')">Buy now</button>
               </div>
-            </a>`;
+            </div>`;
           }).join('')
         : '<p class="text-sm text-slate-500">No live listings right now.</p>';
 

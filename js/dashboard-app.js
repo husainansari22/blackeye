@@ -2295,6 +2295,33 @@
     }
   };
 
+  function resolveBuyListingId() {
+    try {
+      const hash = String(location.hash || '');
+      const qIdx = hash.indexOf('?');
+      if (qIdx !== -1) {
+        const fromHash = new URLSearchParams(hash.slice(qIdx + 1)).get('buy');
+        if (fromHash) return String(fromHash);
+      }
+    } catch (e) {}
+    try {
+      const stored = sessionStorage.getItem('acctventa_open_listing');
+      if (stored) {
+        sessionStorage.removeItem('acctventa_open_listing');
+        return String(stored);
+      }
+    } catch (e) {}
+    return '';
+  }
+
+  function handleBuyDeepLink() {
+    const buyId = resolveBuyListingId();
+    if (!buyId || typeof window.openListingDetail !== 'function') return;
+    setTimeout(() => window.openListingDetail(buyId), 400);
+  }
+
+  window.handleBuyDeepLink = handleBuyDeepLink;
+
   window.confirmRefund = async function (orderId) {
     const refundOk = window.AcctventaConfirm
       ? await window.AcctventaConfirm({
@@ -2965,6 +2992,7 @@
         }
       }
     } catch (e) {}
+    handleBuyDeepLink();
     // re-run pending AI reviews that never finished (localStorage mode only)
     const u = refreshUser();
     if (u && !(window.AcctventaApiSync && window.AcctventaApiSync.usingApi())) {

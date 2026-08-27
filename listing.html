@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script src="/js/theme-init.js?v=20260827theme1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Listing | Acctventa</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -182,7 +183,7 @@
           '<div class="av-listing-checkout__row">' +
             '<div><p class="av-listing-checkout__total-label">Total (1 item)</p><p class="av-listing-checkout__total">' + money(price) + '</p></div>' +
           '</div>' +
-          '<a class="av-listing-pay-btn block text-center no-underline" href="' + buyUrl + '">Pay ' + money(price) + ' Securely</a>' +
+          '<button type="button" class="av-listing-pay-btn" onclick="openListingBuy(\'' + esc(String(listing.id)) + '\')">Pay ' + money(price) + ' Securely</button>' +
           '<p class="av-listing-protect"><i class="fa-solid fa-shield-halved"></i> Your payment is protected by Acctventa Buyer Protection.</p>' +
         '</div></div>';
 
@@ -197,6 +198,10 @@
       }
     } catch (e) {
       root.innerHTML = '<h1>This listing is unavailable</h1><p class="text-sm text-slate-500">' + escapeHtml(e.message || 'Not found') + '</p><p class="mt-4"><a class="text-brandPrimary" href="/dashboard.html#home">Browse marketplace</a></p>';
+    }
+    function openListingBuy(listingId) {
+      try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (err) {}
+      window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(listingId);
     }
   })();
   </script>
