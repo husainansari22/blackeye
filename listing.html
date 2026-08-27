@@ -20,11 +20,13 @@
   <meta property="og:image" content="https://acctventa.com/img/brand/og-cover.png">
     <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
   <link rel="stylesheet" href="/css/legal.css?v=20260823c1">
+  <link rel="stylesheet" href="/css/profile.css?v=20260827listing1">
   <style>
     .av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.1rem;height:1.1rem;min-width:1.1rem;margin-left:.28rem;line-height:0;flex-shrink:0;vertical-align:middle}
     .av-verify-badge img{width:100%;height:100%;display:block}
   </style>
   <script src="/js/api-client.js?v=20260823c1"></script>
+  <script src="/js/marketplace-catalog.js?v=20260823c1"></script>
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
 </head>
 <body class="av-pub bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
@@ -52,6 +54,50 @@
       root.innerHTML = '<h1>Listing not found</h1><p><a href="/dashboard.html#home">Browse marketplace</a></p>';
       return;
     }
+
+    function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));}
+    function escapeAttr(s){return escapeHtml(s).replace(/`/g,'');}
+    function money(n){var v=Number(n)||0;return (v<0?'-$'+Math.abs(v).toFixed(2):'$'+v.toFixed(2));}
+    function formatTimeAgo(iso){
+      if(!iso)return 'recently';
+      var t=new Date(iso).getTime(); if(!t||isNaN(t))return 'recently';
+      var sec=Math.max(0,Math.floor((Date.now()-t)/1000));
+      if(sec<60)return 'just now';
+      var min=Math.floor(sec/60); if(min<60)return min+'m ago';
+      var hr=Math.floor(min/60); if(hr<48)return hr+'h ago';
+      var day=Math.floor(hr/24); if(day<14)return day+'d ago';
+      return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    }
+    function formatSalesLabel(n){
+      var v=Number(n)||0;
+      if(v>=1000){var k=v/1000,s=k>=10?Math.round(k)+'k':k.toFixed(1).replace(/\.0$/,'')+'k';return s+'+ Sales';}
+      return v+' Sales';
+    }
+    function starsRow(rating,count){
+      var r=Math.max(0,Math.min(5,Number(rating)||0)),full=Math.floor(r),half=r-full>=0.35?1:0,out='';
+      for(var i=0;i<5;i++){
+        if(i<full) out+='<i class="fa-solid fa-star"></i>';
+        else if(i===full&&half) out+='<i class="fa-solid fa-star-half-stroke"></i>';
+        else out+='<i class="fa-regular fa-star text-slate-300 dark:text-slate-600"></i>';
+      }
+      return '<span class="av-listing-stars">'+out+(count?'<em>('+count+')</em>':'')+'</span>';
+    }
+    function verifyBadge(){
+      return '<span class="av-verify-badge" title="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>';
+    }
+    function productLogo(listing){
+      var Cat=window.AcctventaCatalog;
+      if(!Cat)return '';
+      var hit=Cat.findProduct(listing.category||listing.title||'');
+      return hit?hit.logo:Cat.logoUrl({domain:''});
+    }
+    function initials(name){
+      var p=String(name||'').trim().split(/\s+/).filter(Boolean);
+      if(!p.length)return '?';
+      if(p.length===1)return p[0].slice(0,2).toUpperCase();
+      return (p[0][0]+p[p.length-1][0]).toUpperCase();
+    }
+
     try {
       let res;
       if (window.AcctventaApi && typeof window.AcctventaApi.marketGet === 'function') {
@@ -62,42 +108,95 @@
       if (!res.ok) throw new Error(res.error || 'Not found');
       const listing = res.listing || res.ad || res;
       const title = listing.title || 'Listing';
-      const price = Number(listing.price || 0).toFixed(2);
+      const price = Number(listing.price || 0);
       const desc = listing.description || 'Digital product on Acctventa.';
       const seller = listing.sellerName || listing.seller_name || 'Seller';
       const sellerId = listing.sellerId || listing.seller_id || '';
       const slug = listing.publicSlug || listing.public_slug || listing.id;
       const url = 'https://acctventa.com/listing/' + encodeURIComponent(slug);
+      const stock = Math.max(1, Number(listing.stock) || 1);
+      const isAuto = (listing.releaseType || listing.release_type || 'auto') !== 'manual';
+      const logo = productLogo(listing);
+      const sales = formatSalesLabel(listing.sellerCompletedSales || 0);
+      const added = formatTimeAgo(listing.created_at || listing.createdAt);
+      const verified = !!(listing.sellerVerified || listing.seller_verified);
+      const rating = Number(listing.sellerRating) || 0;
+      const reviews = Number(listing.sellerReviews) || 0;
+      const preview = listing.previewLink || listing.preview_link || '';
+      const buyUrl = '/dashboard.html#home?buy=' + encodeURIComponent(listing.id);
+      const descLong = desc.length > 160;
+
       document.title = title + ' | Acctventa';
       document.getElementById('canonicalLink').href = url;
       document.getElementById('ogTitle').content = title;
       document.getElementById('ogDesc').content = desc.slice(0, 140);
       document.getElementById('ogUrl').content = url;
-      root.innerHTML = `
-        <p class="text-xs font-bold uppercase tracking-widest text-brandPrimary mb-2">${escapeHtml(listing.category || 'Digital product')}</p>
-        <h1 class="text-2xl font-extrabold tracking-tight mb-2">${escapeHtml(title)}</h1>
-        <p class="text-sm text-slate-500 mb-4">Sold by
-          <a class="text-brandPrimary font-semibold inline-flex items-center" href="/seller/${encodeURIComponent(sellerId || seller)}">${escapeHtml(seller)}${(listing.sellerVerified || listing.seller_verified || listing.isVerified) ? '<span class="av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>' : ''}</a>
-          ${listing.sellerRating ? ' · ★ ' + Number(listing.sellerRating).toFixed(1) : ''}
-        </p>
-        <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">${escapeHtml(desc)}</p>
-        ${listing.previewLink ? `<p class="mb-4"><a class="text-brandPrimary font-semibold underline" href="${escapeAttr(listing.previewLink)}" target="_blank" rel="noopener">Open preview link</a></p>` : ''}
-        <div class="flex items-end justify-between gap-4 mb-6">
-          <div>
-            <p class="text-xs text-slate-500">Price</p>
-            <p class="text-3xl font-extrabold text-brandPrimary">$${price}</p>
-          </div>
-          <p class="text-[11px] text-emerald-600 max-w-[12rem] text-right"><i class="fa-solid fa-shield-halved"></i> Escrow protected · 60‑min dispute window</p>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-3">
-          <a class="av-pub-cta !mt-0 text-center" href="/dashboard.html#home?buy=${encodeURIComponent(listing.id)}">Buy on Acctventa</a>
-          <button type="button" onclick="navigator.clipboard.writeText('${url}'); this.textContent='Link copied';" class="inline-flex items-center justify-center font-bold px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600">Share link</button>
-        </div>`;
+
+      var accountRows = '';
+      for (var i = 0; i < stock; i++) {
+        accountRows += '<div class="av-listing-account-row is-selected">' +
+          '<div class="av-listing-account-row__check"><i class="fa-solid fa-check"></i></div>' +
+          '<span class="av-listing-account-row__label">Account ' + (i + 1) + '</span>' +
+          '<span class="av-listing-account-row__price">' + money(price) + '</span>' +
+          (preview ? '<a class="av-listing-eye" href="' + escapeAttr(preview) + '" target="_blank" rel="noopener" title="Preview link"><i class="fa-solid fa-eye"></i></a>' :
+            '<span class="av-listing-eye" style="opacity:.35"><i class="fa-solid fa-eye"></i></span>') +
+          '<a class="av-listing-cart-btn" href="' + buyUrl + '">Buy</a></div>';
+      }
+
+      root.innerHTML = '<div class="av-listing-detail bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">' +
+        '<div class="av-listing-detail__head">' +
+          '<img src="' + escapeAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="av-listing-detail__title-row">' +
+              '<h1 class="av-listing-detail__title">' + escapeHtml(title) + '</h1>' +
+              '<span class="av-listing-detail__price">' + money(price) + '</span>' +
+            '</div>' +
+            '<div class="av-listing-detail__meta">' +
+              (rating ? starsRow(rating, reviews) : '') +
+              (verified ? verifyBadge() : '') +
+              '<span>● ' + stock + ' available, added ' + escapeHtml(added) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="av-listing-badge' + (isAuto ? '' : ' av-listing-badge--manual') + '">' +
+          (isAuto ? '<i class="fa-solid fa-bolt"></i> Instant Delivery' : '<i class="fa-solid fa-clock"></i> Manual delivery') +
+        '</div>' +
+        '<div class="av-listing-seller">' +
+          '<div class="av-listing-seller__avatar">' + escapeHtml(initials(seller)) + '</div>' +
+          '<div class="av-listing-seller__body">' +
+            '<p class="av-listing-seller__name">' + escapeHtml(seller) + (verified ? verifyBadge() : '') + '</p>' +
+            '<p class="av-listing-seller__stats">' + escapeHtml(sales) + '</p>' +
+          '</div>' +
+          '<a class="av-listing-seller__link" href="/seller/' + encodeURIComponent(sellerId || seller) + '">View store →</a>' +
+        '</div>' +
+        '<div class="av-listing-desc">' +
+          '<p id="listingDescText" class="av-listing-desc__text' + (descLong ? ' is-clamped' : '') + '">' + escapeHtml(desc) + '</p>' +
+          (descLong ? '<button type="button" id="listingDescToggle" class="av-listing-desc__more">Show more &gt;</button>' : '') +
+        '</div>' +
+        '<div class="av-listing-accounts">' +
+          '<div class="av-listing-accounts__head"><h4>Select account</h4><span class="av-listing-accounts__count">(1 of ' + stock + ' selected)</span></div>' +
+          accountRows +
+        '</div>' +
+        '<div class="av-listing-checkout">' +
+          '<div class="av-listing-checkout__row">' +
+            '<div><p class="av-listing-checkout__total-label">Total (1 item)</p><p class="av-listing-checkout__total">' + money(price) + '</p></div>' +
+          '</div>' +
+          '<a class="av-listing-pay-btn block text-center no-underline" href="' + buyUrl + '">Pay ' + money(price) + ' Securely</a>' +
+          '<p class="av-listing-protect"><i class="fa-solid fa-shield-halved"></i> Your payment is protected by Acctventa Buyer Protection.</p>' +
+        '</div></div>';
+
+      var toggle = document.getElementById('listingDescToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          var el = document.getElementById('listingDescText');
+          if (!el) return;
+          var clamped = el.classList.toggle('is-clamped');
+          toggle.textContent = clamped ? 'Show more >' : 'Show less';
+        });
+      }
     } catch (e) {
       root.innerHTML = '<h1>This listing is unavailable</h1><p class="text-sm text-slate-500">' + escapeHtml(e.message || 'Not found') + '</p><p class="mt-4"><a class="text-brandPrimary" href="/dashboard.html#home">Browse marketplace</a></p>';
     }
-    function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));}
-    function escapeAttr(s){return escapeHtml(s).replace(/`/g,'');}
   })();
   </script>
   

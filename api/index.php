@@ -194,8 +194,9 @@ try {
             ensure_marketplace_extras();
             ensure_commerce_features();
             $rows = db()->query("SELECT a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
-                a.public_slug AS publicSlug,
-                a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified
+                a.public_slug AS publicSlug, a.created_at,
+                a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified,
+                (SELECT COUNT(*) FROM orders o WHERE o.seller_id = a.seller_id AND o.status = 'completed') AS sellerCompletedSales
                 FROM ads a JOIN users u ON u.id = a.seller_id
                 WHERE a.status = 'active' AND a.stock > 0 AND u.is_banned = 0
                 " . market_list_sql_order() . " LIMIT 200")->fetchAll();
@@ -218,7 +219,8 @@ try {
             $cols = "a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
                 a.public_slug AS publicSlug, a.created_at,
                 a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified,
-                u.avatar_url AS sellerAvatar, u.created_at AS sellerMemberSince";
+                u.avatar_url AS sellerAvatar, u.created_at AS sellerMemberSince,
+                (SELECT COUNT(*) FROM orders o WHERE o.seller_id = a.seller_id AND o.status = 'completed') AS sellerCompletedSales";
             if ($id > 0) {
                 $stmt = db()->prepare("SELECT {$cols} FROM ads a JOIN users u ON u.id = a.seller_id
                     WHERE a.id = ? AND a.status = 'active' AND u.is_banned = 0 LIMIT 1");

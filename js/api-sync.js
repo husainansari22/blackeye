@@ -82,9 +82,11 @@
         || row.seller_verified === true || row.seller_verified === 1 || row.seller_verified === '1',
       sellerRating: Number(row.sellerRating) || 0,
       sellerReviews: Number(row.sellerReviews) || 0,
+      sellerCompletedSales: Number(row.sellerCompletedSales || row.seller_completed_sales) || 0,
       sellerInitials: initials,
       stock: row.stock != null ? Number(row.stock) : 1,
       publicSlug: row.publicSlug || row.public_slug || '',
+      createdAt: row.created_at || row.createdAt || '',
     };
   }
 
@@ -599,5 +601,6 @@
     usingApi,
     patchAcctventaForApi,
     mapOrder,
+    mapListing,
   };
 })(window);

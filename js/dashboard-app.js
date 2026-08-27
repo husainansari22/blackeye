@@ -1937,30 +1937,186 @@
       <p class="text-[11px] text-amber-600 mt-3">After submit, your listing is checked and stays <strong>Pending</strong> until Owner approves it for Market.</p>`;
   }
 
-  // -------- Listing detail / buy --------
-  window.openListingDetail = function (id) {
-    const item = A().findListingById(id);
+  // -------- Listing detail / buy (AcctBazaar-style) --------
+  let listingSelectedAccount = {};
+
+  function formatTimeAgo(iso) {
+    if (!iso) return 'recently';
+    const t = new Date(iso).getTime();
+    if (!t || Number.isNaN(t)) return 'recently';
+    const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (sec < 60) return 'just now';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return min + 'm ago';
+    const hr = Math.floor(min / 60);
+    if (hr < 48) return hr + 'h ago';
+    const day = Math.floor(hr / 24);
+    if (day < 14) return day + 'd ago';
+    const wk = Math.floor(day / 7);
+    if (wk < 8) return wk + 'w ago';
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function formatSalesLabel(n) {
+    const v = Number(n) || 0;
+    if (v >= 1000) {
+      const k = v / 1000;
+      const s = k >= 10 ? Math.round(k) + 'k' : k.toFixed(1).replace(/\.0$/, '') + 'k';
+      return s + '+ Sales';
+    }
+    return v + ' Sales';
+  }
+
+  function starsRowHtml(rating, reviewCount) {
+    const r = Math.max(0, Math.min(5, Number(rating) || 0));
+    const full = Math.floor(r);
+    const half = r - full >= 0.35 ? 1 : 0;
+    let icons = '';
+    for (let i = 0; i < 5; i++) {
+      if (i < full) icons += '<i class="fa-solid fa-star"></i>';
+      else if (i === full && half) icons += '<i class="fa-solid fa-star-half-stroke"></i>';
+      else icons += '<i class="fa-regular fa-star text-slate-300 dark:text-slate-600"></i>';
+    }
+    const count = Number(reviewCount) || 0;
+    return `<span class="av-listing-stars">${icons}${count ? `<em>(${count})</em>` : ''}</span>`;
+  }
+
+  function buildListingDetailHtml(item) {
+    const logo = productLogoFor(item);
+    const stock = Math.max(1, Number(item.stock) || 1);
+    const sel = listingSelectedAccount[item.id] != null ? listingSelectedAccount[item.id] : 0;
+    listingSelectedAccount[item.id] = sel;
+    const desc = String(item.description || 'No description provided.');
+    const descLong = desc.length > 160;
+    const u = refreshUser();
+    const walletBal = money(u ? u.balance : 0);
+    const salesLabel = formatSalesLabel(item.sellerCompletedSales);
+    const added = formatTimeAgo(item.createdAt);
+    const isAuto = item.releaseType !== 'manual';
+    const sellerKey = escapeAttr(item.sellerEmail || item.sellerId || '');
+
+    const accountRows = [];
+    for (let i = 0; i < stock; i++) {
+      const selected = sel === i;
+      const previewAttr = item.previewLink ? escapeAttr(item.previewLink) : '';
+      accountRows.push(`
+        <div class="av-listing-account-row${selected ? ' is-selected' : ''}" onclick="selectListingAccount('${escapeAttr(item.id)}', ${i})">
+          <div class="av-listing-account-row__check">${selected ? '<i class="fa-solid fa-check"></i>' : ''}</div>
+          <span class="av-listing-account-row__label">Account ${i + 1}</span>
+          <span class="av-listing-account-row__price">${money(item.price)}</span>
+          <button type="button" class="av-listing-eye" title="Preview link" onclick="event.stopPropagation(); previewListingLink('${previewAttr}')" ${item.previewLink ? '' : 'disabled style="opacity:.35;cursor:not-allowed"'}><i class="fa-solid fa-eye"></i></button>
+          <button type="button" class="av-listing-cart-btn" onclick="event.stopPropagation(); window.CommerceUI && window.CommerceUI.addToCart('${escapeAttr(item.id)}')">Add to cart</button>
+        </div>`);
+    }
+
+    const shareRow = window.CommerceUI ? window.CommerceUI.listingActionButtonsHtml(item) : '';
+
+    return `
+      <div class="av-listing-detail" data-listing-id="${escapeAttr(item.id)}">
+        <div class="av-listing-detail__head">
+          <img src="${escapeAttr(logo)}" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">
+          <div class="min-w-0 flex-1">
+            <div class="av-listing-detail__title-row">
+              <h3 class="av-listing-detail__title">${escapeHtml(item.title)}</h3>
+              <span class="av-listing-detail__price">${money(item.price)}</span>
+            </div>
+            <div class="av-listing-detail__meta">
+              ${item.sellerRating ? starsRowHtml(item.sellerRating, item.sellerReviews) : ''}
+              ${item.sellerVerified ? verifyBadgeHtml('sm') : ''}
+              <span>● ${stock} available, added ${escapeHtml(added)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="av-listing-badge${isAuto ? '' : ' av-listing-badge--manual'}">${isAuto ? '<i class="fa-solid fa-bolt"></i> Instant Delivery' : '<i class="fa-solid fa-clock"></i> Manual delivery'}</div>
+        <div class="av-listing-seller">
+          <div class="av-listing-seller__avatar">${escapeHtml(item.sellerInitials || 'S')}</div>
+          <div class="av-listing-seller__body">
+            <p class="av-listing-seller__name inline-flex items-center gap-0.5 flex-wrap">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</p>
+            <p class="av-listing-seller__stats">${escapeHtml(salesLabel)}</p>
+          </div>
+          <button type="button" class="av-listing-seller__link" onclick="openSellerProfile('${sellerKey}')">View store →</button>
+        </div>
+        <div class="av-listing-desc">
+          <p id="listingDescText" class="av-listing-desc__text${descLong ? ' is-clamped' : ''}">${escapeHtml(desc)}</p>
+          ${descLong ? `<button type="button" id="listingDescToggle" class="av-listing-desc__more" onclick="toggleListingDesc()">Show more &gt;</button>` : ''}
+        </div>
+        <div class="av-listing-accounts">
+          <div class="av-listing-accounts__head">
+            <h4>Select account</h4>
+            <span class="av-listing-accounts__count">(${sel + 1} of ${stock} selected)</span>
+          </div>
+          ${accountRows.join('')}
+        </div>
+        ${shareRow}
+        <div class="av-listing-checkout">
+          <div class="av-listing-checkout__row">
+            <div>
+              <p class="av-listing-checkout__total-label">Total (1 item)</p>
+              <p class="av-listing-checkout__total">${money(item.price)}</p>
+            </div>
+            <button type="button" class="av-listing-wallet" onclick="closeModal(); switchTab('wallet');">Wallet Balance<strong>${walletBal} →</strong></button>
+          </div>
+          <button type="button" class="av-listing-pay-btn" onclick="buyListing('${escapeAttr(item.id)}')">Pay ${money(item.price)} Securely</button>
+          <p class="av-listing-protect"><i class="fa-solid fa-shield-halved"></i> Your payment is protected by Acctventa Buyer Protection.</p>
+        </div>
+      </div>`;
+  }
+
+  window.toggleListingDesc = function () {
+    const el = document.getElementById('listingDescText');
+    const btn = document.getElementById('listingDescToggle');
+    if (!el || !btn) return;
+    const clamped = el.classList.toggle('is-clamped');
+    btn.textContent = clamped ? 'Show more >' : 'Show less';
+  };
+
+  window.selectListingAccount = function (listingId, idx) {
+    listingSelectedAccount[String(listingId)] = Number(idx) || 0;
+    const item = A().findListingById(listingId);
+    if (!item) return;
+    document.getElementById('modalBody').innerHTML = buildListingDetailHtml(item);
+  };
+
+  window.previewListingLink = function (url) {
+    const u = String(url || '').trim();
+    if (!u) {
+      alert('No preview link for this listing.');
+      return;
+    }
+    window.open(u, '_blank', 'noopener,noreferrer');
+  };
+
+  window.openListingDetail = async function (id) {
+    let item = A().findListingById(id);
     if (!item) {
       alert('Listing not available.');
       return;
     }
-    const preview = item.previewLink
-      ? `<a href="${escapeAttr(item.previewLink)}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm text-brandPrimary font-semibold underline"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open preview link before buying</a>
-         <p class="text-[11px] text-slate-400 mt-1 break-all">${escapeHtml(item.previewLink)}</p>`
-      : `<p class="text-xs text-slate-500">No public preview link for this listing.</p>`;
-    document.getElementById('modalBody').innerHTML = `
-      <h3 class="font-bold text-xl mb-1">${escapeHtml(item.title)}</h3>
-      <p class="text-xs text-slate-500 mb-1 flex flex-wrap items-center gap-x-1">By <button type="button" class="text-brandPrimary font-semibold underline inline-flex items-center" onclick="openSellerProfile('${escapeAttr(item.sellerEmail || item.sellerId || '')}')">${nameWithVerify(item.sellerName, item.sellerVerified)}</button> · ${escapeHtml(item.category || '')}${item.sellerRating ? ` · ★ ${Number(item.sellerRating).toFixed(1)}` : ''}</p>
-      <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">${escapeHtml(item.description || 'No description.')}</p>
-      <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4">
-        <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">Review product link</p>
-        ${preview}
-      </div>
-      <div class="flex justify-between items-center mb-4"><span class="text-slate-500 text-sm">Price</span><span class="text-2xl font-extrabold text-brandPrimary">${money(item.price)}</span></div>
-      <p class="text-[11px] text-emerald-600 mb-3"><i class="fa-solid fa-shield-halved mr-1"></i>${item.releaseType === 'manual' ? 'Manual delivery — seller funds stay in escrow until login details are sent (AI release).' : 'Auto delivery — credentials unlock instantly after purchase.'}</p>
-      ${window.CommerceUI ? window.CommerceUI.listingActionButtonsHtml(item) : ''}
-      <button onclick="buyListing('${item.id}')" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Buy now · ${money(item.price)}</button>`;
-    (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
+    const modal = document.getElementById('appModal');
+    if (modal) modal.classList.add('av-listing-modal');
+    document.getElementById('modalBody').innerHTML = '<p class="text-sm text-slate-500 py-8 text-center">Loading listing…</p>';
+    (function () {
+      var m = document.getElementById('appModal');
+      if (!m) return;
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    })();
+
+    if (window.AcctventaApi && window.AcctventaApiSync && window.AcctventaApiSync.usingApi && window.AcctventaApiSync.usingApi()) {
+      try {
+        const res = await window.AcctventaApi.marketGet({ id: Number(id) || id });
+        if (res && res.ok && res.listing) {
+          const mapped = window.AcctventaApiSync.mapListing
+            ? window.AcctventaApiSync.mapListing(res.listing)
+            : res.listing;
+          item = Object.assign({}, item, mapped);
+        }
+      } catch (e) {
+        console.warn('market.get failed', e);
+      }
+    }
+
+    document.getElementById('modalBody').innerHTML = buildListingDetailHtml(item);
   };
 
   window.buyListing = async function (id) {

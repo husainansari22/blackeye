@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260823badge3">
+    <link rel="stylesheet" href="/css/profile.css?v=20260827listing1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -912,7 +912,7 @@
     <script src="/js/kyc-app.js?v=20260823ver1"></script>
     <script src="/js/av-confirm.js?v=20260823confirm1"></script>
     <script src="/js/commerce-ui.js?v=20260827ads2"></script>
-    <script src="/js/dashboard-app.js?v=20260827ads4"></script>
+    <script src="/js/dashboard-app.js?v=20260827listing1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
@@ -1052,6 +1052,7 @@
             if (!el) return;
             el.classList.add('hidden');
             el.classList.remove('flex');
+            el.classList.remove('av-listing-modal');
         }
         function toggleWishlist(icon) { icon.classList.toggle('fa-regular'); icon.classList.toggle('fa-solid'); icon.classList.toggle('text-red-500'); }
 
