@@ -47,6 +47,11 @@
     <p class="text-sm text-slate-500">Loading listing…</p>
   </main>
   <script>
+  window.openListingBuy = function (listingId) {
+    try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (err) {}
+    window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(String(listingId || ''));
+  };
+
   (async function () {
     const root = document.getElementById('listingRoot');
     const parts = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
@@ -183,7 +188,7 @@
           '<div class="av-listing-checkout__row">' +
             '<div><p class="av-listing-checkout__total-label">Total (1 item)</p><p class="av-listing-checkout__total">' + money(price) + '</p></div>' +
           '</div>' +
-          '<button type="button" class="av-listing-pay-btn" onclick="openListingBuy(\'' + esc(String(listing.id)) + '\')">Pay ' + money(price) + ' Securely</button>' +
+          '<button type="button" class="av-listing-pay-btn" data-buy-listing="' + esc(String(listing.id)) + '">Pay ' + money(price) + ' Securely</button>' +
           '<p class="av-listing-protect"><i class="fa-solid fa-shield-halved"></i> Your payment is protected by Acctventa Buyer Protection.</p>' +
         '</div></div>';
 
@@ -196,12 +201,14 @@
           toggle.textContent = clamped ? 'Show more >' : 'Show less';
         });
       }
+      root.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-buy-listing]');
+        if (!btn) return;
+        ev.preventDefault();
+        window.openListingBuy(btn.getAttribute('data-buy-listing'));
+      });
     } catch (e) {
       root.innerHTML = '<h1>This listing is unavailable</h1><p class="text-sm text-slate-500">' + escapeHtml(e.message || 'Not found') + '</p><p class="mt-4"><a class="text-brandPrimary" href="/dashboard.html#home">Browse marketplace</a></p>';
-    }
-    function openListingBuy(listingId) {
-      try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (err) {}
-      window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(listingId);
     }
   })();
   </script>

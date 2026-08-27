@@ -12,7 +12,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#0ea5e9">
   <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
-  <link rel="stylesheet" href="/css/profile.css?v=20260827store1">
+  <link rel="stylesheet" href="/css/profile.css?v=20260827buy1">
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
   <style>
     .av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.15rem;height:1.15rem;min-width:1.15rem;margin-left:.25rem;line-height:0;flex-shrink:0;vertical-align:middle}
@@ -35,6 +35,11 @@
     <p class="text-sm text-slate-500 text-center py-12">Loading storefront…</p>
   </main>
   <script>
+  window.openStoreBuy = function (listingId) {
+    try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (e) {}
+    window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(String(listingId || ''));
+  };
+
   (async function () {
     const root = document.getElementById('sellerRoot');
     const key = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '';
@@ -53,8 +58,7 @@
       return hit ? hit.logo : Cat.logoUrl({ domain: '' });
     };
     function openStoreBuy(listingId) {
-      try { sessionStorage.setItem('acctventa_open_listing', String(listingId)); } catch (e) {}
-      window.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(listingId);
+      window.openStoreBuy(listingId);
     }
 
     if (!key) {
@@ -94,7 +98,7 @@
               </div>
               <div class="av-storefront-ad__side">
                 <p class="av-storefront-ad__price">${money(l.price)}</p>
-                <button type="button" class="av-storefront-ad__buy" onclick="openStoreBuy('${esc(String(l.id))}')">Buy now</button>
+                <button type="button" class="av-storefront-ad__buy" data-buy-listing="${esc(String(l.id))}">Buy now</button>
               </div>
             </div>`;
           }).join('')
@@ -149,6 +153,13 @@
           btn.innerHTML = '<i class="fa-solid fa-check"></i>';
           setTimeout(function () { btn.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 1500);
         });
+      });
+
+      root.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('[data-buy-listing]');
+        if (!btn) return;
+        ev.preventDefault();
+        window.openStoreBuy(btn.getAttribute('data-buy-listing'));
       });
     } catch (e) {
       root.innerHTML = '<div class="av-storefront px-4"><h1 class="text-xl font-bold mb-2">Storefront unavailable</h1><p class="text-sm text-slate-500">' + esc(e.message) + '</p><p class="mt-4"><a class="text-brandPrimary font-semibold" href="/dashboard.html#home">Browse marketplace</a></p></div>';
