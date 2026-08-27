@@ -342,7 +342,65 @@ try {
                 'status' => $result['status'],
                 'sellerNet' => $result['sellerNet'],
                 'platformFee' => $result['platformFee'],
+                'listingId' => $result['listingId'] ?? $listingId,
+                'title' => $result['title'] ?? '',
+                'category' => $result['category'] ?? '',
+                'price' => $result['price'] ?? null,
+                'credentials' => $result['credentials'] ?? null,
+                'sellerName' => $result['sellerName'] ?? '',
+                'sellerEmail' => $result['sellerEmail'] ?? '',
+                'sellerId' => $result['sellerId'] ?? null,
+                'orderStatusStep' => $result['orderStatusStep'] ?? null,
+                'createdAt' => $result['createdAt'] ?? null,
+                'balance' => $result['buyerBalance'] ?? null,
             ]);
+        }
+
+        case 'orders.get':
+        case 'orders.detail': {
+            $u = require_user();
+            $orderId = (int)($body['orderId'] ?? $_GET['orderId'] ?? $_GET['id'] ?? 0);
+            $txid = trim((string)($body['txid'] ?? $_GET['txid'] ?? $body['publicId'] ?? $_GET['publicId'] ?? ''));
+            if ($orderId < 1 && $txid === '') {
+                json_out(['ok' => false, 'error' => 'orderId or txid required'], 422);
+            }
+            if ($orderId > 0) {
+                $stmt = db()->prepare('SELECT o.*,
+                    CASE WHEN o.buyer_id = ? THEN \'buyer\' ELSE \'seller\' END AS role,
+                    b.name AS buyerName, b.email AS buyerEmail, s.name AS sellerName, s.email AS sellerEmail, s.id AS sellerId
+                    FROM orders o
+                    JOIN users b ON b.id = o.buyer_id
+                    JOIN users s ON s.id = o.seller_id
+                    WHERE o.id = ? AND (o.buyer_id = ? OR o.seller_id = ?)
+                    LIMIT 1');
+                $stmt->execute([(int)$u['id'], $orderId, (int)$u['id'], (int)$u['id']]);
+            } else {
+                $stmt = db()->prepare('SELECT o.*,
+                    CASE WHEN o.buyer_id = ? THEN \'buyer\' ELSE \'seller\' END AS role,
+                    b.name AS buyerName, b.email AS buyerEmail, s.name AS sellerName, s.email AS sellerEmail, s.id AS sellerId
+                    FROM orders o
+                    JOIN users b ON b.id = o.buyer_id
+                    JOIN users s ON s.id = o.seller_id
+                    WHERE o.public_id = ? AND (o.buyer_id = ? OR o.seller_id = ?)
+                    LIMIT 1');
+                $stmt->execute([(int)$u['id'], $txid, (int)$u['id'], (int)$u['id']]);
+            }
+            $r = $stmt->fetch();
+            if (!$r) json_out(['ok' => false, 'error' => 'Order not found'], 404);
+            $r['credentials'] = $r['credentials_json'] ? json_decode($r['credentials_json'], true) : null;
+            unset($r['credentials_json']);
+            $r['txid'] = $r['public_id'];
+            $r['publicId'] = $r['public_id'];
+            if (($r['role'] ?? '') === 'buyer' && ($r['status'] ?? '') === 'completed') {
+                $chk = db()->prepare('SELECT id FROM seller_reviews WHERE order_id = ?');
+                $chk->execute([(int)$r['id']]);
+                $r['canReview'] = !$chk->fetch();
+                $r['reviewed'] = !$r['canReview'];
+            } else {
+                $r['canReview'] = false;
+                $r['reviewed'] = false;
+            }
+            json_out(['ok' => true, 'order' => $r]);
         }
 
         case 'cart.list': {

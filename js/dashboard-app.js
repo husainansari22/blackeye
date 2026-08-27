@@ -1763,20 +1763,55 @@
       return;
     }
     closeModal();
+    try {
+      if (A().refreshOrdersFromApi) await A().refreshOrdersFromApi();
+      else if (window.AcctventaApiSync && window.AcctventaApiSync.refreshOrdersFromApi) {
+        await window.AcctventaApiSync.refreshOrdersFromApi();
+      } else if (window.AcctventaApiSync) await window.AcctventaApiSync.hydrateFromApi();
+    } catch (e) {}
     applyProfileChrome(refreshUser());
     renderOrders();
     renderMarketplace();
     alert('Purchase successful. Open Orders to view credentials and message the seller.');
     switchTab('orders');
+    if (res.orderId) {
+      try {
+        openOrderDetail(String(res.orderId));
+      } catch (e) {}
+    }
   };
 
   // -------- Orders detail / chat / refund --------
-  window.openOrderDetail = function (orderId) {
+  window.openOrderDetail = async function (orderId) {
     const u = refreshUser();
-    const order = (u.orders || []).find((o) => o.id === orderId);
-    if (!order) return;
-    activeOrderId = orderId;
-    const cred = order.credentials || {};
+    let order = (u.orders || []).find((o) => String(o.id) === String(orderId) || String(o.publicId || o.txid) === String(orderId));
+    // Always prefer fresh credentials from API when available
+    if (window.AcctventaApi && window.AcctventaApiSync && window.AcctventaApiSync.usingApi()) {
+      try {
+        const res = await window.AcctventaApi.getOrder(orderId);
+        if (res && res.order) {
+          const mapped = window.AcctventaApiSync.mapOrder
+            ? window.AcctventaApiSync.mapOrder(res.order)
+            : res.order;
+          if (u) {
+            const rest = (u.orders || []).filter((o) => String(o.id) !== String(mapped.id));
+            u.orders = [mapped].concat(rest);
+            A().persistUser(u);
+          }
+          order = mapped;
+        }
+      } catch (e) {
+        console.warn('orders.get failed', e);
+      }
+    }
+    if (!order) {
+      alert('Order not found. Pull to refresh or reopen Purchase.');
+      return;
+    }
+    activeOrderId = String(order.id);
+    const rawCred = order.credentials;
+    const cred = rawCred && typeof rawCred === 'object' ? rawCred : {};
+    const hasCreds = !!(cred.username || cred.password || cred.previewLink || cred.twoFA || cred.attachedEmail || cred.extraInfo);
     const isSeller = order.role === 'seller';
     const other = isSeller ? order.buyerName : order.sellerName;
     const tx = order.txid || order.publicId || order.id;
@@ -1798,21 +1833,33 @@
         order.status !== 'cancelled'
           ? `<div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-mono space-y-1 mb-4">
         <p class="text-[10px] uppercase text-slate-400 font-sans font-bold mb-1">Account credentials</p>
-        <p><span class="text-slate-500">User:</span> ${escapeHtml(cred.username || (order.status === 'pending' && !isSeller ? 'Awaiting seller…' : '—'))}</p>
-        <p><span class="text-slate-500">Pass:</span> ${escapeHtml(cred.password || (order.status === 'pending' && !isSeller ? 'Awaiting seller…' : '—'))}</p>
+        ${
+          hasCreds
+            ? `<p><span class="text-slate-500">User:</span> ${escapeHtml(cred.username || '—')}</p>
+        <p><span class="text-slate-500">Pass:</span> ${escapeHtml(cred.password || '—')}</p>
         ${cred.previewLink ? `<p class="break-all"><span class="text-slate-500">Link:</span> ${escapeHtml(cred.previewLink)}</p>` : ''}
         ${cred.twoFA ? `<p><span class="text-slate-500">2FA:</span> ${escapeHtml(cred.twoFA)}</p>` : ''}
         ${cred.attachedEmail ? `<p><span class="text-slate-500">Email:</span> ${escapeHtml(cred.attachedEmail)}</p>` : ''}
-        ${cred.extraInfo ? `<p class="font-sans text-xs mt-2">${escapeHtml(cred.extraInfo)}</p>` : ''}
+        ${cred.attachedEmailPassword ? `<p><span class="text-slate-500">Email pass:</span> ${escapeHtml(cred.attachedEmailPassword)}</p>` : ''}
+        ${cred.extraInfo ? `<p class="font-sans text-xs mt-2 whitespace-pre-wrap">${escapeHtml(cred.extraInfo)}</p>` : ''}`
+            : `<p class="font-sans text-xs text-amber-600">${
+                order.status === 'pending' && !isSeller
+                  ? 'Awaiting seller to deliver login details…'
+                  : isSeller
+                    ? 'Deliver login details in chat for this order.'
+                    : 'Credentials are not available yet. Tap retry or contact Support with your TXID.'
+              }</p>
+              ${!isSeller ? `<button type="button" onclick="openOrderDetail('${escapeAttr(String(order.id))}')" class="mt-2 text-xs font-bold text-brandPrimary underline">Retry load credentials</button>` : ''}`
+        }
       </div>`
           : '<p class="text-xs text-red-500 mb-4">Order cancelled / refunded.</p>'
       }
       <div class="grid grid-cols-2 gap-2">
-        <button onclick="openOrderChat('${orderId}')" class="bg-brandPrimary text-white py-2.5 rounded-xl text-xs font-bold">Chat ${isSeller ? 'Buyer' : 'Seller'}</button>
-        ${isSeller && order.status !== 'cancelled' ? `<button onclick="confirmRefund('${orderId}')" class="bg-red-500 text-white py-2.5 rounded-xl text-xs font-bold">Refund Buyer</button>` : '<div></div>'}
-        ${!isSeller && order.canReview ? `<button onclick="leaveSellerReview('${orderId}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">Leave a review</button>` : ''}
+        <button onclick="openOrderChat('${escapeAttr(String(order.id))}')" class="bg-brandPrimary text-white py-2.5 rounded-xl text-xs font-bold">Chat ${isSeller ? 'Buyer' : 'Seller'}</button>
+        ${isSeller && order.status !== 'cancelled' ? `<button onclick="confirmRefund('${escapeAttr(String(order.id))}')" class="bg-red-500 text-white py-2.5 rounded-xl text-xs font-bold">Refund Buyer</button>` : '<div></div>'}
+        ${!isSeller && order.canReview ? `<button onclick="leaveSellerReview('${escapeAttr(String(order.id))}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">Leave a review</button>` : ''}
         ${!isSeller && order.sellerEmail ? `<button onclick="openSellerProfile('${escapeAttr(order.sellerEmail)}')" class="col-span-2 text-xs text-slate-500 underline py-1">View seller profile</button>` : ''}
-        ${isSeller && order.status === 'pending' ? `<button onclick="releaseOrder('${orderId}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">I sent login details — release funds</button>` : ''}
+        ${isSeller && order.status === 'pending' ? `<button onclick="releaseOrder('${escapeAttr(String(order.id))}')" class="col-span-2 border border-brandPrimary text-brandPrimary py-2.5 rounded-xl text-xs font-bold">I sent login details — release funds</button>` : ''}
       </div>`;
     (function(){var m=document.getElementById('appModal'); if(!m)return; m.classList.remove('hidden'); m.classList.add('flex');})();
   };
@@ -2493,6 +2540,12 @@
       if (!hydrated && window.AcctventaApiSync.hydratePublicMarket) {
         await window.AcctventaApiSync.hydratePublicMarket();
       }
+      // Always re-pull orders after hydrate so Purchase is never stuck empty
+      try {
+        if (hydrated && window.AcctventaApiSync.refreshOrdersFromApi) {
+          await window.AcctventaApiSync.refreshOrdersFromApi();
+        }
+      } catch (e) {}
     }
     window.AcctventaUI.refreshAll();
     try {
@@ -2501,6 +2554,18 @@
     // Keep the user on wallet/orders/etc after refresh (do not bounce to home)
     try {
       if (typeof window.restoreDashTab === 'function') window.restoreDashTab();
+    } catch (e) {}
+    // Open a specific order from email deep-link: #orders?txid=...
+    try {
+      const hash = String(location.hash || '');
+      const qIdx = hash.indexOf('?');
+      if (qIdx !== -1) {
+        const params = new URLSearchParams(hash.slice(qIdx + 1));
+        const txid = params.get('txid') || params.get('orderId') || params.get('id');
+        if (txid && typeof window.openOrderDetail === 'function') {
+          setTimeout(() => window.openOrderDetail(txid), 400);
+        }
+      }
     } catch (e) {}
     // re-run pending AI reviews that never finished (localStorage mode only)
     const u = refreshUser();

@@ -362,6 +362,8 @@ function purchase_listing(int $buyerId, int $listingId): array {
     $publicId = '';
     $status = '';
     $orderId = 0;
+    $creds = '';
+    $step = 'paid';
     try {
         debit_user_for_purchase($pdo, $buyerId, $price);
         $creds = json_encode([
@@ -420,15 +422,31 @@ function purchase_listing(int $buyerId, int $listingId): array {
         maybe_credit_referral_reward($buyerId);
     } catch (Throwable $e) {}
 
+    $buyerBalance = null;
+    try {
+        $b = db()->prepare('SELECT balance FROM users WHERE id = ? LIMIT 1');
+        $b->execute([$buyerId]);
+        $row = $b->fetch();
+        if ($row) $buyerBalance = (float)$row['balance'];
+    } catch (Throwable $e) {}
+
     return [
         'orderId' => $orderId,
         'publicId' => $publicId,
         'status' => $status,
         'listingId' => $listingId,
         'title' => $ad['title'],
+        'category' => $ad['category'] ?? '',
         'price' => $price,
         'sellerNet' => $saleSplit['net'] ?? null,
         'platformFee' => $saleSplit['commission'] ?? null,
+        'credentials' => $creds !== '' ? json_decode($creds, true) : null,
+        'sellerName' => $ad['seller_name'] ?? '',
+        'sellerEmail' => $ad['seller_email'] ?? '',
+        'sellerId' => (int)$ad['seller_id'],
+        'orderStatusStep' => $step,
+        'createdAt' => date('c'),
+        'buyerBalance' => $buyerBalance,
     ];
 }
 

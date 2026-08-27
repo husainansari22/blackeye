@@ -126,6 +126,27 @@
       return request('auth.login', { method: 'POST', body: payload }).then((data) => {
         if (data.token) setToken(data.token);
         applySessionUser(data.user);
+        // Seed local profile without wiping existing orders if hydrate is slow/offline
+        try {
+          if (global.Acctventa && data.user && data.user.email) {
+            global.Acctventa.persistUser({
+              id: data.user.id,
+              name: data.user.name,
+              email: data.user.email,
+              phone: data.user.phone || '',
+              balance: data.user.balance,
+              withdrawableBalance: data.user.withdrawableBalance,
+              escrowBalance: data.user.escrowBalance,
+              totalDeposits: data.user.totalDeposits,
+              totalWithdrawals: data.user.totalWithdrawals,
+              plan: data.user.plan || 'free',
+              referralCode: data.user.referralCode,
+              isVerified: !!data.user.isVerified,
+              kycStatus: data.user.kycStatus,
+              avatarUrl: data.user.avatarUrl || '',
+            });
+          }
+        } catch (e) {}
         return data;
       });
     },
@@ -170,6 +191,12 @@
     },
     myOrders() {
       return request('orders.mine');
+    },
+    getOrder(orderIdOrTx) {
+      const q = {};
+      if (orderIdOrTx != null && String(orderIdOrTx).match(/^\d+$/)) q.orderId = Number(orderIdOrTx);
+      else if (orderIdOrTx) q.txid = String(orderIdOrTx);
+      return request('orders.get', { query: q });
     },
     orderRefund(payload) {
       return request('orders.refund', { method: 'POST', body: payload });

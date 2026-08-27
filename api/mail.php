@@ -168,7 +168,7 @@ function email_order_notice(string $name, string $title, string $role, string $a
     $txLine = $safeTx !== ''
         ? '<p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#94a3b8;">Transaction ID: <strong style="color:#fff;font-family:monospace;">' . $safeTx . '</strong></p>'
         : '';
-    $dash = mail_cfg()['app_url'] . '/dashboard.html#orders';
+    $dash = mail_cfg()['app_url'] . '/dashboard.html#orders' . ($txid !== '' ? '?txid=' . rawurlencode($txid) : '');
     if ($role === 'seller') {
         $headline = 'Congratulations — you made a sale!';
         $body = 'Great news! A buyer just purchased <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>.';

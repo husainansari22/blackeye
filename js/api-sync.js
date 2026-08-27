@@ -174,7 +174,9 @@
       const [me, adsRes, ordersRes, marketRes, walletRes, notesRes, cfgRes] = await Promise.all([
         Api.me(),
         Api.myAds().catch(() => ({ ads: [] })),
-        Api.myOrders().catch(() => ({ orders: [] })),
+        Api.myOrders()
+          .then((r) => Object.assign({ __ordersOk: true }, r || {}))
+          .catch((e) => ({ __ordersOk: false, orders: null, error: e && e.message })),
         Api.market().catch(() => ({ listings: [] })),
         Api.wallet().then((r) => Object.assign({ __walletOk: true }, r || {})).catch((e) => ({ __walletOk: false, transactions: null, error: e && e.message })),
         Api.notifications().catch(() => ({ notifications: [] })),
@@ -188,17 +190,30 @@
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       })();
 
+      let prevUser = null;
+      try {
+        prevUser = A.getCurrentUser && A.getCurrentUser();
+      } catch (e) {}
+
       // Keep previous history if wallet.summary failed (e.g. Flutterwave timeout after key change)
       let txs = [];
       if (walletRes && walletRes.__walletOk) {
         txs = (walletRes.transactions || []).map(mapTx);
       } else {
-        try {
-          const prev = A.getCurrentUser && A.getCurrentUser();
-          if (prev && Array.isArray(prev.transactions)) txs = prev.transactions;
-        } catch (e) {}
+        if (prevUser && Array.isArray(prevUser.transactions)) txs = prevUser.transactions;
         if (walletRes && walletRes.error) {
           console.warn('Wallet history sync failed', walletRes.error);
+        }
+      }
+
+      // Keep previous orders if orders.mine failed — never wipe a successful purchase from the UI
+      let orders = [];
+      if (ordersRes && ordersRes.__ordersOk) {
+        orders = (ordersRes.orders || []).map(mapOrder);
+      } else {
+        if (prevUser && Array.isArray(prevUser.orders)) orders = prevUser.orders;
+        if (ordersRes && ordersRes.error) {
+          console.warn('Orders sync failed', ordersRes.error);
         }
       }
 
@@ -227,7 +242,7 @@
         payoutBankCode: user.payoutBankCode || '',
         avatarUrl: user.avatarUrl || '',
         ads: (adsRes.ads || []).map(mapAd),
-        orders: (ordersRes.orders || []).map(mapOrder),
+        orders: orders,
         transactions: txs,
         notifications: (notesRes.notifications || []).map(mapNotif),
         messages: {},
@@ -307,12 +322,48 @@
 
     A.purchaseListing = async function (_user, listingId) {
       try {
-        await Api.createOrder({ listingId: Number(listingId) });
+        const res = await Api.createOrder({ listingId: Number(listingId) });
+        // Merge the new order immediately so Orders is never empty if hydrate/myOrders glitches
+        try {
+          const cur = A.getCurrentUser && A.getCurrentUser();
+          if (cur && res) {
+            const mapped = mapOrder({
+              id: res.orderId || res.id,
+              public_id: res.publicId || res.txid || res.public_id,
+              txid: res.publicId || res.txid,
+              listing_id: res.listingId || listingId,
+              title: res.title || 'Order',
+              category: res.category || '',
+              price: res.price,
+              status: res.status || 'completed',
+              role: 'buyer',
+              sellerName: res.sellerName || '',
+              sellerEmail: res.sellerEmail || '',
+              sellerId: res.sellerId,
+              credentials: res.credentials || null,
+              created_at: res.createdAt || new Date().toISOString(),
+              order_status_step: res.orderStatusStep || (res.status === 'completed' ? 'delivered' : 'paid'),
+              canReview: !!(res.status === 'completed'),
+              reviewed: false,
+            });
+            const rest = (cur.orders || []).filter((o) => String(o.id) !== String(mapped.id));
+            cur.orders = [mapped].concat(rest);
+            if (res.balance != null) cur.balance = Number(res.balance);
+            A.persistUser(cur);
+          }
+        } catch (mergeErr) {
+          console.warn('Could not merge purchase into local orders', mergeErr);
+        }
         await hydrateFromApi();
-        return { ok: true };
+        return { ok: true, orderId: res && (res.orderId || res.id), publicId: res && (res.publicId || res.txid) };
       } catch (e) {
         return { ok: false, error: e.message || 'Purchase failed', code: e.code || '' };
       }
+    };
+
+    /** Force-refresh orders list from API (used when opening Purchase / Orders). */
+    A.refreshOrdersFromApi = async function () {
+      return refreshOrdersFromApi();
     };
 
     A.refundOrder = async function (_user, orderId) {
@@ -440,11 +491,30 @@
     }
   }
 
+  async function refreshOrdersFromApi() {
+    const Api = global.AcctventaApi;
+    const A = global.Acctventa;
+    if (!Api || !A) return false;
+    try {
+      const res = await Api.myOrders();
+      const cur = A.getCurrentUser && A.getCurrentUser();
+      if (!cur) return false;
+      cur.orders = (res.orders || []).map(mapOrder);
+      A.persistUser(cur);
+      return true;
+    } catch (e) {
+      console.warn('refreshOrdersFromApi failed', e);
+      return false;
+    }
+  }
+
   global.AcctventaApiSync = {
     hydrateFromApi,
     hydratePublicMarket,
     loadMessages,
+    refreshOrdersFromApi,
     usingApi,
     patchAcctventaForApi,
+    mapOrder,
   };
 })(window);

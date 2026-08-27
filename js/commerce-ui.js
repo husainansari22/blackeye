@@ -635,6 +635,21 @@
       }
       if (tabId === 'orders') {
         refreshDisputesBanner();
+        // Re-pull purchase orders so credentials appear after buy / email deep-link
+        (async function () {
+          try {
+            if (global.AcctventaApiSync && typeof global.AcctventaApiSync.refreshOrdersFromApi === 'function') {
+              await global.AcctventaApiSync.refreshOrdersFromApi();
+            } else if (global.Acctventa && typeof global.Acctventa.refreshOrdersFromApi === 'function') {
+              await global.Acctventa.refreshOrdersFromApi();
+            } else if (global.AcctventaApiSync && global.AcctventaApiSync.hydrateFromApi) {
+              await global.AcctventaApiSync.hydrateFromApi();
+            }
+            if (global.AcctventaUI && typeof global.AcctventaUI.refreshAll === 'function') {
+              global.AcctventaUI.refreshAll();
+            }
+          } catch (e) {}
+        })();
       }
       refreshCartBadge();
     };

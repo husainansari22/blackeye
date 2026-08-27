@@ -343,7 +343,12 @@
     const users = getUsers();
     const key = user.email.toLowerCase();
     const prev = users[key] || {};
-    users[key] = normalizeUser({ ...prev, ...user, password: user.password || prev.password || '' });
+    // Drop undefined keys so partial updates (e.g. KYC) cannot wipe orders/ads/history
+    const incoming = Object.assign({}, user);
+    ['orders', 'ads', 'notifications', 'transactions', 'messages', 'uploadsByDay'].forEach((k) => {
+      if (incoming[k] === undefined) delete incoming[k];
+    });
+    users[key] = normalizeUser({ ...prev, ...incoming, password: incoming.password || prev.password || '' });
     saveUsers(users);
     safeSet('userName', users[key].name);
     safeSet('userEmail', users[key].email);
