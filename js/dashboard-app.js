@@ -348,18 +348,30 @@
       }
     }
     if (!ads.length) {
+      const emptyTitle =
+        adsFilter === 'pending'
+          ? 'No pending listings'
+          : adsFilter === 'active'
+            ? 'No active listings'
+            : adsFilter === 'denied'
+              ? 'No denied listings'
+              : adsFilter === 'removed'
+                ? 'No removed listings'
+                : 'No ads in this tab';
+      const emptySub =
+        adsFilter === 'pending'
+          ? 'New uploads appear here until Owner approves them.'
+          : adsFilter === 'active'
+            ? 'Sold-out ads move to Removed — list a new product or ask Owner to restock.'
+            : adsFilter === 'denied'
+              ? 'Denied listings will show here with the reason.'
+              : adsFilter === 'removed'
+                ? 'Removed or sold-out listings show here.'
+                : 'Tap + to list a product.';
       box.innerHTML = `<div class="text-center py-12 space-y-2">
         <i class="fa-solid fa-bullhorn text-4xl text-slate-300 dark:text-slate-700"></i>
-        <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No ads in this tab</p>
-        <p class="text-xs text-slate-400">${
-          adsFilter === 'pending'
-            ? 'Nothing under review right now. New uploads stay here until Owner approves them.'
-            : adsFilter === 'active'
-              ? 'No live listings. Sold-out ads move to Removed — list a new product or ask Owner to restock.'
-              : adsFilter === 'denied'
-                ? 'No denied listings.'
-                : 'Tap + to list a product. New uploads start Under Review (Pending).'
-        }</p>
+        <p class="font-bold text-sm text-slate-600 dark:text-slate-400">${emptyTitle}</p>
+        <p class="text-xs text-slate-400">${emptySub}</p>
       </div>`;
       return;
     }
@@ -394,7 +406,7 @@
           </div>
         </div>
         ${a.status === 'denied' && a.denyReason ? `<div class="text-xs bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-lg p-2"><strong>Reason for denied:</strong> ${escapeHtml(a.denyReason)}</div>` : ''}
-        ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">Passed AI checks — waiting for Owner approval before Market.</p>` : ''}
+        ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">Pending Owner approval before Market.</p>` : ''}
         ${soldOut ? `<p class="text-[11px] text-amber-600">This unit sold. It will not show on Market until restocked with new login details.</p>` : ''}
       </div>`;
       })
@@ -1765,7 +1777,7 @@
     const st = document.getElementById('sellWizardStepText');
     if (st) st.textContent = `Step ${step} of 3 — ${labels[step - 1]}`;
     const btn = document.getElementById('sellWizardBtn');
-    if (btn) btn.textContent = step === 3 ? 'Submit for AI Review' : 'Continue';
+    if (btn) btn.textContent = step === 3 ? 'Submit listing' : 'Continue';
     document.querySelectorAll('.sell-step-label').forEach((el, i) => {
       el.classList.toggle('text-brandPrimary', i === step - 1);
       el.classList.toggle('font-bold', i === step - 1);
@@ -1868,7 +1880,7 @@
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = 'Submit for AI Review';
+        btn.textContent = 'Submit listing';
       }
     }
     if (!res.ok) {
@@ -1922,7 +1934,7 @@
         <div class="flex justify-between gap-2"><span class="text-slate-500 shrink-0">Preview link</span><span class="font-mono text-[10px] text-right break-all">${escapeHtml(sellDraft.previewLink || '—')}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">2FA</span><span class="font-medium">${escapeHtml(sellDraft.twoFA || '—')}</span></div>
       </div>
-      <p class="text-[11px] text-amber-600 mt-3">After submit, AI checks credentials &amp; preview link. Valid listings stay <strong>Under Review (Pending)</strong> until Owner approves them for Market.</p>`;
+      <p class="text-[11px] text-amber-600 mt-3">After submit, your listing is checked and stays <strong>Pending</strong> until Owner approves it for Market.</p>`;
   }
 
   // -------- Listing detail / buy --------
