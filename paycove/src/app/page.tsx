@@ -1,121 +1,148 @@
 import Link from "next/link";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar";
+import { ArrowRight, Shield, Zap } from "lucide-react";
+import { AppLogo, AppShell } from "@/components/AppShell";
+import { LiveTicker } from "@/components/LiveTicker";
 import { getSession } from "@/lib/auth";
 import { DEAL_TYPES, FEE_PERCENT, PLATFORM_NAME, PLATFORM_TAGLINE } from "@/lib/constants";
+import { DEAL_COLORS, DEAL_ICON_MAP } from "@/lib/deal-icons";
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
   const session = await getSession();
+  if (session) redirect("/dashboard");
+
+  const dealTypes = Object.values(DEAL_TYPES);
 
   return (
-    <>
-      <Navbar user={session} />
-      <main>
-        <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 text-white">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:items-center lg:py-28">
+    <AppShell>
+      <main className="relative px-5 pb-8">
+        {/* Top bar */}
+        <div className="flex items-center justify-between pt-14 pb-6 animate-fade-up">
+          <div className="flex items-center gap-3">
+            <AppLogo />
             <div>
-              <p className="inline-flex rounded-full bg-teal-500/20 px-3 py-1 text-sm font-medium text-teal-200">
-                Built for Nigeria 🇳🇬
-              </p>
-              <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                {PLATFORM_NAME}
-              </h1>
-              <p className="mt-4 text-2xl font-medium text-teal-200">{PLATFORM_TAGLINE}</p>
-              <p className="mt-6 max-w-xl text-lg text-slate-300">
-                One platform to protect every deal — WhatsApp & IG shops, services,
-                rent, cars, weddings, imports, and B2B supply. Money held until
-                everyone is satisfied.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/register"
-                  className="rounded-xl bg-teal-500 px-6 py-3 font-semibold text-white hover:bg-teal-400"
-                >
-                  Start free
-                </Link>
-                <Link
-                  href="/login"
-                  className="rounded-xl border border-white/20 px-6 py-3 font-semibold text-white hover:bg-white/10"
-                >
-                  Log in
-                </Link>
-              </div>
-              <p className="mt-6 text-sm text-slate-400">
-                Only {FEE_PERCENT}% per deal · Sellers bring their own buyers · No monthly fee
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-              <p className="text-sm font-medium text-teal-200">All deal types in one place</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {Object.values(DEAL_TYPES).map((type) => (
-                  <div key={type.id} className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-2xl">{type.icon}</p>
-                    <p className="mt-2 font-semibold">{type.label}</p>
-                    <p className="mt-1 text-sm text-slate-300">{type.description}</p>
-                  </div>
-                ))}
+              <p className="text-base font-semibold tracking-tight">{PLATFORM_NAME}</p>
+              <div className="flex items-center gap-1.5">
+                <span className="live-dot" />
+                <p className="text-[11px] text-white/45">Live · Nigeria</p>
               </div>
             </div>
           </div>
+          <Link href="/login" className="btn-ghost px-4 py-2.5 text-sm">
+            Sign in
+          </Link>
+        </div>
+
+        {/* Hero */}
+        <section className="animate-fade-up animate-fade-up-delay-1">
+          <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight">
+            Pay safe.
+            <br />
+            <span className="text-gradient">Pay now.</span>
+          </h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-white/50">
+            {PLATFORM_TAGLINE} Escrow for every deal — shops, services, rent, cars & more.
+          </p>
         </section>
 
-        <section id="how-it-works" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <h2 className="text-center text-3xl font-bold text-slate-900">How PayCove works</h2>
-          <div className="mt-12 grid gap-6 md:grid-cols-4">
-            {[
-              ["1", "Create deal", "Pick deal type, enter amount, get a payment link."],
-              ["2", "Buyer pays", "Customer pays via Paystack. Funds held in escrow."],
-              ["3", "Deliver & prove", "Seller ships or completes service with proof."],
-              ["4", "Release funds", "Buyer confirms. Seller gets paid minus 4% fee."],
-            ].map(([step, title, copy]) => (
-              <div key={step} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 font-bold text-teal-700">
-                  {step}
+        {/* Stats bento */}
+        <section className="mt-6 grid grid-cols-2 gap-3 animate-fade-up animate-fade-up-delay-2">
+          <div className="glass col-span-2 rounded-[var(--app-radius-lg)] p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-white/35">
+                  Platform fee
                 </p>
-                <h3 className="mt-4 text-lg font-semibold">{title}</h3>
-                <p className="mt-2 text-sm text-slate-600">{copy}</p>
+                <p className="mt-1 text-4xl font-bold tracking-tight text-gradient">
+                  {FEE_PERCENT}%
+                </p>
+                <p className="mt-1 text-xs text-white/40">Only when deal completes</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15">
+                <Zap className="h-5 w-5 text-emerald-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="glass rounded-[var(--app-radius)] p-4">
+            <Shield className="h-5 w-5 text-[#00e5b5]" />
+            <p className="mt-3 text-2xl font-bold">8</p>
+            <p className="text-[11px] text-white/40">Deal types</p>
+          </div>
+          <div className="glass rounded-[var(--app-radius)] p-4">
+            <p className="text-2xl font-bold">₦</p>
+            <p className="mt-1 text-[11px] leading-snug text-white/40">
+              WhatsApp & IG ready
+            </p>
+          </div>
+        </section>
+
+        {/* Live ticker */}
+        <section className="mt-6 animate-fade-up animate-fade-up-delay-3">
+          <LiveTicker />
+        </section>
+
+        {/* Deal types — horizontal scroll */}
+        <section className="mt-8">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold">All escrow types</p>
+            <p className="text-[11px] text-white/35">Swipe →</p>
+          </div>
+          <div className="scroll-strip -mx-5 px-5">
+            {dealTypes.map((type) => {
+              const Icon = DEAL_ICON_MAP[type.id];
+              return (
+                <div
+                  key={type.id}
+                  className={`glass w-[140px] rounded-[var(--app-radius)] bg-gradient-to-br p-4 ${DEAL_COLORS[type.id]}`}
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
+                    <Icon className="h-4 w-4 text-white/80" />
+                  </div>
+                  <p className="mt-3 text-[13px] font-semibold leading-tight">{type.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* How it works — compact steps */}
+        <section className="mt-8">
+          <p className="mb-3 text-sm font-semibold">How it works</p>
+          <div className="glass-strong rounded-[var(--app-radius-lg)] p-1">
+            {[
+              ["Create deal", "Get a payment link in seconds"],
+              ["Buyer pays", "Funds held safely via Paystack"],
+              ["Deliver & confirm", "Release when everyone's happy"],
+            ].map(([title, sub], i) => (
+              <div
+                key={title}
+                className="flex items-center gap-4 rounded-[18px] px-4 py-3.5"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#00e5b5]/20 to-[#3b9eff]/20 text-xs font-bold text-[#00e5b5]">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{title}</p>
+                  <p className="text-[11px] text-white/40">{sub}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        <section id="deal-types" className="bg-white py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="text-center text-3xl font-bold text-slate-900">
-              Every escrow type. One website.
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-center text-slate-600">
-              Whether you sell wigs on Instagram, collect rent, import from China,
-              or plan weddings — PayCove handles the money safely.
-            </p>
-            <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {Object.values(DEAL_TYPES).map((type) => (
-                <div key={type.id} className="rounded-2xl border border-slate-200 p-5">
-                  <p className="text-3xl">{type.icon}</p>
-                  <h3 className="mt-3 font-semibold text-slate-900">{type.label}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{type.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="pricing" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <div className="rounded-3xl bg-teal-600 p-10 text-center text-white">
-            <h2 className="text-3xl font-bold">Simple pricing</h2>
-            <p className="mt-4 text-5xl font-bold">{FEE_PERCENT}%</p>
-            <p className="mt-2 text-lg text-teal-100">per completed deal. No setup fee. No monthly subscription.</p>
-            <Link
-              href="/register"
-              className="mt-8 inline-flex rounded-xl bg-white px-6 py-3 font-semibold text-teal-700 hover:bg-teal-50"
-            >
-              Create your first deal
-            </Link>
-          </div>
-        </section>
+        {/* Sticky CTA */}
+        <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 p-5 pb-[calc(20px+env(safe-area-inset-bottom))]">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#060608] via-[#060608]/95 to-transparent" />
+          <Link href="/register" className="btn-primary relative gap-2">
+            Get started free
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <p className="relative mt-2 text-center text-[10px] text-white/30">
+            No monthly fee · Sellers bring their own buyers
+          </p>
+        </div>
       </main>
-      <Footer />
-    </>
+    </AppShell>
   );
 }

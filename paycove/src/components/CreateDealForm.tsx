@@ -2,12 +2,15 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DEAL_TYPES, DealTypeId } from "@/lib/constants";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DEAL_TYPES, DealTypeId, FEE_PERCENT } from "@/lib/constants";
+import { DEAL_COLORS, DEAL_ICON_MAP } from "@/lib/deal-icons";
 
 type Milestone = { title: string; amount: string };
 
 export function CreateDealForm() {
   const router = useRouter();
+  const [step, setStep] = useState(0);
   const [type, setType] = useState<DealTypeId>("GOODS");
   const [milestones, setMilestones] = useState<Milestone[]>([
     { title: "Deposit", amount: "" },
@@ -17,9 +20,15 @@ export function CreateDealForm() {
   const [loading, setLoading] = useState(false);
 
   const showMilestones = ["SERVICE", "EVENT"].includes(type);
+  const dealTypes = Object.values(DEAL_TYPES);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (step < 2) {
+      setStep(step + 1);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -59,117 +68,140 @@ export function CreateDealForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label className="mb-2 block text-sm font-medium text-slate-700">Deal type</label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {Object.values(DEAL_TYPES).map((dealType) => (
-            <button
-              key={dealType.id}
-              type="button"
-              onClick={() => setType(dealType.id)}
-              className={`rounded-2xl border p-4 text-left transition ${
-                type === dealType.id
-                  ? "border-teal-600 bg-teal-50 ring-2 ring-teal-600"
-                  : "border-slate-200 hover:border-teal-300"
-              }`}
-            >
-              <p className="text-lg">{dealType.icon}</p>
-              <p className="mt-2 font-semibold text-slate-900">{dealType.label}</p>
-              <p className="mt-1 text-sm text-slate-600">{dealType.description}</p>
-            </button>
-          ))}
-        </div>
+    <form onSubmit={handleSubmit} className="flex flex-col">
+      {/* Step indicator */}
+      <div className="mb-6 flex gap-2">
+        {[0, 1, 2].map((s) => (
+          <div
+            key={s}
+            className={`h-1 flex-1 rounded-full transition-all ${
+              s <= step ? "bg-gradient-to-r from-[#00e5b5] to-[#3b9eff]" : "bg-white/10"
+            }`}
+          />
+        ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Deal title</label>
-          <input
-            name="title"
-            required
-            placeholder="e.g. iPhone 15 Pro Max — 256GB"
-            className="w-full rounded-xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Description</label>
-          <textarea
-            name="description"
-            rows={3}
-            placeholder="Details, delivery terms, warranty, etc."
-            className="w-full rounded-xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Amount (₦)</label>
-          <input
-            name="amount"
-            type="number"
-            min="1000"
-            required
-            className="w-full rounded-xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-        <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          PayCove fee: <strong>4%</strong> deducted when funds are released to you.
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 p-4">
-        <p className="font-medium text-slate-900">Buyer details (optional)</p>
-        <p className="mt-1 text-sm text-slate-600">
-          Pre-fill if you already know who will pay. They can also enter details on the payment page.
-        </p>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <input name="buyerName" placeholder="Buyer name" className="rounded-xl border border-slate-200 px-4 py-3" />
-          <input name="buyerEmail" type="email" placeholder="Buyer email" className="rounded-xl border border-slate-200 px-4 py-3" />
-          <input name="buyerPhone" placeholder="Buyer phone" className="rounded-xl border border-slate-200 px-4 py-3" />
-        </div>
-      </div>
-
-      {showMilestones && (
-        <div className="rounded-2xl border border-slate-200 p-4">
-          <p className="font-medium text-slate-900">Milestones</p>
-          <div className="mt-4 space-y-3">
-            {milestones.map((milestone, index) => (
-              <div key={index} className="grid gap-3 md:grid-cols-2">
-                <input
-                  value={milestone.title}
-                  onChange={(e) => {
-                    const next = [...milestones];
-                    next[index] = { ...next[index], title: e.target.value };
-                    setMilestones(next);
-                  }}
-                  placeholder="Milestone title"
-                  className="rounded-xl border border-slate-200 px-4 py-3"
-                />
-                <input
-                  value={milestone.amount}
-                  onChange={(e) => {
-                    const next = [...milestones];
-                    next[index] = { ...next[index], amount: e.target.value };
-                    setMilestones(next);
-                  }}
-                  type="number"
-                  placeholder="Amount in ₦"
-                  className="rounded-xl border border-slate-200 px-4 py-3"
-                />
-              </div>
-            ))}
+      {step === 0 && (
+        <div className="animate-fade-up">
+          <p className="text-sm font-semibold">What type of deal?</p>
+          <p className="mt-1 text-[12px] text-white/40">Swipe to browse all types</p>
+          <div className="scroll-strip mt-4 -mx-1">
+            {dealTypes.map((dealType) => {
+              const Icon = DEAL_ICON_MAP[dealType.id];
+              const selected = type === dealType.id;
+              return (
+                <button
+                  key={dealType.id}
+                  type="button"
+                  onClick={() => setType(dealType.id)}
+                  className={`w-[130px] rounded-[var(--app-radius)] p-4 text-left transition ${
+                    selected
+                      ? "glass-strong ring-1 ring-[#00e5b5]/40"
+                      : "glass opacity-70"
+                  } bg-gradient-to-br ${DEAL_COLORS[dealType.id]}`}
+                >
+                  <Icon className={`h-5 w-5 ${selected ? "text-[#00e5b5]" : "text-white/50"}`} />
+                  <p className="mt-3 text-[13px] font-semibold leading-tight">{dealType.label}</p>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {step === 1 && (
+        <div className="animate-fade-up space-y-3">
+          <p className="text-sm font-semibold">Deal details</p>
+          <input
+            name="title"
+            required
+            placeholder="e.g. iPhone 15 Pro Max — 256GB"
+            className="app-input"
+          />
+          <textarea
+            name="description"
+            rows={2}
+            placeholder="Delivery terms, warranty, etc. (optional)"
+            className="app-input resize-none"
+          />
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/35">₦</span>
+            <input
+              name="amount"
+              type="number"
+              min="1000"
+              required
+              placeholder="Amount"
+              className="app-input pl-9 text-lg font-semibold"
+            />
+          </div>
+          <div className="glass rounded-[var(--app-radius)] px-4 py-3 text-[12px] text-white/45">
+            PayCove takes <span className="font-semibold text-[#00e5b5]">{FEE_PERCENT}%</span> when
+            funds are released to you
+          </div>
+        </div>
+      )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-xl bg-teal-600 px-6 py-3 font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
-      >
-        {loading ? "Creating..." : "Create deal & get payment link"}
-      </button>
+      {step === 2 && (
+        <div className="animate-fade-up space-y-3">
+          <p className="text-sm font-semibold">Buyer info <span className="text-white/30">(optional)</span></p>
+          <input name="buyerName" placeholder="Buyer name" className="app-input" />
+          <input name="buyerEmail" type="email" placeholder="Buyer email" className="app-input" />
+          <input name="buyerPhone" placeholder="Buyer phone" className="app-input" />
+
+          {showMilestones && (
+            <div className="glass rounded-[var(--app-radius-lg)] p-4 space-y-3">
+              <p className="text-[13px] font-medium">Payment milestones</p>
+              {milestones.map((milestone, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    value={milestone.title}
+                    onChange={(e) => {
+                      const next = [...milestones];
+                      next[index] = { ...next[index], title: e.target.value };
+                      setMilestones(next);
+                    }}
+                    placeholder="Title"
+                    className="app-input flex-1"
+                  />
+                  <input
+                    value={milestone.amount}
+                    onChange={(e) => {
+                      const next = [...milestones];
+                      next[index] = { ...next[index], amount: e.target.value };
+                      setMilestones(next);
+                    }}
+                    type="number"
+                    placeholder="₦"
+                    className="app-input w-28"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>
+      )}
+
+      <div className="mt-8 flex gap-3">
+        {step > 0 && (
+          <button
+            type="button"
+            onClick={() => setStep(step - 1)}
+            className="btn-ghost flex-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+        )}
+        <button type="submit" disabled={loading} className="btn-primary flex-[2]">
+          {loading ? "Creating..." : step < 2 ? "Continue" : "Create & get link"}
+          {!loading && step < 2 && <ChevronRight className="h-4 w-4" />}
+        </button>
+      </div>
     </form>
   );
 }

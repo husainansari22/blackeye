@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AppLogo, AppShell } from "@/components/AppShell";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
@@ -36,90 +37,76 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {mode === "register" && (
-        <>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Full name</label>
-            <input
-              name="name"
-              required
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none ring-teal-600 focus:ring-2"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Phone (optional)</label>
-            <input
-              name="phone"
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none ring-teal-600 focus:ring-2"
-              placeholder="+234..."
-            />
-          </div>
-        </>
-      )}
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-        <input
-          name="email"
-          type="email"
-          required
-          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none ring-teal-600 focus:ring-2"
-        />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none ring-teal-600 focus:ring-2"
-        />
-      </div>
-
-      {mode === "register" && (
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">I am a</label>
-          <select
-            name="role"
-            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none ring-teal-600 focus:ring-2"
-            defaultValue="SELLER"
-          >
-            <option value="SELLER">Seller / Service provider</option>
-            <option value="AGENT">Agent / Broker</option>
-          </select>
+    <AppShell>
+      <main className="relative flex min-h-[100dvh] flex-col px-5">
+        <div className="pt-16 animate-fade-up">
+          <AppLogo size="lg" />
+          <h1 className="mt-8 text-2xl font-bold tracking-tight">
+            {mode === "login" ? "Welcome back" : "Create account"}
+          </h1>
+          <p className="mt-2 text-sm text-white/45">
+            {mode === "login"
+              ? "Sign in to manage your deals"
+              : "Start protecting deals in minutes"}
+          </p>
         </div>
-      )}
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        <form onSubmit={handleSubmit} className="mt-8 flex flex-1 flex-col animate-fade-up animate-fade-up-delay-1">
+          <div className="space-y-3">
+            {mode === "register" && (
+              <>
+                <input name="name" required placeholder="Full name" className="app-input" />
+                <input name="phone" placeholder="Phone (optional)" className="app-input" />
+              </>
+            )}
+            <input name="email" type="email" required placeholder="Email address" className="app-input" />
+            <input
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              placeholder="Password (min 8 chars)"
+              className="app-input"
+            />
+            {mode === "register" && (
+              <select name="role" defaultValue="SELLER" className="app-input">
+                <option value="SELLER">Seller / Service provider</option>
+                <option value="AGENT">Agent / Broker</option>
+              </select>
+            )}
+          </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-xl bg-teal-600 py-3 font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
-      >
-        {loading ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
-      </button>
+          {error && (
+            <p className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>
+          )}
 
-      <p className="text-center text-sm text-slate-600">
-        {mode === "login" ? (
-          <>
-            New to PayCove?{" "}
-            <Link href="/register" className="font-medium text-teal-700">
-              Create account
+          <div className="mt-auto pb-[calc(24px+env(safe-area-inset-bottom))] pt-8">
+            <button type="submit" disabled={loading} className="btn-primary">
+              {loading ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
+            </button>
+            <p className="mt-4 text-center text-sm text-white/40">
+              {mode === "login" ? (
+                <>
+                  New here?{" "}
+                  <Link href="/register" className="font-medium text-[#00e5b5]">
+                    Sign up
+                  </Link>
+                </>
+              ) : (
+                <>
+                  Have an account?{" "}
+                  <Link href="/login" className="font-medium text-[#00e5b5]">
+                    Sign in
+                  </Link>
+                </>
+              )}
+            </p>
+            <Link href="/" className="mt-3 block text-center text-[11px] text-white/25">
+              ← Back to home
             </Link>
-          </>
-        ) : (
-          <>
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium text-teal-700">
-              Log in
-            </Link>
-          </>
-        )}
-      </p>
-    </form>
+          </div>
+        </form>
+      </main>
+    </AppShell>
   );
 }

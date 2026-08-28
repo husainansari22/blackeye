@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { AppHeader, AppShell } from "@/components/AppShell";
 import { DealActions, DealSummary } from "@/components/DealDetail";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -18,27 +16,18 @@ export default async function DealDetailPage({ params }: Params) {
       publicId,
       OR: [{ sellerId: session.id }, { agentId: session.id }],
     },
-    include: {
-      proofs: true,
-      disputes: true,
-    },
+    include: { proofs: true, disputes: true },
   });
 
   if (!deal) notFound();
 
   return (
-    <>
-      <Navbar user={session} />
-      <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-        <Link href="/dashboard" className="text-sm text-teal-700 hover:underline">
-          ← Back to dashboard
-        </Link>
-        <div className="mt-6 grid gap-6">
-          <DealSummary deal={deal} />
-          <DealActions deal={deal} />
-        </div>
+    <AppShell showNav user={session}>
+      <AppHeader title="Deal" backHref="/dashboard" />
+      <main className="relative space-y-4 px-5 pb-8">
+        <DealSummary deal={deal} />
+        <DealActions deal={deal} />
       </main>
-      <Footer />
-    </>
+    </AppShell>
   );
 }

@@ -1,15 +1,10 @@
 import { notFound } from "next/navigation";
-import { BuyerPaymentForm } from "@/components/BuyerPaymentForm";
+import { AppLogo, AppShell } from "@/components/AppShell";
 import { BuyerDealActions } from "@/components/BuyerDealActions";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar";
-import { StatusBadge } from "@/components/StatusBadge";
-import { PLATFORM_NAME } from "@/lib/constants";
+import { BuyerPaymentForm } from "@/components/BuyerPaymentForm";
 import { prisma } from "@/lib/prisma";
 
-type Params = {
-  params: Promise<{ publicId: string }>;
-};
+type Params = { params: Promise<{ publicId: string }> };
 
 export default async function PayPage({ params }: Params) {
   const { publicId } = await params;
@@ -28,29 +23,20 @@ export default async function PayPage({ params }: Params) {
   const showPaymentForm = deal.status === "PENDING_PAYMENT";
 
   return (
-    <>
-      <Navbar />
-      <main className="mx-auto max-w-lg px-4 py-10 sm:px-6">
-        <p className="mb-4 text-center text-sm text-slate-600">
-          Protected by {PLATFORM_NAME}
-        </p>
+    <AppShell>
+      <main className="relative px-5 pt-14 pb-8">
+        <div className="mb-8 flex items-center justify-center gap-2 animate-fade-up">
+          <AppLogo size="sm" />
+          <span className="text-sm font-semibold">PayCove</span>
+          <span className="live-dot" />
+        </div>
 
         {showPaymentForm ? (
           <BuyerPaymentForm deal={deal} />
         ) : (
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h1 className="text-2xl font-bold text-slate-900">{deal.title}</h1>
-                <StatusBadge status={deal.status} />
-              </div>
-              <p className="mt-2 text-sm text-slate-600">Seller: {deal.seller.name}</p>
-            </div>
-            <BuyerDealActions deal={deal} />
-          </div>
+          <BuyerDealActions deal={deal} />
         )}
       </main>
-      <Footer />
-    </>
+    </AppShell>
   );
 }

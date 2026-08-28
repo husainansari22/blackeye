@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { Lock, ShieldCheck } from "lucide-react";
 import { formatNaira } from "@/lib/utils";
 
 type Deal = {
@@ -47,60 +48,50 @@ export function BuyerPaymentForm({ deal }: { deal: Deal }) {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-sm font-medium uppercase tracking-wide text-teal-700">Secure payment</p>
-      <h1 className="mt-2 text-2xl font-bold text-slate-900">{deal.title}</h1>
-      <p className="mt-2 text-sm text-slate-600">Seller: {deal.seller.name}</p>
-
-      <div className="mt-6 rounded-2xl bg-slate-50 p-4">
-        <div className="flex justify-between text-sm text-slate-600">
-          <span>Amount</span>
-          <span>{formatNaira(deal.amount)}</span>
-        </div>
-        <div className="mt-2 flex justify-between text-sm text-slate-600">
-          <span>PayCove protection fee (included)</span>
-          <span>{formatNaira(deal.feeAmount)}</span>
-        </div>
-        <div className="mt-3 flex justify-between border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900">
-          <span>Total to pay</span>
-          <span>{formatNaira(deal.amount)}</span>
+    <div className="animate-fade-up">
+      {/* Amount hero */}
+      <div className="relative overflow-hidden rounded-[var(--app-radius-xl)] p-6 text-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00e5b5]/15 to-[#3b9eff]/10" />
+        <div className="relative">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15">
+            <ShieldCheck className="h-6 w-6 text-[#00e5b5]" />
+          </div>
+          <p className="mt-4 text-[11px] uppercase tracking-widest text-white/35">
+            Protected payment
+          </p>
+          <p className="mt-1 text-[2.5rem] font-bold tracking-tight">
+            {formatNaira(deal.amount)}
+          </p>
+          <p className="mt-2 text-sm text-white/45">{deal.title}</p>
+          <p className="mt-1 text-[12px] text-white/30">Seller: {deal.seller.name}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <input
-          name="buyerName"
-          required
-          placeholder="Your full name"
-          className="w-full rounded-xl border border-slate-200 px-4 py-3"
-        />
-        <input
-          name="buyerEmail"
-          type="email"
-          required
-          placeholder="Your email"
-          className="w-full rounded-xl border border-slate-200 px-4 py-3"
-        />
-        <input
-          name="buyerPhone"
-          placeholder="Phone number"
-          className="w-full rounded-xl border border-slate-200 px-4 py-3"
-        />
+      {/* Trust note */}
+      <div className="mt-4 flex items-center gap-3 glass rounded-[var(--app-radius)] px-4 py-3">
+        <Lock className="h-4 w-4 shrink-0 text-[#00e5b5]" />
+        <p className="text-[12px] leading-snug text-white/45">
+          Funds held in escrow until you confirm delivery. Fee included in total.
+        </p>
+      </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+        <input name="buyerName" required placeholder="Your full name" className="app-input" />
+        <input name="buyerEmail" type="email" required placeholder="Email address" className="app-input" />
+        <input name="buyerPhone" placeholder="Phone number" className="app-input" />
+
+        {error && (
+          <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>
+        )}
 
         <button
           type="submit"
           disabled={loading || deal.status !== "PENDING_PAYMENT"}
-          className="w-full rounded-xl bg-teal-600 py-3 font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+          className="btn-primary mt-2"
         >
           {loading ? "Redirecting to Paystack..." : `Pay ${formatNaira(deal.amount)} safely`}
         </button>
       </form>
-
-      <p className="mt-4 text-center text-xs text-slate-500">
-        Funds are held until delivery is confirmed or dispute is resolved.
-      </p>
     </div>
   );
 }

@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar";
+import { ChevronRight } from "lucide-react";
+import { AppHeader, AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getSession } from "@/lib/auth";
-import { DEAL_TYPES } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { formatNaira } from "@/lib/utils";
 
@@ -16,8 +15,8 @@ export default async function AdminPage() {
   const [deals, users, stats] = await Promise.all([
     prisma.deal.findMany({
       orderBy: { createdAt: "desc" },
-      take: 50,
-      include: { seller: { select: { name: true, email: true } }, disputes: true },
+      take: 30,
+      include: { seller: { select: { name: true } } },
     }),
     prisma.user.count(),
     prisma.deal.aggregate({
@@ -27,57 +26,45 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <>
-      <Navbar user={session} />
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <h1 className="text-3xl font-bold text-slate-900">Admin</h1>
-        <p className="mt-2 text-slate-600">Platform overview for PayCove</p>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-600">Users</p>
-            <p className="mt-2 text-3xl font-bold">{users}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-600">Total deals</p>
-            <p className="mt-2 text-3xl font-bold">{stats._count}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-600">GMV</p>
-            <p className="mt-2 text-3xl font-bold">{formatNaira(stats._sum.amount ?? 0)}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-600">Fees earned</p>
-            <p className="mt-2 text-3xl font-bold">{formatNaira(stats._sum.feeAmount ?? 0)}</p>
-          </div>
+    <AppShell showNav user={session}>
+      <AppHeader title="Admin" subtitle="Platform overview" backHref="/dashboard" />
+      <main className="relative px-5 pb-8">
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            ["Users", users.toString()],
+            ["Deals", stats._count.toString()],
+            ["GMV", formatNaira(stats._sum.amount ?? 0)],
+            ["Fees", formatNaira(stats._sum.feeAmount ?? 0)],
+          ].map(([label, value]) => (
+            <div key={label} className="glass rounded-[var(--app-radius)] p-4">
+              <p className="text-[10px] uppercase tracking-widest text-white/30">{label}</p>
+              <p className="mt-1 text-lg font-bold">{value}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <h2 className="text-lg font-semibold">Recent deals</h2>
-          </div>
-          <div className="divide-y divide-slate-100">
+        <section className="mt-6">
+          <p className="mb-3 text-sm font-semibold">Recent deals</p>
+          <div className="space-y-2">
             {deals.map((deal) => (
-              <div key={deal.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                <div>
-                  <p className="font-medium text-slate-900">{deal.title}</p>
-                  <p className="text-sm text-slate-600">
-                    {deal.seller.name} · {DEAL_TYPES[deal.type as keyof typeof DEAL_TYPES]?.label} ·{" "}
-                    {formatNaira(deal.amount)}
+              <Link
+                key={deal.id}
+                href={`/dashboard/deals/${deal.publicId}`}
+                className="flex items-center gap-3 glass rounded-[var(--app-radius)] p-3.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{deal.title}</p>
+                  <p className="text-[11px] text-white/40">
+                    {deal.seller.name} · {formatNaira(deal.amount)}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <StatusBadge status={deal.status} />
-                  <Link href={`/dashboard/deals/${deal.publicId}`} className="text-sm text-teal-700">
-                    View
-                  </Link>
-                </div>
-              </div>
+                <StatusBadge status={deal.status} size="xs" />
+                <ChevronRight className="h-4 w-4 text-white/20" />
+              </Link>
             ))}
           </div>
-        </div>
+        </section>
       </main>
-      <Footer />
-    </>
+    </AppShell>
   );
 }

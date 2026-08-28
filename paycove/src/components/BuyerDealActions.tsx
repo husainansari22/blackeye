@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CheckCircle2, MessageCircle } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatNaira } from "@/lib/utils";
 
@@ -33,56 +34,61 @@ export function BuyerDealActions({ deal }: { deal: Deal }) {
 
     setLoading(false);
     if (response.ok) {
-      setMessage(action === "confirm" ? "Thanks for confirming delivery." : "Dispute opened.");
+      setMessage(action === "confirm" ? "Delivery confirmed ✓" : "Dispute opened");
       router.refresh();
     }
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-sm text-slate-600">Deal amount</p>
-      <p className="text-2xl font-bold">{formatNaira(deal.amount)}</p>
-      <div className="mt-4">
+    <div className="animate-fade-up glass rounded-[var(--app-radius-xl)] p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-2xl font-bold">{formatNaira(deal.amount)}</p>
         <StatusBadge status={deal.status} />
       </div>
+      <p className="mt-1 text-sm text-white/45">{deal.title}</p>
 
       {deal.proofs.length > 0 && (
-        <div className="mt-6">
-          <p className="font-medium text-slate-900">Seller proof</p>
-          <ul className="mt-2 space-y-2 text-sm">
-            {deal.proofs.map((proof, index) => (
-              <li key={index}>
-                <a href={proof.url} target="_blank" className="text-teal-700 hover:underline">
-                  View {proof.type.toLowerCase()} proof
-                </a>
-              </li>
-            ))}
-          </ul>
+        <div className="mt-4 rounded-[var(--app-radius)] bg-white/4 p-3">
+          <p className="text-[11px] uppercase tracking-widest text-white/30">Seller proof</p>
+          {deal.proofs.map((proof, i) => (
+            <a
+              key={i}
+              href={proof.url}
+              target="_blank"
+              className="mt-2 block text-sm text-[#00e5b5]"
+            >
+              View delivery proof →
+            </a>
+          ))}
         </div>
       )}
 
       {["SHIPPED", "PAID", "DELIVERED"].includes(deal.status) && (
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-5 flex flex-col gap-2">
           <button
             type="button"
             disabled={loading}
             onClick={() => handleAction("confirm")}
-            className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white"
+            className="btn-primary gap-2"
           >
+            <CheckCircle2 className="h-4 w-4" />
             Confirm delivery
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => handleAction("dispute")}
-            className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700"
+            className="btn-ghost text-red-400"
           >
+            <MessageCircle className="h-4 w-4" />
             Open dispute
           </button>
         </div>
       )}
 
-      {message && <p className="mt-4 rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-800">{message}</p>}
+      {message && (
+        <p className="mt-4 text-center text-sm text-emerald-400">{message}</p>
+      )}
     </div>
   );
 }
@@ -95,7 +101,7 @@ export function PaymentSuccessVerifier({
   reference: string;
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState("Verifying payment...");
+  const [status, setStatus] = useState("Securing your payment...");
 
   useEffect(() => {
     async function verify() {
@@ -106,16 +112,23 @@ export function PaymentSuccessVerifier({
       });
 
       if (response.ok) {
-        setStatus("Payment successful. Funds are now held in escrow.");
-        router.replace(`/pay/${publicId}`);
-        router.refresh();
+        setStatus("Payment secured in escrow ✓");
+        setTimeout(() => {
+          router.replace(`/pay/${publicId}`);
+          router.refresh();
+        }, 1200);
       } else {
-        setStatus("Payment verification failed. Contact support.");
+        setStatus("Verification failed — contact support");
       }
     }
 
     verify();
   }, [publicId, reference, router]);
 
-  return <p className="text-center text-slate-600">{status}</p>;
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#00e5b5]/30 border-t-[#00e5b5]" />
+      <p className="text-sm text-white/50">{status}</p>
+    </div>
+  );
 }

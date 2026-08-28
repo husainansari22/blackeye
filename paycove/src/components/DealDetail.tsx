@@ -2,8 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Copy, Link2, Truck } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DEAL_TYPES } from "@/lib/constants";
+import { DEAL_COLORS, DEAL_ICON_MAP } from "@/lib/deal-icons";
 import { formatNaira } from "@/lib/utils";
 
 type Deal = {
@@ -27,6 +29,10 @@ export function DealActions({ deal }: { deal: Deal }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const payUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/pay/${deal.publicId}`
+      : `/pay/${deal.publicId}`;
 
   async function handleShip(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,123 +52,101 @@ export function DealActions({ deal }: { deal: Deal }) {
 
     setLoading(false);
     if (response.ok) {
-      setMessage("Delivery proof uploaded. Waiting for buyer confirmation.");
+      setMessage("Proof uploaded — waiting for buyer");
       router.refresh();
     }
   }
 
   async function copyLink() {
-    const url = `${window.location.origin}/pay/${deal.publicId}`;
-    await navigator.clipboard.writeText(url);
-    setMessage("Payment link copied to clipboard.");
+    await navigator.clipboard.writeText(payUrl);
+    setMessage("Link copied! Paste in WhatsApp or IG");
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        <p className="text-sm text-slate-600">Payment link</p>
-        <p className="mt-2 break-all font-mono text-sm text-slate-900">
-          {typeof window !== "undefined" ? `${window.location.origin}/pay/${deal.publicId}` : `/pay/${deal.publicId}`}
-        </p>
-        <button
-          type="button"
-          onClick={copyLink}
-          className="mt-4 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-        >
-          Copy link for WhatsApp / IG
+    <div className="space-y-3">
+      <div className="glass rounded-[var(--app-radius-lg)] p-4">
+        <div className="flex items-center gap-2 text-white/40">
+          <Link2 className="h-4 w-4" />
+          <span className="text-xs font-medium uppercase tracking-widest">Payment link</span>
+        </div>
+        <p className="mt-2 break-all font-mono text-[12px] text-white/60">{payUrl}</p>
+        <button type="button" onClick={copyLink} className="btn-primary mt-4 gap-2">
+          <Copy className="h-4 w-4" />
+          Copy for WhatsApp
         </button>
       </div>
 
       {["PAID", "IN_PROGRESS"].includes(deal.status) && (
-        <form onSubmit={handleShip} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-          <h3 className="font-semibold text-slate-900">Upload delivery proof</h3>
-          <input
-            name="trackingInfo"
-            placeholder="Tracking number or rider phone"
-            className="w-full rounded-xl border border-slate-200 px-4 py-3"
-          />
-          <input
-            name="proofUrl"
-            placeholder="Proof image URL"
-            className="w-full rounded-xl border border-slate-200 px-4 py-3"
-          />
-          <textarea
-            name="deliveryNote"
-            placeholder="Delivery notes"
-            className="w-full rounded-xl border border-slate-200 px-4 py-3"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Mark as shipped
+        <form onSubmit={handleShip} className="glass rounded-[var(--app-radius-lg)] p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Truck className="h-4 w-4 text-[#00e5b5]" />
+            <p className="text-sm font-semibold">Upload delivery proof</p>
+          </div>
+          <input name="trackingInfo" placeholder="Tracking / rider phone" className="app-input" />
+          <input name="proofUrl" placeholder="Proof image URL" className="app-input" />
+          <textarea name="deliveryNote" placeholder="Notes" rows={2} className="app-input resize-none" />
+          <button type="submit" disabled={loading} className="btn-ghost w-full">
+            {loading ? "Uploading..." : "Mark as shipped"}
           </button>
         </form>
       )}
 
-      {message && <p className="rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-800">{message}</p>}
+      {message && (
+        <p className="rounded-xl bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-400">
+          {message}
+        </p>
+      )}
     </div>
   );
 }
 
 export function DealSummary({ deal }: { deal: Deal }) {
+  const typeInfo = DEAL_TYPES[deal.type as keyof typeof DEAL_TYPES];
+  const Icon = DEAL_ICON_MAP[deal.type as keyof typeof DEAL_ICON_MAP];
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-slate-600">
-            {DEAL_TYPES[deal.type as keyof typeof DEAL_TYPES]?.icon}{" "}
-            {DEAL_TYPES[deal.type as keyof typeof DEAL_TYPES]?.label ?? deal.type}
-          </p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">{deal.title}</h1>
-          {deal.description && <p className="mt-2 text-slate-600">{deal.description}</p>}
+    <div className="glass rounded-[var(--app-radius-xl)] overflow-hidden">
+      <div className={`bg-gradient-to-br p-5 ${DEAL_COLORS[deal.type as keyof typeof DEAL_COLORS]}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
+            <Icon className="h-5 w-5 text-white/80" />
+          </div>
+          <StatusBadge status={deal.status} />
         </div>
-        <StatusBadge status={deal.status} />
+        <h1 className="mt-4 text-xl font-bold leading-tight">{deal.title}</h1>
+        {deal.description && (
+          <p className="mt-2 text-[13px] text-white/50">{deal.description}</p>
+        )}
+        <p className="mt-3 text-[11px] uppercase tracking-widest text-white/35">
+          {typeInfo?.label}
+        </p>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl bg-slate-50 p-4">
-          <p className="text-sm text-slate-600">Deal amount</p>
-          <p className="mt-1 font-semibold">{formatNaira(deal.amount)}</p>
-        </div>
-        <div className="rounded-xl bg-slate-50 p-4">
-          <p className="text-sm text-slate-600">PayCove fee (4%)</p>
-          <p className="mt-1 font-semibold">{formatNaira(deal.feeAmount)}</p>
-        </div>
-        <div className="rounded-xl bg-slate-50 p-4">
-          <p className="text-sm text-slate-600">You receive</p>
-          <p className="mt-1 font-semibold">{formatNaira(deal.sellerAmount)}</p>
-        </div>
+      <div className="grid grid-cols-3 divide-x divide-white/6 border-t border-white/6">
+        {[
+          ["Amount", formatNaira(deal.amount)],
+          ["Fee", formatNaira(deal.feeAmount)],
+          ["You get", formatNaira(deal.sellerAmount)],
+        ].map(([label, value]) => (
+          <div key={label} className="px-3 py-4 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-white/30">{label}</p>
+            <p className="mt-1 text-[13px] font-semibold">{value}</p>
+          </div>
+        ))}
       </div>
 
       {(deal.buyerName || deal.buyerEmail) && (
-        <div className="mt-6 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
-          <p className="font-medium text-slate-900">Buyer</p>
-          <p>{deal.buyerName}</p>
-          <p>{deal.buyerEmail}</p>
-        </div>
-      )}
-
-      {deal.proofs.length > 0 && (
-        <div className="mt-6">
-          <p className="font-medium text-slate-900">Proofs</p>
-          <ul className="mt-2 space-y-2 text-sm">
-            {deal.proofs.map((proof, index) => (
-              <li key={index}>
-                <a href={proof.url} className="text-teal-700 hover:underline" target="_blank">
-                  {proof.type}: {proof.url}
-                </a>
-              </li>
-            ))}
-          </ul>
+        <div className="border-t border-white/6 px-5 py-4">
+          <p className="text-[10px] uppercase tracking-widest text-white/30">Buyer</p>
+          <p className="mt-1 text-sm">{deal.buyerName}</p>
+          <p className="text-[12px] text-white/40">{deal.buyerEmail}</p>
         </div>
       )}
 
       {deal.disputes.length > 0 && (
-        <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-800">
-          <p className="font-medium">Open dispute</p>
-          <p>{deal.disputes[0].reason}</p>
+        <div className="border-t border-red-500/20 bg-red-500/5 px-5 py-4">
+          <p className="text-sm font-medium text-red-400">Dispute open</p>
+          <p className="mt-1 text-[12px] text-red-400/70">{deal.disputes[0].reason}</p>
         </div>
       )}
     </div>
