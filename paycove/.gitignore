@@ -40,4 +40,19 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# database
+/prisma/dev.db
+/prisma/dev.db-journal
+*.db
+*.db-journal
+
 /src/generated/prisma
+
+# prisma auto-skills
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+AGENTS.md
+CLAUDE.md
+
