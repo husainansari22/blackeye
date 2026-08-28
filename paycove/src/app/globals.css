@@ -10,7 +10,16 @@
   --app-accent: #00e5b5;
   --app-accent-dim: rgba(0, 229, 181, 0.15);
   --app-blue: #3b9eff;
-  --app-gradient: linear-gradient(135deg, #00e5b5 0%, #3b9eff 55%, #7c5cff 100%);
+  --app-green: #00ffcc;
+  --app-gradient: linear-gradient(135deg, #00ffcc 0%, #00e5b5 35%, #3b9eff 70%, #0088ff 100%);
+  --app-gradient-animated: linear-gradient(
+    270deg,
+    #00ffcc,
+    #00e5b5,
+    #3b9eff,
+    #0088ff,
+    #00ffcc
+  );
   --app-gradient-soft: linear-gradient(160deg, rgba(0, 229, 181, 0.12) 0%, rgba(59, 158, 255, 0.08) 50%, transparent 100%);
   --app-text: #f4f4f5;
   --app-text-muted: rgba(255, 255, 255, 0.5);
@@ -113,23 +122,23 @@ body {
   position: absolute;
   top: -20%;
   left: -20%;
-  width: 80%;
-  height: 60%;
-  background: radial-gradient(circle, rgba(0, 229, 181, 0.18) 0%, transparent 70%);
+  width: 90%;
+  height: 70%;
+  background: radial-gradient(circle, rgba(0, 255, 204, 0.22) 0%, transparent 70%);
   filter: blur(60px);
-  animation: mesh-drift 12s ease-in-out infinite alternate;
+  animation: mesh-drift 10s ease-in-out infinite alternate;
 }
 
 .mesh-bg::after {
   content: "";
   position: absolute;
-  top: 10%;
-  right: -30%;
-  width: 70%;
-  height: 50%;
-  background: radial-gradient(circle, rgba(59, 158, 255, 0.14) 0%, transparent 70%);
+  top: 5%;
+  right: -35%;
+  width: 80%;
+  height: 55%;
+  background: radial-gradient(circle, rgba(59, 158, 255, 0.2) 0%, transparent 70%);
   filter: blur(70px);
-  animation: mesh-drift 15s ease-in-out infinite alternate-reverse;
+  animation: mesh-drift 13s ease-in-out infinite alternate-reverse;
 }
 
 @keyframes mesh-drift {
@@ -317,4 +326,243 @@ body {
 
 .ticker-track:hover {
   animation-play-state: paused;
+}
+
+/* ─── Animated gradient text ─── */
+.text-gradient-animated {
+  background: var(--app-gradient-animated);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-flow 4s ease infinite;
+}
+
+@keyframes gradient-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ─── Logo glow pulse ─── */
+.logo-glow {
+  animation: logo-pulse 3s ease-in-out infinite;
+}
+
+@keyframes logo-pulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 229, 181, 0.4)); }
+  50% { filter: drop-shadow(0 0 16px rgba(59, 158, 255, 0.5)); }
+}
+
+/* ─── Hero flow card ─── */
+.hero-flow {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-flow-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: 28px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 255, 204, 0.35),
+    rgba(59, 158, 255, 0.2),
+    rgba(0, 136, 255, 0.35),
+    rgba(0, 255, 204, 0.35)
+  );
+  background-size: 300% 300%;
+  animation: gradient-flow 5s ease infinite;
+  opacity: 0.45;
+  z-index: 0;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  padding: 1px;
+}
+
+.shield-orbit .orbit-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 229, 181, 0.25);
+}
+
+.orbit-ring-1 {
+  animation: orbit-spin 6s linear infinite;
+}
+
+.orbit-ring-2 {
+  inset: -6px;
+  border-color: rgba(59, 158, 255, 0.2);
+  animation: orbit-spin 9s linear infinite reverse;
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.flow-node-active {
+  box-shadow: 0 0 20px rgba(0, 229, 181, 0.25);
+}
+
+.flow-progress {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flow-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer-slide 2s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle-1 {
+  width: 6px;
+  height: 6px;
+  background: #00e5b5;
+  top: 20%;
+  right: 15%;
+  animation: float-particle 5s ease-in-out infinite;
+  box-shadow: 0 0 10px #00e5b5;
+}
+
+.particle-2 {
+  width: 4px;
+  height: 4px;
+  background: #3b9eff;
+  bottom: 30%;
+  left: 10%;
+  animation: float-particle 7s ease-in-out infinite 1s;
+  box-shadow: 0 0 8px #3b9eff;
+}
+
+.particle-3 {
+  width: 5px;
+  height: 5px;
+  background: #00ffcc;
+  top: 60%;
+  right: 8%;
+  animation: float-particle 6s ease-in-out infinite 2s;
+  box-shadow: 0 0 10px #00ffcc;
+}
+
+@keyframes float-particle {
+  0%, 100% { transform: translate(0, 0); opacity: 0.6; }
+  33% { transform: translate(8px, -12px); opacity: 1; }
+  66% { transform: translate(-6px, 8px); opacity: 0.8; }
+}
+
+/* ─── Motion feed marquee ─── */
+@keyframes feed-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.motion-feed-track {
+  animation: feed-scroll 35s linear infinite;
+  width: max-content;
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e5b5;
+  box-shadow: 0 0 6px #00e5b5;
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+.motion-pill {
+  animation: pill-bob 3s ease-in-out infinite;
+}
+
+.motion-pill:nth-child(odd) {
+  animation-delay: 0.5s;
+}
+
+@keyframes pill-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* ─── Deal type marquee ─── */
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.deal-marquee-track {
+  animation: marquee-scroll 40s linear infinite;
+  width: max-content;
+}
+
+.marquee-card {
+  animation: card-float 4s ease-in-out infinite;
+}
+
+.marquee-card:nth-child(2n) {
+  animation-delay: 0.7s;
+}
+
+.marquee-card:nth-child(3n) {
+  animation-delay: 1.4s;
+}
+
+@keyframes card-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ─── Flow steps pulse dot ─── */
+.step-pulse {
+  animation: pulse-live 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px #00e5b5;
+}
+
+/* ─── CTA shimmer button ─── */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 60%
+  );
+  animation: btn-shine 3s ease-in-out infinite;
+}
+
+@keyframes btn-shine {
+  0%, 100% { transform: translateX(-120%); }
+  50% { transform: translateX(120%); }
+}
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
