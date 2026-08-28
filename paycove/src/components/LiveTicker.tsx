@@ -27,7 +27,10 @@ export function LiveTicker() {
               key={i}
               className="whitespace-nowrap text-[13px] text-white/55"
             >
-              {item}
+              <span className="mr-8 inline-flex items-center gap-2">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                {item}
+              </span>
             </span>
           ))}
         </div>

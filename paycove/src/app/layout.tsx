@@ -31,13 +31,46 @@ export const viewport: Viewport = {
   themeColor: "#060608",
 };
 
+/* Critical CSS — ensures dark app shell loads even if external stylesheet is delayed */
+const criticalCss = `
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #060608 !important;
+    color: #f4f4f5 !important;
+    font-family: system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app-viewport { min-height: 100dvh; background: #060608; }
+  .app-frame { width: 100%; max-width: 430px; margin: 0 auto; min-height: 100dvh; background: #060608; }
+  .glass {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+  }
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 16px; border-radius: 16px; border: none;
+    font-weight: 600; font-size: 15px; color: #060608;
+    background: linear-gradient(135deg, #00e5b5, #3b9eff);
+  }
+  .text-gradient {
+    background: linear-gradient(135deg, #00e5b5, #3b9eff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: criticalCss }} />
+      </head>
+      <body className="min-h-full bg-[#060608] text-[#f4f4f5]">{children}</body>
     </html>
   );
 }
