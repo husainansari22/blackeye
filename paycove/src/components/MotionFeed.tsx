@@ -1,12 +1,16 @@
-const FEED = [
-  { text: "Ada · iPhone 15", amount: "₦85,000", type: "paid" },
-  { text: "Lagos Fashion Hub", amount: "Secured", type: "hold" },
-  { text: "Surulere rent", amount: "₦500k", type: "hold" },
-  { text: "Wedding caterer", amount: "Released", type: "done" },
-  { text: "Import batch", amount: "₦420k", type: "done" },
-  { text: "Abuja car deal", amount: "₦2.1M", type: "paid" },
-  { text: "IG wig order", amount: "Confirmed", type: "done" },
-  { text: "Tailor — Milestone", amount: "₦45k", type: "hold" },
+const SELLERS = [
+  { name: "iPhone sellers", tag: "Active", type: "paid" },
+  { name: "Gadget sellers", tag: "Protected", type: "hold" },
+  { name: "Fashion vendors", tag: "Active", type: "paid" },
+  { name: "Wig sellers", tag: "Protected", type: "hold" },
+  { name: "Sneaker resellers", tag: "Active", type: "done" },
+  { name: "Car dealers", tag: "Protected", type: "hold" },
+  { name: "Rent agents", tag: "Active", type: "paid" },
+  { name: "Import sellers", tag: "Protected", type: "hold" },
+  { name: "Wedding vendors", tag: "Active", type: "done" },
+  { name: "Tailors & services", tag: "Protected", type: "hold" },
+  { name: "Skincare vendors", tag: "Active", type: "paid" },
+  { name: "Electronics shops", tag: "Protected", type: "done" },
 ];
 
 const TYPE_STYLES = {
@@ -16,7 +20,7 @@ const TYPE_STYLES = {
 };
 
 export function MotionFeed() {
-  const items = [...FEED, ...FEED];
+  const items = [...SELLERS, ...SELLERS];
 
   return (
     <div className="motion-feed -mx-5 overflow-hidden py-1">
@@ -27,8 +31,10 @@ export function MotionFeed() {
             className={`motion-pill flex shrink-0 items-center gap-2.5 rounded-full border px-3.5 py-2 ${TYPE_STYLES[item.type as keyof typeof TYPE_STYLES]}`}
           >
             <span className="pill-dot" />
-            <span className="text-[12px] font-medium text-white/70">{item.text}</span>
-            <span className="text-[11px] font-semibold text-[#00e5b5]">{item.amount}</span>
+            <span className="text-[12px] font-medium text-white/80">{item.name}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#00e5b5]/80">
+              {item.tag}
+            </span>
           </div>
         ))}
       </div>

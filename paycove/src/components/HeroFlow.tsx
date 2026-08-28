@@ -4,14 +4,23 @@ import { useEffect, useState } from "react";
 import { Lock, ShieldCheck } from "lucide-react";
 
 const FLOW_STEPS = [
-  { label: "Buyer pays", amount: "₦85,000", color: "from-[#3b9eff]/40 to-[#3b9eff]/10" },
-  { label: "Held safe", amount: "Escrow", color: "from-[#00e5b5]/40 to-[#00e5b5]/10" },
-  { label: "Released", amount: "₦81,600", color: "from-[#00e5b5]/30 to-[#3b9eff]/10" },
+  { label: "Buyer pays", amount: "Via your link", color: "from-[#3b9eff]/40 to-[#3b9eff]/10" },
+  { label: "Held safe", amount: "In escrow", color: "from-[#00e5b5]/40 to-[#00e5b5]/10" },
+  { label: "Released", amount: "Seller paid", color: "from-[#00e5b5]/30 to-[#3b9eff]/10" },
+];
+
+const SELLER_ROTATION = [
+  "iPhone sellers",
+  "Gadget sellers",
+  "Fashion vendors",
+  "Car dealers",
+  "Import sellers",
 ];
 
 export function HeroFlow() {
   const [active, setActive] = useState(0);
   const [counter, setCounter] = useState(1840000);
+  const [sellerIdx, setSellerIdx] = useState(0);
 
   useEffect(() => {
     const stepTimer = setInterval(() => {
@@ -23,6 +32,7 @@ export function HeroFlow() {
   useEffect(() => {
     const counterTimer = setInterval(() => {
       setCounter((prev) => prev + Math.floor(Math.random() * 8000) + 2000);
+      setSellerIdx((prev) => (prev + 1) % SELLER_ROTATION.length);
     }, 3200);
     return () => clearInterval(counterTimer);
   }, []);
@@ -41,7 +51,12 @@ export function HeroFlow() {
             <p className="mt-1 font-mono text-2xl font-bold tracking-tight text-white">
               ₦{(counter / 1000000).toFixed(1)}M+
             </p>
-            <p className="text-[11px] text-white/40">protected on PayCove</p>
+            <p className="text-[11px] text-white/40">
+              protected for{" "}
+              <span className="font-medium text-[#00e5b5]/90 transition-all duration-500">
+                {SELLER_ROTATION[sellerIdx]}
+              </span>
+            </p>
           </div>
 
           <div className="shield-orbit relative flex h-16 w-16 items-center justify-center">
