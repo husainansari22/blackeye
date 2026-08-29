@@ -352,10 +352,14 @@
 
     A.createAd = async function (_user, draft) {
       try {
-        // Token may live only in httponly cookie; request() still sends credentials
-        if (!Api.getToken() && !usingApi()) {
-          return { ok: false, error: 'You are offline from the server. Log out and sign in again, then retry.' };
+        let online = false;
+        try {
+          online = await Api.isAvailable();
+        } catch (e) {}
+        if (!online) {
+          return { ok: false, error: 'Cannot reach the server. Check your connection and try again.', code: 'offline' };
         }
+        await ensureApiSession(Api);
         const priceRaw = draft && draft.price;
         const priceNum = Number(String(priceRaw ?? '').replace(/,/g, '.'));
         if (!Number.isFinite(priceNum) || priceNum <= 0) {
@@ -409,6 +413,9 @@
           message: res.message || '',
         };
       } catch (e) {
+        if (e && e.status === 401) {
+          return { ok: false, error: 'Session expired. Log out, sign in again, then retry.', code: 'auth' };
+        }
         return { ok: false, error: e.message || 'Failed to create listing', code: e.code || '' };
       }
     };

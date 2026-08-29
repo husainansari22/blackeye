@@ -1741,7 +1741,11 @@
         if (typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
           window.AcctventaApiSync.patchAcctventaForApi();
         }
-        if (window.AcctventaApiSync.usingApi() || (window.AcctventaApi && window.AcctventaApi.getToken())) {
+        const Api = window.AcctventaApi;
+        if (Api && window.AcctventaApiSync.ensureApiSession) {
+          await window.AcctventaApiSync.ensureApiSession(Api);
+        }
+        if (window.AcctventaApiSync.hydrateFromApi) {
           await window.AcctventaApiSync.hydrateFromApi();
         }
       }
@@ -1875,8 +1879,15 @@
     }
     // submit — must hit MySQL when logged into API (never localStorage-only)
     const u = refreshUser();
-    if (window.AcctventaApiSync && typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
-      window.AcctventaApiSync.patchAcctventaForApi();
+    if (window.AcctventaApiSync) {
+      if (typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
+        window.AcctventaApiSync.patchAcctventaForApi();
+      }
+      if (window.AcctventaApiSync.ensureApiSession && window.AcctventaApi) {
+        try {
+          await window.AcctventaApiSync.ensureApiSession(window.AcctventaApi);
+        } catch (_) {}
+      }
     }
     // Re-read price from review step so it always matches what the seller entered
     const finalPrice = parseListingPrice(sellDraft.price != null ? sellDraft.price : document.getElementById('wizardPrice')?.value);
@@ -2955,16 +2966,22 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (window.AcctventaApiSync) {
-      // Patch createAd/buy onto Acctventa before any Sell click (avoids localStorage-only ads)
       try {
         const Api = window.AcctventaApi;
-        let shouldPatch =
-          typeof window.AcctventaApiSync.patchAcctventaForApi === 'function' &&
-          (window.AcctventaApiSync.usingApi() || (Api && Api.getToken && Api.getToken()));
-        if (!shouldPatch && Api && window.AcctventaApiSync.ensureApiSession) {
-          shouldPatch = await window.AcctventaApiSync.ensureApiSession(Api);
+        let online = false;
+        if (Api) {
+          try {
+            online = await Api.isAvailable();
+          } catch (e) {}
         }
-        if (shouldPatch) window.AcctventaApiSync.patchAcctventaForApi();
+        if (online && Api) {
+          if (window.AcctventaApiSync.ensureApiSession) {
+            await window.AcctventaApiSync.ensureApiSession(Api);
+          }
+          if (typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
+            window.AcctventaApiSync.patchAcctventaForApi();
+          }
+        }
       } catch (e) {}
       const hydrated = await window.AcctventaApiSync.hydrateFromApi();
       if (!hydrated && window.AcctventaApiSync.hydratePublicMarket) {

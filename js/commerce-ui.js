@@ -41,7 +41,7 @@
   function usingApi() {
     if (global.AcctventaApi && global.AcctventaApi.hasApiSession) {
       try {
-        return global.AcctventaApi.hasApiSession() && localStorage.getItem('acctventa_backend') === 'api';
+        return global.AcctventaApi.hasApiSession();
       } catch (e) {}
     }
     return !!(global.AcctventaApiSync && global.AcctventaApiSync.usingApi && global.AcctventaApiSync.usingApi());

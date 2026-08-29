@@ -584,14 +584,10 @@
   }
 
   function createAd(user, draft) {
-    // Never write ads only to localStorage when the user is on the live API
+    // Prefer live MySQL API whenever the client is loaded (cookie sessions work without JS token).
     try {
-      if (
-        global.AcctventaApi &&
-        (global.AcctventaApi.getToken() ||
-          (global.AcctventaApiSync && global.AcctventaApiSync.usingApi()))
-      ) {
-        if (global.AcctventaApiSync && typeof global.AcctventaApiSync.patchAcctventaForApi === 'function') {
+      if (global.AcctventaApi && global.AcctventaApiSync) {
+        if (typeof global.AcctventaApiSync.patchAcctventaForApi === 'function') {
           global.AcctventaApiSync.patchAcctventaForApi();
         }
         if (global.Acctventa && global.Acctventa.__apiPatched && global.Acctventa.createAd !== createAd) {

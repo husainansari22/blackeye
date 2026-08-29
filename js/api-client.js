@@ -112,9 +112,8 @@
   function hasApiSession() {
     try {
       if (getToken()) return true;
-      if (localStorage.getItem('acctventa_backend') === 'api' && localStorage.getItem('isLoggedIn') === 'true') {
-        return true;
-      }
+      if (localStorage.getItem('isLoggedIn') === 'true') return true;
+      if (localStorage.getItem('acctventa_backend') === 'api') return true;
     } catch (e) {}
     return false;
   }
