@@ -61,6 +61,21 @@ upload_one() {
     return 1
   fi
   echo "OK $rel"
+
+  # Verify file landed (TUS can report success before file is visible)
+  local listed
+  listed=$(curl -sS -G "https://developers.hostinger.com/api/hosting/v1/accounts/${USERNAME}/domains/${DOMAIN}/files" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H 'Accept: application/json' \
+    --data-urlencode "path=/${rel%/*}" 2>/dev/null || true)
+  local base="${rel##*/}"
+  if ! python3 -c "import json,sys; d=json.load(sys.stdin); names=[i.get('name') for i in d.get('items',[])]; sys.exit(0 if '${base}' in names else 1)" <<<"$listed" 2>/dev/null; then
+    echo "WARN: $rel not visible in file listing yet — retrying once" >&2
+    sleep 2
+    upload_one "$rel" "$file" && return 0
+    echo "VERIFY FAILED: $rel missing after upload" >&2
+    return 1
+  fi
 }
 
 ROOT="${1:-/workspace}"
