@@ -335,9 +335,7 @@ input[type=range]{width:100%;margin-top:4px}
     <h1>Avatar Stream</h1>
     <p>Full-body AI transformation · RTX PRO 6000</p>
     <p style="color:#94a3b8;font-size:.85rem;margin-bottom:12px">
-      Webcam needs HTTPS →
-      <strong>https://live.kelvinoz.com:20002</strong>
-      (accept certificate warning once)
+      Webcam works at <strong>https://live.kelvinoz.com</strong>
     </p>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
     <button class="btn-go" style="width:100%" onclick="doLogin()">Enter</button>
@@ -386,6 +384,10 @@ input[type=range]{width:100%;margin-top:4px}
 let TOKEN=localStorage.getItem("avatar_token")||"";
 let running=false, busy=false, loopId=null, stream=null, videoMode=false;
 const FPS=30, INTERVAL=1000/FPS;
+const HTTPS_URL="https://live.kelvinoz.com";
+if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
+  location.replace(HTTPS_URL+location.pathname+location.search);
+}
 
 async function doLogin(){
   const pw=document.getElementById("pw").value;
@@ -398,9 +400,9 @@ async function doLogin(){
 function showApp(){
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("app-view").classList.remove("hidden");
-  if(!window.isSecureContext && location.protocol!=="https:"){
+  if(!window.isSecureContext){
     document.getElementById("cam-banner").innerHTML=
-      "📷 For webcam: open <a href='https://live.kelvinoz.com:20002' style='color:#93c5fd'>https://live.kelvinoz.com:20002</a> and accept the certificate — or use <b>Video file</b> below.";
+      "📷 For webcam: open <a href='"+HTTPS_URL+"' style='color:#93c5fd'>"+HTTPS_URL+"</a> — or use <b>Video file</b> below.";
     document.getElementById("cam-banner").classList.remove("hidden");
   }
   pollStats(); setInterval(pollStats,2000);
@@ -419,7 +421,7 @@ async function pollStats(){
 
 async function getCam(){
   if(!navigator.mediaDevices?.getUserMedia){
-    throw new Error("Camera blocked. Open https://live.kelvinoz.com:20002 (accept certificate) OR use Video file below.");
+    throw new Error("Camera blocked. Open "+HTTPS_URL+" OR use Video file below.");
   }
   return navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720}},audio:false});
 }
