@@ -131,13 +131,19 @@ async def obs_page(request: Request, token: str = Depends(require_token)):
 
 
 @app.post("/api/login")
-async def login(body: LoginRequest):
+async def login(body: LoginRequest, request: Request):
     if not verify_password(body.password):
         raise HTTPException(status_code=401, detail="Invalid password")
     token = create_access_token()
+    base = os.environ.get("VID2VID_BASE_URL")
+    if not base:
+        base = str(request.base_url).rstrip("/")
+    elif request.headers.get("x-forwarded-host"):
+        scheme = request.headers.get("x-forwarded-proto", "https")
+        base = f"{scheme}://{request.headers['x-forwarded-host']}"
     return {
         "token": token,
-        "obs_url": obs_url(PUBLIC_BASE_URL, token),
+        "obs_url": obs_url(base, token),
         "redirect": f"/?token={token}",
     }
 
