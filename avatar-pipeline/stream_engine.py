@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import logging
 import os
 import sys
@@ -20,9 +21,10 @@ STREAM_ROOT = Path(__file__).resolve().parent / "StreamDiffusion"
 if STREAM_ROOT.exists():
     sys.path.insert(0, str(STREAM_ROOT))
 
-FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "512"))
+FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "384"))
 ENGINE_DIR = os.environ.get("STREAM_ENGINES", str(Path(__file__).resolve().parent / "engines"))
 ACCELERATION = os.environ.get("STREAM_ACCEL", "tensorrt")  # tensorrt | xformers | none
+ACCEL_FILE = Path(__file__).resolve().parent / ".stream_accel"
 
 
 def _color_transfer(ref_rgb: np.ndarray, src_rgb: np.ndarray, amount: float = 0.55) -> np.ndarray:
@@ -40,6 +42,14 @@ def _color_transfer(ref_rgb: np.ndarray, src_rgb: np.ndarray, amount: float = 0.
     return blended
 
 
+def _accel_candidates(preferred: str) -> list[str]:
+    order: list[str] = []
+    for accel in (preferred, ACCELERATION, "tensorrt", "xformers", "none"):
+        if accel and accel not in order:
+            order.append(accel)
+    return order
+
+
 class StreamAvatarEngine:
     """SD-Turbo via StreamDiffusion — TensorRT when available."""
 
@@ -54,28 +64,22 @@ class StreamAvatarEngine:
         self._times: list[float] = []
         self.prompt = "sharp portrait photo, detailed face, cinematic lighting, high quality"
         self.negative = "blurry, low quality, distorted, deformed, ugly"
-        self.strength = 0.45  # mapped to stream delta at prepare time
+        self.strength = 0.45
         self.color_amount = 0.55
         self.mode = "stream-turbo"
-        self.acceleration = ACCELERATION
+        accel = ACCELERATION
+        if ACCEL_FILE.exists():
+            accel = ACCEL_FILE.read_text().strip() or accel
+        self.acceleration = accel
 
-    def load(self) -> None:
-        if self.ready:
-            return
+    def _create_stream(self, accel: str):
         from utils.wrapper import StreamDiffusionWrapper  # StreamDiffusion repo
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
         dtype = torch.float16 if device == "cuda" else torch.float32
-        accel = self.acceleration
-        logger.info(
-            "Loading StreamDiffusion SD-Turbo (%spx, accel=%s)...",
-            FRAME_SIZE,
-            accel,
-        )
-
-        self._stream = StreamDiffusionWrapper(
+        return StreamDiffusionWrapper(
             model_id_or_path="stabilityai/sd-turbo",
-            t_index_list=[35, 45],
+            t_index_list=[45],
             frame_buffer_size=1,
             width=FRAME_SIZE,
             height=FRAME_SIZE,
@@ -91,15 +95,44 @@ class StreamAvatarEngine:
             device=device,
             dtype=dtype,
         )
-        self._stream.prepare(
-            prompt=self.prompt,
-            negative_prompt=self.negative,
-            num_inference_steps=50,
-            guidance_scale=1.0,
-            delta=0.5,
-        )
-        self.ready = True
-        logger.info("StreamDiffusion ready (accel=%s)", accel)
+
+    def load(self) -> None:
+        if self.ready:
+            return
+
+        preferred = self.acceleration
+        last_exc: Optional[Exception] = None
+
+        for accel in _accel_candidates(preferred):
+            try:
+                logger.info(
+                    "Loading StreamDiffusion SD-Turbo (%spx, accel=%s)...",
+                    FRAME_SIZE,
+                    accel,
+                )
+                stream = self._create_stream(accel)
+                stream.prepare(
+                    prompt=self.prompt,
+                    negative_prompt=self.negative,
+                    num_inference_steps=50,
+                    guidance_scale=1.0,
+                    delta=0.5,
+                )
+                self._stream = stream
+                self.acceleration = accel
+                self.ready = True
+                ACCEL_FILE.write_text(accel)
+                logger.info("StreamDiffusion ready (accel=%s)", accel)
+                return
+            except Exception as exc:
+                last_exc = exc
+                logger.warning("StreamDiffusion accel=%s failed: %s", accel, exc)
+                self._stream = None
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+
+        raise RuntimeError(f"StreamDiffusion failed for all accelerations: {last_exc}")
 
     def set_reference(self, image: Optional[Image.Image]) -> None:
         with self._lock:
