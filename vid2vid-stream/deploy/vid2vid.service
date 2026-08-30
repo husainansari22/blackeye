@@ -8,7 +8,7 @@ User=ubuntu
 Group=ubuntu
 WorkingDirectory=/opt/vid2vid-stream
 Environment=VID2VID_PASSWORD=@535846.oZ
-Environment=VID2VID_BASE_URL=https://live.kelvinoz.com
+Environment=VID2VID_BASE_URL=http://50.35.188.73:20001
 Environment=HF_HOME=/opt/vid2vid-stream/.cache/huggingface
 Environment=TRANSFORMERS_CACHE=/opt/vid2vid-stream/.cache/huggingface
 Environment=HF_HUB_ENABLE_HF_TRANSFER=1

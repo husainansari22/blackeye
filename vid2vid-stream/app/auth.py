@@ -6,7 +6,6 @@ import hashlib
 import hmac
 import os
 import secrets
-import time
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
@@ -45,3 +44,15 @@ def verify_token(token: str) -> bool:
 
 def obs_url(base: str, token: str) -> str:
     return f"{base.rstrip('/')}/obs?token={token}"
+
+
+def request_base_url(request) -> str:
+    """Build public base URL from Host / proxy headers."""
+    host = request.headers.get("host")
+    scheme = request.headers.get("x-forwarded-proto") or request.url.scheme
+    if host:
+        return f"{scheme}://{host}".rstrip("/")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_host:
+        return f"{scheme}://{forwarded_host}".rstrip("/")
+    return str(request.base_url).rstrip("/")

@@ -10,15 +10,12 @@ let stream = null;
 let running = false;
 let frameLoop = null;
 
-function authHeaders() {
-  return { Authorization: `Bearer ${token}` };
-}
-
 async function refreshStats() {
   try {
     const res = await fetch(`/api/status?token=${encodeURIComponent(token)}`);
     const data = await res.json();
-    statsEl.textContent = `GPU: ${data.device} | FPS: ${data.fps} | Latency: ${data.latency_ms}ms | Model: ${data.model_loaded ? "ready" : "loading"}`;
+    const ref = data.has_reference ? "reference" : "turbo";
+    statsEl.textContent = `GPU: ${data.device} | Mode: ${ref} | FPS: ${data.fps} | Latency: ${data.latency_ms}ms | Model: ${data.model_loaded ? "ready" : "loading"}`;
   } catch (_) {}
 }
 
@@ -33,6 +30,7 @@ function getSettingsPayload() {
     steps: parseInt(document.getElementById("steps").value, 10),
     width: parseInt(document.getElementById("width").value, 10),
     height: parseInt(document.getElementById("height").value, 10),
+    reference_strength: parseFloat(document.getElementById("reference-strength").value),
   };
 }
 
@@ -41,6 +39,9 @@ document.getElementById("strength").addEventListener("input", (e) => {
 });
 document.getElementById("steps").addEventListener("input", (e) => {
   document.getElementById("steps-val").textContent = e.target.value;
+});
+document.getElementById("reference-strength").addEventListener("input", (e) => {
+  document.getElementById("ref-strength-val").textContent = e.target.value;
 });
 
 document.getElementById("apply-settings").addEventListener("click", async () => {
@@ -55,6 +56,69 @@ document.getElementById("copy-obs").addEventListener("click", async () => {
   const input = document.getElementById("obs-url");
   await navigator.clipboard.writeText(input.value);
 });
+
+function showReferencePreview(hasImage) {
+  document.getElementById("reference-preview").classList.toggle("hidden", !hasImage);
+  document.getElementById("reference-empty").classList.toggle("hidden", hasImage);
+  document.getElementById("clear-reference").disabled = !hasImage;
+}
+
+async function loadReferencePreview() {
+  const res = await fetch(`/api/reference-image?token=${encodeURIComponent(token)}`);
+  if (!res.ok) {
+    showReferencePreview(false);
+    return;
+  }
+  const blob = await res.blob();
+  document.getElementById("reference-preview").src = URL.createObjectURL(blob);
+  showReferencePreview(true);
+}
+
+document.getElementById("upload-reference").addEventListener("click", () => {
+  document.getElementById("reference-file").click();
+});
+
+document.getElementById("reference-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const form = new FormData();
+  form.append("file", file);
+
+  const btn = document.getElementById("upload-reference");
+  btn.disabled = true;
+  btn.textContent = "Uploading…";
+
+  try {
+    const res = await fetch(`/api/reference-image?token=${encodeURIComponent(token)}`, {
+      method: "POST",
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Upload failed");
+    await loadReferencePreview();
+    await fetch(`/api/settings?token=${encodeURIComponent(token)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(getSettingsPayload()),
+    });
+    alert("Reference photo saved. Click Start AI stream to transform your webcam toward this look.");
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Upload reference photo";
+    e.target.value = "";
+  }
+});
+
+document.getElementById("clear-reference").addEventListener("click", async () => {
+  await fetch(`/api/reference-image?token=${encodeURIComponent(token)}`, { method: "DELETE" });
+  document.getElementById("reference-preview").removeAttribute("src");
+  showReferencePreview(false);
+});
+
+loadReferencePreview();
 
 function drawOutputFromBlob(blob) {
   createImageBitmap(blob).then((bitmap) => {
@@ -91,7 +155,7 @@ async function startWebSocket() {
         blob.arrayBuffer().then((buf) => ws.send(buf));
       }
     }, "image/jpeg", 0.75);
-  }, 120);
+  }, 150);
 
   ws.onmessage = (event) => {
     if (typeof event.data !== "string") {

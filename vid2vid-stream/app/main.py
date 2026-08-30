@@ -13,10 +13,11 @@ from typing import Any
 
 import cv2
 import numpy as np
+from PIL import Image
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from aiortc.contrib.media import MediaRelay
 from av import VideoFrame
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -24,7 +25,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from starlette.websockets import WebSocketState
 
-from app.auth import create_access_token, obs_url, verify_password, verify_token
+from app.auth import create_access_token, obs_url, request_base_url, verify_password, verify_token
 from app.pipeline import PipelineSettings, pipeline
 
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +35,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 
-PUBLIC_BASE_URL = os.environ.get("VID2VID_BASE_URL", "https://live.kelvinoz.com")
+PUBLIC_BASE_URL = os.environ.get("VID2VID_BASE_URL", "http://50.35.188.73:20001")
 
 latest_output_jpeg: bytes | None = None
 latest_output_lock = asyncio.Lock()
@@ -55,6 +56,7 @@ class SettingsUpdate(BaseModel):
     steps: int | None = Field(default=None, ge=1, le=8)
     width: int | None = Field(default=None, ge=256, le=1024)
     height: int | None = Field(default=None, ge=256, le=1024)
+    reference_strength: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class OfferRequest(BaseModel):
@@ -112,12 +114,13 @@ async def decode_jpeg(data: bytes) -> np.ndarray:
 async def index(request: Request, token: str | None = None):
     if not token or not verify_token(token):
         return templates.TemplateResponse("login.html", {"request": request})
+    base = request_base_url(request)
     return templates.TemplateResponse(
         "studio.html",
         {
             "request": request,
             "token": token,
-            "obs_url": obs_url(PUBLIC_BASE_URL, token),
+            "obs_url": obs_url(base, token),
         },
     )
 
@@ -135,12 +138,7 @@ async def login(body: LoginRequest, request: Request):
     if not verify_password(body.password):
         raise HTTPException(status_code=401, detail="Invalid password")
     token = create_access_token()
-    base = os.environ.get("VID2VID_BASE_URL")
-    if not base:
-        base = str(request.base_url).rstrip("/")
-    elif request.headers.get("x-forwarded-host"):
-        scheme = request.headers.get("x-forwarded-proto", "https")
-        base = f"{scheme}://{request.headers['x-forwarded-host']}"
+    base = request_base_url(request)
     return {
         "token": token,
         "obs_url": obs_url(base, token),
@@ -158,6 +156,8 @@ async def status(token: str = Depends(require_token)):
         "active_sessions": len(active_sessions),
         "settings": pipeline.settings.__dict__,
         "last_error": pipeline.stats.last_error,
+        "has_reference": pipeline.stats.has_reference,
+        "mode": pipeline.stats.mode,
     }
 
 
@@ -165,6 +165,50 @@ async def status(token: str = Depends(require_token)):
 async def update_settings(body: SettingsUpdate, token: str = Depends(require_token)):
     updated = pipeline.update_settings(**body.model_dump(exclude_none=True))
     return updated.__dict__
+
+
+@app.post("/api/reference-image")
+async def upload_reference_image(
+    token: str = Depends(require_token),
+    file: UploadFile = File(...),
+):
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp", "image/jpg"}:
+        raise HTTPException(status_code=400, detail="Upload a JPG, PNG, or WebP image")
+
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be under 10 MB")
+
+    arr = np.frombuffer(data, dtype=np.uint8)
+    frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if frame is None:
+        raise HTTPException(status_code=400, detail="Could not read image file")
+
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(rgb)
+    pipeline.set_reference_image(image)
+    asyncio.create_task(pipeline.ensure_ip_loaded())
+
+    return {
+        "ok": True,
+        "has_reference": True,
+        "mode": "reference",
+        "message": "Reference photo saved. Start streaming to transform toward this look.",
+    }
+
+
+@app.get("/api/reference-image")
+async def get_reference_image(token: str = Depends(require_token)):
+    preview = pipeline.get_reference_preview()
+    if not preview:
+        raise HTTPException(status_code=404, detail="No reference photo uploaded")
+    return Response(content=preview, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.delete("/api/reference-image")
+async def clear_reference_image(token: str = Depends(require_token)):
+    pipeline.set_reference_image(None)
+    return {"ok": True, "has_reference": False, "mode": "turbo"}
 
 
 @app.get("/api/output.jpg")
