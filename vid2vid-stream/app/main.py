@@ -67,7 +67,17 @@ class OfferRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    asyncio.create_task(pipeline.ensure_loaded())
+    async def _load():
+        try:
+            await pipeline.ensure_loaded()
+            if pipeline.stats.has_reference:
+                await pipeline.ensure_ip_loaded()
+            logger.info("Models ready on %s", pipeline.stats.device)
+        except Exception as exc:
+            pipeline.stats.last_error = str(exc)
+            logger.exception("Model load failed at startup")
+
+    asyncio.create_task(_load())
     yield
     coros = [pc.close() for pc in pcs]
     if coros:
@@ -347,6 +357,20 @@ async def webrtc_offer(body: OfferRequest):
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
     return JSONResponse({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type})
+
+
+@app.get("/api/warmup")
+async def warmup(token: str = Depends(require_token)):
+    """Pre-load AI models before streaming."""
+    try:
+        if pipeline.stats.has_reference:
+            await pipeline.ensure_ip_loaded()
+        else:
+            await pipeline.ensure_loaded()
+        return {"ok": True, "model_loaded": pipeline.stats.model_loaded, "mode": pipeline.stats.mode}
+    except Exception as exc:
+        pipeline.stats.last_error = str(exc)
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.get("/health")

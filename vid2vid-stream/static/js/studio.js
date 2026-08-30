@@ -3,24 +3,50 @@ const inputVideo = document.getElementById("input-video");
 const outputCanvas = document.getElementById("output-canvas");
 const ctx = outputCanvas.getContext("2d");
 const statsEl = document.getElementById("stats");
+const statusDot = document.getElementById("status-dot");
+const cameraBanner = document.getElementById("camera-banner");
 
 let ws = null;
-let pc = null;
 let stream = null;
 let running = false;
 let frameLoop = null;
+let videoFileMode = false;
+
+function isSecureCameraContext() {
+  return window.isSecureContext || location.hostname === "localhost" || location.protocol === "https:";
+}
+
+function showBanner(msg, type = "warn") {
+  cameraBanner.textContent = msg;
+  cameraBanner.className = `banner ${type === "info" ? "info" : ""}`;
+  cameraBanner.classList.remove("hidden");
+}
 
 async function refreshStats() {
   try {
     const res = await fetch(`/api/status?token=${encodeURIComponent(token)}`);
     const data = await res.json();
-    const ref = data.has_reference ? "reference" : "turbo";
-    statsEl.textContent = `GPU: ${data.device} | Mode: ${ref} | FPS: ${data.fps} | Latency: ${data.latency_ms}ms | Model: ${data.model_loaded ? "ready" : "loading"}`;
-  } catch (_) {}
+    if (data.model_loaded) {
+      statusDot.className = "ready";
+      const mode = data.has_reference ? "reference" : "turbo";
+      statsEl.textContent = `Ready | ${mode} | ${data.fps} fps | ${data.latency_ms}ms`;
+    } else if (data.last_error) {
+      statusDot.className = "error";
+      statsEl.textContent = `Error: ${data.last_error.slice(0, 60)}`;
+    } else {
+      statusDot.className = "";
+      statsEl.textContent = "Loading AI model…";
+    }
+  } catch (_) {
+    statsEl.textContent = "Connecting…";
+  }
 }
 
 setInterval(refreshStats, 2000);
 refreshStats();
+
+// Warm up model
+fetch(`/api/warmup?token=${encodeURIComponent(token)}`).catch(() => {});
 
 function getSettingsPayload() {
   return {
@@ -28,8 +54,8 @@ function getSettingsPayload() {
     negative_prompt: document.getElementById("negative-prompt").value,
     strength: parseFloat(document.getElementById("strength").value),
     steps: parseInt(document.getElementById("steps").value, 10),
-    width: parseInt(document.getElementById("width").value, 10),
-    height: parseInt(document.getElementById("height").value, 10),
+    width: 512,
+    height: 512,
     reference_strength: parseFloat(document.getElementById("reference-strength").value),
   };
 }
@@ -50,11 +76,11 @@ document.getElementById("apply-settings").addEventListener("click", async () => 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(getSettingsPayload()),
   });
+  alert("Settings saved.");
 });
 
 document.getElementById("copy-obs").addEventListener("click", async () => {
-  const input = document.getElementById("obs-url");
-  await navigator.clipboard.writeText(input.value);
+  await navigator.clipboard.writeText(document.getElementById("obs-url").value);
 });
 
 function showReferencePreview(hasImage) {
@@ -65,10 +91,7 @@ function showReferencePreview(hasImage) {
 
 async function loadReferencePreview() {
   const res = await fetch(`/api/reference-image?token=${encodeURIComponent(token)}`);
-  if (!res.ok) {
-    showReferencePreview(false);
-    return;
-  }
+  if (!res.ok) { showReferencePreview(false); return; }
   const blob = await res.blob();
   document.getElementById("reference-preview").src = URL.createObjectURL(blob);
   showReferencePreview(true);
@@ -81,19 +104,13 @@ document.getElementById("upload-reference").addEventListener("click", () => {
 document.getElementById("reference-file").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
   const form = new FormData();
   form.append("file", file);
-
   const btn = document.getElementById("upload-reference");
   btn.disabled = true;
   btn.textContent = "Uploading…";
-
   try {
-    const res = await fetch(`/api/reference-image?token=${encodeURIComponent(token)}`, {
-      method: "POST",
-      body: form,
-    });
+    const res = await fetch(`/api/reference-image?token=${encodeURIComponent(token)}`, { method: "POST", body: form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Upload failed");
     await loadReferencePreview();
@@ -102,12 +119,11 @@ document.getElementById("reference-file").addEventListener("change", async (e) =
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(getSettingsPayload()),
     });
-    alert("Reference photo saved. Click Start AI stream to transform your webcam toward this look.");
   } catch (err) {
     alert(err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = "Upload reference photo";
+    btn.textContent = "Upload photo";
     e.target.value = "";
   }
 });
@@ -119,6 +135,33 @@ document.getElementById("clear-reference").addEventListener("click", async () =>
 });
 
 loadReferencePreview();
+
+// Camera access
+async function getCameraStream() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (!isSecureCameraContext()) {
+      throw new Error(
+        "Camera blocked on HTTP. Use https://50.35.188.73:20002 (accept certificate warning) OR click 'Or use video file' below."
+      );
+    }
+    throw new Error("Camera not supported in this browser.");
+  }
+  return navigator.mediaDevices.getUserMedia({
+    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+    audio: false,
+  });
+}
+
+document.getElementById("video-file").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  videoFileMode = true;
+  inputVideo.srcObject = null;
+  inputVideo.src = URL.createObjectURL(file);
+  inputVideo.loop = true;
+  inputVideo.play();
+  showBanner("Using video file as input. Click Start streaming.", "info");
+});
 
 function drawOutputFromBlob(blob) {
   createImageBitmap(blob).then((bitmap) => {
@@ -135,7 +178,8 @@ async function startWebSocket() {
 
   await new Promise((resolve, reject) => {
     ws.onopen = resolve;
-    ws.onerror = reject;
+    ws.onerror = () => reject(new Error("WebSocket connection failed"));
+    setTimeout(() => reject(new Error("WebSocket timeout")), 10000);
   });
 
   ws.send(JSON.stringify({ type: "settings", data: getSettingsPayload() }));
@@ -143,90 +187,60 @@ async function startWebSocket() {
   const capture = document.createElement("canvas");
   const captureCtx = capture.getContext("2d");
 
-  frameLoop = setInterval(async () => {
+  frameLoop = setInterval(() => {
     if (!running || ws.readyState !== WebSocket.OPEN) return;
-    const w = parseInt(document.getElementById("width").value, 10);
-    const h = parseInt(document.getElementById("height").value, 10);
-    capture.width = w;
-    capture.height = h;
-    captureCtx.drawImage(inputVideo, 0, 0, w, h);
+    if (inputVideo.readyState < 2) return;
+    capture.width = 512;
+    capture.height = 512;
+    captureCtx.drawImage(inputVideo, 0, 0, 512, 512);
     capture.toBlob((blob) => {
       if (blob && ws.readyState === WebSocket.OPEN) {
         blob.arrayBuffer().then((buf) => ws.send(buf));
       }
-    }, "image/jpeg", 0.75);
-  }, 150);
+    }, "image/jpeg", 0.8);
+  }, 200);
 
   ws.onmessage = (event) => {
-    if (typeof event.data !== "string") {
+    if (typeof event.data === "string") {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "error") alert("AI error: " + msg.message);
+      } catch (_) {}
+    } else {
       drawOutputFromBlob(new Blob([event.data], { type: "image/jpeg" }));
     }
   };
 }
 
-async function startWebRTC() {
-  pc = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  });
-
-  stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-  pc.ontrack = (event) => {
-    const remote = document.createElement("video");
-    remote.srcObject = event.streams[0];
-    remote.play();
-    const draw = () => {
-      if (!running) return;
-      outputCanvas.width = remote.videoWidth || 512;
-      outputCanvas.height = remote.videoHeight || 512;
-      ctx.drawImage(remote, 0, 0, outputCanvas.width, outputCanvas.height);
-      requestAnimationFrame(draw);
-    };
-    remote.onloadedmetadata = draw;
-  };
-
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-
-  const res = await fetch("/api/webrtc/offer", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sdp: offer.sdp,
-      type: offer.type,
-      token,
-    }),
-  });
-  const answer = await res.json();
-  if (!res.ok) throw new Error(answer.detail || "WebRTC failed");
-  await pc.setRemoteDescription(answer);
-}
-
 async function startStream() {
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
-    audio: false,
-  });
-  inputVideo.srcObject = stream;
-  running = true;
-  document.getElementById("start-btn").disabled = true;
-  document.getElementById("stop-btn").disabled = false;
+  const startBtn = document.getElementById("start-btn");
+  startBtn.disabled = true;
+  startBtn.textContent = "Starting…";
 
-  if (document.getElementById("use-webrtc").checked) {
-    try {
-      await startWebRTC();
-      return;
-    } catch (err) {
-      console.warn("WebRTC failed, falling back to WebSocket", err);
+  try {
+    if (!videoFileMode) {
+      stream = await getCameraStream();
+      inputVideo.srcObject = stream;
+      cameraBanner.classList.add("hidden");
     }
+
+    await inputVideo.play().catch(() => {});
+    running = true;
+    document.getElementById("stop-btn").disabled = false;
+    startBtn.textContent = "▶ Start streaming";
+    await startWebSocket();
+  } catch (err) {
+    startBtn.disabled = false;
+    startBtn.textContent = "▶ Start streaming";
+    showBanner(err.message);
+    alert(err.message);
   }
-  await startWebSocket();
 }
 
 function stopStream() {
   running = false;
-  if (frameLoop) clearInterval(frameLoop);
+  if (frameLoop) { clearInterval(frameLoop); frameLoop = null; }
   if (ws) { ws.close(); ws = null; }
-  if (pc) { pc.close(); pc = null; }
   if (stream) {
     stream.getTracks().forEach((t) => t.stop());
     stream = null;
@@ -235,7 +249,13 @@ function stopStream() {
   document.getElementById("stop-btn").disabled = true;
 }
 
-document.getElementById("start-btn").addEventListener("click", () => {
-  startStream().catch((err) => alert(err.message));
-});
+document.getElementById("start-btn").addEventListener("click", startStream);
 document.getElementById("stop-btn").addEventListener("click", stopStream);
+
+// Show camera warning on HTTP
+if (!isSecureCameraContext()) {
+  showBanner(
+    "Camera needs HTTPS. Open https://50.35.188.73:20002 and accept the certificate, OR use 'Or use video file' for testing.",
+    "info"
+  );
+}
