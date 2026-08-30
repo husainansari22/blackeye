@@ -30,7 +30,7 @@ logger = logging.getLogger("avatar")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "@535846.oZ")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 DTYPE = torch.float16 if DEVICE.startswith("cuda") else torch.float32
-FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "512"))
+FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "384"))
 
 if DEVICE.startswith("cuda"):
     torch.backends.cudnn.benchmark = True
@@ -414,7 +414,7 @@ input[type=range]{width:100%;margin-top:4px}
 <script>
 let TOKEN=localStorage.getItem("avatar_token")||"";
 let running=false, busy=false, rafId=null, stream=null, videoMode=false;
-const CAP=512;
+const CAP=384;
 const HTTPS_URL="https://live.kelvinoz.com";
 if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
   location.replace(HTTPS_URL+location.pathname+location.search);
