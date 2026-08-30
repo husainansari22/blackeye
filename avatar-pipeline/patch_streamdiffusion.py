@@ -7,6 +7,7 @@ REPLACEMENTS = {
     "from diffusers.models.unet_2d_condition import": "from diffusers.models.unets.unet_2d_condition import",
     "from diffusers.models.vae import": "from diffusers.models.autoencoders.vae import",
     "from diffusers.models.autoencoder_tiny import": "from diffusers.models.autoencoders.autoencoder_tiny import",
+    "onnx_opset: int = 17": "onnx_opset: int = 18",
 }
 
 def patch_file(path: Path) -> bool:

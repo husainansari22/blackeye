@@ -14,10 +14,10 @@ echo "[2/7] System deps + swap (helps ONNX/TRT build on 16GB RAM)..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt-get install -y -qq cmake build-essential git
 if [ ! -f /swapfile ]; then
-  sudo fallocate -l 8G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192
-  sudo chmod 600 /swapfile
-  sudo mkswap /swapfile
-  sudo swapon /swapfile
+  sudo fallocate -l 8G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=none 2>/dev/null || true
+  sudo chmod 600 /swapfile 2>/dev/null || true
+  sudo mkswap /swapfile 2>/dev/null || true
+  sudo swapon /swapfile 2>/dev/null || echo "WARN: swap unavailable (continuing without swap)"
 fi
 
 echo "[3/7] Activate venv..."
@@ -67,7 +67,7 @@ import torch
 size = int(os.environ.get("FRAME_SIZE", "384"))
 app_dir = os.environ.get("APP_DIR", ".")
 
-for attempt in ["tensorrt", "xformers", "none"]:
+for attempt in ["xformers", "tensorrt", "none"]:
     try:
         from stream_engine import StreamAvatarEngine
 
