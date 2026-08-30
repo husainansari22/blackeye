@@ -30,7 +30,7 @@ logger = logging.getLogger("avatar")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "@535846.oZ")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 DTYPE = torch.float16 if DEVICE.startswith("cuda") else torch.float32
-FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "384"))
+FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "512"))
 
 if DEVICE.startswith("cuda"):
     torch.backends.cudnn.benchmark = True
@@ -73,9 +73,9 @@ def require_token(request: Request) -> str:
     return token
 
 
-# ---------------------------------------------------------------------------
-# GPU Pipeline
-# ---------------------------------------------------------------------------
+USE_STREAM = os.environ.get("USE_STREAM", "1") == "1"
+STREAM_ACCEL = os.environ.get("STREAM_ACCEL", "tensorrt")
+
 def _color_transfer(ref_rgb: np.ndarray, src_rgb: np.ndarray, amount: float = 0.55) -> np.ndarray:
     """Fast LAB color transfer — applies reference palette without slow IP-Adapter."""
     ref = cv2.cvtColor(ref_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
@@ -201,7 +201,18 @@ class AvatarPipeline:
         return buf.tobytes()
 
 
-pipeline = AvatarPipeline()
+if USE_STREAM:
+    try:
+        from stream_engine import StreamAvatarEngine
+
+        pipeline = StreamAvatarEngine()
+        pipeline.acceleration = STREAM_ACCEL
+        logger.info("Using StreamDiffusion SD-Turbo (accel=%s)", STREAM_ACCEL)
+    except Exception as exc:
+        logger.warning("StreamDiffusion unavailable (%s), falling back to LCM", exc)
+        pipeline = AvatarPipeline()
+else:
+    pipeline = AvatarPipeline()
 
 
 @asynccontextmanager
@@ -227,14 +238,23 @@ async def login(body: dict):
 
 @app.get("/api/status")
 async def status(token: str = Depends(require_token)):
+    has_ref = getattr(pipeline, "_reference_rgb", None) is not None or getattr(
+        pipeline, "_reference", None
+    ) is not None
+    mode = getattr(pipeline, "mode", "lcm")
+    if has_ref and mode.startswith("stream"):
+        mode = "stream+ref"
+    elif has_ref:
+        mode = f"{mode}+ref"
     return {
         "ready": pipeline.ready,
         "device": DEVICE,
         "fps": round(pipeline.fps, 2),
         "latency_ms": round(pipeline.last_ms, 1),
-        "has_reference": pipeline._reference is not None,
-        "mode": "lcm+ref" if pipeline._reference is not None else "lcm",
+        "has_reference": has_ref,
+        "mode": mode,
         "frame_size": FRAME_SIZE,
+        "acceleration": getattr(pipeline, "acceleration", "lcm"),
         "last_error": pipeline.last_error,
     }
 
@@ -268,6 +288,8 @@ async def update_settings(body: dict, token: str = Depends(require_token)):
     for key in ("prompt", "negative", "steps", "guidance", "strength", "color_amount"):
         if key in body and body[key] is not None:
             setattr(pipeline, key if key != "negative" else "negative", body[key])
+    if hasattr(pipeline, "update_prompt") and "prompt" in body:
+        pipeline.update_prompt(pipeline.prompt, pipeline.negative)
     return {"ok": True}
 
 
@@ -355,7 +377,7 @@ input[type=range]{width:100%;margin-top:4px}
   <div class="wrap">
     <div class="grid">
       <div class="panel"><h2>Webcam</h2><video id="cam" autoplay playsinline muted></video></div>
-      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">LCM fast mode — pumps frames as fast as GPU allows (~8–12 fps)</p></div>
+      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">StreamDiffusion SD-Turbo + TensorRT — target 40–90 fps</p></div>
     </div>
     <div class="actions">
       <button id="btn-start" class="btn-go" onclick="startStream()">▶ Start</button>
@@ -392,7 +414,7 @@ input[type=range]{width:100%;margin-top:4px}
 <script>
 let TOKEN=localStorage.getItem("avatar_token")||"";
 let running=false, busy=false, rafId=null, stream=null, videoMode=false;
-const CAP=384;
+const CAP=512;
 const HTTPS_URL="https://live.kelvinoz.com";
 if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
   location.replace(HTTPS_URL+location.pathname+location.search);
@@ -423,7 +445,7 @@ async function pollStats(){
   try{
     const d=await(await fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}})).json();
     document.getElementById("stats").textContent=
-      `${d.ready?"Ready":"Loading"} | ${d.mode||"turbo"} | ${d.device} | ${d.fps} fps | ${d.latency_ms}ms`+
+      `${d.ready?"Ready":"Loading"} | ${d.mode||"stream"} | ${d.acceleration||""} | ${d.fps} fps | ${d.latency_ms}ms`+
       (d.has_reference?" | ref ✓":"")+
       (d.last_error?" | ⚠ error":"");
   }catch(e){}
