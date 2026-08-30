@@ -24,6 +24,7 @@ FILES = [
     "app.py",
     "stream_engine.py",
     "realtime_engine.py",
+    "lucy_backend.py",
     "start-server.sh",
 ]
 
@@ -54,6 +55,10 @@ def main() -> None:
     sftp.close()
 
     run(client, f"chmod +x {REMOTE_DIR}/start-server.sh")
+    run(
+        client,
+        f"cd {REMOTE_DIR} && source venv/bin/activate && pip install -q decart httpx 2>/dev/null || true",
+    )
     run(client, f"echo none > {REMOTE_DIR}/.stream_accel")
     _, out, err = run(client, f"cd {REMOTE_DIR} && bash start-server.sh")
     print(out or err)

@@ -24,6 +24,13 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from PIL import Image
 
+from lucy_backend import (
+    create_decart_client_token,
+    create_fal_realtime_token,
+    fal_available,
+    lucy_available,
+)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("avatar")
 
@@ -241,6 +248,36 @@ async def login(body: dict):
     return {"token": _issue_token()}
 
 
+@app.get("/api/capabilities")
+async def capabilities(token: str = Depends(require_token)):
+    return {
+        "lucy": lucy_available(),
+        "fal": fal_available(),
+        "local_gpu": True,
+        "default_pipeline": "lucy" if lucy_available() else "local",
+    }
+
+
+@app.post("/api/lucy/token")
+async def lucy_token(token: str = Depends(require_token)):
+    try:
+        return await create_decart_client_token()
+    except Exception as exc:
+        logger.exception("Lucy token error")
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.post("/api/fal/realtime-token")
+async def fal_realtime_token(body: dict, token: str = Depends(require_token)):
+    app_id = body.get("app", "decart/lucy-2-5/realtime")
+    try:
+        jwt = await create_fal_realtime_token(app_id)
+        return Response(content=jwt, media_type="text/plain")
+    except Exception as exc:
+        logger.exception("FAL token error")
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
 @app.get("/api/status")
 async def status(token: str = Depends(require_token)):
     has_ref = getattr(pipeline, "_reference_rgb", None) is not None or getattr(
@@ -382,6 +419,14 @@ input[type=range]{width:100%;margin-top:4px}
   <div class="bar"><h1>● Avatar Stream</h1><div id="stats">Loading GPU…</div></div>
   <div id="cam-banner" class="banner hidden"></div>
   <div class="wrap">
+    <div class="panel" style="margin-bottom:16px">
+      <h2>Pipeline</h2>
+      <div class="actions" style="margin-top:0">
+        <label class="file" style="cursor:pointer"><input type="radio" name="pipe" id="pipe-lucy" value="lucy" checked style="margin-right:6px"/> Lucy 2.5 · WebRTC · ~30fps</label>
+        <label class="file" style="cursor:pointer"><input type="radio" name="pipe" id="pipe-local" value="local" style="margin-right:6px"/> Local GPU · StreamDiffusion</label>
+      </div>
+      <p id="pipe-hint" style="font-size:.75rem;color:#64748b;margin-top:8px">Lucy 2.5: Decart realtime video editing (prompt + reference). Requires DECART_API_KEY on server.</p>
+    </div>
     <div class="grid">
       <div class="panel"><h2>Webcam</h2>
         <label class="lbl">Camera</label>
@@ -392,7 +437,11 @@ input[type=range]{width:100%;margin-top:4px}
         <video id="cam" autoplay playsinline muted></video>
         <p id="cam-status" style="font-size:.75rem;color:#64748b;margin-top:6px">Click Detect cameras, allow access, pick your HD webcam</p>
       </div>
-      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">StreamDiffusion SD-Turbo on your GPU — no cloud API</p></div>
+      <div class="panel"><h2>AI Avatar</h2>
+        <video id="out-lucy" class="hidden" autoplay playsinline muted style="width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;border:1px solid #1e293b;object-fit:contain"></video>
+        <canvas id="out"></canvas>
+        <p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">Select pipeline and click Start</p>
+      </div>
     </div>
     <div class="actions">
       <button id="btn-start" class="btn-go" onclick="startStream()">▶ Start</button>
@@ -408,32 +457,67 @@ input[type=range]{width:100%;margin-top:4px}
           <label class="file">Upload photo<input type="file" id="ref-file" accept="image/*" hidden onchange="uploadRef(event)"/></label>
           <button class="btn-sec" onclick="clearRef()">Remove</button>
         </div>
-        <label class="lbl">Transform strength <span id="str-val">0.55</span></label>
-        <input type="range" id="strength" min="0.2" max="0.9" step="0.05" value="0.55" oninput="document.getElementById('str-val').textContent=this.value"/>
-        <label class="lbl">Reference likeness (color transfer) <span id="ref-val">0.55</span></label>
-        <input type="range" id="ref-strength" min="0.2" max="1" step="0.05" value="0.55" oninput="document.getElementById('ref-val').textContent=this.value"/>
-        <p style="font-size:.75rem;color:#64748b;margin-top:6px">With reference: color-matched look. Without: ~8–12 fps SD-Turbo stream.</p>
+        <label class="lbl local-only">Transform strength <span id="str-val">0.55</span></label>
+        <input class="local-only" type="range" id="strength" min="0.2" max="0.9" step="0.05" value="0.55" oninput="document.getElementById('str-val').textContent=this.value"/>
+        <label class="lbl local-only">Reference likeness (color transfer) <span id="ref-val">0.55</span></label>
+        <input class="local-only" type="range" id="ref-strength" min="0.2" max="1" step="0.05" value="0.55" oninput="document.getElementById('ref-val').textContent=this.value"/>
+        <p id="ref-hint" style="font-size:.75rem;color:#64748b;margin-top:6px">Lucy: reference photo for character swap / try-on. Local GPU: color transfer.</p>
       </div>
       <div class="panel">
         <h2>Settings</h2>
         <label class="lbl">Prompt</label>
         <textarea id="prompt" rows="2">sharp portrait photo, detailed face, cinematic lighting, high quality</textarea>
-        <label class="lbl">Negative</label>
-        <textarea id="neg" rows="2">blurry, low quality, distorted, deformed, ugly</textarea>
-        <label class="lbl">Steps <span id="steps-val">2</span> <span style="color:#64748b">(2=fastest)</span></label>
-        <input type="range" id="steps" min="2" max="6" step="1" value="2" oninput="document.getElementById('steps-val').textContent=this.value"/>
+        <label class="lbl local-only">Negative</label>
+        <textarea class="local-only" id="neg" rows="2">blurry, low quality, distorted, deformed, ugly</textarea>
+        <label class="lbl local-only">Steps <span id="steps-val">2</span> <span style="color:#64748b">(2=fastest)</span></label>
+        <input class="local-only" type="range" id="steps" min="2" max="6" step="1" value="2" oninput="document.getElementById('steps-val').textContent=this.value"/>
         <button class="btn-sec" style="margin-top:12px;width:100%" onclick="saveSettings()">Save settings</button>
       </div>
     </div>
   </div>
 </div>
-<script>
+<script type="module">
+import { createDecartClient, models } from "https://esm.sh/@decartai/sdk@0.2.0";
+
 let TOKEN=localStorage.getItem("avatar_token")||"";
 let running=false, busy=false, rafId=null, stream=null, videoMode=false;
+let lucyRealtime=null, refFileBlob=null, caps={lucy:false,local_gpu:true};
 const CAP=384;
+const LUCY_MODEL=models.realtime("lucy-2.5");
 const HTTPS_URL="https://live.kelvinoz.com";
 if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
   location.replace(HTTPS_URL+location.pathname+location.search);
+}
+
+function pipelineMode(){ return document.getElementById("pipe-lucy").checked?"lucy":"local"; }
+
+function syncPipelineUi(){
+  const lucy=pipelineMode()==="lucy";
+  document.querySelectorAll(".local-only").forEach(el=>el.classList.toggle("hidden",lucy));
+  document.getElementById("out").classList.toggle("hidden",lucy);
+  document.getElementById("out-lucy").classList.toggle("hidden",!lucy);
+  const hint=document.getElementById("pipe-hint");
+  if(lucy){
+    hint.textContent=caps.lucy
+      ? "Lucy 2.5 WebRTC — prompt + reference, ~30fps (Decart cloud)"
+      : "Lucy unavailable — add DECART_API_KEY on server. Using Local GPU instead.";
+    if(!caps.lucy) document.getElementById("pipe-local").checked=true;
+  }else{
+    hint.textContent="Local GPU StreamDiffusion SD-Turbo (~8–12 fps, no cloud billing)";
+  }
+}
+
+document.getElementById("pipe-lucy").addEventListener("change",syncPipelineUi);
+document.getElementById("pipe-local").addEventListener("change",syncPipelineUi);
+
+async function loadCaps(){
+  if(!TOKEN)return;
+  try{
+    caps=await(await fetch("/api/capabilities",{headers:{Authorization:"Bearer "+TOKEN}})).json();
+    if(caps.default_pipeline==="local"||!caps.lucy) document.getElementById("pipe-local").checked=true;
+    else document.getElementById("pipe-lucy").checked=true;
+    syncPipelineUi();
+  }catch(e){}
 }
 
 async function doLogin(){
@@ -452,13 +536,17 @@ function showApp(){
       "📷 For webcam: open <a href='"+HTTPS_URL+"' style='color:#93c5fd'>"+HTTPS_URL+"</a> — or use <b>Video file</b> below.";
     document.getElementById("cam-banner").classList.remove("hidden");
   }
-  pollStats(); setInterval(pollStats,2000);
+  loadCaps(); pollStats(); setInterval(pollStats,2000);
   initCameras().catch(()=>{});
 }
 if(TOKEN) fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}}).then(r=>{if(r.ok)showApp();});
 
 async function pollStats(){
   if(!TOKEN)return;
+  if(pipelineMode()==="lucy"&&running){
+    document.getElementById("stats").textContent="Live | lucy-2.5 | webrtc | ~30fps target";
+    return;
+  }
   try{
     const d=await(await fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}})).json();
     document.getElementById("stats").textContent=
@@ -484,8 +572,9 @@ async function initCameras(){
       o.textContent=d.label||("Camera "+(i+1));
       sel.appendChild(o);
     });
-    const ext=vids.find(d=>/webcam|usb|hd|external/i.test(d.label));
+    const ext=vids.find(d=>/webcam|usb|hd|external|full/i.test(d.label));
     if(ext) sel.value=ext.deviceId;
+    else if(vids.length>1) sel.selectedIndex=vids.length-1;
     st.textContent=vids.length+" camera(s) found — select yours, then Start";
     await previewCamera();
   }catch(e){ st.textContent="Camera error: "+e.message; }
@@ -493,21 +582,35 @@ async function initCameras(){
 
 async function previewCamera(){
   const v=document.getElementById("cam");
+  const st=document.getElementById("cam-status");
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
-  stream=await getCam();
-  v.srcObject=stream;
-  await v.play().catch(()=>{});
+  try{
+    stream=await getCam();
+    v.srcObject=stream;
+    await v.play().catch(()=>{});
+    await waitVideoReady(v,5000);
+    const b=frameBrightness();
+    if(b<12) st.textContent="⚠ Camera open but image is black — try another camera in the list";
+    else st.textContent="Camera OK (brightness "+Math.round(b)+") — click Start";
+  }catch(e){ st.textContent="Camera error: "+e.message; }
 }
 
-async function getCam(){
+async function getCam(forLucy=false){
   if(!navigator.mediaDevices?.getUserMedia){
     throw new Error("Camera blocked. Use "+HTTPS_URL+" and allow camera.");
   }
   const sel=document.getElementById("cam-select");
   const id=sel?.value;
-  const video=id
-    ?{deviceId:{exact:id},width:{ideal:1280},height:{ideal:720}}
-    :{width:{ideal:1280},height:{ideal:720}};
+  let video;
+  if(forLucy){
+    video=id
+      ?{deviceId:{exact:id},frameRate:LUCY_MODEL.fps,width:LUCY_MODEL.width,height:LUCY_MODEL.height}
+      :{frameRate:LUCY_MODEL.fps,width:LUCY_MODEL.width,height:LUCY_MODEL.height};
+  }else{
+    video=id
+      ?{deviceId:{exact:id},width:{ideal:1280},height:{ideal:720}}
+      :{width:{ideal:1280},height:{ideal:720}};
+  }
   return navigator.mediaDevices.getUserMedia({video,audio:false});
 }
 
@@ -523,29 +626,48 @@ function useVideoFile(e){
   const f=e.target.files[0]; if(!f)return;
   videoMode=true; const v=document.getElementById("cam");
   v.srcObject=null; v.src=URL.createObjectURL(f); v.loop=true; v.play();
+  document.getElementById("cam-status").textContent="Video file mode — Lucy 2.5 needs live webcam";
 }
 
 async function uploadRef(e){
   const f=e.target.files[0]; if(!f)return;
-  const fd=new FormData(); fd.append("file",f);
-  const r=await fetch("/api/reference",{method:"POST",headers:{Authorization:"Bearer "+TOKEN},body:fd});
-  if(!r.ok){alert("Upload failed");return;}
+  refFileBlob=f;
+  if(pipelineMode()==="local"){
+    const fd=new FormData(); fd.append("file",f);
+    const r=await fetch("/api/reference",{method:"POST",headers:{Authorization:"Bearer "+TOKEN},body:fd});
+    if(!r.ok){alert("Upload failed");return;}
+  }
   const url=URL.createObjectURL(f);
   document.getElementById("ref-preview").src=url;
   document.getElementById("ref-preview").classList.remove("hidden");
   document.getElementById("ref-empty").classList.add("hidden");
+  if(lucyRealtime){
+    const prompt=document.getElementById("prompt").value||
+      "Substitute the character in the video with the person in the reference image.";
+    await lucyRealtime.set({prompt,image:f,enhance:true});
+  }
 }
 
 async function clearRef(){
-  await fetch("/api/reference",{method:"DELETE",headers:{Authorization:"Bearer "+TOKEN}});
+  refFileBlob=null;
+  if(pipelineMode()==="local") await fetch("/api/reference",{method:"DELETE",headers:{Authorization:"Bearer "+TOKEN}});
   document.getElementById("ref-preview").classList.add("hidden");
   document.getElementById("ref-empty").classList.remove("hidden");
+  if(lucyRealtime) await lucyRealtime.set({image:null});
 }
 
 async function saveSettings(){
+  const prompt=document.getElementById("prompt").value;
+  if(lucyRealtime){
+    const payload={prompt,enhance:true};
+    if(refFileBlob) payload.image=refFileBlob;
+    await lucyRealtime.set(payload);
+    outStatus.textContent="Lucy prompt updated";
+    return;
+  }
   await fetch("/api/settings",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},
     body:JSON.stringify({
-      prompt:document.getElementById("prompt").value,
+      prompt,
       negative:document.getElementById("neg").value,
       steps:+document.getElementById("steps").value,
       strength:+document.getElementById("strength").value,
@@ -577,7 +699,7 @@ function frameBrightness(){
 }
 
 async function sendFrame(){
-  if(!running||busy)return;
+  if(!running||busy||pipelineMode()!=="local")return;
   const v=document.getElementById("cam");
   if(v.readyState<2||!v.videoWidth){ scheduleFrame(); return; }
   busy=true;
@@ -621,16 +743,55 @@ async function sendFrame(){
 }
 
 function scheduleFrame(){
-  if(!running)return;
+  if(!running||pipelineMode()!=="local")return;
   rafId=requestAnimationFrame(()=>{ if(!busy) sendFrame(); else scheduleFrame(); });
+}
+
+async function startLucy(){
+  if(videoMode) throw new Error("Lucy 2.5 requires a live webcam (not video file)");
+  if(!caps.lucy) throw new Error("Lucy not configured — set DECART_API_KEY on the GPU server");
+  outStatus.textContent="Connecting Lucy 2.5…";
+  const tokRes=await fetch("/api/lucy/token",{method:"POST",headers:{Authorization:"Bearer "+TOKEN}});
+  if(!tokRes.ok){
+    const err=await tokRes.json().catch(()=>({}));
+    throw new Error(err.detail||"Lucy token failed");
+  }
+  const {apiKey}=await tokRes.json();
+  const v=document.getElementById("cam");
+  if(stream){stream.getTracks().forEach(t=>t.stop());}
+  stream=await getCam(true);
+  v.srcObject=stream;
+  await waitVideoReady(v);
+  const prompt=document.getElementById("prompt").value||
+    "sharp portrait photo, detailed face, cinematic lighting, high quality";
+  const initialState={prompt:{text:prompt,enhance:true}};
+  if(refFileBlob) initialState.image=refFileBlob;
+  const client=createDecartClient({apiKey});
+  lucyRealtime=await client.realtime.connect(stream,{
+    model:LUCY_MODEL,
+    mirror:"auto",
+    onRemoteStream:(remote)=>{
+      const out=document.getElementById("out-lucy");
+      out.srcObject=remote;
+      out.play().catch(()=>{});
+    },
+    onError:(err)=>{ outStatus.textContent="Lucy error: "+(err.message||err); },
+    onDisconnect:(reason)=>{ outStatus.textContent="Lucy disconnected: "+reason; },
+    initialState,
+  });
+  running=true;
+  outStatus.textContent="Lucy 2.5 live · WebRTC · edit with prompt + reference";
+  document.getElementById("btn-stop").disabled=false;
 }
 
 async function startStream(){
   document.getElementById("btn-start").disabled=true;
+  syncPipelineUi();
   try{
+    if(pipelineMode()==="lucy"){ await startLucy(); return; }
     const v=document.getElementById("cam");
     if(!videoMode){
-      stream=await getCam();
+      stream=await getCam(false);
       v.srcObject=stream;
       await waitVideoReady(v);
     }else{
@@ -647,10 +808,23 @@ async function startStream(){
 function stopStream(){
   running=false;
   if(rafId) cancelAnimationFrame(rafId);
+  if(lucyRealtime){ lucyRealtime.disconnect(); lucyRealtime=null; }
+  document.getElementById("out-lucy").srcObject=null;
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
   document.getElementById("btn-start").disabled=false;
   document.getElementById("btn-stop").disabled=true;
+  outStatus.textContent="Stopped";
 }
+
+window.doLogin=doLogin;
+window.initCameras=initCameras;
+window.previewCamera=previewCamera;
+window.useVideoFile=useVideoFile;
+window.uploadRef=uploadRef;
+window.clearRef=clearRef;
+window.saveSettings=saveSettings;
+window.startStream=startStream;
+window.stopStream=stopStream;
 </script>
 </body></html>"""
 
