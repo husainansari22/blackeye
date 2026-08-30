@@ -72,71 +72,78 @@ def require_token(request: Request) -> str:
 # GPU Pipeline
 # ---------------------------------------------------------------------------
 class AvatarPipeline:
-    """ControlNet OpenPose full-body tracking + IP-Adapter reference avatar."""
+    """SD-Turbo webcam img2img; SD 1.5 + IP-Adapter when a reference photo is set."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._pipe = None
-        self._openpose = None
+        self._turbo_pipe = None
+        self._ip_pipe = None
         self._reference: Optional[Image.Image] = None
         self.ready = False
         self.last_ms = 0.0
         self.fps = 0.0
+        self.last_error: Optional[str] = None
         self._times: list[float] = []
         self.prompt = "full body portrait, high quality, detailed avatar, cinematic lighting"
         self.negative = "blurry, low quality, distorted, deformed, ugly, watermark, text"
         self.steps = 4
         self.guidance = 7.0
-        self.control_scale = 0.85
+        self.strength = 0.55
         self.ip_scale = 0.65
 
     def load(self) -> None:
         if self.ready:
             return
-        from controlnet_aux import OpenposeDetector
-        from diffusers import ControlNetModel, StableDiffusionControlNetPipeline, UniPCMultistepScheduler
+        from diffusers import AutoPipelineForImage2Image
 
-        logger.info("Loading OpenPose detector...")
-        self._openpose = OpenposeDetector.from_pretrained("lllyasviel/ControlNet")
-
-        logger.info("Loading ControlNet OpenPose + SD1.5 on %s...", DEVICE)
-        controlnet = ControlNetModel.from_pretrained(
-            "lllyasviel/control_v11p_sd15_openpose", torch_dtype=DTYPE
-        )
-        pipe = StableDiffusionControlNetPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
-            controlnet=controlnet,
+        logger.info("Loading SD-Turbo on %s...", DEVICE)
+        pipe = AutoPipelineForImage2Image.from_pretrained(
+            "stabilityai/sd-turbo",
             torch_dtype=DTYPE,
-            safety_checker=None,
+            variant="fp16" if DEVICE.startswith("cuda") else None,
         )
-        pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
-        try:
-            pipe.load_ip_adapter(
-                "h94/IP-Adapter",
-                subfolder="models",
-                weight_name="ip-adapter_sd15.bin",
-            )
-            pipe.set_ip_adapter_scale(0.0)
-            logger.info("IP-Adapter loaded for reference photos")
-        except Exception as exc:
-            logger.warning("IP-Adapter unavailable: %s", exc)
-
         if DEVICE.startswith("cuda"):
             pipe.to(DEVICE)
             try:
                 pipe.enable_xformers_memory_efficient_attention()
             except Exception:
                 pass
-
-        self._pipe = pipe
+        self._turbo_pipe = pipe
         self.ready = True
-        logger.info("Pipeline ready on %s", DEVICE)
+        logger.info("Turbo pipeline ready on %s", DEVICE)
+
+    def _load_ip(self) -> None:
+        if self._ip_pipe is not None:
+            return
+        from diffusers import DPMSolverMultistepScheduler, StableDiffusionImg2ImgPipeline
+
+        logger.info("Loading SD 1.5 + IP-Adapter on %s...", DEVICE)
+        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+            "runwayml/stable-diffusion-v1-5",
+            torch_dtype=DTYPE,
+            safety_checker=None,
+        )
+        pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+        pipe.load_ip_adapter(
+            "h94/IP-Adapter",
+            subfolder="models",
+            weight_name="ip-adapter_sd15.bin",
+        )
+        if DEVICE.startswith("cuda"):
+            pipe.to(DEVICE)
+            try:
+                pipe.enable_xformers_memory_efficient_attention()
+            except Exception:
+                pass
+        pipe.set_ip_adapter_scale(0.0)
+        self._ip_pipe = pipe
+        logger.info("IP-Adapter pipeline ready")
 
     def set_reference(self, image: Optional[Image.Image]) -> None:
         with self._lock:
             self._reference = image.convert("RGB") if image else None
-            if self._pipe and hasattr(self._pipe, "set_ip_adapter_scale"):
-                self._pipe.set_ip_adapter_scale(self.ip_scale if self._reference else 0.0)
+            if self._ip_pipe and hasattr(self._ip_pipe, "set_ip_adapter_scale"):
+                self._ip_pipe.set_ip_adapter_scale(self.ip_scale if self._reference else 0.0)
 
     def process_jpeg(self, jpeg_bytes: bytes) -> bytes:
         if not self.ready:
@@ -156,30 +163,37 @@ class AvatarPipeline:
             negative = self.negative
             steps = self.steps
             guidance = self.guidance
-            cscale = self.control_scale
+            strength = self.strength
             ip_scale = self.ip_scale
             reference = self._reference
 
-        pose = self._openpose(pil)
-        if isinstance(pose, np.ndarray):
-            pose = Image.fromarray(pose)
-
-        kwargs = dict(
-            prompt=prompt,
-            negative_prompt=negative,
-            control_image=pose,
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            controlnet_conditioning_scale=cscale,
-        )
-
-        if reference is not None and hasattr(self._pipe, "set_ip_adapter_scale"):
-            ref = reference.resize((512, 512), Image.Resampling.LANCZOS)
-            self._pipe.set_ip_adapter_scale(ip_scale)
-            kwargs["ip_adapter_image"] = ref
-
-        with torch.inference_mode():
-            result = self._pipe(**kwargs).images[0]
+        try:
+            with torch.inference_mode():
+                if reference is not None:
+                    self._load_ip()
+                    ref = reference.resize((512, 512), Image.Resampling.LANCZOS)
+                    self._ip_pipe.set_ip_adapter_scale(ip_scale)
+                    result = self._ip_pipe(
+                        prompt=prompt,
+                        negative_prompt=negative,
+                        image=pil,
+                        ip_adapter_image=ref,
+                        num_inference_steps=max(1, steps),
+                        strength=min(max(strength, 0.05), 0.95),
+                        guidance_scale=guidance,
+                    ).images[0]
+                else:
+                    result = self._turbo_pipe(
+                        prompt=prompt,
+                        image=pil,
+                        num_inference_steps=max(1, min(steps, 4)),
+                        strength=min(max(strength, 0.05), 0.95),
+                        guidance_scale=1.0,
+                    ).images[0]
+            self.last_error = None
+        except Exception as exc:
+            self.last_error = str(exc)
+            raise
 
         out_bgr = cv2.cvtColor(np.array(result), cv2.COLOR_RGB2BGR)
         ok, buf = cv2.imencode(".jpg", out_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
@@ -227,6 +241,8 @@ async def status(token: str = Depends(require_token)):
         "fps": round(pipeline.fps, 2),
         "latency_ms": round(pipeline.last_ms, 1),
         "has_reference": pipeline._reference is not None,
+        "mode": "reference" if pipeline._reference is not None else "turbo",
+        "last_error": pipeline.last_error,
     }
 
 
@@ -245,6 +261,8 @@ async def upload_reference(
         raise HTTPException(status_code=400, detail="Invalid image")
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
     pipeline.set_reference(Image.fromarray(rgb))
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, pipeline._load_ip)
     return {"ok": True}
 
 
@@ -256,11 +274,11 @@ async def clear_reference(token: str = Depends(require_token)):
 
 @app.post("/api/settings")
 async def update_settings(body: dict, token: str = Depends(require_token)):
-    for key in ("prompt", "negative", "steps", "guidance", "control_scale", "ip_scale"):
+    for key in ("prompt", "negative", "steps", "guidance", "strength", "ip_scale"):
         if key in body and body[key] is not None:
             setattr(pipeline, key if key != "negative" else "negative", body[key])
-    if pipeline._reference and hasattr(pipeline._pipe, "set_ip_adapter_scale"):
-        pipeline._pipe.set_ip_adapter_scale(float(pipeline.ip_scale))
+    if pipeline._reference and pipeline._ip_pipe and hasattr(pipeline._ip_pipe, "set_ip_adapter_scale"):
+        pipeline._ip_pipe.set_ip_adapter_scale(float(pipeline.ip_scale))
     return {"ok": True}
 
 
@@ -348,7 +366,7 @@ input[type=range]{width:100%;margin-top:4px}
   <div class="wrap">
     <div class="grid">
       <div class="panel"><h2>Webcam</h2><video id="cam" autoplay playsinline muted></video></div>
-      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas></div>
+      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">Click Start — updates every few seconds (not real-time 30fps)</p></div>
     </div>
     <div class="actions">
       <button id="btn-start" class="btn-go" onclick="startStream()">▶ Start</button>
@@ -364,6 +382,8 @@ input[type=range]{width:100%;margin-top:4px}
           <label class="file">Upload photo<input type="file" id="ref-file" accept="image/*" hidden onchange="uploadRef(event)"/></label>
           <button class="btn-sec" onclick="clearRef()">Remove</button>
         </div>
+        <label class="lbl">Transform strength <span id="str-val">0.55</span></label>
+        <input type="range" id="strength" min="0.2" max="0.9" step="0.05" value="0.55" oninput="document.getElementById('str-val').textContent=this.value"/>
         <label class="lbl">Style strength <span id="ip-val">0.65</span></label>
         <input type="range" id="ip-scale" min="0.1" max="1" step="0.05" value="0.65" oninput="document.getElementById('ip-val').textContent=this.value"/>
       </div>
@@ -414,8 +434,9 @@ async function pollStats(){
   try{
     const d=await(await fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}})).json();
     document.getElementById("stats").textContent=
-      `${d.ready?"Ready":"Loading"} | ${d.device} | ${d.fps} fps | ${d.latency_ms}ms`+
-      (d.has_reference?" | ref ✓":"");
+      `${d.ready?"Ready":"Loading"} | ${d.mode||"turbo"} | ${d.device} | ${d.fps} fps | ${d.latency_ms}ms`+
+      (d.has_reference?" | ref ✓":"")+
+      (d.last_error?" | ⚠ error":"");
   }catch(e){}
 }
 
@@ -455,18 +476,22 @@ async function saveSettings(){
       prompt:document.getElementById("prompt").value,
       negative:document.getElementById("neg").value,
       steps:+document.getElementById("steps").value,
+      strength:+document.getElementById("strength").value,
       ip_scale:+document.getElementById("ip-scale").value
     })});
 }
 
 const cap=document.createElement("canvas"), capCtx=cap.getContext("2d");
 const outCanvas=document.getElementById("out"), outCtx=outCanvas.getContext("2d");
+const outStatus=document.getElementById("out-status");
+let frames=0;
 
 async function sendFrame(){
   if(!running||busy)return;
   const v=document.getElementById("cam");
   if(v.readyState<2)return;
   busy=true;
+  if(frames===0) outStatus.textContent="Processing first frame (may take 30–60s with reference photo)…";
   cap.width=512; cap.height=512;
   capCtx.drawImage(v,0,0,512,512);
   cap.toBlob(async blob=>{
@@ -478,12 +503,17 @@ async function sendFrame(){
       });
       if(r.ok){
         const buf=await r.blob();
-        createImageBitmap(buf).then(b=>{
-          outCanvas.width=b.width; outCanvas.height=b.height;
-          outCtx.drawImage(b,0,0);
-        });
+        const b=await createImageBitmap(buf);
+        outCanvas.width=b.width; outCanvas.height=b.height;
+        outCtx.drawImage(b,0,0);
+        frames++;
+        outStatus.textContent=frames===1?"Live — updating every few seconds":"";
+      }else{
+        const err=await r.json().catch(()=>({detail:r.statusText}));
+        outStatus.textContent="Error: "+(err.detail||r.status);
+        console.error("process-frame", err);
       }
-    }catch(e){console.error(e);}
+    }catch(e){outStatus.textContent="Network error — retrying…"; console.error(e);}
     finally{busy=false;}
   },"image/jpeg",0.82);
 }
@@ -494,9 +524,10 @@ async function startStream(){
     if(!videoMode){ stream=await getCam(); document.getElementById("cam").srcObject=stream; }
     await document.getElementById("cam").play().catch(()=>{});
     await saveSettings();
-    running=true;
+    running=true; frames=0;
     document.getElementById("btn-stop").disabled=false;
     loopId=setInterval(sendFrame, INTERVAL);
+    sendFrame();
   }catch(e){ alert(e.message); document.getElementById("btn-start").disabled=false; }
 }
 
