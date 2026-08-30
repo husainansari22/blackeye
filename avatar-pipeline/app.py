@@ -30,6 +30,11 @@ logger = logging.getLogger("avatar")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "@535846.oZ")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 DTYPE = torch.float16 if DEVICE.startswith("cuda") else torch.float32
+FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "384"))
+
+if DEVICE.startswith("cuda"):
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cuda.matmul.allow_tf32 = True
 
 # ---------------------------------------------------------------------------
 # Auth
@@ -71,79 +76,76 @@ def require_token(request: Request) -> str:
 # ---------------------------------------------------------------------------
 # GPU Pipeline
 # ---------------------------------------------------------------------------
+def _color_transfer(ref_rgb: np.ndarray, src_rgb: np.ndarray, amount: float = 0.55) -> np.ndarray:
+    """Fast LAB color transfer — applies reference palette without slow IP-Adapter."""
+    ref = cv2.cvtColor(ref_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    src = cv2.cvtColor(src_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    out = src.copy()
+    for ch in range(3):
+        s_mean, s_std = src[:, :, ch].mean(), src[:, :, ch].std() + 1e-6
+        r_mean, r_std = ref[:, :, ch].mean(), ref[:, :, ch].std()
+        out[:, :, ch] = (src[:, :, ch] - s_mean) * (r_std / s_std) + r_mean
+    out = np.clip(out, 0, 255).astype(np.uint8)
+    blended = cv2.cvtColor(out, cv2.COLOR_LAB2RGB)
+    if amount < 1.0:
+        blended = cv2.addWeighted(blended, amount, src_rgb, 1.0 - amount, 0)
+    return blended
+
+
 class AvatarPipeline:
-    """SD-Turbo webcam img2img; SD 1.5 + IP-Adapter when a reference photo is set."""
+    """LCM-LoRA img2img for speed; optional reference color transfer."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._turbo_pipe = None
-        self._ip_pipe = None
+        self._pipe = None
         self._reference: Optional[Image.Image] = None
+        self._reference_rgb: Optional[np.ndarray] = None
         self.ready = False
         self.last_ms = 0.0
         self.fps = 0.0
         self.last_error: Optional[str] = None
         self._times: list[float] = []
-        self.prompt = "full body portrait, high quality, detailed avatar, cinematic lighting"
+        self.prompt = "sharp portrait photo, detailed face, cinematic lighting, high quality"
         self.negative = "blurry, low quality, distorted, deformed, ugly, watermark, text"
-        self.steps = 4
-        self.guidance = 7.0
+        self.steps = 2
+        self.guidance = 1.0
         self.strength = 0.55
-        self.ip_scale = 0.65
+        self.color_amount = 0.6
 
     def load(self) -> None:
         if self.ready:
             return
-        from diffusers import AutoPipelineForImage2Image
+        from diffusers import LCMScheduler, StableDiffusionImg2ImgPipeline
 
-        logger.info("Loading SD-Turbo on %s...", DEVICE)
-        pipe = AutoPipelineForImage2Image.from_pretrained(
-            "stabilityai/sd-turbo",
-            torch_dtype=DTYPE,
-            variant="fp16" if DEVICE.startswith("cuda") else None,
-        )
-        if DEVICE.startswith("cuda"):
-            pipe.to(DEVICE)
-            try:
-                pipe.enable_xformers_memory_efficient_attention()
-            except Exception:
-                pass
-        self._turbo_pipe = pipe
-        self.ready = True
-        logger.info("Turbo pipeline ready on %s", DEVICE)
-
-    def _load_ip(self) -> None:
-        if self._ip_pipe is not None:
-            return
-        from diffusers import DPMSolverMultistepScheduler, StableDiffusionImg2ImgPipeline
-
-        logger.info("Loading SD 1.5 + IP-Adapter on %s...", DEVICE)
+        logger.info("Loading LCM-LoRA img2img on %s (%spx)...", DEVICE, FRAME_SIZE)
         pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
             torch_dtype=DTYPE,
             safety_checker=None,
         )
-        pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
-        pipe.load_ip_adapter(
-            "h94/IP-Adapter",
-            subfolder="models",
-            weight_name="ip-adapter_sd15.bin",
-        )
+        pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
+        pipe.load_lora_weights("latent-consistency/lcm-lora-sdv1-5")
+        pipe.fuse_lora()
         if DEVICE.startswith("cuda"):
             pipe.to(DEVICE)
             try:
                 pipe.enable_xformers_memory_efficient_attention()
             except Exception:
-                pass
-        pipe.set_ip_adapter_scale(0.0)
-        self._ip_pipe = pipe
-        logger.info("IP-Adapter pipeline ready")
+                logger.info("xformers unavailable, using default attention")
+        pipe.set_progress_bar_config(disable=True)
+        self._pipe = pipe
+        self.ready = True
+        logger.info("LCM pipeline ready on %s", DEVICE)
 
     def set_reference(self, image: Optional[Image.Image]) -> None:
         with self._lock:
-            self._reference = image.convert("RGB") if image else None
-            if self._ip_pipe and hasattr(self._ip_pipe, "set_ip_adapter_scale"):
-                self._ip_pipe.set_ip_adapter_scale(self.ip_scale if self._reference else 0.0)
+            if image is None:
+                self._reference = None
+                self._reference_rgb = None
+                return
+            img = image.convert("RGB")
+            self._reference = img
+            self._reference_rgb = np.array(img.resize((FRAME_SIZE, FRAME_SIZE), Image.Resampling.LANCZOS))
 
     def process_jpeg(self, jpeg_bytes: bytes) -> bytes:
         if not self.ready:
@@ -156,54 +158,44 @@ class AvatarPipeline:
             raise ValueError("Invalid JPEG")
 
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        pil = Image.fromarray(rgb).resize((512, 512), Image.Resampling.LANCZOS)
+        pil = Image.fromarray(rgb).resize((FRAME_SIZE, FRAME_SIZE), Image.Resampling.LANCZOS)
 
         with self._lock:
             prompt = self.prompt
             negative = self.negative
-            steps = self.steps
+            steps = max(2, min(self.steps, 6))
             guidance = self.guidance
             strength = self.strength
-            ip_scale = self.ip_scale
-            reference = self._reference
+            color_amount = self.color_amount
+            ref_rgb = self._reference_rgb.copy() if self._reference_rgb is not None else None
 
         try:
             with torch.inference_mode():
-                if reference is not None:
-                    self._load_ip()
-                    ref = reference.resize((512, 512), Image.Resampling.LANCZOS)
-                    self._ip_pipe.set_ip_adapter_scale(ip_scale)
-                    result = self._ip_pipe(
-                        prompt=prompt,
-                        negative_prompt=negative,
-                        image=pil,
-                        ip_adapter_image=ref,
-                        num_inference_steps=max(1, steps),
-                        strength=min(max(strength, 0.05), 0.95),
-                        guidance_scale=guidance,
-                    ).images[0]
-                else:
-                    result = self._turbo_pipe(
-                        prompt=prompt,
-                        image=pil,
-                        num_inference_steps=max(1, min(steps, 4)),
-                        strength=min(max(strength, 0.05), 0.95),
-                        guidance_scale=1.0,
-                    ).images[0]
+                result = self._pipe(
+                    prompt=prompt,
+                    negative_prompt=negative,
+                    image=pil,
+                    num_inference_steps=steps,
+                    strength=min(max(strength, 0.2), 0.85),
+                    guidance_scale=guidance,
+                ).images[0]
+            out_rgb = np.array(result)
+            if ref_rgb is not None and color_amount > 0:
+                out_rgb = _color_transfer(ref_rgb, out_rgb, color_amount)
             self.last_error = None
         except Exception as exc:
             self.last_error = str(exc)
             raise
 
-        out_bgr = cv2.cvtColor(np.array(result), cv2.COLOR_RGB2BGR)
-        ok, buf = cv2.imencode(".jpg", out_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+        out_bgr = cv2.cvtColor(out_rgb, cv2.COLOR_RGB2BGR)
+        ok, buf = cv2.imencode(".jpg", out_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 88])
         if not ok:
             raise RuntimeError("JPEG encode failed")
 
         elapsed = time.perf_counter() - t0
         self.last_ms = elapsed * 1000
         self._times.append(elapsed)
-        if len(self._times) > 30:
+        if len(self._times) > 60:
             self._times.pop(0)
         self.fps = 1.0 / (sum(self._times) / len(self._times)) if self._times else 0.0
         return buf.tobytes()
@@ -241,7 +233,8 @@ async def status(token: str = Depends(require_token)):
         "fps": round(pipeline.fps, 2),
         "latency_ms": round(pipeline.last_ms, 1),
         "has_reference": pipeline._reference is not None,
-        "mode": "reference" if pipeline._reference is not None else "turbo",
+        "mode": "lcm+ref" if pipeline._reference is not None else "lcm",
+        "frame_size": FRAME_SIZE,
         "last_error": pipeline.last_error,
     }
 
@@ -261,8 +254,6 @@ async def upload_reference(
         raise HTTPException(status_code=400, detail="Invalid image")
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
     pipeline.set_reference(Image.fromarray(rgb))
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, pipeline._load_ip)
     return {"ok": True}
 
 
@@ -274,11 +265,9 @@ async def clear_reference(token: str = Depends(require_token)):
 
 @app.post("/api/settings")
 async def update_settings(body: dict, token: str = Depends(require_token)):
-    for key in ("prompt", "negative", "steps", "guidance", "strength", "ip_scale"):
+    for key in ("prompt", "negative", "steps", "guidance", "strength", "color_amount"):
         if key in body and body[key] is not None:
             setattr(pipeline, key if key != "negative" else "negative", body[key])
-    if pipeline._reference and pipeline._ip_pipe and hasattr(pipeline._ip_pipe, "set_ip_adapter_scale"):
-        pipeline._ip_pipe.set_ip_adapter_scale(float(pipeline.ip_scale))
     return {"ok": True}
 
 
@@ -366,7 +355,7 @@ input[type=range]{width:100%;margin-top:4px}
   <div class="wrap">
     <div class="grid">
       <div class="panel"><h2>Webcam</h2><video id="cam" autoplay playsinline muted></video></div>
-      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">Click Start — updates every few seconds (not real-time 30fps)</p></div>
+      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">LCM fast mode — pumps frames as fast as GPU allows (~8–12 fps)</p></div>
     </div>
     <div class="actions">
       <button id="btn-start" class="btn-go" onclick="startStream()">▶ Start</button>
@@ -384,17 +373,17 @@ input[type=range]{width:100%;margin-top:4px}
         </div>
         <label class="lbl">Transform strength <span id="str-val">0.55</span></label>
         <input type="range" id="strength" min="0.2" max="0.9" step="0.05" value="0.55" oninput="document.getElementById('str-val').textContent=this.value"/>
-        <label class="lbl">Style strength <span id="ip-val">0.65</span></label>
-        <input type="range" id="ip-scale" min="0.1" max="1" step="0.05" value="0.65" oninput="document.getElementById('ip-val').textContent=this.value"/>
+        <label class="lbl">Reference color match <span id="col-val">0.6</span></label>
+        <input type="range" id="color-amt" min="0" max="1" step="0.05" value="0.6" oninput="document.getElementById('col-val').textContent=this.value"/>
       </div>
       <div class="panel">
         <h2>Settings</h2>
         <label class="lbl">Prompt</label>
-        <textarea id="prompt" rows="2">full body portrait, high quality, detailed avatar, cinematic lighting</textarea>
+        <textarea id="prompt" rows="2">sharp portrait photo, detailed face, cinematic lighting, high quality</textarea>
         <label class="lbl">Negative</label>
         <textarea id="neg" rows="2">blurry, low quality, distorted, deformed, ugly</textarea>
-        <label class="lbl">Steps <span id="steps-val">4</span></label>
-        <input type="range" id="steps" min="2" max="8" step="1" value="4" oninput="document.getElementById('steps-val').textContent=this.value"/>
+        <label class="lbl">Steps <span id="steps-val">2</span> <span style="color:#64748b">(2=fastest)</span></label>
+        <input type="range" id="steps" min="2" max="6" step="1" value="2" oninput="document.getElementById('steps-val').textContent=this.value"/>
         <button class="btn-sec" style="margin-top:12px;width:100%" onclick="saveSettings()">Save settings</button>
       </div>
     </div>
@@ -402,8 +391,8 @@ input[type=range]{width:100%;margin-top:4px}
 </div>
 <script>
 let TOKEN=localStorage.getItem("avatar_token")||"";
-let running=false, busy=false, loopId=null, stream=null, videoMode=false;
-const FPS=30, INTERVAL=1000/FPS;
+let running=false, busy=false, rafId=null, stream=null, videoMode=false;
+const CAP=384;
 const HTTPS_URL="https://live.kelvinoz.com";
 if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
   location.replace(HTTPS_URL+location.pathname+location.search);
@@ -477,7 +466,7 @@ async function saveSettings(){
       negative:document.getElementById("neg").value,
       steps:+document.getElementById("steps").value,
       strength:+document.getElementById("strength").value,
-      ip_scale:+document.getElementById("ip-scale").value
+      color_amount:+document.getElementById("color-amt").value
     })});
 }
 
@@ -486,16 +475,27 @@ const outCanvas=document.getElementById("out"), outCtx=outCanvas.getContext("2d"
 const outStatus=document.getElementById("out-status");
 let frames=0;
 
+function captureFrame(){
+  const v=document.getElementById("cam");
+  const vw=v.videoWidth||CAP, vh=v.videoHeight||CAP;
+  cap.width=CAP; cap.height=CAP;
+  capCtx.fillStyle="#000";
+  capCtx.fillRect(0,0,CAP,CAP);
+  const scale=Math.min(CAP/vw, CAP/vh);
+  const dw=vw*scale, dh=vh*scale;
+  capCtx.drawImage(v,(CAP-dw)/2,(CAP-dh)/2,dw,dh);
+}
+
 async function sendFrame(){
   if(!running||busy)return;
   const v=document.getElementById("cam");
-  if(v.readyState<2)return;
+  if(v.readyState<2){ scheduleFrame(); return; }
   busy=true;
-  if(frames===0) outStatus.textContent="Processing first frame (may take 30–60s with reference photo)…";
-  cap.width=512; cap.height=512;
-  capCtx.drawImage(v,0,0,512,512);
+  if(frames===0) outStatus.textContent="Processing first frame…";
+  captureFrame();
   cap.toBlob(async blob=>{
     try{
+      const t0=performance.now();
       const r=await fetch("/process-frame",{
         method:"POST",
         headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"image/jpeg"},
@@ -507,15 +507,20 @@ async function sendFrame(){
         outCanvas.width=b.width; outCanvas.height=b.height;
         outCtx.drawImage(b,0,0);
         frames++;
-        outStatus.textContent=frames===1?"Live — updating every few seconds":"";
+        const ms=(performance.now()-t0).toFixed(0);
+        outStatus.textContent=`Live · ${ms}ms round-trip`;
       }else{
         const err=await r.json().catch(()=>({detail:r.statusText}));
         outStatus.textContent="Error: "+(err.detail||r.status);
-        console.error("process-frame", err);
       }
-    }catch(e){outStatus.textContent="Network error — retrying…"; console.error(e);}
-    finally{busy=false;}
-  },"image/jpeg",0.82);
+    }catch(e){outStatus.textContent="Network error — retrying…";}
+    finally{busy=false; scheduleFrame();}
+  },"image/jpeg",0.75);
+}
+
+function scheduleFrame(){
+  if(!running)return;
+  rafId=requestAnimationFrame(()=>{ if(!busy) sendFrame(); else scheduleFrame(); });
 }
 
 async function startStream(){
@@ -526,13 +531,13 @@ async function startStream(){
     await saveSettings();
     running=true; frames=0;
     document.getElementById("btn-stop").disabled=false;
-    loopId=setInterval(sendFrame, INTERVAL);
-    sendFrame();
+    scheduleFrame();
   }catch(e){ alert(e.message); document.getElementById("btn-start").disabled=false; }
 }
 
 function stopStream(){
-  running=false; clearInterval(loopId);
+  running=false;
+  if(rafId) cancelAnimationFrame(rafId);
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
   document.getElementById("btn-start").disabled=false;
   document.getElementById("btn-stop").disabled=true;

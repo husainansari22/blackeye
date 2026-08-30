@@ -37,7 +37,7 @@ pip install \
   transformers==4.47.1 \
   accelerate==1.2.1 \
   safetensors==0.4.5 \
-  controlnet-aux==0.0.9 \
+  peft==0.14.0 \
   huggingface-hub==0.36.2 \
   einops
 
@@ -49,25 +49,17 @@ mkdir -p "$HF_HOME"
 echo "[6/6] Pre-download model weights..."
 python3 - <<'PY'
 import torch
-from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
-from controlnet_aux import OpenposeDetector
+from diffusers import StableDiffusionImg2ImgPipeline, LCMScheduler, AutoPipelineForImage2Image
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if device.startswith("cuda") else torch.float32
 
-OpenposeDetector.from_pretrained("lllyasviel/ControlNet")
-cn = ControlNetModel.from_pretrained("lllyasviel/control_v11p_sd15_openpose", torch_dtype=dtype)
-pipe = StableDiffusionControlNetPipeline.from_pretrained(
-    "runwayml/stable-diffusion-v1-5", controlnet=cn, torch_dtype=dtype, safety_checker=None,
+pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+    "runwayml/stable-diffusion-v1-5", torch_dtype=dtype, safety_checker=None,
 )
-pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
-try:
-    pipe.load_ip_adapter("h94/IP-Adapter", subfolder="models", weight_name="ip-adapter_sd15.bin")
-except Exception as e:
-    print("IP-Adapter skip:", e)
-if device.startswith("cuda"):
-    pipe.to(device)
-print("Models cached on", device)
+pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
+pipe.load_lora_weights("latent-consistency/lcm-lora-sdv1-5")
+print("LCM-LoRA cached on", device)
 PY
 
 echo "Starting server on 0.0.0.0:80 ..."
