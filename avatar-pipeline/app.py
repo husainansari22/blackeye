@@ -334,6 +334,10 @@ input[type=range]{width:100%;margin-top:4px}
   <div class="login-box">
     <h1>Avatar Stream</h1>
     <p>Full-body AI transformation · RTX PRO 6000</p>
+    <p style="color:#f59e0b;font-size:.85rem;margin-bottom:12px">
+      ⚠ Use <strong>http://</strong> not https:// — type:
+      <strong>http://50.35.188.73:20001</strong>
+    </p>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
     <button class="btn-go" style="width:100%" onclick="doLogin()">Enter</button>
     <p id="login-err" class="err hidden"></p>

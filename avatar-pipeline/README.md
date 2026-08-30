@@ -4,7 +4,10 @@ Real-time full-body pose tracking (ControlNet OpenPose) + reference avatar styli
 
 ## Public URL
 
-**https://50.35.188.73:20001** → internal port **80**
+**http://50.35.188.73:20001** → internal port **80**
+
+> ⚠️ **Do NOT use `https://`** — Hostinger exposes plain HTTP on port 20001.
+> Using `https://` causes `ERR_SSL_PROTOCOL_ERROR`.
 
 Password: `@535846.oZ`
 
