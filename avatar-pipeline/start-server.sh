@@ -12,7 +12,7 @@ export APP_PASSWORD="${APP_PASSWORD:-@535846.oZ}"
 export USE_STREAM=1
 export FRAME_SIZE="${FRAME_SIZE:-384}"
 export STREAM_ENGINES="${APP_DIR}/engines"
-export STREAM_ACCEL="${STREAM_ACCEL:-tensorrt}"
+export STREAM_ACCEL="${STREAM_ACCEL:-none}"
 export PYTHONPATH="${APP_DIR}/StreamDiffusion:${APP_DIR}:${PYTHONPATH:-}"
 
 pkill -f "uvicorn app:app" 2>/dev/null || true

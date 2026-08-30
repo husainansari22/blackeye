@@ -334,6 +334,7 @@ body{font-family:system-ui,sans-serif;background:#0a0e14;color:#e2e8f0;min-heigh
 .panel{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:16px}
 .panel h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px}
 video,canvas,img.preview{width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;border:1px solid #1e293b;object-fit:contain}
+#cam{transform:scaleX(-1)}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
 button,.btn{padding:10px 18px;border:0;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9rem}
 .btn-go{background:#3b82f6;color:#fff}.btn-go:disabled{opacity:.4;cursor:not-allowed}
@@ -377,7 +378,7 @@ input[type=range]{width:100%;margin-top:4px}
   <div class="wrap">
     <div class="grid">
       <div class="panel"><h2>Webcam</h2><video id="cam" autoplay playsinline muted></video></div>
-      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">StreamDiffusion SD-Turbo + TensorRT — target 40–90 fps</p></div>
+      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">StreamDiffusion SD-Turbo — ~10 fps (TensorRT builds separately)</p></div>
     </div>
     <div class="actions">
       <button id="btn-start" class="btn-go" onclick="startStream()">▶ Start</button>
@@ -455,7 +456,19 @@ async function getCam(){
   if(!navigator.mediaDevices?.getUserMedia){
     throw new Error("Camera blocked. Open "+HTTPS_URL+" OR use Video file below.");
   }
-  return navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720}},audio:false});
+  const cams=await navigator.mediaDevices.enumerateDevices().catch(()=>[]);
+  const vids=cams.filter(d=>d.kind==="videoinput");
+  const external=vids.find(d=>/webcam|usb|hd|camera/i.test(d.label));
+  const video=external?{deviceId:{exact:external.deviceId}}:{facingMode:"user",width:{ideal:1280},height:{ideal:720}};
+  return navigator.mediaDevices.getUserMedia({video,audio:false});
+}
+
+async function waitVideoReady(v,ms=8000){
+  if(v.readyState>=2&&v.videoWidth>0)return;
+  await new Promise((res,rej)=>{
+    const t=setTimeout(()=>rej(new Error("Camera timeout — check permissions or use Video file")),ms);
+    v.onloadedmetadata=()=>{clearTimeout(t);v.play().then(res).catch(res);};
+  });
 }
 
 function useVideoFile(e){
@@ -511,20 +524,25 @@ function captureFrame(){
 async function sendFrame(){
   if(!running||busy)return;
   const v=document.getElementById("cam");
-  if(v.readyState<2){ scheduleFrame(); return; }
+  if(v.readyState<2||!v.videoWidth){ scheduleFrame(); return; }
   busy=true;
   if(frames===0) outStatus.textContent="Processing first frame…";
   captureFrame();
   cap.toBlob(async blob=>{
     try{
       const t0=performance.now();
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),120000);
       const r=await fetch("/process-frame",{
         method:"POST",
         headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"image/jpeg"},
-        body:blob
+        body:blob,
+        signal:ctrl.signal
       });
+      clearTimeout(timer);
       if(r.ok){
         const buf=await r.blob();
+        if(buf.size<1000) throw new Error("Empty response from GPU");
         const b=await createImageBitmap(buf);
         outCanvas.width=b.width; outCanvas.height=b.height;
         outCtx.drawImage(b,0,0);
@@ -535,7 +553,9 @@ async function sendFrame(){
         const err=await r.json().catch(()=>({detail:r.statusText}));
         outStatus.textContent="Error: "+(err.detail||r.status);
       }
-    }catch(e){outStatus.textContent="Network error — retrying…";}
+    }catch(e){
+      outStatus.textContent=e.name==="AbortError"?"GPU timeout (>120s) — retrying…":"Network error — "+(e.message||"retrying…");
+    }
     finally{busy=false; scheduleFrame();}
   },"image/jpeg",0.75);
 }
@@ -548,8 +568,15 @@ function scheduleFrame(){
 async function startStream(){
   document.getElementById("btn-start").disabled=true;
   try{
-    if(!videoMode){ stream=await getCam(); document.getElementById("cam").srcObject=stream; }
-    await document.getElementById("cam").play().catch(()=>{});
+    const v=document.getElementById("cam");
+    if(!videoMode){
+      stream=await getCam();
+      v.srcObject=stream;
+      await waitVideoReady(v);
+    }else{
+      await v.play().catch(()=>{});
+    }
+    if(!v.videoWidth) throw new Error("No camera frames — allow camera access or use Video file");
     await saveSettings();
     running=true; frames=0;
     document.getElementById("btn-stop").disabled=false;

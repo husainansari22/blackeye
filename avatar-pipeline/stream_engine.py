@@ -42,11 +42,28 @@ def _color_transfer(ref_rgb: np.ndarray, src_rgb: np.ndarray, amount: float = 0.
     return blended
 
 
+def _trt_ready() -> bool:
+    """True only if compiled TensorRT engine binaries exist."""
+    root = Path(ENGINE_DIR)
+    if not root.exists():
+        return False
+    for p in root.rglob("*"):
+        if p.is_file() and p.name == "unet.engine" and p.stat().st_size > 1_000_000:
+            return True
+    return False
+
+
 def _accel_candidates(preferred: str) -> list[str]:
     order: list[str] = []
-    for accel in (preferred, ACCELERATION, "tensorrt", "xformers", "none"):
+    for accel in (preferred, ACCELERATION, "none"):
+        if accel == "tensorrt" and not _trt_ready():
+            continue
+        if accel == "xformers":
+            continue  # broken on Blackwell sm_120
         if accel and accel not in order:
             order.append(accel)
+    if "none" not in order:
+        order.append("none")
     return order
 
 
@@ -119,10 +136,15 @@ class StreamAvatarEngine:
                     delta=0.5,
                 )
                 self._stream = stream
-                self.acceleration = accel
+                # Wrapper may silently fall back when TRT/xformers fail
+                actual = accel
+                if accel == "tensorrt" and not _trt_ready():
+                    actual = "none"
+                self.acceleration = actual
+                self.mode = f"stream-turbo ({actual})"
                 self.ready = True
-                ACCEL_FILE.write_text(accel)
-                logger.info("StreamDiffusion ready (accel=%s)", accel)
+                ACCEL_FILE.write_text(actual)
+                logger.info("StreamDiffusion ready (accel=%s)", actual)
                 return
             except Exception as exc:
                 last_exc = exc
