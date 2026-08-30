@@ -334,9 +334,10 @@ input[type=range]{width:100%;margin-top:4px}
   <div class="login-box">
     <h1>Avatar Stream</h1>
     <p>Full-body AI transformation · RTX PRO 6000</p>
-    <p style="color:#f59e0b;font-size:.85rem;margin-bottom:12px">
-      ⚠ Use <strong>http://</strong> not https:// — type:
-      <strong>http://50.35.188.73:20001</strong>
+    <p style="color:#94a3b8;font-size:.85rem;margin-bottom:12px">
+      Webcam needs HTTPS →
+      <strong>https://live.kelvinoz.com:20002</strong>
+      (accept certificate warning once)
     </p>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
     <button class="btn-go" style="width:100%" onclick="doLogin()">Enter</button>
@@ -398,8 +399,8 @@ function showApp(){
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("app-view").classList.remove("hidden");
   if(!window.isSecureContext && location.protocol!=="https:"){
-    document.getElementById("cam-banner").textContent=
-      "Tip: For webcam, use https://50.35.188.73:20001 and accept the certificate — or use Video file below.";
+    document.getElementById("cam-banner").innerHTML=
+      "📷 For webcam: open <a href='https://live.kelvinoz.com:20002' style='color:#93c5fd'>https://live.kelvinoz.com:20002</a> and accept the certificate — or use <b>Video file</b> below.";
     document.getElementById("cam-banner").classList.remove("hidden");
   }
   pollStats(); setInterval(pollStats,2000);
@@ -417,7 +418,9 @@ async function pollStats(){
 }
 
 async function getCam(){
-  if(!navigator.mediaDevices?.getUserMedia) throw new Error("Camera needs HTTPS. Use Video file or open https://50.35.188.73:20001");
+  if(!navigator.mediaDevices?.getUserMedia){
+    throw new Error("Camera blocked. Open https://live.kelvinoz.com:20002 (accept certificate) OR use Video file below.");
+  }
   return navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720}},audio:false});
 }
 
