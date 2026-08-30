@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Patch StreamDiffusion TensorRT imports for diffusers >= 0.30."""
+"""Patch StreamDiffusion TensorRT imports and fp16 for diffusers >= 0.30 / TRT 11."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent / "StreamDiffusion"
@@ -8,7 +8,9 @@ REPLACEMENTS = {
     "from diffusers.models.vae import": "from diffusers.models.autoencoders.vae import",
     "from diffusers.models.autoencoder_tiny import": "from diffusers.models.autoencoders.autoencoder_tiny import",
     "onnx_opset: int = 17": "onnx_opset: int = 18",
+    "        fp16=True,\n        input_profile=input_profile,": "        fp16=False,\n        input_profile=input_profile,",
 }
+
 
 def patch_file(path: Path) -> bool:
     text = path.read_text()
@@ -20,6 +22,7 @@ def patch_file(path: Path) -> bool:
         return True
     return False
 
+
 def main() -> None:
     count = 0
     for py in ROOT.rglob("*.py"):
@@ -27,6 +30,7 @@ def main() -> None:
             print("patched", py.relative_to(ROOT))
             count += 1
     print(f"done ({count} files)")
+
 
 if __name__ == "__main__":
     main()
