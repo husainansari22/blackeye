@@ -73,8 +73,6 @@ def require_token(request: Request) -> str:
     return token
 
 
-USE_STREAM = os.environ.get("USE_STREAM", "1") == "1"
-STREAM_ACCEL = os.environ.get("STREAM_ACCEL", "tensorrt")
 
 def _color_transfer(ref_rgb: np.ndarray, src_rgb: np.ndarray, amount: float = 0.55) -> np.ndarray:
     """Fast LAB color transfer — applies reference palette without slow IP-Adapter."""
@@ -201,13 +199,20 @@ class AvatarPipeline:
         return buf.tobytes()
 
 
-if USE_STREAM:
+USE_REALTIME = os.environ.get("USE_REALTIME", "0") == "1"
+USE_STREAM = os.environ.get("USE_STREAM", "1") == "1"
+
+if USE_REALTIME:
+    from realtime_engine import RealtimeEngine
+
+    pipeline = RealtimeEngine()
+    logger.info("Using local SD-Turbo realtime engine (Decart-style, no API)")
+elif USE_STREAM:
     try:
         from stream_engine import StreamAvatarEngine
 
         pipeline = StreamAvatarEngine()
-        pipeline.acceleration = STREAM_ACCEL
-        logger.info("Using StreamDiffusion SD-Turbo (accel=%s)", STREAM_ACCEL)
+        logger.info("Using StreamDiffusion SD-Turbo")
     except Exception as exc:
         logger.warning("StreamDiffusion unavailable (%s), falling back to LCM", exc)
         pipeline = AvatarPipeline()
@@ -285,9 +290,10 @@ async def clear_reference(token: str = Depends(require_token)):
 
 @app.post("/api/settings")
 async def update_settings(body: dict, token: str = Depends(require_token)):
-    for key in ("prompt", "negative", "steps", "guidance", "strength", "color_amount"):
+    for key in ("prompt", "negative", "steps", "guidance", "strength", "reference_strength"):
         if key in body and body[key] is not None:
-            setattr(pipeline, key if key != "negative" else "negative", body[key])
+            attr = "negative" if key == "negative" else key
+            setattr(pipeline, attr, body[key])
     if hasattr(pipeline, "update_prompt") and "prompt" in body:
         pipeline.update_prompt(pipeline.prompt, pipeline.negative)
     return {"ok": True}
@@ -377,8 +383,16 @@ input[type=range]{width:100%;margin-top:4px}
   <div id="cam-banner" class="banner hidden"></div>
   <div class="wrap">
     <div class="grid">
-      <div class="panel"><h2>Webcam</h2><video id="cam" autoplay playsinline muted></video></div>
-      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">StreamDiffusion SD-Turbo — ~10 fps (TensorRT builds separately)</p></div>
+      <div class="panel"><h2>Webcam</h2>
+        <label class="lbl">Camera</label>
+        <select id="cam-select" style="width:100%;padding:8px;background:#0f172a;border:1px solid #1e293b;color:#e2e8f0;border-radius:8px;margin-bottom:8px" onchange="previewCamera()">
+          <option value="">Default camera</option>
+        </select>
+        <button class="btn-sec" style="width:100%;margin-bottom:8px" onclick="initCameras()">Detect cameras</button>
+        <video id="cam" autoplay playsinline muted></video>
+        <p id="cam-status" style="font-size:.75rem;color:#64748b;margin-top:6px">Click Detect cameras, allow access, pick your HD webcam</p>
+      </div>
+      <div class="panel"><h2>AI Avatar</h2><canvas id="out"></canvas><p id="out-status" style="margin-top:8px;font-size:.8rem;color:#64748b;text-align:center">StreamDiffusion SD-Turbo on your GPU — no cloud API</p></div>
     </div>
     <div class="actions">
       <button id="btn-start" class="btn-go" onclick="startStream()">▶ Start</button>
@@ -396,8 +410,9 @@ input[type=range]{width:100%;margin-top:4px}
         </div>
         <label class="lbl">Transform strength <span id="str-val">0.55</span></label>
         <input type="range" id="strength" min="0.2" max="0.9" step="0.05" value="0.55" oninput="document.getElementById('str-val').textContent=this.value"/>
-        <label class="lbl">Reference color match <span id="col-val">0.6</span></label>
-        <input type="range" id="color-amt" min="0" max="1" step="0.05" value="0.6" oninput="document.getElementById('col-val').textContent=this.value"/>
+        <label class="lbl">Reference likeness (color transfer) <span id="ref-val">0.55</span></label>
+        <input type="range" id="ref-strength" min="0.2" max="1" step="0.05" value="0.55" oninput="document.getElementById('ref-val').textContent=this.value"/>
+        <p style="font-size:.75rem;color:#64748b;margin-top:6px">With reference: color-matched look. Without: ~8–12 fps SD-Turbo stream.</p>
       </div>
       <div class="panel">
         <h2>Settings</h2>
@@ -438,6 +453,7 @@ function showApp(){
     document.getElementById("cam-banner").classList.remove("hidden");
   }
   pollStats(); setInterval(pollStats,2000);
+  initCameras().catch(()=>{});
 }
 if(TOKEN) fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}}).then(r=>{if(r.ok)showApp();});
 
@@ -452,14 +468,46 @@ async function pollStats(){
   }catch(e){}
 }
 
+async function initCameras(){
+  const sel=document.getElementById("cam-select");
+  const st=document.getElementById("cam-status");
+  try{
+    if(!navigator.mediaDevices?.getUserMedia) throw new Error("No camera API");
+    const tmp=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    tmp.getTracks().forEach(t=>t.stop());
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    const vids=devs.filter(d=>d.kind==="videoinput");
+    sel.innerHTML="";
+    vids.forEach((d,i)=>{
+      const o=document.createElement("option");
+      o.value=d.deviceId;
+      o.textContent=d.label||("Camera "+(i+1));
+      sel.appendChild(o);
+    });
+    const ext=vids.find(d=>/webcam|usb|hd|external/i.test(d.label));
+    if(ext) sel.value=ext.deviceId;
+    st.textContent=vids.length+" camera(s) found — select yours, then Start";
+    await previewCamera();
+  }catch(e){ st.textContent="Camera error: "+e.message; }
+}
+
+async function previewCamera(){
+  const v=document.getElementById("cam");
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  stream=await getCam();
+  v.srcObject=stream;
+  await v.play().catch(()=>{});
+}
+
 async function getCam(){
   if(!navigator.mediaDevices?.getUserMedia){
-    throw new Error("Camera blocked. Open "+HTTPS_URL+" OR use Video file below.");
+    throw new Error("Camera blocked. Use "+HTTPS_URL+" and allow camera.");
   }
-  const cams=await navigator.mediaDevices.enumerateDevices().catch(()=>[]);
-  const vids=cams.filter(d=>d.kind==="videoinput");
-  const external=vids.find(d=>/webcam|usb|hd|camera/i.test(d.label));
-  const video=external?{deviceId:{exact:external.deviceId}}:{facingMode:"user",width:{ideal:1280},height:{ideal:720}};
+  const sel=document.getElementById("cam-select");
+  const id=sel?.value;
+  const video=id
+    ?{deviceId:{exact:id},width:{ideal:1280},height:{ideal:720}}
+    :{width:{ideal:1280},height:{ideal:720}};
   return navigator.mediaDevices.getUserMedia({video,audio:false});
 }
 
@@ -501,7 +549,7 @@ async function saveSettings(){
       negative:document.getElementById("neg").value,
       steps:+document.getElementById("steps").value,
       strength:+document.getElementById("strength").value,
-      color_amount:+document.getElementById("color-amt").value
+      reference_strength:+document.getElementById("ref-strength").value
     })});
 }
 
@@ -521,6 +569,13 @@ function captureFrame(){
   capCtx.drawImage(v,(CAP-dw)/2,(CAP-dh)/2,dw,dh);
 }
 
+function frameBrightness(){
+  captureFrame();
+  const d=capCtx.getImageData(0,0,CAP,CAP).data;
+  let s=0; for(let i=0;i<d.length;i+=4) s+=d[i]+d[i+1]+d[i+2];
+  return s/(d.length/4)/3;
+}
+
 async function sendFrame(){
   if(!running||busy)return;
   const v=document.getElementById("cam");
@@ -528,6 +583,11 @@ async function sendFrame(){
   busy=true;
   if(frames===0) outStatus.textContent="Processing first frame…";
   captureFrame();
+  const bright=frameBrightness();
+  if(bright<12){
+    outStatus.textContent="⚠ Camera is black — click Detect cameras, pick HD webcam, or use Video file";
+    busy=false; scheduleFrame(); return;
+  }
   cap.toBlob(async blob=>{
     try{
       const t0=performance.now();
