@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vid2Vid OBS Output</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+    #output {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      display: block;
+      background: #000;
+    }
+    #placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: #888;
+      font: 16px/1.4 system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <img id="output" alt="AI output" />
+  <div id="placeholder">Waiting for AI stream…</div>
+  <script>
+    const token = "{{ token }}";
+    const img = document.getElementById("output");
+    const placeholder = document.getElementById("placeholder");
+
+    // MJPEG stream for smooth OBS browser source
+    img.src = `/obs/mjpeg?token=${encodeURIComponent(token)}`;
+    img.onload = () => { placeholder.style.display = "none"; };
+    img.onerror = () => {
+      // Fallback: poll latest JPEG
+      placeholder.textContent = "Connecting…";
+      setInterval(() => {
+        img.src = `/api/output.jpg?token=${encodeURIComponent(token)}&t=${Date.now()}`;
+      }, 100);
+    };
+  </script>
+</body>
+</html>

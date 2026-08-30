@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vid2Vid Studio</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand compact"><span class="dot"></span> Vid2Vid Studio</div>
+    <div class="stats" id="stats">Loading model…</div>
+  </header>
+
+  <main class="studio-grid">
+    <section class="panel">
+      <h2>Camera input</h2>
+      <video id="input-video" autoplay playsinline muted></video>
+      <div class="controls">
+        <button id="start-btn">Start AI stream</button>
+        <button id="stop-btn" disabled>Stop</button>
+        <label class="inline">
+          <input type="checkbox" id="use-webrtc" checked />
+          WebRTC (lower latency)
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>AI output</h2>
+      <canvas id="output-canvas"></canvas>
+      <div class="obs-box">
+        <label>OBS Browser Source URL</label>
+        <div class="copy-row">
+          <input id="obs-url" readonly value="{{ obs_url }}" />
+          <button type="button" id="copy-obs">Copy</button>
+        </div>
+        <p class="hint">In OBS: Sources → Browser → paste URL above (1920×1080 recommended).</p>
+      </div>
+    </section>
+
+    <section class="panel settings-panel">
+      <h2>Diffusion settings</h2>
+      <label>Prompt</label>
+      <textarea id="prompt" rows="3">cyberpunk neon city portrait, cinematic lighting, highly detailed</textarea>
+      <label>Negative prompt</label>
+      <textarea id="negative-prompt" rows="2">blurry, low quality, distorted, ugly, watermark</textarea>
+      <div class="grid-2">
+        <div>
+          <label>Strength <span id="strength-val">0.45</span></label>
+          <input id="strength" type="range" min="0.05" max="0.95" step="0.05" value="0.45" />
+        </div>
+        <div>
+          <label>Steps <span id="steps-val">2</span></label>
+          <input id="steps" type="range" min="1" max="6" step="1" value="2" />
+        </div>
+        <div>
+          <label>Width</label>
+          <select id="width">
+            <option value="384">384</option>
+            <option value="512" selected>512</option>
+            <option value="768">768</option>
+          </select>
+        </div>
+        <div>
+          <label>Height</label>
+          <select id="height">
+            <option value="384">384</option>
+            <option value="512" selected>512</option>
+            <option value="768">768</option>
+          </select>
+        </div>
+      </div>
+      <button id="apply-settings">Apply settings</button>
+    </section>
+  </main>
+
+  <script>
+    window.VID2VID_TOKEN = "{{ token }}";
+  </script>
+  <script src="/static/js/studio.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+[Unit]
+Description=Kelvin Vid2Vid Real-time AI Stream
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/vid2vid-stream
+Environment=VID2VID_PASSWORD=@535846.oZ
+Environment=VID2VID_BASE_URL=https://live.kelvinoz.com
+Environment=HF_HOME=/opt/vid2vid-stream/.cache/huggingface
+Environment=TRANSFORMERS_CACHE=/opt/vid2vid-stream/.cache/huggingface
+Environment=CUDA_VISIBLE_DEVICES=0
+ExecStart=/opt/vid2vid-stream/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8765 --workers 1
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

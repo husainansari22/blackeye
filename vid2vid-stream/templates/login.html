@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vid2Vid Stream — Login</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body class="login-page">
+  <main class="card login-card">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>Vid2Vid Live</h1>
+      <p>Real-time AI video transformation on kelvinoz.com</p>
+    </div>
+    <form id="login-form">
+      <label for="password">Access password</label>
+      <input id="password" type="password" autocomplete="current-password" required />
+      <button type="submit" id="login-btn">Enter studio</button>
+      <p id="login-error" class="error hidden"></p>
+    </form>
+  </main>
+  <script src="/static/js/login.js"></script>
+</body>
+</html>
