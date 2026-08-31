@@ -127,6 +127,16 @@
   function applySettings(settings) {
     const s = settings || getSettings();
     CONFIG = { ...DEFAULT_CONFIG, ...(s.config || {}) };
+    if (CONFIG.supportTelegram === 'https://t.me/acctventa') {
+      CONFIG.supportTelegram = DEFAULT_CONFIG.supportTelegram;
+      try {
+        const fixed = getSettings();
+        if (fixed.config) {
+          fixed.config.supportTelegram = CONFIG.supportTelegram;
+          safeSet(SETTINGS_KEY, JSON.stringify(fixed));
+        }
+      } catch (e) {}
+    }
     PLANS = JSON.parse(JSON.stringify(DEFAULT_PLANS));
     if (s.plans) {
       Object.keys(s.plans).forEach((id) => {
