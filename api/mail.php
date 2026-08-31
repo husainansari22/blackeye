@@ -13,7 +13,7 @@ function mail_cfg(): array {
         'app_name' => $c['app_name'] ?? 'Acctventa',
         'app_url' => rtrim($c['app_url'] ?? 'https://acctventa.com', '/'),
         'support_email' => $c['support_email'] ?? 'support@acctventa.com',
-        'support_telegram' => $c['support_telegram'] ?? 'https://t.me/acctventa',
+        'support_telegram' => $c['support_telegram'] ?? 'https://t.me/acctventa_support',
         'brand' => '#0ea5e9',
         'brand_hover' => '#0284c7',
     ];

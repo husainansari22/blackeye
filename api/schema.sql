@@ -277,7 +277,7 @@ INSERT INTO settings (setting_key, setting_value) VALUES
 ('referral_reward_amount', '5'),
 ('referral_min_deposit', '50'),
 ('deposit_fee_rate', '0'),
-('support_telegram', 'https://t.me/acctventa'),
+('support_telegram', 'https://t.me/acctventa_support'),
 ('support_email', 'support@acctventa.com'),
 ('installed', '1')
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);

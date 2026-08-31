@@ -30,7 +30,7 @@ return [
     'currency' => 'USD',
     'payment_currency' => 'NGN',
     'usd_ngn_rate' => 1600,
-    'support_telegram' => 'https://t.me/acctventa',
+    'support_telegram' => 'https://t.me/acctventa_support',
     'support_email' => 'support@acctventa.com',
 
     // Create this mailbox in Hostinger → Emails first

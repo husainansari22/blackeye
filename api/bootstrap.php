@@ -692,6 +692,21 @@ function migrate_legacy_support_email(): void {
     }
 }
 
+/** One-time: point support Telegram at @acctventa_support (group chat stays @acctventa). */
+function migrate_legacy_support_telegram(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        $tg = (string)setting_get('support_telegram', '');
+        if ($tg === '' || $tg === 'https://t.me/acctventa') {
+            setting_set('support_telegram', 'https://t.me/acctventa_support');
+        }
+    } catch (Throwable $e) {
+        // db may not be ready during install
+    }
+}
+
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/flutterwave.php';
 require_once __DIR__ . '/support.php';

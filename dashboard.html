@@ -1237,7 +1237,8 @@
         function openSupportCenter() {
             const c = (window.Acctventa && window.Acctventa.CONFIG) || {};
             const em = c.supportEmail || 'support@acctventa.com';
-            const tg = c.supportTelegram || 'https://t.me/acctventa';
+            const tg = c.supportTelegram || 'https://t.me/acctventa_support';
+            const tgHandle = '@' + String(tg).replace(/^https?:\/\/(t\.me|telegram\.me)\//i, '').replace(/\/.*$/, '').split('?')[0];
             const gmailLogo = `<svg viewBox="0 0 24 24" class="w-8 h-8" aria-hidden="true"><path fill="#EA4335" d="M12 12.713L1.5 5.25V18c0 .825.675 1.5 1.5 1.5h4.5V11.1L12 15.087 16.5 11.1V19.5H21c.825 0 1.5-.675 1.5-1.5V5.25L12 12.713z"/><path fill="#34A853" d="M21 4.5h-1.5L12 10.087 4.5 4.5H3c-.45 0-.862.2-1.125.525L12 12.713l10.125-7.688A1.49 1.49 0 0 0 21 4.5z"/><path fill="#4285F4" d="M3 4.5v14.25c0 .225.05.437.15.637L7.5 11.1V4.5H3z"/><path fill="#FBBC05" d="M21 4.5h-4.5v6.6l4.35 8.287c.1-.2.15-.412.15-.637V4.5z"/></svg>`;
             const tgLogo = `<span class="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center text-white text-xl"><i class="fa-brands fa-telegram"></i></span>`;
             const chatLogo = `<span class="w-10 h-10 rounded-full bg-brandPrimary flex items-center justify-center text-white text-xl"><i class="fa-solid fa-comments"></i></span>`;
@@ -1272,7 +1273,7 @@
                     <a href="${tg}" target="_blank" rel="noopener" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
                       ${tgLogo}
                       <p class="text-xs font-bold mt-2">Telegram</p>
-                      <p class="text-[9px] text-slate-400 mt-0.5">@acctventa</p>
+                      <p class="text-[9px] text-slate-400 mt-0.5">${tgHandle}</p>
                     </a>
                     <a href="mailto:${em}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
                       <span class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden">${gmailLogo}</span>
