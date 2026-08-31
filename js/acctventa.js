@@ -17,6 +17,9 @@
     freeDailyUploadLimit: 5,
     brandPrimary: '#0ea5e9',
     supportTelegram: 'https://t.me/acctventa',
+    socialInstagram: 'https://instagram.com/acctventa',
+    socialTwitter: 'https://x.com/acctventa',
+    socialTiktok: 'https://tiktok.com/@acctventa',
     supportEmail: 'support@acctventa.com',
     siteName: 'acctventa',
     walletCurrencies: {
