@@ -2161,7 +2161,11 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block"><label>Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>"></div>
               <div class="av-field-block"><label>Referral reward ($)</label><input name="referral_reward" type="number" step="0.01" value="<?= h(setting_get('referral_reward_amount',5)) ?>"></div>
               <div class="av-field-block"><label>Referral min deposit ($)</label><input name="referral_min_deposit" type="number" step="0.01" value="<?= h(setting_get('referral_min_deposit',50)) ?>"></div>
+<<<<<<< HEAD
               <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa_support')) ?>" placeholder="https://t.me/acctventa_support"></div>
+=======
+              <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>"></div>
+>>>>>>> 3af3153 (Restore iOS-style Owner Admin UI accidentally overwritten by deploy)
               <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>"></div>
             </div>
             <button class="av-btn av-btn-primary">Save settings</button>
