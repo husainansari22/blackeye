@@ -85,6 +85,7 @@ FILES=(
   "index.html"
   "dashboard.html"
   "company.html"
+  ".htaccess"
   "js/acctventa.js"
   "js/api-client.js"
   "js/api-sync.js"
