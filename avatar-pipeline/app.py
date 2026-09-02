@@ -20,7 +20,7 @@ from typing import Optional
 import cv2
 import numpy as np
 import torch
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pathlib import Path
 
@@ -204,9 +204,15 @@ class AvatarPipeline:
 USE_REALTIME = os.environ.get("USE_REALTIME", "0") == "1"
 USE_STREAM = os.environ.get("USE_STREAM", "0") == "1"
 USE_QUALITY = os.environ.get("USE_QUALITY", "0") == "1"
-USE_FACESWAP = os.environ.get("USE_FACESWAP", "1") == "1"
+USE_FACESWAP = os.environ.get("USE_FACESWAP", "0") == "1"
+USE_BODY = os.environ.get("USE_BODY", "1") == "1"
 
-if USE_FACESWAP:
+if USE_BODY:
+    from body_engine import BodyTransformEngine
+
+    pipeline = BodyTransformEngine()
+    logger.info("Using full-body LCM + IP-Adapter Plus transform")
+elif USE_FACESWAP:
     from faceswap_engine import FaceSwapEngine
 
     pipeline = FaceSwapEngine()
@@ -260,11 +266,12 @@ async def status(token: str = Depends(require_token)):
     has_ref = getattr(pipeline, "_reference_rgb", None) is not None or getattr(
         pipeline, "_reference", None
     ) is not None
-    mode = getattr(pipeline, "mode", "lcm")
-    if has_ref and mode.startswith("stream"):
-        mode = "stream+ref"
-    elif has_ref:
-        mode = f"{mode}+ref"
+    mode = getattr(pipeline, "mode", "faceswap")
+    if has_ref and "+ref" not in mode:
+        if mode.startswith("stream"):
+            mode = "stream+ref"
+        else:
+            mode = f"{mode}+ref"
     return {
         "ready": pipeline.ready,
         "device": DEVICE,
@@ -328,6 +335,28 @@ async def process_frame(request: Request, token: str = Depends(require_token)):
         logger.exception("Frame error")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return Response(content=out, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.websocket("/ws/stream")
+async def ws_stream(websocket: WebSocket):
+    await websocket.accept()
+    token = websocket.query_params.get("token")
+    if not _check_token(token):
+        await websocket.close(code=4401)
+        return
+    loop = asyncio.get_event_loop()
+    try:
+        while True:
+            body = await websocket.receive_bytes()
+            if not body:
+                continue
+            try:
+                out = await loop.run_in_executor(None, pipeline.process_jpeg, body)
+                await websocket.send_bytes(out)
+            except Exception as exc:
+                await websocket.send_json({"error": str(exc)})
+    except WebSocketDisconnect:
+        return
 
 
 @app.get("/health")

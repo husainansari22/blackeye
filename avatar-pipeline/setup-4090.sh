@@ -35,7 +35,8 @@ pip install \
   huggingface-hub==0.36.2 \
   einops \
   insightface \
-  onnxruntime-gpu==1.19.2
+  onnxruntime-gpu==1.19.2 \
+  mediapipe
 
 export HF_HOME="${APP_DIR}/.cache/huggingface"
 export APP_PASSWORD="${APP_PASSWORD:-@535846.oZ}"
