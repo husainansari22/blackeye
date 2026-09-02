@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acctlogs - Marketplace Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brandPrimary: '#000000',
+                        brandHover: '#262626',
+                        darkBg: '#0a0a0a',
+                        darkCard: '#171717',
+                        lightBg: '#fafafa',
+                        lightCard: '#ffffff'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-28 transition-colors duration-200" data-theme="light">
+
+    <!-- TOP HEADER -->
+    <div class="sticky top-0 z-[100] mx-auto w-full max-w-[500px]">
+        <div class="flex items-center justify-between px-3 py-3 md:px-0 bg-lightCard dark:bg-darkBg border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-bars cursor-pointer text-xl text-slate-700 dark:text-white" onclick="toggleLeftMenu()"></i>
+                <a href="#" onclick="switchTab('home')" class="flex items-center gap-x-1.5">
+                    <div class="w-8 h-8 rounded-lg bg-brandPrimary flex items-center justify-center text-white shadow-md">
+                        <i class="fa-solid fa-bag-shopping text-sm"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-brandPrimary dark:text-white lowercase">acctlogs</span>
+                </a>
+            </div>
+            <div class="flex items-center gap-x-3.5 text-slate-700 dark:text-white">
+                <button type="button" onclick="openSupportCenter()" class="hover:text-brandPrimary transition" title="Support">
+                    <i class="fa-solid fa-headphones text-lg"></i>
+                </button>
+                <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller desk">
+                    <i class="fa-solid fa-desktop text-lg"></i>
+                </button>
+                <button type="button" onclick="switchTab('orders')" class="relative hover:text-brandPrimary transition" title="Cart">
+                    <i class="fa-solid fa-cart-shopping text-lg"></i>
+                    <span class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[10px] font-bold text-white">0</span>
+                </button>
+                <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
+                    <i class="fa-regular fa-bell text-lg"></i>
+                    <span class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[10px] font-bold text-white">1</span>
+                </button>
+                <button type="button" onclick="toggleRightMenu()" class="hover:text-brandPrimary transition" title="Help">
+                    <i class="fa-regular fa-circle-question text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEWS -->
+    <main class="max-w-md mx-auto px-4 py-4">
+
+        <!-- TAB: HOME -->
+        <div id="tab_home" class="app-tab space-y-6">
+            <!-- Top Merchants -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                </div>
+                <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
+                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('Legit')">
+                        <div class="w-14 h-14 rounded-full p-0.5 border-2 border-brandPrimary mb-1">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="w-full h-full rounded-full object-cover" alt="Merchant">
+                        </div>
+                        <span class="text-xs font-bold truncate w-full">Legit</span>
+                        <span class="text-[10px] text-slate-500">5.0 <i class="fa-solid fa-star text-yellow-500 text-[8px]"></i> 39 sales</span>
+                    </div>
+                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('LeoTech')">
+                        <div class="w-14 h-14 rounded-full p-0.5 border-2 border-orange-500 mb-1">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" class="w-full h-full rounded-full object-cover" alt="Merchant">
+                        </div>
+                        <span class="text-xs font-bold truncate w-full">LeoTech</span>
+                        <span class="text-[10px] text-slate-500">3.8 <i class="fa-solid fa-star text-yellow-500 text-[8px]"></i> 257 sales</span>
+                    </div>
+                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('Leon')">
+                        <div class="w-14 h-14 rounded-full p-0.5 border-2 border-brandPrimary mb-1">
+                            <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/600px-LinkedIn_logo_initials.png" class="w-8 h-8 object-contain" alt="Merchant">
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold truncate w-full">Leon</span>
+                        <span class="text-[10px] text-slate-500">5.8 <i class="fa-solid fa-star text-yellow-500 text-[8px]"></i> 6.4k sales</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Bar & Filter Button -->
+            <div class="relative flex items-center gap-2">
+                <div class="relative flex-1">
+                    <input type="text" id="searchInput" placeholder="Search accounts, VPN, numbers..." oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
+                </div>
+                <button onclick="toggleFilterDrawer()" class="w-10 h-10 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-lg hover:bg-brandHover transition" title="Filters"><i class="fa-solid fa-bars-staggered"></i></button>
+            </div>
+
+            <!-- Filter Chips -->
+            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
+                <button onclick="filterCategory('Trending')" class="filter-chip bg-brandPrimary text-white px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition"><i class="fa-solid fa-fire"></i> Trending</button>
+                <button onclick="filterCategory('Social')" class="filter-chip bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition hover:border-brandPrimary hover:text-brandPrimary"><i class="fa-solid fa-users"></i> Social accounts</button>
+                <button onclick="filterCategory('VPN')" class="filter-chip bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition hover:border-brandPrimary hover:text-brandPrimary"><i class="fa-solid fa-shield-halved"></i> VPN</button>
+            </div>
+
+            <!-- Spotlight Banner -->
+            <div class="bg-gradient-to-r from-neutral-900 to-black rounded-xl p-4 flex justify-between items-center text-white shadow-lg h-28 relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                <div class="relative z-10">
+                    <span class="text-white/80 text-xs font-black drop-shadow">✦ MERCHANT SPOTLIGHT</span>
+                    <div class="flex items-center gap-2 my-1">
+                        <span class="text-white font-bold text-xl">Gold</span>
+                        <span class="bg-white/20 text-white border border-white/40 text-[10px] px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                    </div>
+                    <p class="text-xs text-neutral-300">583+ Sales • 29% Success Rate</p>
+                </div>
+                <button onclick="openMerchantStore('Gold')" class="relative z-10 bg-white text-black text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-neutral-100 transition shadow-md">Visit store</button>
+            </div>
+
+            <!-- Trending Catalog -->
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-fire text-brandPrimary"></i> Trending now</h3>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all</span>
+                </div>
+                <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
+                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 w-40 shrink-0 relative shadow-sm">
+                        <div class="absolute top-3 right-3 text-slate-400 cursor-pointer hover:text-red-500 transition" onclick="toggleWishlist(this)"><i class="fa-regular fa-heart"></i></div>
+                        <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png" class="w-6 h-6 object-contain" alt="Gmail">
+                        </div>
+                        <h4 class="font-bold text-sm leading-tight mb-2 h-10">15 Years Old Gmail Account</h4>
+                        <div class="flex justify-between items-center mt-3">
+                            <span class="text-sm font-bold text-brandPrimary">$3.00</span>
+                            <button onclick="openCheckout('15 Years Old Gmail Account', 3.00)" class="bg-brandPrimary hover:bg-brandHover text-white text-xs font-bold px-3 py-1.5 rounded-full transition shadow-sm">Buy</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 w-40 shrink-0 relative shadow-sm">
+                        <div class="absolute top-3 right-3 text-slate-400 cursor-pointer hover:text-red-500 transition" onclick="toggleWishlist(this)"><i class="fa-regular fa-heart"></i></div>
+                        <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 text-blue-600 text-xl">
+                            <i class="fa-brands fa-facebook"></i>
+                        </div>
+                        <h4 class="font-bold text-sm leading-tight mb-2 h-10">USA Facebook Account (Aged)</h4>
+                        <div class="flex justify-between items-center mt-3">
+                            <span class="text-sm font-bold text-brandPrimary">$5.50</span>
+                            <button onclick="openCheckout('USA Facebook Account', 5.50)" class="bg-brandPrimary hover:bg-brandHover text-white text-xs font-bold px-3 py-1.5 rounded-full transition shadow-sm">Buy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: MARKETPLACE -->
+        <div id="tab_market" class="app-tab hidden space-y-4">
+            <h2 class="text-xl font-bold">Marketplace</h2>
+            <div class="relative flex items-center gap-2">
+                <input type="text" id="marketSearch" placeholder="Search marketplace..." oninput="handleMarketSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
+                <button onclick="toggleFilterDrawer()" class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 text-xs px-3.5 py-2.5 rounded-xl hover:border-brandPrimary transition">Filter <i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+            </div>
+            <p class="text-xs text-slate-500" id="resultCount">2 results found</p>
+            <div class="space-y-3" id="marketProductsList">
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center product-item shadow-sm" data-category="Social Media" data-price="4.50">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xl">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm mb-1">USA 🇺🇸 WhatsApp number</h4>
+                            <p class="text-[10px] text-emerald-500 font-medium">3 available</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold text-brandPrimary mb-1">$4.50</div>
+                        <button onclick="openCheckout('USA WhatsApp number', 4.50)" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm transition">Buy now</button>
+                    </div>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center product-item shadow-sm" data-category="Emails & Messaging" data-price="3.00">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png" class="w-6 h-6 object-contain" alt="Gmail">
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm mb-1">15 Years Old Gmail Account</h4>
+                            <p class="text-[10px] text-emerald-500 font-medium">2 available</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold text-brandPrimary mb-1">$3.00</div>
+                        <button onclick="openCheckout('15 Years Old Gmail Account', 3.00)" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm transition">Buy now</button>
+                    </div>
+                </div>
+            </div>
+            <div id="noResultsState" class="hidden text-center py-12 space-y-3">
+                <i class="fa-solid fa-filter-circle-xmark text-4xl text-slate-300 dark:text-slate-700"></i>
+                <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No Results Found</p>
+            </div>
+        </div>
+
+        <!-- TAB: ORDERS -->
+        <div id="tab_orders" class="app-tab hidden space-y-4">
+            <h2 class="text-xl font-bold">My Purchases</h2>
+            <div class="space-y-3" id="ordersListContainer">
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
+                    <div>
+                        <h4 class="font-bold text-sm">Pia VPN 1-Year Access</h4>
+                        <p class="text-[10px] text-slate-500 mt-0.5">Order No: 9f063f...15c0</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-sm text-brandPrimary">$2.50</span>
+                        <button onclick="openOrderCredentials()" class="block text-xs mt-1 text-brandPrimary hover:text-brandHover underline transition">View Order</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ADS -->
+        <div id="tab_ads" class="app-tab hidden space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold">My Ads</h2>
+                <button onclick="openSellProductWizard()" class="w-10 h-10 rounded-xl bg-brandPrimary hover:bg-brandHover text-white flex items-center justify-center font-bold text-lg shadow-md transition"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-sm">
+                <div>
+                    <h4 class="font-bold text-sm">USA Facebook Account</h4>
+                    <p class="text-sm font-extrabold mt-1 text-brandPrimary">$1.99</p>
+                </div>
+                <span class="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg font-medium">Active</span>
+            </div>
+        </div>
+
+        <!-- TAB: WALLET -->
+        <div id="tab_wallet" class="app-tab hidden space-y-5">
+            <h2 class="text-xl font-bold">Wallet</h2>
+            <div class="bg-gradient-to-r from-neutral-800 to-black p-6 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+                <div class="relative z-10">
+                    <p class="text-xs text-neutral-300 font-medium tracking-wide uppercase">Available Balance</p>
+                    <h3 class="text-4xl font-extrabold mt-1 tracking-tight">$2.03</h3>
+                </div>
+                <div class="flex gap-3 relative z-10 pt-2">
+                    <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-black font-bold py-3 rounded-xl text-xs shadow-md hover:bg-neutral-100 transition">Deposit</button>
+                    <button onclick="openWalletModal('withdraw')" class="flex-1 bg-white/20 backdrop-blur-sm text-white font-bold py-3 rounded-xl text-xs border border-white/30 hover:bg-white/30 transition">Withdraw</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ACCOUNT DASHBOARD -->
+        <div id="tab_account_dashboard" class="app-tab hidden space-y-5">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <button onclick="switchTab('home')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-brandPrimary transition"><i class="fa-solid fa-arrow-left"></i></button>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Dashboard</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Overview of your account performance</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-brandPrimary mb-2">
+                        <i class="fa-solid fa-wallet text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Balance</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">$0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 mb-2">
+                        <i class="fa-solid fa-bullhorn text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Active Ad</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-500 mb-2">
+                        <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Pending Order</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 mb-2">
+                        <i class="fa-solid fa-circle-check text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Completed</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: REFERRAL -->
+        <div id="tab_referral" class="app-tab hidden space-y-5">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <button onclick="switchTab('home')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-brandPrimary transition"><i class="fa-solid fa-arrow-left"></i></button>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral History</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Invite friends and earn rewards.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-brandPrimary mb-2">
+                        <i class="fa-solid fa-users text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Total Referrals</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 mb-2">
+                        <i class="fa-solid fa-money-bill-wave text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Total Earned</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">$0.00</h4>
+                </div>
+            </div>
+
+            <div class="bg-brandPrimary/10 border border-brandPrimary/30 rounded-xl p-4 flex flex-col items-center text-center space-y-3">
+                <div class="w-12 h-12 bg-white dark:bg-darkCard text-brandPrimary rounded-full flex items-center justify-center text-xl font-bold shadow">
+                    🎁
+                </div>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Receive $5 reward instantly</h3>
+                <p class="text-xs text-slate-600 dark:text-slate-400">When your friend registers, funds wallet with minimum of $50 and purchases at least one account, you get rewarded instantly.</p>
+                <div class="w-full bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-700 p-3 rounded-xl mt-2 flex justify-between items-center">
+                    <span class="text-xs truncate text-brandPrimary font-mono font-medium">app.acctlogs.com/auth/sign-up?ref=oduwa</span>
+                    <button onclick="alert('Referral link copied!')" class="text-slate-500 hover:text-brandPrimary transition pl-2 border-l border-slate-200 dark:border-slate-700 ml-2">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+                <button onclick="alert('Referral link shared!')" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3 rounded-xl text-white font-bold text-sm shadow-md mt-2">Share Invitation Link</button>
+            </div>
+        </div>
+
+        <!-- TAB: PLANS PAGE -->
+        <div id="tab_plans" class="app-tab hidden space-y-5">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <button onclick="switchTab('home')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-brandPrimary transition">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Packages & Pricing</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Select a merchant plan to start listing accounts</p>
+                </div>
+            </div>
+
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Package</span>
+                    <span class="text-[10px] font-bold text-brandPrimary bg-brandPrimary/10 border border-brandPrimary/20 px-2 py-0.5 rounded-full">Basic Tier</span>
+                </div>
+                <div class="flex justify-between items-baseline pt-1">
+                    <h3 class="text-2xl font-black text-slate-800 dark:text-white">Basic Plan</h3>
+                    <span class="text-lg font-black text-brandPrimary">$9.99 <span class="text-xs text-slate-400 font-normal">/ mo</span></span>
+                </div>
+                <div class="space-y-1 pt-2">
+                    <div class="flex justify-between text-xs text-slate-500 font-medium">
+                        <span>Daily Upload Limit</span>
+                        <span class="text-slate-700 dark:text-slate-300 font-bold">0 / 49</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div class="bg-brandPrimary h-full w-[0%]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+                <h4 class="font-bold text-sm text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-2">All Plan Features</h4>
+                <ul class="text-xs space-y-2.5 text-slate-600 dark:text-slate-300">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i> <span>Daily upload quotas based on active tier</span></li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i> <span>Access to marketplace seller dashboard</span></li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i> <span>Instant escrow release upon delivery</span></li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i> <span>Bulk credentials upload support</span></li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i> <span>Direct customer dispute resolution</span></li>
+                </ul>
+            </div>
+
+            <div class="space-y-4 pt-1">
+                <h4 class="font-bold text-sm text-slate-800 dark:text-white">Choose Your Tier</h4>
+
+                <div class="bg-lightCard dark:bg-darkCard border-2 border-brandPrimary rounded-2xl p-4 shadow-md space-y-3 relative overflow-hidden">
+                    <span class="absolute top-0 right-0 bg-brandPrimary text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-xl">Popular</span>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="text-lg font-black text-brandPrimary">BASIC PLAN</h4>
+                            <p class="text-xs text-slate-400">Great for individual sellers</p>
+                        </div>
+                        <span class="text-2xl font-black text-slate-800 dark:text-white">$9.99 <span class="text-xs text-slate-400 font-normal">/mo</span></span>
+                    </div>
+                    <ul class="text-xs space-y-2 text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brandPrimary"></i> 49 Uploads Daily</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brandPrimary"></i> Standard Marketplace Visibility</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brandPrimary"></i> Basic Ticket Support</li>
+                    </ul>
+                    <button onclick="alert('Basic Plan Selected!')" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white font-bold py-3 rounded-xl shadow-md text-xs">Active Plan</button>
+                </div>
+
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="text-lg font-black text-slate-800 dark:text-white">STANDARD PLAN</h4>
+                            <p class="text-xs text-slate-400">For growing merchant stores</p>
+                        </div>
+                        <span class="text-2xl font-black text-brandPrimary">$19.99 <span class="text-xs text-slate-400 font-normal">/mo</span></span>
+                    </div>
+                    <ul class="text-xs space-y-2 text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 150 Uploads Daily</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Featured Store Listing</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Priority Merchant Support</li>
+                    </ul>
+                    <button onclick="alert('Subscribed to Standard Plan!')" class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-brandPrimary hover:text-white transition text-slate-700 dark:text-slate-200 font-bold py-3 rounded-xl text-xs border border-slate-200 dark:border-slate-700">Upgrade Plan</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- NOTIFICATION DRAWER -->
+    <div id="notificationDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex justify-end transition-opacity">
+        <div class="w-[85%] max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notifications</h3>
+                <i class="fa-solid fa-xmark text-xl cursor-pointer text-slate-400 hover:text-brandPrimary transition" onclick="toggleNotificationDrawer()"></i>
+            </div>
+            <div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+                <div class="relative pl-4 border-l border-brandPrimary">
+                    <div class="absolute w-2.5 h-2.5 bg-brandPrimary rounded-full -left-[5px] top-1"></div>
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="font-semibold text-sm text-slate-800 dark:text-white">New Message</p>
+                        <span class="text-[10px] text-slate-400">7d Ago</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">You have a new message from TRUST SELLER 🛒 🇺🇸</p>
+                    <a href="#" class="text-brandPrimary text-[10px] font-medium mt-1 inline-block hover:underline">View</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER DRAWER -->
+    <div id="filterDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] hidden flex justify-end transition-opacity">
+        <div class="w-full max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-5 overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 class="font-bold text-lg">Filter Products</h3>
+                <i class="fa-solid fa-xmark text-xl cursor-pointer text-slate-400 hover:text-brandPrimary transition" onclick="toggleFilterDrawer()"></i>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <div class="flex justify-between items-center cursor-pointer font-medium py-1 hover:text-brandPrimary transition" onclick="toggleAccordion('acc_social')">
+                        <span>Social Media</span> <i class="fa-solid fa-chevron-down text-xs text-slate-400" id="icon_acc_social"></i>
+                    </div>
+                    <div id="acc_social" class="hidden pl-4 pt-2 space-y-2 text-xs text-slate-500 dark:text-slate-400">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-brandPrimary"><input type="checkbox" class="accent-black filter-chk" value="Facebook" onchange="applyFilters()"> Facebook</label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-brandPrimary"><input type="checkbox" class="accent-black filter-chk" value="Instagram" onchange="applyFilters()"> Instagram</label>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-bold text-slate-500 mb-2">Price range ($)</p>
+                <div class="flex gap-3">
+                    <input type="number" id="minPrice" value="0" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-center focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary outline-none">
+                    <input type="number" id="maxPrice" value="1000" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-center focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary outline-none">
+                </div>
+            </div>
+            <button onclick="resetFilters(); toggleFilterDrawer();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl mt-auto shadow-md transition">Reset filters</button>
+        </div>
+    </div>
+
+    <!-- LEFT MENU DRAWER (FULL PROFILE & SETTINGS) -->
+    <div id="leftMenu" class="fixed inset-0 top-[57px] bg-lightCard dark:bg-black z-[70] hidden flex justify-center transition-opacity">
+        <div class="w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
+            <!-- Back -->
+            <div class="px-4 pt-4 pb-2">
+                <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-700 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Profile -->
+            <div class="px-5 pb-5 space-y-3">
+                <div class="flex items-start gap-3">
+                    <div class="w-12 h-12 rounded-md bg-black flex items-center justify-center text-white shrink-0">
+                        <i class="fa-solid fa-question text-xl"></i>
+                    </div>
+                    <div class="min-w-0 pt-0.5">
+                        <h3 class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug">ODUWA ELVIS OSAZEMWINDE</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">elvissmith5544@gmail.com</p>
+                    </div>
+                </div>
+                <button onclick="openBecomeVerified(); toggleLeftMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-2 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
+                    Become Verified
+                </button>
+            </div>
+
+            <!-- Nav list -->
+            <nav class="flex-1 px-2 pb-4">
+                <a href="#" onclick="switchTab('account_dashboard'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-border-all w-5 text-center"></i> Account Dashboard
+                </a>
+                <a href="#" onclick="switchTab('referral'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-users w-5 text-center"></i> Referral
+                </a>
+                <a href="#" onclick="switchTab('plans'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-award w-5 text-center"></i> Plans
+                </a>
+                <a href="#" onclick="switchTab('orders'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Purchase
+                </a>
+                <a href="#" onclick="openAccountSettings(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
+                </a>
+                <a href="#" onclick="openSupportCenter(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-headset w-5 text-center"></i> Support
+                </a>
+                <a href="#" onclick="openMyStories(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-camera w-5 text-center"></i> My Stories
+                </a>
+                <button type="button" onclick="toggleDarkMode()" class="w-full flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition text-left">
+                    <i class="fa-solid fa-moon w-5 text-center" id="themeIcon"></i>
+                    <span id="themeText">Dark Mode</span>
+                </button>
+                <a href="#" onclick="handleLogout()" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
+                </a>
+            </nav>
+
+            <!-- CTA -->
+            <div class="px-5 pb-8 pt-2 mt-auto">
+                <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm">
+                    Sell Product
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT MENU DRAWER (QUICK NAVIGATION) -->
+    <div id="rightMenu" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex justify-end transition-opacity">
+        <div class="w-3/4 max-w-sm h-full bg-lightCard dark:bg-darkCard border-l border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
+                <span class="font-bold text-lg text-brandPrimary dark:text-white">Quick Menu</span>
+                <i class="fa-solid fa-xmark text-xl cursor-pointer text-slate-400 hover:text-brandPrimary transition" onclick="toggleRightMenu()"></i>
+            </div>
+            <div class="space-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+                <a href="#" onclick="switchTab('home'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-house w-5 text-slate-400"></i> Home Feed</a>
+                <a href="#" onclick="switchTab('market'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-border-all w-5 text-slate-400"></i> Marketplace</a>
+                <a href="#" onclick="switchTab('orders'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-regular fa-clipboard w-5 text-slate-400"></i> Purchases</a>
+                <a href="#" onclick="switchTab('ads'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-bullhorn w-5 text-slate-400"></i> Active Ads</a>
+                <a href="#" onclick="switchTab('wallet'); toggleRightMenu();" class="flex items-center gap-3 py-2.5 hover:text-brandPrimary transition"><i class="fa-solid fa-wallet w-5 text-slate-400"></i> Wallet & Escrow</a>
+                
+                <div class="border-t border-slate-200 dark:border-slate-800 pt-4 mt-2">
+                    <p class="text-xs text-slate-400 font-bold mb-3 uppercase tracking-wider">Quick Categories</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-normal">
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-neutral-100 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">Social Media</span>
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-neutral-100 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">Messaging</span>
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-neutral-100 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">VPN & Proxies</span>
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-neutral-100 dark:hover:bg-slate-800 hover:text-brandPrimary border border-transparent transition text-center" onclick="switchTab('market'); toggleRightMenu();">Giftcards</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GENERAL MODAL CONTAINER -->
+    <div id="appModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+        <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-brandPrimary transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- FULL SCREEN SELL PRODUCT WIZARD OVERLAY -->
+    <div id="sellWizardOverlay" class="fixed inset-0 bg-lightBg dark:bg-darkBg z-[110] hidden flex-col transition-opacity">
+        <!-- Header with Back Button -->
+        <div class="flex items-center justify-between px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-arrow-left text-lg cursor-pointer text-slate-500 hover:text-brandPrimary transition" onclick="closeSellProductWizard()"></i>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Sell Your Account</h2>
+            </div>
+            <span class="text-xs text-emerald-500 font-medium" id="sellWizardStepText">Step 1 of 2</span>
+        </div>
+
+        <!-- Step 1 Content -->
+        <div id="sellStep1" class="flex-1 overflow-y-auto px-4 py-5 space-y-5">
+            <div>
+                <label class="block mb-1.5 text-slate-600 dark:text-slate-400 text-xs font-medium">Select account category</label>
+                <select id="wizardCat" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+                    <option value="">Select category...</option>
+                    <option value="Social Media">Social Media</option>
+                    <option value="Emails & Messaging">Emails & Messaging</option>
+                    <option value="VPN & Proxies">VPN & Proxies</option>
+                    <option value="Giftcards">Giftcards</option>
+                </select>
+            </div>
+            <div>
+                <label class="block mb-1.5 text-slate-600 dark:text-slate-400 text-xs font-medium">Account Title</label>
+                <input type="text" id="wizardTitle" placeholder="e.g. Verified Facebook Account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-slate-600 dark:text-slate-400 text-xs font-medium">Add account price ($)</label>
+                <input type="number" id="wizardPrice" step="0.01" placeholder="0.00" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+            </div>
+
+            <p class="text-xs font-bold pt-2 text-slate-800 dark:text-white border-t border-slate-200 dark:border-slate-800 mt-2">Release options</p>
+            <div class="space-y-3">
+                <label onclick="selectWizardRelease('auto')" id="wizardCardAuto" class="flex items-start gap-3 p-3.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer transition">
+                    <input type="radio" name="wizardRelease" value="auto" checked class="mt-0.5 accent-black">
+                    <div>
+                        <span class="font-bold text-slate-800 dark:text-white flex items-center gap-1 text-sm">Auto Confirm Order <span class="text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded">Recommended</span></span>
+                        <p class="text-[10px] text-slate-500 mt-1 leading-snug">Logins are sent and the order is confirmed automatically — no action required.</p>
+                    </div>
+                </label>
+                <label onclick="selectWizardRelease('manual')" id="wizardCardManual" class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer transition">
+                    <input type="radio" name="wizardRelease" value="manual" class="mt-0.5 accent-black">
+                    <div>
+                        <span class="font-bold text-slate-800 dark:text-white text-sm">Manual Release</span>
+                        <p class="text-[10px] text-slate-500 mt-1 leading-snug">Ideal for products needing a code or extra authentication before access.</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Step 2 Content -->
+        <div id="sellStep2" class="flex-1 overflow-y-auto px-4 py-5 space-y-5 hidden">
+            <div>
+                <label class="block mb-1.5 text-slate-600 dark:text-slate-400 text-xs font-medium">Username / Email</label>
+                <input type="text" id="wizardUser" placeholder="Enter username or email" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-slate-600 dark:text-slate-400 text-xs font-medium">Password</label>
+                <input type="text" id="wizardPass" placeholder="Enter password" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-slate-600 dark:text-slate-400 text-xs font-medium">Additional Information (Optional)</label>
+                <textarea id="wizardExtra" rows="4" placeholder="Recovery email, 2FA backup codes, or instructions..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white"></textarea>
+            </div>
+        </div>
+
+        <!-- Fixed Bottom Footer for Button -->
+        <div class="p-4 bg-lightCard dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 pb-safe mt-auto">
+            <button id="sellWizardBtn" onclick="handleSellWizardNext()" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white font-bold py-3.5 rounded-xl shadow-md text-sm">Continue</button>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 w-full bg-lightCard/95 dark:bg-darkCard/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 py-2.5 px-6 pb-safe">
+        <div class="max-w-md mx-auto flex justify-between items-center text-center">
+            <button onclick="switchTab('home'); setActiveNav(this);" class="nav-item text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-house text-lg mb-1"></i><span class="text-[10px] font-medium">Home</span></button>
+            <button onclick="switchTab('market'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-border-all text-lg mb-1"></i><span class="text-[10px] font-medium">Market</span></button>
+            <button onclick="switchTab('orders'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-regular fa-clipboard text-lg mb-1"></i><span class="text-[10px] font-medium">Orders</span></button>
+            <button onclick="switchTab('ads'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-bullhorn text-lg mb-1"></i><span class="text-[10px] font-medium">Ads</span></button>
+            <button onclick="switchTab('wallet'); setActiveNav(this);" class="nav-item text-slate-400 hover:text-brandPrimary flex flex-col items-center transition"><i class="fa-solid fa-wallet text-lg mb-1"></i><span class="text-[10px] font-medium">Wallet</span></button>
+        </div>
+    </nav>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        let currentSellStep = 1;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.app-tab').forEach(t => t.classList.add('hidden'));
+            document.getElementById('tab_' + tabId).classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function setActiveNav(el) {
+            document.querySelectorAll('.nav-item').forEach(i => {
+                i.classList.remove('text-brandPrimary');
+                i.classList.add('text-slate-400');
+            });
+            el.classList.remove('text-slate-400');
+            el.classList.add('text-brandPrimary');
+        }
+
+        function toggleLeftMenu() {
+            const menu = document.getElementById('leftMenu');
+            const nav = document.querySelector('nav.fixed.bottom-0');
+            menu.classList.toggle('hidden');
+            if (nav) {
+                nav.classList.toggle('hidden', !menu.classList.contains('hidden'));
+            }
+        }
+        function toggleRightMenu() { document.getElementById('rightMenu').classList.toggle('hidden'); }
+        function toggleNotificationDrawer() { document.getElementById('notificationDrawer').classList.toggle('hidden'); }
+        function toggleFilterDrawer() { document.getElementById('filterDrawer').classList.toggle('hidden'); }
+        
+        function toggleAccordion(id) {
+            document.getElementById(id).classList.toggle('hidden');
+            const icon = document.getElementById('icon_' + id);
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+        }
+        function closeModal() { document.getElementById('appModal').classList.add('hidden'); }
+        function toggleWishlist(icon) { icon.classList.toggle('fa-regular'); icon.classList.toggle('fa-solid'); icon.classList.toggle('text-red-500'); }
+
+        function filterCategory(cat) { switchTab('market'); }
+
+        function applyFilters() {
+            const min = parseFloat(document.getElementById('minPrice').value) || 0;
+            const max = parseFloat(document.getElementById('maxPrice').value) || 10000;
+            const items = document.querySelectorAll('.product-item');
+            let count = 0;
+            items.forEach(item => {
+                const price = parseFloat(item.getAttribute('data-price')) || 0;
+                if (price >= min && price <= max) {
+                    item.classList.remove('hidden');
+                    count++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+            document.getElementById('resultCount').innerText = count + " results found";
+            document.getElementById('noResultsState').classList.toggle('hidden', count > 0);
+        }
+
+        function resetFilters() {
+            document.querySelectorAll('.filter-chk').forEach(cb => cb.checked = false);
+            document.getElementById('minPrice').value = 0;
+            document.getElementById('maxPrice').value = 1000;
+            applyFilters();
+        }
+
+        function handleMarketSearch(query) {
+            const q = query.toLowerCase();
+            const items = document.querySelectorAll('.product-item');
+            let count = 0;
+            items.forEach(item => {
+                if (item.innerText.toLowerCase().includes(q)) {
+                    item.classList.remove('hidden');
+                    count++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+            document.getElementById('resultCount').innerText = count + " results found";
+            document.getElementById('noResultsState').classList.toggle('hidden', count > 0);
+        }
+
+        function openCheckout(title, price) {
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-xl mb-1 text-slate-800 dark:text-white">Secure Checkout</h3>
+                <p class="text-xs text-emerald-600 dark:text-emerald-400 mb-4"><i class="fa-solid fa-shield-halved mr-1"></i> Escrow protected</p>
+                <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl mb-5 text-sm space-y-3">
+                    <div class="flex justify-between"><span class="text-slate-500">Item:</span> <span class="font-medium text-right ml-4 text-slate-800 dark:text-white">${title}</span></div>
+                    <div class="flex justify-between border-t border-slate-200 dark:border-slate-800 pt-3"><span class="text-slate-500">Price:</span> <span class="font-bold text-brandPrimary text-lg">$${price.toFixed(2)}</span></div>
+                </div>
+                <button onclick="alert('Payment successful!'); closeModal(); switchTab('orders');" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white py-3.5 rounded-xl font-bold text-sm shadow-md">Pay $${price.toFixed(2)} Now</button>
+            `;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        // FULL SCREEN SELL PRODUCT WIZARD
+        function openSellProductWizard() {
+            currentSellStep = 1;
+            document.getElementById('sellWizardStepText').innerText = "Step 1 of 2";
+            document.getElementById('sellStep1').classList.remove('hidden');
+            document.getElementById('sellStep2').classList.add('hidden');
+            document.getElementById('sellWizardBtn').innerText = "Continue";
+            
+            document.getElementById('sellWizardOverlay').classList.remove('hidden');
+            document.getElementById('sellWizardOverlay').classList.add('flex');
+        }
+
+        function closeSellProductWizard() {
+            if(currentSellStep === 2) {
+                // Go back to Step 1 instead of closing
+                currentSellStep = 1;
+                document.getElementById('sellWizardStepText').innerText = "Step 1 of 2";
+                document.getElementById('sellStep1').classList.remove('hidden');
+                document.getElementById('sellStep2').classList.add('hidden');
+                document.getElementById('sellWizardBtn').innerText = "Continue";
+            } else {
+                // Completely close modal
+                document.getElementById('sellWizardOverlay').classList.remove('flex');
+                document.getElementById('sellWizardOverlay').classList.add('hidden');
+            }
+        }
+
+        function selectWizardRelease(type) {
+            const autoCard = document.getElementById('wizardCardAuto');
+            const manualCard = document.getElementById('wizardCardManual');
+            if(type === 'auto') {
+                autoCard.className = "flex items-start gap-3 p-3.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer transition";
+                manualCard.className = "flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer transition";
+                autoCard.querySelector('input').checked = true;
+            } else {
+                manualCard.className = "flex items-start gap-3 p-3.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer transition";
+                autoCard.className = "flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer transition";
+                manualCard.querySelector('input').checked = true;
+            }
+        }
+
+        function handleSellWizardNext() {
+            if(currentSellStep === 1) {
+                const cat = document.getElementById('wizardCat').value;
+                const title = document.getElementById('wizardTitle').value;
+                const price = document.getElementById('wizardPrice').value;
+                
+                if(!cat || !title || !price) {
+                    alert("Please fill in all required fields on this step.");
+                    return;
+                }
+                
+                currentSellStep = 2;
+                document.getElementById('sellWizardStepText').innerText = "Step 2 of 2";
+                document.getElementById('sellStep1').classList.add('hidden');
+                document.getElementById('sellStep2').classList.remove('hidden');
+                document.getElementById('sellWizardBtn').innerText = "Publish Listing";
+            } else {
+                const user = document.getElementById('wizardUser').value;
+                const pass = document.getElementById('wizardPass').value;
+                
+                if(!user || !pass) {
+                    alert("Please enter the delivery credentials.");
+                    return;
+                }
+                
+                alert('Listing published successfully!');
+                closeSellProductWizard(); // This resets it
+                // Make sure we actually close it since closeSellProductWizard checks step
+                document.getElementById('sellWizardOverlay').classList.remove('flex');
+                document.getElementById('sellWizardOverlay').classList.add('hidden');
+                
+                // Clear all values
+                document.getElementById('wizardTitle').value = '';
+                document.getElementById('wizardPrice').value = '';
+                document.getElementById('wizardUser').value = '';
+                document.getElementById('wizardPass').value = '';
+                document.getElementById('wizardExtra').value = '';
+                
+                switchTab('ads');
+            }
+        }
+
+        function openWalletModal(type) {
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-xl mb-1 text-slate-800 dark:text-white">${type === 'deposit' ? 'Fund Wallet' : 'Withdraw Funds'}</h3>
+                <p class="text-xs text-slate-500 mb-4">${type === 'deposit' ? 'Add funds securely.' : 'Available Balance: $2.03'}</p>
+                <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-slate-400 font-medium">$</span>
+                    <input type="number" placeholder="0.00" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-4 py-3.5 my-3 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white">
+                </div>
+                <button onclick="alert('Transaction submitted!'); closeModal();" class="w-full bg-brandPrimary hover:bg-brandHover transition text-white py-3.5 rounded-xl font-bold text-sm shadow-md mt-2">Submit</button>
+            `;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function openAccountSettings() {
+            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Account Settings</h3><input type="text" value="Acctlogs" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-brandPrimary text-slate-800 dark:text-white"><button onclick="alert('Saved successfully!'); closeModal();" class="w-full bg-brandPrimary py-3.5 rounded-xl text-white font-bold shadow-md">Save Changes</button>`;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function openSupportCenter() {
+            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-2 text-slate-800 dark:text-white">Support</h3><p class="text-xs text-slate-500 mb-4">Contact via Telegram or Email.</p><button onclick="closeModal()" class="w-full bg-brandPrimary py-3 rounded-xl text-white font-bold">Close</button>`;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function openMyStories() {
+            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-2 text-slate-800 dark:text-white">My Stories</h3><p class="text-xs text-slate-500 mb-4">No stories active.</p><button onclick="closeModal()" class="w-full bg-brandPrimary py-3 rounded-xl text-white font-bold">Close</button>`;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function openBecomeVerified() {
+            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-2 text-slate-800 dark:text-white">Verified Merchant</h3><p class="text-xs text-slate-500 mb-4">Unlock trusted seller status.</p><button onclick="alert('Submitted for review!'); closeModal();" class="w-full bg-brandPrimary py-3.5 rounded-xl text-white font-bold shadow-md">Apply Now</button>`;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function openOrderCredentials() {
+            document.getElementById('modalBody').innerHTML = `<h3 class="font-bold text-lg mb-3 text-slate-800 dark:text-white">Order Credentials</h3><div class="text-sm font-mono bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-800 dark:text-white"><p><span class="text-slate-500">User:</span> pia_user</p><p><span class="text-slate-500">Pass:</span> ********</p></div><button onclick="closeModal()" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3.5 rounded-xl text-white font-bold mt-4 shadow-md">Close</button>`;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function openMerchantStore(name) { alert("Opening merchant: " + name); }
+
+        function toggleDarkMode() {
+            const htmlEl = document.documentElement;
+            const isDark = htmlEl.classList.toggle('dark');
+            const text = document.getElementById('themeText');
+            const icon = document.getElementById('themeIcon');
+            
+            if (isDark) {
+                text.innerText = 'Light Mode';
+                icon.className = 'fa-solid fa-sun w-5 text-center text-yellow-500';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                text.innerText = 'Dark Mode';
+                icon.className = 'fa-solid fa-moon w-5 text-center text-slate-700 dark:text-white';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if(savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeText').innerText = 'Light Mode';
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun w-5 text-center text-yellow-500';
+            }
+        });
+
+        function handleLogout() {
+            if(confirm("Are you sure you want to log out?")) {
+                window.location.href = "index.html";
+            }
+        }
+    </script>
+</body>
+</html>
+
+
