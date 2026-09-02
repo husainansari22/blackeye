@@ -849,6 +849,17 @@ try {
             json_out(['ok' => true, 'message' => 'Website admin password updated']);
         }
 
+        case 'chat.file': {
+            $f = chat_attachment_basename((string)($_GET['f'] ?? ''));
+            if ($f === '') {
+                http_response_code(404);
+                header('Content-Type: text/plain; charset=utf-8');
+                echo 'Invalid file';
+                exit;
+            }
+            serve_chat_attachment_file($f);
+        }
+
         case 'support.open': {
             $u = require_user();
             touch_user_presence((int)$u['id']);

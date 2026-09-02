@@ -732,8 +732,8 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-alerts.js?v=20260902attach1"></script>
-      <script src="/js/staff-inbox.js?v=20260902attach1"></script>
+      <script src="/js/staff-alerts.js?v=20260902attach2"></script>
+      <script src="/js/staff-inbox.js?v=20260902attach2"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);

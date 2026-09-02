@@ -85,10 +85,14 @@ ROOT="${1:-/workspace}"
 cd "$ROOT"
 
 FILES=(
+  "api/marketplace_extras.php"
+  "api/support.php"
+  "api/index.php"
   "js/staff-inbox.js"
   "js/dashboard-app.js"
   "dashboard.html"
-  "api/index.php"
+  "owner/index.php"
+  "css/admin-app.css"
 )
 
 for rel in "${FILES[@]}"; do

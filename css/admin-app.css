@@ -537,6 +537,16 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   object-fit: cover;
   background: #000;
 }
+.av-bubble .av-attach-missing {
+  display: block;
+  margin-top: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.7rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
 .av-bubble a.av-file {
   display: inline-flex;
   align-items: center;

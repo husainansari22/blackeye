@@ -1813,7 +1813,7 @@
       /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(m.attachmentUrl) ||
       /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(name);
     if (isImg) {
-      return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="block mt-1"><img src="${escapeAttr(m.attachmentUrl)}" alt="" class="max-w-full rounded-lg max-h-40 object-cover" loading="lazy"></a>`;
+      return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="block mt-1"><img src="${escapeAttr(m.attachmentUrl)}" alt="" class="max-w-full rounded-lg max-h-40 object-cover" loading="lazy" onerror="this.onerror=null;this.outerHTML='<span class=\\'text-[11px] opacity-80 italic\\'>Photo unavailable — ask support to resend</span>';"></a>`;
     }
     return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-1 text-[11px] underline ${mine ? 'text-white/90' : 'text-brandPrimary'}"><i class="fa-solid fa-file"></i> ${escapeHtml(m.attachmentName || 'Download file')}</a>`;
   }
