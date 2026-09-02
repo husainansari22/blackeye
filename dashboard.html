@@ -234,9 +234,18 @@
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-sm flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
-                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all</span>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
                 <div id="homeListings" class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none"></div>
+            </div>
+
+            <!-- Other products (AcctBazaar-style vertical list) -->
+            <div id="homeOtherSection">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">Other product</h3>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                </div>
+                <div id="homeOtherListings" class="space-y-2.5"></div>
             </div>
         </div>
 
@@ -883,7 +892,7 @@
     <script src="/js/api-client.js?v=20260902support1"></script>
     <script src="/js/api-sync.js?v=20260902support1"></script>
     <script src="/js/kyc-app.js?v=20260822kyc9"></script>
-    <script src="/js/dashboard-app.js?v=20260902attach2"></script>
+    <script src="/js/dashboard-app.js?v=20260902other1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

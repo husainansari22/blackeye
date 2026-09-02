@@ -212,6 +212,7 @@
     const logo = productLogoFor(item);
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
+    const stock = Math.max(1, Number(item.stock) || 1);
     const previewBtn = item.previewLink
       ? `<a href="${escapeAttr(item.previewLink)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-[10px] text-brandPrimary underline">Preview</a>`
       : `<span class="text-[10px] text-slate-400">No preview</span>`;
@@ -222,10 +223,12 @@
           <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
+        ${item.sellerRating ? `<p class="text-[10px] text-amber-500 mb-0.5">★ ${Number(item.sellerRating).toFixed(1)}</p>` : ''}
         <p class="text-[10px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')}</p>
+        <p class="text-[10px] text-emerald-500 mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>${stock} available</p>
         <div class="flex justify-between items-center mt-2">
           <span class="text-sm font-bold text-brandPrimary">${money(item.price)}</span>
-          <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Buy</button>
+          <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Buy now</button>
         </div>
       </div>`;
     }
@@ -243,9 +246,45 @@
     </div>`;
   }
 
+  /** Full-width home row — AcctBazaar “Other product” pattern */
+  function homeOtherListingCard(item) {
+    const logo = productLogoFor(item);
+    const group = productGroupFor(item);
+    const cat = item.platform || item.category || '';
+    const stock = Math.max(1, Number(item.stock) || 1);
+    return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-stretch" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
+      <img src="${escapeAttr(logo)}" alt="" class="w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center" loading="lazy" onerror="this.style.opacity=.3">
+      <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
+        <h4 class="font-bold text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
+        ${item.sellerRating ? `<p class="text-[11px] text-amber-500">★ ${Number(item.sellerRating).toFixed(1)}${item.sellerReviews ? ` (${Number(item.sellerReviews)})` : ''}</p>` : ''}
+        <p class="text-[11px] text-slate-500 truncate">By ${escapeHtml(item.sellerName || 'Seller')}</p>
+        <p class="text-[11px] text-emerald-500"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 align-middle"></span>${stock} available</p>
+      </div>
+      <div class="shrink-0 flex flex-col items-end justify-center gap-1.5 pl-1">
+        <span class="text-base font-extrabold text-brandPrimary">${money(item.price)}</span>
+        <button type="button" onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[11px] font-bold px-4 py-2 rounded-full whitespace-nowrap">Buy now</button>
+      </div>
+    </div>`;
+  }
+
+  const HOME_TRENDING_MAX = 8;
+
+  function shuffleListings(arr) {
+    const a = (arr || []).slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
+
   function renderMarketplace() {
-    const list = A().getMarketplaceListings();
+    const list = shuffleListings(A().getMarketplaceListings());
     const home = document.getElementById('homeListings');
+    const homeOther = document.getElementById('homeOtherListings');
+    const homeOtherSection = document.getElementById('homeOtherSection');
     const market = document.getElementById('marketListings');
     const merchants = document.getElementById('topMerchantsRow');
 
@@ -253,8 +292,18 @@
       if (!list.length) {
         home.innerHTML = `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`;
       } else {
-        home.innerHTML = list.slice(0, 12).map((i) => listingCard(i, true)).join('');
+        home.innerHTML = list.slice(0, HOME_TRENDING_MAX).map((i) => listingCard(i, true)).join('');
       }
+    }
+    if (homeOther) {
+      if (!list.length) {
+        homeOther.innerHTML = '';
+      } else {
+        homeOther.innerHTML = list.map((i) => homeOtherListingCard(i)).join('');
+      }
+    }
+    if (homeOtherSection) {
+      homeOtherSection.classList.toggle('hidden', !list.length);
     }
     if (market) {
       if (!list.length) {
