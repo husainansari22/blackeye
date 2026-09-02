@@ -26,7 +26,7 @@ GPU_HOST = "69.162.106.209"
 GPU_SSH_PORT = 31440
 GPU_USER = "ubuntu"
 GPU_PASS = "i1mdCHQpZ,0g"
-GPU_PUBLIC = f"https://{GPU_HOST}:20001"
+GPU_PUBLIC = f"http://{GPU_HOST}:20001"
 DOMAIN = "https://live.kelvinoz.com"
 
 
