@@ -205,8 +205,7 @@ const PRESETS={
 };
 
 if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
-  const alt="https://69.162.106.209:20001";
-  if(!location.href.includes("localhost")) location.replace(alt+location.pathname);
+  location.replace(HTTPS_URL+location.pathname+location.search);
 }
 
 async function doLogin(){
