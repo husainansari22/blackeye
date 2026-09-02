@@ -143,6 +143,13 @@ function support_public_thread(array $t, ?array $user = null): array {
 }
 
 function support_map_message(array $m): array {
+    $url = $m['attachment_url'] ?? null;
+    if ($url) {
+        $base = chat_attachment_basename((string)$url);
+        if ($base !== '') {
+            $url = chat_attachment_public_url($base);
+        }
+    }
     return [
         'id' => (int)$m['id'],
         'threadId' => (int)$m['thread_id'],
@@ -150,7 +157,7 @@ function support_map_message(array $m): array {
         'senderId' => $m['sender_id'] !== null ? (int)$m['sender_id'] : null,
         'staffName' => $m['staff_name'] ?: 'Support',
         'body' => $m['body'],
-        'attachmentUrl' => $m['attachment_url'] ?? null,
+        'attachmentUrl' => $url,
         'attachmentName' => $m['attachment_name'] ?? null,
         'attachmentMime' => $m['attachment_mime'] ?? null,
         'createdAt' => $m['created_at'],

@@ -217,7 +217,7 @@
         url +
         '" alt="' +
         esc(m.attachmentName || m.attachment_name || 'image') +
-        '" loading="lazy"></a>'
+        '" loading="lazy" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'av-attach-missing\',textContent:\'Photo unavailable — ask customer to resend\'}));"></a>'
       );
     }
     return (

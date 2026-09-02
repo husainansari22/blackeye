@@ -138,11 +138,46 @@ function save_chat_attachment(string $data, string $filename = '', string $mimeH
     if (file_put_contents($path, $bin) === false) {
         throw new RuntimeException('Could not save attachment');
     }
+    @chmod($path, 0644);
+    if (!is_file($path) || filesize($path) < 1) {
+        @unlink($path);
+        throw new RuntimeException('Attachment saved but file is missing on disk');
+    }
     return [
-        'url' => '/uploads/chat/' . $stored,
+        'url' => chat_attachment_public_url($stored),
         'name' => $safeName,
         'mime' => $mime,
     ];
+}
+
+function chat_attachment_basename(string $urlOrName): string {
+    $base = basename(parse_url($urlOrName, PHP_URL_PATH) ?: $urlOrName);
+    return preg_match('/^[a-f0-9]{24}\.(png|jpe?g|gif|webp|heic|heif|pdf|txt|docx?|zip)$/i', $base) ? $base : '';
+}
+
+function chat_attachment_disk_path(string $basename): string {
+    return dirname(__DIR__) . '/uploads/chat/' . $basename;
+}
+
+function chat_attachment_public_url(string $basename): string {
+    return '/api/index.php?action=chat.file&f=' . rawurlencode($basename);
+}
+
+function serve_chat_attachment_file(string $basename): void {
+    ensure_marketplace_extras();
+    $path = chat_attachment_disk_path($basename);
+    if (!is_file($path)) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Attachment not found';
+        exit;
+    }
+    $mime = mime_content_type($path) ?: 'application/octet-stream';
+    header('Content-Type: ' . $mime);
+    header('Cache-Control: public, max-age=86400');
+    header('Content-Length: ' . (string)filesize($path));
+    readfile($path);
+    exit;
 }
 
 /**
@@ -467,6 +502,13 @@ function release_pending_order_to_seller(array $order, string $noteSuffix = ''):
 }
 
 function map_order_message(array $m): array {
+    $url = $m['attachment_url'] ?? null;
+    if ($url) {
+        $base = chat_attachment_basename((string)$url);
+        if ($base !== '') {
+            $url = chat_attachment_public_url($base);
+        }
+    }
     return [
         'id' => (int)$m['id'],
         'orderId' => (int)$m['order_id'],
@@ -474,7 +516,7 @@ function map_order_message(array $m): array {
         'fromEmail' => $m['fromEmail'] ?? $m['from_email'] ?? '',
         'text' => $m['body'] ?? $m['text'] ?? '',
         'body' => $m['body'] ?? '',
-        'attachmentUrl' => $m['attachment_url'] ?? null,
+        'attachmentUrl' => $url,
         'attachmentName' => $m['attachment_name'] ?? null,
         'attachmentMime' => $m['attachment_mime'] ?? null,
         'createdAt' => $m['created_at'] ?? null,
