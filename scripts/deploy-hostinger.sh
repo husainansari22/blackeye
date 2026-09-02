@@ -69,6 +69,9 @@ upload_one() {
     -H 'Accept: application/json' \
     --data-urlencode "path=/${rel%/*}" 2>/dev/null || true)
   local base="${rel##*/}"
+  if [[ "$base" == .* ]]; then
+    return 0
+  fi
   if ! python3 -c "import json,sys; d=json.load(sys.stdin); names=[i.get('name') for i in d.get('items',[])]; sys.exit(0 if '${base}' in names else 1)" <<<"$listed" 2>/dev/null; then
     echo "WARN: $rel not visible in file listing yet — retrying once" >&2
     sleep 2
@@ -82,20 +85,10 @@ ROOT="${1:-/workspace}"
 cd "$ROOT"
 
 FILES=(
-  "index.html"
-  "dashboard.html"
-  "company.html"
-  ".htaccess"
-  "js/acctventa.js"
-  "js/api-client.js"
-  "js/api-sync.js"
+  "js/staff-inbox.js"
   "js/dashboard-app.js"
-  "api/bootstrap.php"
+  "dashboard.html"
   "api/index.php"
-  "api/mail.php"
-  "owner/index.php"
-  "css/admin-app.css"
-  "admin/index.html"
 )
 
 for rel in "${FILES[@]}"; do

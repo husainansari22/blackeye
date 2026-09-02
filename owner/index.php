@@ -732,8 +732,8 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-alerts.js?v=20260821toast2"></script>
-      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+      <script src="/js/staff-alerts.js?v=20260902attach1"></script>
+      <script src="/js/staff-inbox.js?v=20260902attach1"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);
@@ -1657,10 +1657,13 @@ $tab = $_GET['tab'] ?? 'overview';
           const box=document.getElementById('orderChatMsgs');
           box.className='av-chat-msgs';
           box.innerHTML=msgs.length?msgs.map(m=>{
-            const mime=String(m.attachmentMime||'');
-            const isImg=m.attachmentUrl&&(mime.startsWith('image/')||/\.(png|jpe?g|gif|webp)$/i.test(m.attachmentUrl));
-            const att=m.attachmentUrl?(isImg?'<a href="'+esc(m.attachmentUrl)+'" target="_blank" rel="noopener"><img class="av-attach" src="'+esc(m.attachmentUrl)+'" alt=""></a>':'<a class="av-file" href="'+esc(m.attachmentUrl)+'" target="_blank" rel="noopener">📎 '+esc(m.attachmentName||'file')+'</a>'):'';
-            return '<div class="av-bubble av-bubble-in"><p class="who">'+esc(m.fromName)+' · '+esc(m.fromEmail)+'</p><p class="body">'+esc(m.text||m.body||'')+'</p>'+att+'</div>';
+            const att = (window.AcctventaStaffInbox && window.AcctventaStaffInbox.attachHtml)
+              ? window.AcctventaStaffInbox.attachHtml(m)
+              : (m.attachmentUrl ? '<a class="av-file" href="'+esc(m.attachmentUrl)+'" target="_blank" rel="noopener">📎 '+esc(m.attachmentName||'file')+'</a>' : '');
+            const body = (window.AcctventaStaffInbox && m.attachmentUrl)
+              ? (String(m.body||'').trim().match(/^📎\s/) ? '' : esc(m.body||m.text||''))
+              : esc(m.text||m.body||'');
+            return '<div class="av-bubble av-bubble-in"><p class="who">'+esc(m.fromName)+' · '+esc(m.fromEmail)+'</p>'+(body?'<p class="body">'+body+'</p>':'')+att+'</div>';
           }).join(''):'<div class="av-empty-chat"><i class="fa-regular fa-comment-dots"></i><p>No messages</p></div>';
           box.scrollTop=box.scrollHeight;
           const actions=document.getElementById('orderChatActions');
@@ -2161,7 +2164,7 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block"><label>Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>"></div>
               <div class="av-field-block"><label>Referral reward ($)</label><input name="referral_reward" type="number" step="0.01" value="<?= h(setting_get('referral_reward_amount',5)) ?>"></div>
               <div class="av-field-block"><label>Referral min deposit ($)</label><input name="referral_min_deposit" type="number" step="0.01" value="<?= h(setting_get('referral_min_deposit',50)) ?>"></div>
-              <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa')) ?>"></div>
+              <div class="av-field-block"><label>Support Telegram (Support Center — not group chat)</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctventa_support')) ?>" placeholder="https://t.me/acctventa_support"></div>
               <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>"></div>
             </div>
             <button class="av-btn av-btn-primary">Save settings</button>

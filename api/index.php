@@ -428,7 +428,11 @@ try {
                 }
             }
             if ($text === '' && !$att) json_out(['ok' => false, 'error' => 'Empty message'], 422);
-            if ($text === '' && $att) $text = '📎 ' . ($att['name'] ?: 'Attachment');
+            if ($text === '' && $att) {
+                $text = (strpos((string)($att['mime'] ?? ''), 'image/') === 0)
+                    ? ''
+                    : ('📎 ' . ($att['name'] ?: 'Attachment'));
+            }
             $chk = db()->prepare('SELECT * FROM orders WHERE id = ? AND (buyer_id = ? OR seller_id = ?)');
             $chk->execute([$orderId, (int)$u['id'], (int)$u['id']]);
             $o = $chk->fetch();
@@ -855,6 +859,7 @@ try {
         }
 
         case 'support.messages': {
+            ensure_marketplace_extras();
             // user or staff
             $staff = staff_from_token();
             $threadId = (int)($body['threadId'] ?? $_GET['threadId'] ?? 0);
@@ -898,7 +903,11 @@ try {
                 }
             }
             if ($text === '' && !$att) json_out(['ok' => false, 'error' => 'Empty message'], 422);
-            if ($text === '' && $att) $text = '📎 ' . ($att['name'] ?: 'Attachment');
+            if ($text === '' && $att) {
+                $text = (strpos((string)($att['mime'] ?? ''), 'image/') === 0)
+                    ? ''
+                    : ('📎 ' . ($att['name'] ?: 'Attachment'));
+            }
             if ($staff) {
                 $threadId = (int)($body['threadId'] ?? 0);
                 if ($threadId < 1) json_out(['ok' => false, 'error' => 'threadId required'], 422);
@@ -951,6 +960,7 @@ try {
 
         case 'support.threads': {
             $staff = require_staff();
+            ensure_marketplace_extras();
             ensure_support_tables();
             $rows = db()->query("SELECT t.*, u.name AS user_name, u.email AS user_email, u.last_seen_at, u.balance AS user_balance, u.plan AS user_plan,
                 (SELECT body FROM support_messages sm WHERE sm.thread_id = t.id ORDER BY sm.id DESC LIMIT 1) AS last_body,
