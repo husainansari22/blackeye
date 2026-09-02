@@ -2510,11 +2510,24 @@
 
   function attachmentHtml(m, mine) {
     if (!m.attachmentUrl) return '';
-    const isImg = (m.attachmentMime || '').startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(m.attachmentUrl);
+    const mime = String(m.attachmentMime || '');
+    const name = String(m.attachmentName || '');
+    const isImg =
+      mime.startsWith('image/') ||
+      /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(m.attachmentUrl) ||
+      /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(name);
     if (isImg) {
-      return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="block mt-1"><img src="${escapeAttr(m.attachmentUrl)}" alt="" class="max-w-full rounded-lg max-h-40 object-cover"></a>`;
+      return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="block mt-1"><img src="${escapeAttr(m.attachmentUrl)}" alt="" class="max-w-full rounded-lg max-h-40 object-cover" loading="lazy"></a>`;
     }
     return `<a href="${escapeAttr(m.attachmentUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-1 text-[11px] underline ${mine ? 'text-white/90' : 'text-brandPrimary'}"><i class="fa-solid fa-file"></i> ${escapeHtml(m.attachmentName || 'Download file')}</a>`;
+  }
+
+  function supportBodyHtml(m) {
+    const body = String(m.body || m.text || '').trim();
+    const name = String(m.attachmentName || '').trim();
+    if (!body) return '';
+    if (m.attachmentUrl && name && (body === name || body === '📎 ' + name || /^📎\s/.test(body))) return '';
+    return escapeHtml(body);
   }
 
   function updateSupportPresence(thread) {
@@ -2614,7 +2627,8 @@
             .map((m) => {
               const mine = m.role === 'user';
               const name = mine ? (u && u.name) || 'You' : m.staffName || 'Support';
-              return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-brandPrimary text-white' : 'bg-slate-100 dark:bg-slate-800'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(name)}</p><p class="whitespace-pre-wrap break-words">${escapeHtml(m.body)}</p>${attachmentHtml(m, mine)}</div></div>`;
+              const body = supportBodyHtml(m);
+              return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-brandPrimary text-white' : 'bg-slate-100 dark:bg-slate-800'}"><p class="text-[10px] opacity-70 mb-0.5">${escapeHtml(name)}</p>${body ? `<p class="whitespace-pre-wrap break-words">${body}</p>` : ''}${attachmentHtml(m, mine)}</div></div>`;
             })
             .join('')
         : '<p class="text-center text-xs text-slate-400 py-8">No messages yet. Ask support anything — you can also attach screenshots.</p>';

@@ -188,30 +188,52 @@
     shell.classList.toggle('is-chat-open', !!open);
   }
 
+  function isImageAttachment(m) {
+    if (!m) return false;
+    const mime = String(m.attachmentMime || m.attachment_mime || '');
+    const url = String(m.attachmentUrl || m.attachment_url || '');
+    const name = String(m.attachmentName || m.attachment_name || '');
+    if (mime.indexOf('image/') === 0) return true;
+    return /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(url) || /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(name);
+  }
+
+  function attachmentBodyIsPlaceholder(m) {
+    const body = String(m.body || m.text || '').trim();
+    const name = String(m.attachmentName || m.attachment_name || '').trim();
+    if (!body) return true;
+    if (name && (body === name || body === '📎 ' + name)) return true;
+    return /^📎\s+\S+\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(body);
+  }
+
   function attachHtml(m) {
-    if (!m || !m.attachmentUrl) return '';
-    const url = esc(m.attachmentUrl);
-    const mime = String(m.attachmentMime || '');
-    const isImg =
-      mime.indexOf('image/') === 0 || /\.(png|jpe?g|gif|webp|heic)$/i.test(m.attachmentUrl || '');
-    if (isImg) {
+    const rawUrl = m && (m.attachmentUrl || m.attachment_url);
+    if (!rawUrl) return '';
+    const url = esc(rawUrl);
+    if (isImageAttachment(m)) {
       return (
         '<a href="' +
         url +
         '" target="_blank" rel="noopener"><img class="av-attach" src="' +
         url +
         '" alt="' +
-        esc(m.attachmentName || 'image') +
-        '"></a>'
+        esc(m.attachmentName || m.attachment_name || 'image') +
+        '" loading="lazy"></a>'
       );
     }
     return (
       '<a class="av-file" href="' +
       url +
       '" target="_blank" rel="noopener">📎 ' +
-      esc(m.attachmentName || 'file') +
+      esc(m.attachmentName || m.attachment_name || 'file') +
       '</a>'
     );
+  }
+
+  function messageBodyHtml(m) {
+    const body = String(m.body || m.text || '').trim();
+    if (!body) return '';
+    if ((m.attachmentUrl || m.attachment_url) && attachmentBodyIsPlaceholder(m)) return '';
+    return esc(body);
   }
 
   function renderMessages(box, messages, thread, opts) {
@@ -229,14 +251,14 @@
     box.innerHTML = msgs
       .map(function (m) {
         const mine = m.role === 'staff';
+        const body = messageBodyHtml(m);
         return (
           '<div class="av-bubble ' +
           (mine ? 'av-bubble-out' : 'av-bubble-in') +
           '"><p class="who">' +
           esc(mine ? m.staffName || 'Support' : userName) +
-          '</p><p class="body">' +
-          esc(m.body || '') +
           '</p>' +
+          (body ? '<p class="body">' + body + '</p>' : '') +
           attachHtml(m) +
           '<p class="when">' +
           esc(clockTime(m.createdAt)) +
