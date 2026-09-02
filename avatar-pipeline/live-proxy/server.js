@@ -1,7 +1,7 @@
 const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
-const TARGET = process.env.GPU_BACKEND || "http://50.35.188.73:20001";
+const TARGET = process.env.GPU_BACKEND || "https://69.162.106.209:20001";
 const app = express();
 
 app.use(

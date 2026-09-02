@@ -7,7 +7,7 @@ export HF_HOME="${APP_DIR}/.cache/huggingface"
 export APP_PASSWORD="${APP_PASSWORD:-@535846.oZ}"
 export USE_REALTIME=0
 export USE_STREAM=1
-export STREAM_ACCEL=none
+export STREAM_ACCEL="${STREAM_ACCEL:-tensorrt}"
 export FRAME_SIZE="${FRAME_SIZE:-384}"
 export PYTHONPATH="${APP_DIR}:${PYTHONPATH:-}"
 pkill -f "uvicorn app:app" 2>/dev/null || true

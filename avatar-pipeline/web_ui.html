@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<title>Kelvin Live</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;--border:#2a2a2a;
+  --red:#e11d2e;--red-dim:#991b1b;--text:#f5f5f5;--muted:#9ca3af;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:24px}
+.hidden{display:none!important}
+.app{max-width:480px;margin:0 auto;padding:12px}
+
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:28px;width:100%;max-width:380px}
+.login-box h1{font-size:1.4rem;margin-bottom:6px}
+.login-box p{color:var(--muted);font-size:.9rem;margin-bottom:16px}
+.login-box input{width:100%;padding:14px;background:#0d0d0d;border:1px solid var(--border);
+  border-radius:12px;color:#fff;font-size:1rem;margin-bottom:12px}
+.err{color:#f87171;font-size:.85rem;margin-top:8px}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:16px;margin-bottom:14px}
+.card.red-border{border-color:rgba(225,29,46,.45)}
+.card-hdr{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.95rem;margin-bottom:12px}
+.card-hdr .ico{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--red)}
+.badge-live{margin-left:auto;background:var(--red);color:#fff;font-size:.65rem;font-weight:800;
+  padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+
+/* camera select */
+.select-wrap{position:relative;margin-bottom:8px}
+select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--border);
+  color:#fff;padding:14px 40px 14px 14px;border-radius:12px;font-size:.95rem}
+.select-wrap::after{content:"▾";position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:var(--red);pointer-events:none;font-size:1.1rem}
+.cam-note{font-size:.8rem;color:var(--muted);margin-bottom:12px}
+
+/* dual video */
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vpane{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:9/16}
+.vpane video{width:100%;height:100%;object-fit:cover;display:block}
+.vpane canvas#out{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vpane.cam-pane{border:2px solid rgba(225,29,46,.5)}
+.vpane.ai-pane{border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  flex-direction:column;color:var(--muted);font-size:.75rem;text-align:center;padding:8px}
+.vpane.ai-pane .ph-ico{font-size:1.8rem;color:var(--red);margin-bottom:8px;opacity:.7}
+.vpane.ai-pane.has-out{border-color:rgba(225,29,46,.35)}
+.vpane-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ai-placeholder.hidden{display:none}
+.vctrl{display:flex;gap:8px;margin-top:8px;justify-content:center}
+.icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
+  background:var(--card2);color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:1rem}
+.icon-btn.on{border-color:var(--red);color:var(--red)}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.btn{padding:16px;border-radius:14px;border:none;font-weight:700;font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-live{background:var(--red);color:#fff}
+.btn-live:disabled{opacity:.45;cursor:not-allowed}
+.btn-stop{background:var(--card2);color:#fff;border:1px solid var(--border)}
+.btn-stop:disabled{opacity:.45;cursor:not-allowed}
+.btn-outline{background:transparent;border:1px solid var(--border);color:#fff;width:100%;
+  padding:14px;border-radius:12px;font-weight:600;cursor:pointer;margin-top:8px}
+.btn-red{background:var(--red);color:#fff;width:100%;padding:16px;border:none;border-radius:14px;
+  font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-apply{width:100%;padding:14px;border-radius:12px;border:1px solid var(--border);
+  background:var(--card2);color:#fff;font-weight:600;cursor:pointer;margin-top:10px;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.slider-row{margin-bottom:14px}
+.slider-row label{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-bottom:6px}
+.slider-row label span{color:#fff;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--red);height:4px}
+.ref-card{display:flex;align-items:center;gap:12px;background:#0d0d0d;border:1px solid var(--border);
+  border-radius:12px;padding:10px;margin-top:12px}
+.ref-card img{width:48px;height:48px;border-radius:8px;object-fit:cover}
+.ref-card .meta{flex:1;min-width:0}
+.ref-card .meta strong{display:block;font-size:.9rem}
+.ref-card .meta small{color:var(--muted);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ref-x{background:var(--red);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-weight:700}
+textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;
+  color:#fff;padding:14px;font:inherit;font-size:.9rem;line-height:1.45;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card2);
+  color:#fff;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+.chip.active{border-color:var(--red);background:rgba(225,29,46,.12)}
+.chip.spark{background:var(--red);border-color:var(--red);padding:10px 12px}
+.stats-bar{text-align:center;font-size:.75rem;color:var(--muted);padding:8px 0 4px}
+#cam{transform:scaleX(-1)}
+#cam.no-mirror{transform:none}
+.banner{background:#422006;color:#fde68a;padding:10px 14px;font-size:.8rem;border-radius:12px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div id="login-view" class="login">
+  <div class="login-box">
+    <h1>Kelvin Live</h1>
+    <p>RTX 4090 · local GPU avatar stream</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
+    <button class="btn-red" onclick="doLogin()">Enter</button>
+    <p id="login-err" class="err hidden"></p>
+  </div>
+</div>
+
+<div id="app-view" class="app hidden">
+  <div id="cam-banner" class="banner hidden"></div>
+  <p class="stats-bar" id="stats">Loading GPU…</p>
+
+  <div class="card red-border">
+    <div class="card-hdr"><span class="ico">📷</span> Camera Source</div>
+    <div class="select-wrap">
+      <select id="cam-select" onchange="previewCamera()"></select>
+    </div>
+    <p class="cam-note" id="cam-status">Detecting cameras…</p>
+    <button class="btn-outline" onclick="restartCamera()">📷 Restart Camera</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="ico">✨</span> AI Output
+      <span class="badge-live" id="live-badge">AI OUTPUT</span>
+    </div>
+    <div class="dual">
+      <div>
+        <div class="vpane cam-pane"><video id="cam" autoplay playsinline muted></video></div>
+        <div class="vctrl">
+          <button class="icon-btn" id="btn-hide" title="Hide preview" onclick="toggleHide()">👁</button>
+          <button class="icon-btn on" id="btn-flip" title="Mirror" onclick="toggleFlip()">⇄</button>
+          <button class="icon-btn" title="Switch camera" onclick="cycleCamera()">⟳</button>
+        </div>
+      </div>
+      <div>
+        <div class="vpane ai-pane" id="ai-pane">
+          <canvas id="out" class="hidden"></canvas>
+          <div class="vpane-placeholder ai-placeholder" id="ai-ph">
+            <span class="ph-ico">✨</span>
+            <span>AI output will appear here</span>
+          </div>
+        </div>
+        <button class="btn-outline" style="margin-top:8px" onclick="aiFullscreen()">✨ AI Fullscreen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-live" id="btn-start" onclick="startStream()">📹 Go Live</button>
+    <button class="btn btn-stop" id="btn-stop" onclick="stopStream()" disabled>⏹ Stop</button>
+  </div>
+
+  <div class="card">
+    <div class="slider-row">
+      <label>Camera Delay <span id="cam-delay-val">0.0s</span></label>
+      <input type="range" id="cam-delay" min="0" max="2" step="0.1" value="0"
+        oninput="document.getElementById('cam-delay-val').textContent=(+this.value).toFixed(1)+'s'"/>
+    </div>
+    <div class="slider-row">
+      <label>Output Delay <span id="out-delay-val">0.0s</span></label>
+      <input type="range" id="out-delay" min="0" max="2" step="0.1" value="0"
+        oninput="document.getElementById('out-delay-val').textContent=(+this.value).toFixed(1)+'s'"/>
+    </div>
+  </div>
+
+  <div class="card">
+    <input type="file" id="ref-file" accept="image/*" hidden onchange="uploadRef(event)"/>
+    <button class="btn-red" onclick="document.getElementById('ref-file').click()">⬆ Upload Image</button>
+    <div id="ref-card" class="ref-card hidden">
+      <img id="ref-thumb" alt="reference"/>
+      <div class="meta"><strong>Image ready</strong><small id="ref-name">reference.jpg</small></div>
+      <button class="ref-x" onclick="clearRef()">✕</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="ico">✨</span> Edit Ai Output with Prompt</div>
+    <textarea id="prompt">use the character in the reference image. same cloth, hair, face from the reference image. don't use the cloth or background from the camera output</textarea>
+    <div class="chips">
+      <button class="chip spark" onclick="applyPreset('portrait')">✨</button>
+      <button class="chip" data-preset="hotel" onclick="applyPreset('hotel')">🏨 Hotel Room</button>
+      <button class="chip" data-preset="airport" onclick="applyPreset('airport')">✈ Airport Lobby</button>
+    </div>
+    <button class="btn-apply" onclick="applyPrompt()">↻ Apply Prompt</button>
+  </div>
+
+  <p class="stats-bar" id="out-status">Ready · local GPU</p>
+</div>
+
+<script>
+let TOKEN=localStorage.getItem("avatar_token")||"";
+let running=false,busy=false,rafId=null,stream=null,videoMode=false,camHidden=false,camMirrored=true;
+let camDevices=[],camIndex=0;
+const CAP=384;
+const HTTPS_URL="https://live.kelvinoz.com";
+const PRESETS={
+  portrait:"sharp portrait photo, detailed face, cinematic lighting, high quality",
+  hotel:"luxury hotel room background, warm ambient lighting, elegant interior",
+  airport:"modern airport terminal background, bright lighting, travel atmosphere"
+};
+
+if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
+  const alt="https://69.162.106.209:20001";
+  if(!location.href.includes("localhost")) location.replace(alt+location.pathname);
+}
+
+async function doLogin(){
+  const pw=document.getElementById("pw").value;
+  const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({password:pw})});
+  const d=await r.json();
+  if(!r.ok){
+    document.getElementById("login-err").textContent=d.detail||"Failed";
+    document.getElementById("login-err").classList.remove("hidden");return;
+  }
+  TOKEN=d.token; localStorage.setItem("avatar_token",TOKEN);
+  showApp();
+}
+
+function showApp(){
+  document.getElementById("login-view").classList.add("hidden");
+  document.getElementById("app-view").classList.remove("hidden");
+  if(!window.isSecureContext){
+    document.getElementById("cam-banner").innerHTML=
+      "Webcam needs HTTPS — use <a href='"+HTTPS_URL+"' style='color:#fca5a5'>"+HTTPS_URL+"</a> or https://69.162.106.209:20001";
+    document.getElementById("cam-banner").classList.remove("hidden");
+  }
+  pollStats(); setInterval(pollStats,2000);
+  initCameras().catch(()=>{});
+}
+
+if(TOKEN) fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}}).then(r=>{if(r.ok)showApp();});
+
+async function pollStats(){
+  if(!TOKEN)return;
+  try{
+    const d=await(await fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}})).json();
+    document.getElementById("stats").textContent=
+      (d.ready?"Ready":"Loading")+" · "+(d.acceleration||"gpu")+" · "+d.fps+" fps · "+d.latency_ms+"ms"+
+      (d.has_reference?" · ref ✓":"")+(d.last_error?" · ⚠":"");
+    document.getElementById("live-badge").style.background=running?"#16a34a":"#e11d2e";
+  }catch(e){}
+}
+
+async function initCameras(){
+  const sel=document.getElementById("cam-select");
+  const st=document.getElementById("cam-status");
+  try{
+    if(!navigator.mediaDevices?.getUserMedia) throw new Error("No camera API");
+    const tmp=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    tmp.getTracks().forEach(t=>t.stop());
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    camDevices=devs.filter(d=>d.kind==="videoinput");
+    sel.innerHTML="";
+    camDevices.forEach((d,i)=>{
+      const o=document.createElement("option");
+      o.value=d.deviceId;
+      o.textContent=d.label||("Camera "+(i+1));
+      sel.appendChild(o);
+    });
+    const ext=camDevices.findIndex(d=>/webcam|usb|hd|external|full/i.test(d.label));
+    camIndex=ext>=0?ext:(camDevices.length>1?camDevices.length-1:0);
+    if(camDevices[camIndex]) sel.value=camDevices[camIndex].deviceId;
+    st.textContent=camDevices.length+" cameras ready.";
+    await previewCamera();
+  }catch(e){ st.textContent="Camera error: "+e.message; }
+}
+
+async function restartCamera(){ await initCameras(); }
+
+async function previewCamera(){
+  const v=document.getElementById("cam");
+  const st=document.getElementById("cam-status");
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  try{
+    stream=await getCam();
+    v.srcObject=stream;
+    await v.play().catch(()=>{});
+    await waitVideoReady(v,6000);
+    const b=frameBrightness();
+    st.textContent=camDevices.length+" cameras ready."+(b<12?" · ⚠ black feed — try another camera":"");
+  }catch(e){ st.textContent="Camera error: "+e.message; }
+}
+
+async function getCam(){
+  const sel=document.getElementById("cam-select");
+  const id=sel?.value;
+  const video=id?{deviceId:{exact:id},width:{ideal:1280},height:{ideal:720}}:{width:{ideal:1280},height:{ideal:720}};
+  return navigator.mediaDevices.getUserMedia({video,audio:false});
+}
+
+async function cycleCamera(){
+  if(camDevices.length<2)return;
+  camIndex=(camIndex+1)%camDevices.length;
+  document.getElementById("cam-select").value=camDevices[camIndex].deviceId;
+  await previewCamera();
+}
+
+function toggleHide(){
+  camHidden=!camHidden;
+  document.getElementById("cam").style.opacity=camHidden?"0.15":"1";
+  document.getElementById("btn-hide").classList.toggle("on",camHidden);
+}
+
+function toggleFlip(){
+  camMirrored=!camMirrored;
+  document.getElementById("cam").classList.toggle("no-mirror",!camMirrored);
+  document.getElementById("btn-flip").classList.toggle("on",camMirrored);
+}
+
+function aiFullscreen(){
+  const c=document.getElementById("out");
+  if(c.requestFullscreen) c.requestFullscreen();
+  else if(c.webkitRequestFullscreen) c.webkitRequestFullscreen();
+}
+
+async function waitVideoReady(v,ms=8000){
+  if(v.readyState>=2&&v.videoWidth>0)return;
+  await new Promise((res,rej)=>{
+    const t=setTimeout(()=>rej(new Error("Camera timeout")),ms);
+    v.onloadedmetadata=()=>{clearTimeout(t);v.play().then(res).catch(res);};
+  });
+}
+
+async function uploadRef(e){
+  const f=e.target.files[0]; if(!f)return;
+  const fd=new FormData(); fd.append("file",f);
+  const r=await fetch("/api/reference",{method:"POST",headers:{Authorization:"Bearer "+TOKEN},body:fd});
+  if(!r.ok){alert("Upload failed");return;}
+  document.getElementById("ref-thumb").src=URL.createObjectURL(f);
+  document.getElementById("ref-name").textContent=f.name;
+  document.getElementById("ref-card").classList.remove("hidden");
+}
+
+async function clearRef(){
+  await fetch("/api/reference",{method:"DELETE",headers:{Authorization:"Bearer "+TOKEN}});
+  document.getElementById("ref-card").classList.add("hidden");
+}
+
+function applyPreset(key){
+  document.getElementById("prompt").value=PRESETS[key]||PRESETS.portrait;
+  document.querySelectorAll(".chip[data-preset]").forEach(c=>c.classList.remove("active"));
+  const el=document.querySelector('.chip[data-preset="'+key+'"]');
+  if(el) el.classList.add("active");
+}
+
+async function applyPrompt(){
+  await fetch("/api/settings",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},
+    body:JSON.stringify({
+      prompt:document.getElementById("prompt").value,
+      negative:"blurry, low quality, distorted, deformed, ugly",
+      steps:2,strength:0.55,reference_strength:0.55
+    })});
+  document.getElementById("out-status").textContent="Prompt applied";
+  if(running&&pipelineReady) document.getElementById("out-status").textContent="Prompt applied · streaming";
+}
+
+let pipelineReady=true;
+const cap=document.createElement("canvas"), capCtx=cap.getContext("2d");
+const outCanvas=document.getElementById("out"), outCtx=outCanvas.getContext("2d");
+let frames=0;
+
+function captureFrame(){
+  const v=document.getElementById("cam");
+  const vw=v.videoWidth||CAP, vh=v.videoHeight||CAP;
+  cap.width=CAP; cap.height=CAP;
+  capCtx.fillStyle="#000"; capCtx.fillRect(0,0,CAP,CAP);
+  const scale=Math.min(CAP/vw,CAP/vh);
+  const dw=vw*scale,dh=vh*scale;
+  if(camMirrored){ capCtx.save(); capCtx.translate(CAP,0); capCtx.scale(-1,1); }
+  capCtx.drawImage(v,(CAP-dw)/2,(CAP-dh)/2,dw,dh);
+  if(camMirrored) capCtx.restore();
+}
+
+function frameBrightness(){
+  captureFrame();
+  const d=capCtx.getImageData(0,0,CAP,CAP).data;
+  let s=0; for(let i=0;i<d.length;i+=4) s+=d[i]+d[i+1]+d[i+2];
+  return s/(d.length/4)/3;
+}
+
+function showAiOutput(){
+  document.getElementById("out").classList.remove("hidden");
+  document.getElementById("ai-ph").classList.add("hidden");
+  document.getElementById("ai-pane").classList.add("has-out");
+}
+
+async function sendFrame(){
+  if(!running||busy)return;
+  const v=document.getElementById("cam");
+  if(v.readyState<2||!v.videoWidth){ scheduleFrame(); return; }
+  const camDelay=+(document.getElementById("cam-delay").value||0)*1000;
+  const outDelay=+(document.getElementById("out-delay").value||0)*1000;
+  if(camDelay) await new Promise(r=>setTimeout(r,camDelay));
+  busy=true;
+  if(frames===0) document.getElementById("out-status").textContent="Processing first frame…";
+  captureFrame();
+  if(frameBrightness()<12){
+    document.getElementById("out-status").textContent="⚠ Camera black — pick another camera";
+    busy=false; scheduleFrame(); return;
+  }
+  cap.toBlob(async blob=>{
+    try{
+      const t0=performance.now();
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),120000);
+      const r=await fetch("/process-frame",{
+        method:"POST",
+        headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"image/jpeg"},
+        body:blob, signal:ctrl.signal
+      });
+      clearTimeout(timer);
+      if(r.ok){
+        const buf=await r.blob();
+        if(buf.size<1000) throw new Error("Empty GPU response");
+        const draw=async()=>{
+          const b=await createImageBitmap(buf);
+          outCanvas.width=b.width; outCanvas.height=b.height;
+          outCtx.drawImage(b,0,0);
+          showAiOutput();
+          frames++;
+          const ms=(performance.now()-t0).toFixed(0);
+          document.getElementById("out-status").textContent="Live · "+ms+"ms";
+        };
+        if(outDelay) setTimeout(draw,outDelay); else await draw();
+      }else{
+        const err=await r.json().catch(()=>({detail:r.statusText}));
+        document.getElementById("out-status").textContent="Error: "+(err.detail||r.status);
+      }
+    }catch(e){
+      document.getElementById("out-status").textContent=
+        e.name==="AbortError"?"GPU timeout — retrying…":"Network: "+(e.message||"retry");
+    }finally{busy=false; scheduleFrame();}
+  },"image/jpeg",0.82);
+}
+
+function scheduleFrame(){
+  if(!running)return;
+  rafId=requestAnimationFrame(()=>{ if(!busy) sendFrame(); else scheduleFrame(); });
+}
+
+async function startStream(){
+  document.getElementById("btn-start").disabled=true;
+  try{
+    const v=document.getElementById("cam");
+    if(!videoMode){
+      stream=await getCam();
+      v.srcObject=stream;
+      await waitVideoReady(v);
+    }
+    if(!v.videoWidth) throw new Error("No camera — allow access");
+    await applyPrompt();
+    running=true; frames=0;
+    document.getElementById("btn-stop").disabled=false;
+    document.getElementById("live-badge").textContent="LIVE";
+    scheduleFrame();
+  }catch(e){ alert(e.message); document.getElementById("btn-start").disabled=false; }
+}
+
+function stopStream(){
+  running=false;
+  if(rafId) cancelAnimationFrame(rafId);
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  document.getElementById("btn-start").disabled=false;
+  document.getElementById("btn-stop").disabled=true;
+  document.getElementById("live-badge").textContent="AI OUTPUT";
+  document.getElementById("out-status").textContent="Stopped";
+}
+</script>
+</body>
+</html>
