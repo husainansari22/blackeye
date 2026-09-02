@@ -203,9 +203,15 @@ class AvatarPipeline:
 
 USE_REALTIME = os.environ.get("USE_REALTIME", "0") == "1"
 USE_STREAM = os.environ.get("USE_STREAM", "0") == "1"
-USE_QUALITY = os.environ.get("USE_QUALITY", "1") == "1"
+USE_QUALITY = os.environ.get("USE_QUALITY", "0") == "1"
+USE_FACESWAP = os.environ.get("USE_FACESWAP", "1") == "1"
 
-if USE_QUALITY:
+if USE_FACESWAP:
+    from faceswap_engine import FaceSwapEngine
+
+    pipeline = FaceSwapEngine()
+    logger.info("Using InsightFace inswapper real-time face swap (25-30+ fps)")
+elif USE_QUALITY:
     from quality_engine import QualityEngine
 
     pipeline = QualityEngine()
@@ -286,7 +292,10 @@ async def upload_reference(
     if bgr is None:
         raise HTTPException(status_code=400, detail="Invalid image")
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-    pipeline.set_reference(Image.fromarray(rgb))
+    try:
+        pipeline.set_reference(Image.fromarray(rgb))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"ok": True}
 
 

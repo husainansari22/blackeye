@@ -103,7 +103,7 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 <div id="login-view" class="login">
   <div class="login-box">
     <h1>Kelvin Live</h1>
-    <p>RTX 4090 · local GPU avatar stream</p>
+    <p>RTX 4090 · InsightFace face swap · 25-30 fps</p>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
     <button class="btn-red" onclick="doLogin()">Enter</button>
     <p id="login-err" class="err hidden"></p>
@@ -180,7 +180,7 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 
   <div class="card">
     <div class="card-hdr"><span class="ico">✨</span> Edit Ai Output with Prompt</div>
-    <textarea id="prompt">photo of the same person from the reference image, same pose as camera, detailed face, natural skin, photorealistic, sharp focus, don't copy camera background</textarea>
+    <textarea id="prompt" readonly style="opacity:.85">Face swap mode: upload a clear front-facing reference photo. Your camera keeps the pose; the reference face is applied in real time. Prompts are not used in this mode.</textarea>
     <div class="chips">
       <button class="chip spark" onclick="applyPreset('portrait')">✨</button>
       <button class="chip" data-preset="hotel" onclick="applyPreset('hotel')">🏨 Hotel Room</button>
@@ -189,7 +189,7 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
     <button class="btn-apply" onclick="applyPrompt()">↻ Apply Prompt</button>
   </div>
 
-  <p class="stats-bar" id="out-status">Ready · local GPU</p>
+  <p class="stats-bar" id="out-status">Upload reference photo → Go Live</p>
 </div>
 
 <script>

@@ -3,14 +3,20 @@ set -euo pipefail
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$APP_DIR"
 source venv/bin/activate
+
+PY_SITE="$APP_DIR/venv/lib/python3.12/site-packages"
+export LD_LIBRARY_PATH="$PY_SITE/nvidia/cudnn/lib:$PY_SITE/nvidia/cublas/lib:$PY_SITE/nvidia/cuda_runtime/lib:${LD_LIBRARY_PATH:-}"
+
 export HF_HOME="${APP_DIR}/.cache/huggingface"
 export APP_PASSWORD="${APP_PASSWORD:-@535846.oZ}"
-export USE_REALTIME=0
+export USE_FACESWAP=1
+export USE_QUALITY=0
 export USE_STREAM=0
-export USE_QUALITY=1
 export FRAME_SIZE="${FRAME_SIZE:-512}"
+export SWAP_SIZE="${SWAP_SIZE:-512}"
+export INSIGHTFACE_ROOT="${APP_DIR}/models"
 export PYTHONPATH="${APP_DIR}:${PYTHONPATH:-}"
 pkill -f "uvicorn app:app" 2>/dev/null || true
 sleep 2
 nohup python -m uvicorn app:app --host 127.0.0.1 --port 8080 --workers 1 >> server.log 2>&1 &
-echo "Started pid=$! USE_QUALITY=$USE_QUALITY FRAME_SIZE=$FRAME_SIZE"
+echo "Started pid=$! USE_FACESWAP=$USE_FACESWAP FRAME_SIZE=$FRAME_SIZE"

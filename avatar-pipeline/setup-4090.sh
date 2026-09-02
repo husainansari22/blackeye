@@ -33,7 +33,9 @@ pip install \
   safetensors==0.4.5 \
   peft==0.14.0 \
   huggingface-hub==0.36.2 \
-  einops
+  einops \
+  insightface \
+  onnxruntime-gpu==1.19.2
 
 export HF_HOME="${APP_DIR}/.cache/huggingface"
 export APP_PASSWORD="${APP_PASSWORD:-@535846.oZ}"
