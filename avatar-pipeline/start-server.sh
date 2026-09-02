@@ -7,9 +7,10 @@ export HF_HOME="${APP_DIR}/.cache/huggingface"
 export APP_PASSWORD="${APP_PASSWORD:-@535846.oZ}"
 export USE_REALTIME=0
 export USE_STREAM=0
-export FRAME_SIZE="${FRAME_SIZE:-384}"
+export USE_QUALITY=1
+export FRAME_SIZE="${FRAME_SIZE:-512}"
 export PYTHONPATH="${APP_DIR}:${PYTHONPATH:-}"
 pkill -f "uvicorn app:app" 2>/dev/null || true
 sleep 2
 nohup python -m uvicorn app:app --host 127.0.0.1 --port 8080 --workers 1 >> server.log 2>&1 &
-echo "Started pid=$! USE_STREAM=$USE_STREAM STREAM_ACCEL=$STREAM_ACCEL FRAME_SIZE=$FRAME_SIZE"
+echo "Started pid=$! USE_QUALITY=$USE_QUALITY FRAME_SIZE=$FRAME_SIZE"

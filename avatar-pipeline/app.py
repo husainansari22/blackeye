@@ -202,9 +202,15 @@ class AvatarPipeline:
 
 
 USE_REALTIME = os.environ.get("USE_REALTIME", "0") == "1"
-USE_STREAM = os.environ.get("USE_STREAM", "1") == "1"
+USE_STREAM = os.environ.get("USE_STREAM", "0") == "1"
+USE_QUALITY = os.environ.get("USE_QUALITY", "1") == "1"
 
-if USE_REALTIME:
+if USE_QUALITY:
+    from quality_engine import QualityEngine
+
+    pipeline = QualityEngine()
+    logger.info("Using SD-Turbo + IP-Adapter Plus Face quality engine")
+elif USE_REALTIME:
     from realtime_engine import RealtimeEngine
 
     pipeline = RealtimeEngine()

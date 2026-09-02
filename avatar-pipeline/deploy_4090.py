@@ -23,7 +23,8 @@ LOCAL_DIR = Path(__file__).resolve().parent
 UPLOAD = [
     "app.py",
     "web_ui.html",
-    "stream_engine.py",
+    "quality_engine.py",
+  "stream_engine.py",
     "realtime_engine.py",
     "start-server.sh",
     "setup-4090.sh",

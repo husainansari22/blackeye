@@ -180,7 +180,7 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 
   <div class="card">
     <div class="card-hdr"><span class="ico">✨</span> Edit Ai Output with Prompt</div>
-    <textarea id="prompt">use the character in the reference image. same cloth, hair, face from the reference image. don't use the cloth or background from the camera output</textarea>
+    <textarea id="prompt">photo of the same person from the reference image, same pose as camera, detailed face, natural skin, photorealistic, sharp focus, don't copy camera background</textarea>
     <div class="chips">
       <button class="chip spark" onclick="applyPreset('portrait')">✨</button>
       <button class="chip" data-preset="hotel" onclick="applyPreset('hotel')">🏨 Hotel Room</button>
@@ -196,12 +196,12 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 let TOKEN=localStorage.getItem("avatar_token")||"";
 let running=false,busy=false,rafId=null,stream=null,videoMode=false,camHidden=false,camMirrored=true;
 let camDevices=[],camIndex=0;
-const CAP=384;
+const CAP=512;
 const HTTPS_URL="https://live.kelvinoz.com";
 const PRESETS={
-  portrait:"sharp portrait photo, detailed face, cinematic lighting, high quality",
-  hotel:"luxury hotel room background, warm ambient lighting, elegant interior",
-  airport:"modern airport terminal background, bright lighting, travel atmosphere"
+  portrait:"photorealistic portrait, same pose, detailed face, natural skin, sharp focus, professional lighting, 8k uhd",
+  hotel:"luxury hotel room background, warm ambient lighting, elegant interior, photorealistic",
+  airport:"modern airport terminal background, bright natural lighting, travel atmosphere, photorealistic"
 };
 
 if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
@@ -352,8 +352,8 @@ async function applyPrompt(){
   await fetch("/api/settings",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},
     body:JSON.stringify({
       prompt:document.getElementById("prompt").value,
-      negative:"blurry, low quality, distorted, deformed, ugly",
-      steps:2,strength:0.55,reference_strength:0.55
+      negative:"blurry, distorted, deformed, ugly, bad anatomy, disfigured, low quality, cartoon",
+      steps:4,strength:0.38,reference_strength:0.78
     })});
   document.getElementById("out-status").textContent="Prompt applied";
   if(running&&pipelineReady) document.getElementById("out-status").textContent="Prompt applied · streaming";
@@ -435,7 +435,7 @@ async function sendFrame(){
       document.getElementById("out-status").textContent=
         e.name==="AbortError"?"GPU timeout — retrying…":"Network: "+(e.message||"retry");
     }finally{busy=false; scheduleFrame();}
-  },"image/jpeg",0.82);
+  },"image/jpeg",0.90);
 }
 
 function scheduleFrame(){
