@@ -94,6 +94,8 @@ FILES=(
   "api/index.php"
   "api/mail.php"
   "owner/index.php"
+  "css/admin-app.css"
+  "admin/index.html"
 )
 
 for rel in "${FILES[@]}"; do
