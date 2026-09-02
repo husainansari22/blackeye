@@ -118,6 +118,8 @@ FILES=(
   "api/support.php"
   "api/commerce_features.php"
   "owner/index.php"
+  "css/admin-app.css"
+  "admin/index.html"
 )
 
 for rel in "${FILES[@]}"; do
