@@ -16,7 +16,8 @@
     depositFeeRate: 0,
     freeDailyUploadLimit: 5,
     brandPrimary: '#0ea5e9',
-    supportTelegram: 'https://t.me/acctventa',
+    supportTelegram: 'https://t.me/acctventa_support',
+    groupTelegram: 'https://t.me/acctventa',
     supportEmail: 'support@acctventa.com',
     siteName: 'acctventa',
     walletCurrencies: {

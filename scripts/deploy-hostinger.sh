@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Upload files to acctventa.com public_html via Hostinger TUS API.
+# Full new-UI deploy list — do NOT trim to a partial old subset or production regresses.
 set -euo pipefail
 
 TOKEN="${TOKEN:?TOKEN env required}"
@@ -69,6 +70,9 @@ upload_one() {
     -H 'Accept: application/json' \
     --data-urlencode "path=/${rel%/*}" 2>/dev/null || true)
   local base="${rel##*/}"
+  if [[ "$base" == .* ]]; then
+    return 0
+  fi
   if ! python3 -c "import json,sys; d=json.load(sys.stdin); names=[i.get('name') for i in d.get('items',[])]; sys.exit(0 if '${base}' in names else 1)" <<<"$listed" 2>/dev/null; then
     echo "WARN: $rel not visible in file listing yet — retrying once" >&2
     sleep 2
@@ -82,15 +86,34 @@ ROOT="${1:-/workspace}"
 cd "$ROOT"
 
 FILES=(
+  ".htaccess"
+  "index.html"
+  "company.html"
   "dashboard.html"
+  "listing.html"
+  "seller.html"
+  "marketplace.html"
+  "css/profile.css"
+  "css/admin-app.css"
+  "css/tailwind.css"
+  "img/brand/verified.svg"
+  "js/acctventa.js"
   "js/api-client.js"
   "js/api-sync.js"
-  "js/acctventa.js"
-  "js/dashboard-app.js"
+  "js/av-confirm.js"
   "js/commerce-ui.js"
+  "js/dashboard-app.js"
   "js/listing-modal.js"
-  "seller.html"
-  "listing.html"
+  "js/marketplace-catalog.js"
+  "js/kyc-app.js"
+  "js/staff-inbox.js"
+  "js/theme-init.js"
+  "api/bootstrap.php"
+  "api/index.php"
+  "api/marketplace_extras.php"
+  "api/support.php"
+  "api/commerce_features.php"
+  "owner/index.php"
 )
 
 for rel in "${FILES[@]}"; do
