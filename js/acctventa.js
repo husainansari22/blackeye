@@ -270,7 +270,7 @@
     Gmail: ['gmail.com', 'mail.google.com'],
     Telegram: ['t.me', 'telegram.org'],
     WhatsApp: ['wa.me', 'whatsapp.com'],
-    'VPN & Proxies': ['expressvpn.com', 'nordvpn.com', 'surfshark.com', 'protonvpn.com', 'pia.com', 'privateinternetaccess.com'],
+    'VPN & Proxies': [],
     Giftcards: [],
     Gaming: ['steamcommunity.com', 'xbox.com', 'playstation.com', 'epicgames.com'],
     Subscription: ['netflix.com', 'spotify.com', 'disneyplus.com', 'youtube.com']
@@ -412,8 +412,18 @@
     }
   }
 
+  function categoryRequiresPreviewLink(category) {
+    if (window.AcctventaCatalog && typeof window.AcctventaCatalog.categoryRequiresPreviewLink === 'function') {
+      return window.AcctventaCatalog.categoryRequiresPreviewLink(category);
+    }
+    const lower = String(category || '').toLowerCase();
+    if (/\b(vpn|proxy|proxies|giftcard|gift card)\b/.test(lower)) return false;
+    return ['facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp'].some((p) => lower.includes(p));
+  }
+
   function allowedHostsForCategory(category) {
     const cat = String(category || '');
+    if (!categoryRequiresPreviewLink(cat)) return [];
     if (CATEGORY_LINK_RULES[cat]) return CATEGORY_LINK_RULES[cat];
     if (window.AcctventaCatalog) {
       const hit = window.AcctventaCatalog.findProduct(cat);
@@ -445,10 +455,11 @@
     if (!username) reasons.push('Missing account username');
     if (!password || password.length < 3) reasons.push('Missing or weak account password');
 
-    const allowed = allowedHostsForCategory(listing.category || listing.platform);
-    const needsPublicLink = allowed && allowed.length > 0;
+    const cat = listing.category || listing.platform;
+    const needsPublicLink = categoryRequiresPreviewLink(cat);
 
     if (needsPublicLink) {
+      const allowed = allowedHostsForCategory(cat);
       if (!preview) {
         reasons.push('Preview link is required for this account type so buyers can verify before buying');
       } else if (!isValidHttpUrl(preview)) {

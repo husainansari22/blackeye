@@ -500,7 +500,49 @@ function bump_upload(int $userId): void {
     $stmt->execute([$userId, $day]);
 }
 
+function category_requires_preview_link(string $category): bool {
+    $cat = trim($category);
+    if ($cat === '') return false;
+    $lower = strtolower($cat);
+
+    $no_preview_groups = [
+        'vpn & proxys', 'vpn & proxies', 'giftcards', 'gift cards', 'gift card',
+        'accounts & subscriptions', 'gaming', 'e-commerce platforms', 'websites', 'others',
+    ];
+    foreach ($no_preview_groups as $g) {
+        if ($lower === $g || strpos($lower, $g) !== false) return false;
+    }
+    if (preg_match('/\b(vpn|proxy|proxies|giftcard|gift\s+card)\b/i', $cat)) return false;
+
+    $no_preview_products = [
+        'windscribe', 'nord', '911 proxy', 'pia', 'express', 'ip vanish', 'cyberghost',
+        'private', 'total', 'surfshark', 'netflix', 'spotify', 'steam', 'playstation',
+        'xbox', 'epic', 'amazon', 'ebay', 'shopify',
+    ];
+    foreach ($no_preview_products as $p) {
+        if ($lower === $p || strpos($lower, $p) !== false) return false;
+    }
+
+    $preview_groups = ['social media', 'emails & messaging'];
+    foreach ($preview_groups as $g) {
+        if (strpos($lower, $g) !== false) return true;
+    }
+
+    $social_products = [
+        'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
+        'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
+        'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
+    ];
+    foreach ($social_products as $p) {
+        if ($lower === $p || strpos($lower, $p) !== false) return true;
+    }
+
+    return false;
+}
+
 function allowed_hosts_for_category(string $category): array {
+    if (!category_requires_preview_link($category)) return [];
+
     $map = [
         'Facebook' => ['facebook.com', 'fb.com', 'fb.me'],
         'Instagram' => ['instagram.com'],
@@ -511,10 +553,10 @@ function allowed_hosts_for_category(string $category): array {
         'WhatsApp' => ['wa.me', 'whatsapp.com'],
         'Social Media' => ['facebook.com', 'fb.com', 'instagram.com', 'tiktok.com', 'twitter.com', 'x.com', 'linkedin.com'],
         'Emails & Messaging' => ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 't.me', 'wa.me'],
-        'VPN & Proxies' => ['expressvpn.com', 'nordvpn.com', 'surfshark.com', 'protonvpn.com'],
+        'VPN & Proxies' => [],
         'Giftcards' => [],
-        'Gaming' => ['steamcommunity.com', 'xbox.com', 'playstation.com'],
-        'Subscription' => ['netflix.com', 'spotify.com', 'youtube.com'],
+        'Gaming' => [],
+        'Subscription' => [],
     ];
     if (isset($map[$category])) return $map[$category];
     foreach ($map as $k => $hosts) {
@@ -537,24 +579,29 @@ function ai_review_listing(array $ad): array {
     if ($username === '') $reasons[] = 'Missing account username';
     if (strlen($password) < 3) $reasons[] = 'Missing or weak account password';
 
-    $allowed = allowed_hosts_for_category($category);
-    if (count($allowed) > 0) {
-        if ($preview === '') {
-            $reasons[] = 'Preview link is required for this account type';
-        } elseif (!filter_var($preview, FILTER_VALIDATE_URL)) {
-            $reasons[] = 'Preview link is not a valid URL';
-        } else {
-            $host = strtolower(parse_url($preview, PHP_URL_HOST) ?: '');
-            $host = preg_replace('/^www\./', '', $host);
-            $ok = false;
-            foreach ($allowed as $d) {
-                if ($host === $d || substr($host, -strlen('.' . $d)) === '.' . $d || $host === $d) { $ok = true; break; }
+    if (category_requires_preview_link($category)) {
+        $allowed = allowed_hosts_for_category($category);
+        if (count($allowed) > 0) {
+            if ($preview === '') {
+                $reasons[] = 'Preview link is required for this account type';
+            } elseif (!filter_var($preview, FILTER_VALIDATE_URL)) {
+                $reasons[] = 'Preview link is not a valid URL';
+            } else {
+                $host = strtolower(parse_url($preview, PHP_URL_HOST) ?: '');
+                $host = preg_replace('/^www\./', '', $host);
+                $ok = false;
+                foreach ($allowed as $d) {
+                    if ($host === $d || substr($host, -strlen('.' . $d)) === '.' . $d || $host === $d) { $ok = true; break; }
+                }
+                if (!$ok) $reasons[] = 'Preview link does not match the selected account category';
             }
-            if (!$ok) $reasons[] = 'Preview link does not match the selected account category';
         }
-        if (preg_match('/example\.com|localhost|127\.0\.0\.1/i', $preview)) {
-            $reasons[] = 'Preview link looks like a placeholder';
-        }
+    } elseif ($preview !== '' && !filter_var($preview, FILTER_VALIDATE_URL)) {
+        $reasons[] = 'Preview link is not a valid URL';
+    }
+
+    if ($preview !== '' && preg_match('/example\.com|localhost|127\.0\.0\.1/i', $preview)) {
+        $reasons[] = 'Preview link looks like a placeholder';
     }
 
     if ($reasons) {

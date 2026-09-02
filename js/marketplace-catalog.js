@@ -258,12 +258,52 @@
     );
   }
 
+  /** Credential-only groups — no public profile link to verify (VPN, gift cards, etc.) */
+  var NO_PREVIEW_GROUP_IDS = ['vpn', 'giftcards', 'accounts', 'gaming', 'ecommerce', 'websites', 'others'];
+
+  function resolveCategory(name) {
+    var cat = String(name || '').trim();
+    if (!cat) return null;
+    var lower = cat.toLowerCase();
+    var gi;
+    for (gi = 0; gi < GROUPS.length; gi++) {
+      var g = GROUPS[gi];
+      if (g.id === lower || g.name.toLowerCase() === lower) {
+        return { groupId: g.id, groupName: g.name, productName: '' };
+      }
+    }
+    var hit = findProduct(cat);
+    if (hit) return { groupId: hit.groupId, groupName: hit.groupName, productName: hit.name };
+    return null;
+  }
+
+  function categoryRequiresPreviewLink(name) {
+    var resolved = resolveCategory(name);
+    if (resolved && NO_PREVIEW_GROUP_IDS.indexOf(resolved.groupId) !== -1) return false;
+    var lower = String(name || '').toLowerCase();
+    if (/\b(vpn|proxy|proxies|giftcard|gift card)\b/.test(lower)) return false;
+    if (resolved && (resolved.groupId === 'social' || resolved.groupId === 'email')) return true;
+    var socialEmail = [
+      'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
+      'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
+      'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
+    ];
+    var i;
+    for (i = 0; i < socialEmail.length; i++) {
+      if (lower === socialEmail[i] || lower.indexOf(socialEmail[i]) !== -1) return true;
+    }
+    return false;
+  }
+
   global.AcctventaCatalog = {
     GROUPS: GROUPS,
+    NO_PREVIEW_GROUP_IDS: NO_PREVIEW_GROUP_IDS,
     logoUrl: logoUrl,
     allProducts: allProducts,
     findProduct: findProduct,
     searchProducts: searchProducts,
     chipGroups: chipGroups,
+    resolveCategory: resolveCategory,
+    categoryRequiresPreviewLink: categoryRequiresPreviewLink,
   };
 })(window);
