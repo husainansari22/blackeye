@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AceRoyal Estates — Premium Developments</title>
+  <meta name="description" content="Sample luxury real estate developer site inspired by AceRoyal Estates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top">Ace<span>Royal</span></a>
+    <nav class="nav" aria-label="Primary">
+      <a href="#estates">Estates</a>
+      <a href="#amenities">Amenities</a>
+      <a href="#featured">Featured</a>
+      <a href="#contact" class="nav-cta">Enquire</a>
+    </nav>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false"><span></span></button>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-media" aria-hidden="true"></div>
+      <div class="hero-veil"></div>
+      <div class="hero-content">
+        <p class="brand-mark">AceRoyal Estates</p>
+        <h1>Homes shaped for lasting value</h1>
+        <p class="lede">Premium residential and commercial developments across Lagos and beyond.</p>
+        <div class="hero-actions">
+          <a class="btn btn-gold" href="#estates">View Estates</a>
+          <a class="btn btn-ghost" href="#contact">Book Inspection</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="featured" id="featured">
+      <div class="section-inner">
+        <p class="eyebrow">Now selling</p>
+        <h2>Eko Paragon Residences</h2>
+        <p class="section-copy">Waterfront living with private parks, concierge security, and ready titles — from ₦45M.</p>
+        <a class="text-link" href="#contact">Request brochure →</a>
+      </div>
+    </section>
+
+    <section class="amenities" id="amenities">
+      <div class="section-inner">
+        <p class="eyebrow">Why AceRoyal</p>
+        <h2>Infrastructure first</h2>
+        <ul class="amenity-list">
+          <li><strong>24/7 Power</strong><span>Dedicated estate supply</span></li>
+          <li><strong>Secure Access</strong><span>Gated, monitored entries</span></li>
+          <li><strong>Retail Hub</strong><span>On-site shopping & leisure</span></li>
+          <li><strong>Clean Water</strong><span>Treated estate network</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="estates" id="estates">
+      <div class="section-inner">
+        <p class="eyebrow">Our portfolio</p>
+        <h2>Estates by city</h2>
+        <div class="estate-grid">
+          <article class="estate">
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=80" alt="Modern estate homes" loading="lazy" />
+            <div>
+              <h3>Royal Lekki Gardens</h3>
+              <p>Lekki, Lagos · Plots from ₦28M</p>
+            </div>
+          </article>
+          <article class="estate">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=80" alt="Luxury villa exterior" loading="lazy" />
+            <div>
+              <h3>Ace Ivory Court</h3>
+              <p>Ikeja GRA · Duplexes from ₦95M</p>
+            </div>
+          </article>
+          <article class="estate">
+            <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=900&q=80" alt="Contemporary residence" loading="lazy" />
+            <div>
+              <h3>Harbor Crest</h3>
+              <p>Ajah, Lagos · Terraces from ₦62M</p>
+            </div>
+          </article>
+          <article class="estate">
+            <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&q=80" alt="Estate streetscape" loading="lazy" />
+            <div>
+              <h3>Summit Park</h3>
+              <p>Abuja · Mixed plots from ₦18M</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="section-inner stats-row">
+        <div><strong data-count="1200">0</strong><span>Clients served</span></div>
+        <div><strong data-count="48">0</strong><span>Estates delivered</span></div>
+        <div><strong data-count="16">0</strong><span>Cities active</span></div>
+      </div>
+    </section>
+
+    <section class="contact" id="contact">
+      <div class="section-inner contact-panel">
+        <div>
+          <p class="eyebrow">Sample enquiry</p>
+          <h2>Talk to AceRoyal</h2>
+          <p>Demo form only — this is a sample site for kelvinoz.com.</p>
+        </div>
+        <form class="enquiry" onsubmit="event.preventDefault(); this.querySelector('.form-note').hidden=false;">
+          <label>Full name<input type="text" name="name" required placeholder="Your name" /></label>
+          <label>Phone<input type="tel" name="phone" required placeholder="0800 000 0000" /></label>
+          <label>Interest
+            <select name="interest">
+              <option>Buy a plot</option>
+              <option>Buy a home</option>
+              <option>Schedule inspection</option>
+            </select>
+          </label>
+          <button class="btn btn-gold" type="submit">Send enquiry</button>
+          <p class="form-note" hidden>Thanks — this sample form does not send data.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p><strong>AceRoyal Estates</strong> · Sample website on aceroyal.kelvinoz.com</p>
+    <p>Inspired by aceroyalestates.com · Demo content only</p>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
