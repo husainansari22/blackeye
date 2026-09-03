@@ -10,6 +10,7 @@ app.use(
     target: TARGET,
     changeOrigin: true,
     ws: true,
+    secure: false,
     proxyTimeout: 3600000,
     timeout: 3600000,
     on: {

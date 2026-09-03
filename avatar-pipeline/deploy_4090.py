@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Deploy avatar-pipeline to Hostinger RTX 4090 (kelvinoz) — new IP."""
+"""Deploy avatar-pipeline to Hostinger RTX 4090 (kelvinoz)."""
 
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
 try:
@@ -14,9 +13,9 @@ except ImportError:
     sys.exit(1)
 
 HOST = "216.245.209.185"
-PORT = 30914
+PORT = 32027
 USER = "ubuntu"
-PASSWORD = "FL8CRMXIkaNp"
+PASSWORD = "Y:mvPglR4rJY"
 REMOTE_DIR = "/home/ubuntu/avatar-pipeline"
 LOCAL_DIR = Path(__file__).resolve().parent
 
@@ -49,8 +48,7 @@ def main() -> None:
     print(f"Deploy → {USER}@{HOST}:{PORT}")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(HOST, port=PORT, username=USER, password=PASSWORD, timeout=60)
-
+    client.connect(HOST, port=PORT, username=USER, password=PASSWORD, timeout=60, look_for_keys=False, allow_agent=False)
     run(client, f"mkdir -p {REMOTE_DIR}")
     sftp = client.open_sftp()
     for name in UPLOAD:
@@ -61,9 +59,8 @@ def main() -> None:
         print(f"upload {name}")
         sftp.put(str(local), f"{REMOTE_DIR}/{name}")
     sftp.close()
-
     run(client, f"chmod +x {REMOTE_DIR}/*.sh")
-    print("Public: http://216.245.209.185:20000")
+    print("Public: https://216.245.209.185:20000")
     client.close()
 
 
