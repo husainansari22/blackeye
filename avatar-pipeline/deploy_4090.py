@@ -33,6 +33,7 @@ UPLOAD = [
     "setup-4090.sh",
     "setup-stream.sh",
     "setup-stream-ip.sh",
+    "setup-hybrid.sh",
     "patch_streamdiffusion.py",
     "nginx.conf",
     "nginx-simple.conf",
