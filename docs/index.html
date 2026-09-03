@@ -73,114 +73,149 @@
     <main class="max-w-md mx-auto px-4 py-4">
 
         <!-- TAB: HOME -->
-        <div id="tab_home" class="app-tab space-y-6">
-            <!-- Top Merchants -->
+        <div id="tab_home" class="app-tab space-y-4">
+            <!-- Top Merchants (AcctBazaar sample) -->
             <div>
-                <div class="flex justify-between items-center mb-3">
+                <div class="flex justify-between items-center mb-+2">
                     <h3 class="font-bold text-sm text-slate-900 dark:text-white"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
                     <span class="text-xs text-brandPrimary cursor-pointer font-medium transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
-                <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
-                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('Akan')">
+                <div class="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('Legit')">
                         <div class="w-14 h-14 rounded-full p-0.5 border-2 border-brandPrimary mb-1">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="w-full h-full rounded-full object-cover" alt="Merchant">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="w-full h-full rounded-full object-cover" alt="Legit">
                         </div>
-                        <span class="text-xs font-bold truncate w-full">Akan</span>
-                        <span class="text-[10px] text-slate-500">4.8 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> 153 sales</span>
+                        <span class="text-xs font-bold truncate w-full">Legit</span>
+                        <span class="text-[10px] text-slate-500">5.0 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> 39 sales</span>
                     </div>
-                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('Egosim')">
+                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('LeoTech')">
                         <div class="w-14 h-14 rounded-full p-0.5 border-2 border-brandPrimary mb-1">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" class="w-full h-full rounded-full object-cover" alt="Merchant">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" class="w-full h-full rounded-full object-cover" alt="LeoTech">
                         </div>
-                        <span class="text-xs font-bold truncate w-full">Egosim</span>
-                        <span class="text-[10px] text-slate-500">4.5 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> 89 sales</span>
+                        <span class="text-xs font-bold truncate w-full">LeoTech</span>
+                        <span class="text-[10px] text-slate-500">3.8 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> 257 sales</span>
                     </div>
-                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('Amos')">
-                        <div class="w-14 h-14 rounded-full p-0.5 border-2 border-brandPrimary mb-1">
-                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" class="w-full h-full rounded-full object-cover" alt="Merchant">
+                    <div class="flex flex-col items-center shrink-0 cursor-pointer text-center w-16" onclick="openMerchantStore('Leon')">
+                        <div class="w-14 h-14 rounded-full p-0.5 border-2 border-brandPrimary mb-1 bg-white flex items-center justify-center overflow-hidden">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/600px-LinkedIn_logo_initials.png" class="w-8 h-8 object-contain" alt="Leon">
                         </div>
-                        <span class="text-xs font-bold truncate w-full">Amos</span>
-                        <span class="text-[10px] text-slate-500">4.9 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> 312 sales</span>
+                        <span class="text-xs font-bold truncate w-full">Leon</span>
+                        <span class="text-[10px] text-slate-500">5.8 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> 6.4k sales</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Search Bar & Filter Button -->
+            <!-- Search -->
             <div class="relative flex items-center gap-2">
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="Search" oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400 dark:text-white">
+                    <input type="text" id="searchInput" placeholder="Search accounts, VPN, numbers..." oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400 dark:text-white">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
                 </div>
                 <button onclick="toggleFilterDrawer()" class="w-10 h-10 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-lg hover:bg-brandHover transition shrink-0" title="Filters"><i class="fa-solid fa-sliders"></i></button>
             </div>
 
-            <!-- Category Grid -->
-            <div class="grid grid-cols-4 gap-3">
-                <button onclick="filterCategory('Account')" class="flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-user"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">Account</span>
-                </button>
-                <button onclick="filterCategory('SMS')" class="flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-comment-sms"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">SMS</span>
-                </button>
-                <button onclick="filterCategory('Boost')" class="flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-rocket"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">Boost</span>
-                </button>
-                <button onclick="filterCategory('Card')" class="relative flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <span class="absolute top-1 right-1 text-[7px] font-bold bg-emerald-500 text-white px-1 py-0.5 rounded">SOON</span>
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-credit-card"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">Card</span>
-                </button>
-                <button onclick="filterCategory('Giftcard')" class="relative flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <span class="absolute top-1 right-1 text-[7px] font-bold bg-emerald-500 text-white px-1 py-0.5 rounded">SOON</span>
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-gift"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">Giftcard</span>
-                </button>
-                <button onclick="filterCategory('Premium')" class="flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-crown"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">Premium</span>
-                </button>
-                <button onclick="filterCategory('eSIM')" class="flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-sim-card"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">eSIM</span>
-                </button>
-                <button onclick="filterCategory('Proxy')" class="relative flex flex-col items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-lightCard dark:bg-darkCard hover:border-brandPrimary transition">
-                    <span class="absolute top-1 right-1 text-[7px] font-bold bg-emerald-500 text-white px-1 py-0.5 rounded">SOON</span>
-                    <div class="w-11 h-11 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-brandPrimary text-lg"><i class="fa-solid fa-shield-halved"></i></div>
-                    <span class="text-[11px] font-medium text-slate-800 dark:text-white">Proxy</span>
-                </button>
+            <!-- Filter chips -->
+            <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+                <button onclick="filterCategory('Trending')" class="filter-chip bg-brandPrimary text-white px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition"><i class="fa-solid fa-fire"></i> Trending</button>
+                <button onclick="filterCategory('Social')" class="filter-chip bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition hover:border-brandPrimary hover:text-brandPrimary"><i class="fa-solid fa-heart"></i> Social Media</button>
+                <button onclick="filterCategory('Email')" class="filter-chip bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 px-4 py-2 rounded-full font-medium shrink-0 flex items-center gap-2 transition hover:border-brandPrimary hover:text-brandPrimary"><i class="fa-solid fa-envelope"></i> Emails & Messaging</button>
             </div>
 
-            <!-- Trending Catalog -->
+            <!-- Secure marketplace banner -->
+            <div class="bg-gradient-to-r from-brandPrimary to-brandHover dark:from-neutral-900 dark:to-black rounded-2xl p-4 flex justify-between items-center text-white shadow-md relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+                <div class="relative z-10 min-w-0 pr-2">
+                    <span class="text-white/80 text-[10px] font-bold tracking-wide uppercase">Secure Marketplace</span>
+                    <p class="font-bold text-sm mt-0.5 leading-snug">Buy & sell with escrow protection</p>
+                    <p class="text-[10px] text-white/70 mt-0.5">Preview links · AI reviews uploads</p>
+                </div>
+                <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-3 py-1.5 rounded-full shrink-0 hover:bg-neutral-100 transition">Support</button>
+            </div>
+
+            <!-- Trending now (AcctVenta card layout · AcctBazaar listings) -->
             <div>
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-base flex items-center gap-2 text-slate-900 dark:text-white"><i class="fa-solid fa-fire text-brandPrimary"></i> Trending now</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm flex items-center gap-1.5 text-slate-900 dark:text-white"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
                     <span class="text-xs text-brandPrimary cursor-pointer font-medium transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
-                <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
-                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 w-44 shrink-0 relative shadow-sm">
-                        <div class="absolute top-3 right-3 text-slate-400 cursor-pointer hover:text-brandPrimary transition" onclick="toggleWishlist(this)"><i class="fa-regular fa-heart"></i></div>
-                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-3 text-emerald-600 text-2xl font-black">VPN</div>
-                        <h4 class="font-bold text-sm leading-tight mb-1">1 Month strong premium pia vpn</h4>
-                        <p class="text-[10px] text-slate-500 mb-2">4.8 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> By Amos</p>
-                        <p class="text-[10px] text-emerald-600 font-medium mb-3"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>1 available</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-bold text-slate-900 dark:text-white">$1.20</span>
-                            <button onclick="openCheckout('1 Month strong premium pia vpn', 1.20)" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition shadow-sm">Buy now</button>
+                <div class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 w-[9.5rem] shrink-0 shadow-sm">
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <div class="w-5 h-5 rounded bg-slate-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png" class="w-3.5 h-3.5 object-contain" alt="Gmail">
+                            </div>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-neutral-300 truncate">Gmail</span>
+                        </div>
+                        <h4 class="font-bold text-[11px] leading-snug text-slate-900 dark:text-white mb-1.5 min-h-[2.5rem]">15 Years Old Gmail Account</h4>
+                        <p class="text-[10px] text-slate-500 mb-1">By Leon</p>
+                        <p class="text-[10px] text-emerald-600 font-medium mb-2.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>2 available</p>
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-xs font-bold text-brandPrimary">$3.00</span>
+                            <button onclick="openCheckout('15 Years Old Gmail Account', 3.00)" class="bg-brandPrimary hover:bg-brandHover text-white text-[9px] font-bold px-2.5 py-1 rounded-full transition">Buy now</button>
                         </div>
                     </div>
-                    
-                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 w-44 shrink-0 relative shadow-sm">
-                        <div class="absolute top-3 right-3 text-slate-400 cursor-pointer hover:text-brandPrimary transition" onclick="toggleWishlist(this)"><i class="fa-regular fa-heart"></i></div>
-                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-3 text-emerald-600 text-xl font-black">t+</div>
-                        <h4 class="font-bold text-sm leading-tight mb-1">TextPlus USA number</h4>
-                        <p class="text-[10px] text-slate-500 mb-2">4.6 <i class="fa-solid fa-star text-brandPrimary text-[8px]"></i> By Amos</p>
-                        <p class="text-[10px] text-emerald-600 font-medium mb-3"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>2 available</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-bold text-slate-900 dark:text-white">$2.50</span>
-                            <button onclick="openCheckout('TextPlus USA number', 2.50)" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition shadow-sm">Buy now</button>
+                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 w-[9.5rem] shrink-0 shadow-sm">
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <div class="w-5 h-5 rounded bg-blue-600 flex items-center justify-center shrink-0 text-white text-[8px]"><i class="fa-brands fa-facebook"></i></div>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-neutral-300 truncate">Facebook</span>
+                        </div>
+                        <h4 class="font-bold text-[11px] leading-snug text-slate-900 dark:text-white mb-1.5 min-h-[2.5rem]">USA Facebook Account (Aged)</h4>
+                        <p class="text-[10px] text-slate-500 mb-1">By Legit</p>
+                        <p class="text-[10px] text-emerald-600 font-medium mb-2.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>1 available</p>
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-xs font-bold text-brandPrimary">$5.50</span>
+                            <button onclick="openCheckout('USA Facebook Account (Aged)', 5.50)" class="bg-brandPrimary hover:bg-brandHover text-white text-[9px] font-bold px-2.5 py-1 rounded-full transition">Buy now</button>
+                        </div>
+                    </div>
+                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 w-[9.5rem] shrink-0 shadow-sm">
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <div class="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center shrink-0 text-white text-[7px] font-black">VPN</div>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-neutral-300 truncate">Pia</span>
+                        </div>
+                        <h4 class="font-bold text-[11px] leading-snug text-slate-900 dark:text-white mb-1.5 min-h-[2.5rem]">Pia VPN 1-Year Access</h4>
+                        <p class="text-[10px] text-slate-500 mb-1">By LeoTech</p>
+                        <p class="text-[10px] text-emerald-600 font-medium mb-2.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>1 available</p>
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-xs font-bold text-brandPrimary">$2.50</span>
+                            <button onclick="openCheckout('Pia VPN 1-Year Access', 2.50)" class="bg-brandPrimary hover:bg-brandHover text-white text-[9px] font-bold px-2.5 py-1 rounded-full transition">Buy now</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other product (AcctVenta list layout · AcctBazaar listings) -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm text-slate-900 dark:text-white">Other product</h3>
+                    <span class="text-xs text-brandPrimary cursor-pointer font-medium transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                </div>
+                <div class="space-y-2.5">
+                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 flex items-center gap-3 shadow-sm">
+                        <div class="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center text-white text-2xl shrink-0">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-sm text-slate-900 dark:text-white leading-tight">USA 🇺🇸 WhatsApp number</h4>
+                            <p class="text-[10px] text-slate-500 mt-0.5">By LeoTech</p>
+                            <p class="text-[10px] text-emerald-600 font-medium mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>3 available</p>
+                        </div>
+                        <div class="text-right shrink-0 flex flex-col items-end gap-2">
+                            <span class="text-sm font-bold text-brandPrimary">$4.50</span>
+                            <button onclick="openCheckout('USA WhatsApp number', 4.50)" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition">Buy now</button>
+                        </div>
+                    </div>
+                    <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 flex items-center gap-3 shadow-sm">
+                        <div class="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl shrink-0">
+                            <i class="fa-brands fa-facebook"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-sm text-slate-900 dark:text-white leading-tight">USA Facebook Account (Aged)</h4>
+                            <p class="text-[10px] text-slate-500 mt-0.5">By Legit</p>
+                            <p class="text-[10px] text-emerald-600 font-medium mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>1 available</p>
+                        </div>
+                        <div class="text-right shrink-0 flex flex-col items-end gap-2">
+                            <span class="text-sm font-bold text-brandPrimary">$5.50</span>
+                            <button onclick="openCheckout('USA Facebook Account (Aged)', 5.50)" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition">Buy now</button>
                         </div>
                     </div>
                 </div>
