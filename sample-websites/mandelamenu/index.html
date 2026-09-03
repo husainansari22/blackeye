@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mandela Menu — Restaurant & Lounge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="brand">Mandela</p>
+      <h1>Discover our delicious menu options</h1>
+      <p class="sub">Restaurant · Lounge · Zanzibar — tap a venue to browse.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="venues" id="venues">
+      <button class="venue" data-venue="restaurant">
+        <span class="count">42 items</span>
+        <strong>Restaurant</strong>
+        <span>Locals, grills, rice &amp; more</span>
+      </button>
+      <button class="venue" data-venue="lounge">
+        <span class="count">28 items</span>
+        <strong>Lounge</strong>
+        <span>Cocktails, sharers, late bites</span>
+      </button>
+      <button class="venue" data-venue="zanzibar">
+        <span class="count">18 items</span>
+        <strong>Zanzibar</strong>
+        <span>Seafood &amp; coastal plates</span>
+      </button>
+    </section>
+
+    <section class="menu-view" id="menuView" hidden>
+      <button class="back" id="backBtn">← All venues</button>
+      <div class="menu-head">
+        <h2 id="venueTitle">Restaurant</h2>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="items" id="items"></div>
+    </section>
+  </main>
+
+  <button class="to-top" id="toTop" aria-label="Back to top">↑</button>
+
+  <footer class="wrap foot">
+    Mandela Menu sample · mandelamenu.kelvinoz.com · Inspired by mandelamenu.com
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Azure Haven Hotel — Lagos Waterfront Stay</title>
+  <meta name="description" content="Sample boutique hotel website with rooms, dining, and booking enquiry." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="#top">Azure Haven</a>
+    <nav>
+      <a href="#rooms">Rooms</a>
+      <a href="#experience">Experience</a>
+      <a href="#dining">Dining</a>
+      <a href="#book" class="book-link">Book stay</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-media"></div>
+      <div class="hero-copy">
+        <p class="brand-line">Azure Haven Hotel</p>
+        <h1>Waterfront calm in the middle of Lagos</h1>
+        <p>A boutique stay sample — rooms with lagoon light, slow mornings, and evenings by the pool.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#book">Check availability</a>
+          <a class="btn ghost" href="#rooms">Explore rooms</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="experience" id="experience">
+      <div class="wrap experience-grid">
+        <div>
+          <p class="eyebrow">The stay</p>
+          <h2>Designed for unhurried nights</h2>
+          <p>This hotel sample shows how a hospitality brand can lead with atmosphere: lagoon views, soft lighting, and service that feels personal.</p>
+        </div>
+        <ul>
+          <li><strong>Lagoon pool deck</strong><span>Sunset loungers &amp; towel service</span></li>
+          <li><strong>Arrival lounge</strong><span>Cold towels, welcome drink</span></li>
+          <li><strong>Late checkout</strong><span>On request for longer mornings</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="rooms" id="rooms">
+      <div class="wrap">
+        <p class="eyebrow">Accommodations</p>
+        <h2>Rooms &amp; suites</h2>
+        <div class="room-grid">
+          <article class="room">
+            <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=1000&q=80" alt="Deluxe room" loading="lazy" />
+            <div>
+              <h3>Lagoon Deluxe</h3>
+              <p>King bed · City-lagoon view · From ₦95,000 / night</p>
+            </div>
+          </article>
+          <article class="room">
+            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1000&q=80" alt="Suite" loading="lazy" />
+            <div>
+              <h3>Haven Suite</h3>
+              <p>Separate lounge · Rain shower · From ₦165,000 / night</p>
+            </div>
+          </article>
+          <article class="room">
+            <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1000&q=80" alt="Family room" loading="lazy" />
+            <div>
+              <h3>Family Terrace</h3>
+              <p>Two bedrooms · Private terrace · From ₦210,000 / night</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="dining" id="dining">
+      <div class="wrap dining-panel">
+        <div>
+          <p class="eyebrow">Dining</p>
+          <h2>Harbor Kitchen</h2>
+          <p>Coastal Nigerian plates, wood-fired grills, and a bar that stays open after dinner.</p>
+        </div>
+        <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80" alt="Restaurant dining" loading="lazy" />
+      </div>
+    </section>
+
+    <section class="book" id="book">
+      <div class="wrap book-panel">
+        <div>
+          <p class="eyebrow">Sample booking</p>
+          <h2>Reserve your nights</h2>
+          <p>Demo enquiry only — nothing is charged or emailed.</p>
+        </div>
+        <form id="bookForm">
+          <label>Check-in<input type="date" name="in" required /></label>
+          <label>Check-out<input type="date" name="out" required /></label>
+          <label>Guests
+            <select name="guests">
+              <option>1 guest</option>
+              <option selected>2 guests</option>
+              <option>3 guests</option>
+              <option>4 guests</option>
+            </select>
+          </label>
+          <label>Room
+            <select name="room">
+              <option>Lagoon Deluxe</option>
+              <option>Haven Suite</option>
+              <option>Family Terrace</option>
+            </select>
+          </label>
+          <button type="submit">Request stay</button>
+          <p class="note" id="bookNote" hidden>Request captured for this demo — no booking was made.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">Azure Haven Hotel sample · azurehaven.kelvinoz.com · Extra hospitality demo</div>
+  </footer>
+  <script src="main.js"></script>
+</body>
+</html>

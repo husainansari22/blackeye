@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Delta Mega Trend — Dream Homes in Nature</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Yanone+Kaffeesatz:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="#top">Delta <span>Mega Trend</span></a>
+    <nav>
+      <a href="#homes">Homes</a>
+      <a href="#projects">Projects</a>
+      <a href="#facilities">Facilities</a>
+      <a href="#contact" class="cta">Message Us</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-visual"></div>
+      <div class="hero-content">
+        <p class="brand-kicker">Delta Mega Trend</p>
+        <h1>Find your dream home today</h1>
+        <p>Master-planned communities with power, security, and green living in Delta and Lagos.</p>
+        <a class="btn" href="#homes">Browse listings</a>
+      </div>
+    </section>
+
+    <section class="homes" id="homes">
+      <div class="wrap">
+        <p class="eyebrow">Featured listings</p>
+        <h2>Find your perfect home</h2>
+        <div class="home-grid">
+          <article>
+            <img src="https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=900&q=80" alt="Bungalow" loading="lazy" />
+            <div>
+              <h3>3-Bed Bungalow</h3>
+              <p>Plantation City · 450sqm · From ₦28M</p>
+            </div>
+          </article>
+          <article>
+            <img src="https://images.unsplash.com/photo-1600047509358-9dc75590daeb?w=900&q=80" alt="Duplex" loading="lazy" />
+            <div>
+              <h3>Semi-Detached Duplex</h3>
+              <p>Southbrook Gardens · 320sqm · From ₦45M</p>
+            </div>
+          </article>
+          <article>
+            <img src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=900&q=80" alt="Terrace" loading="lazy" />
+            <div>
+              <h3>Luxury Terrace</h3>
+              <p>Ivory Oak Terrace · Lagos · From ₦68M</p>
+            </div>
+          </article>
+          <article>
+            <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80" alt="Land plot" loading="lazy" />
+            <div>
+              <h3>Residential Land</h3>
+              <p>Plantation City · 600sqm · From ₦9.5M</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="types">
+      <div class="wrap type-row">
+        <div><strong>Bungalows</strong><span>Single-level living</span></div>
+        <div><strong>Semi-Detached</strong><span>Shared wall value</span></div>
+        <div><strong>Terraces</strong><span>Urban townhomes</span></div>
+        <div><strong>Fully Detached</strong><span>Private compounds</span></div>
+      </div>
+    </section>
+
+    <section class="facilities" id="facilities">
+      <div class="wrap">
+        <p class="eyebrow">Built-in reliability</p>
+        <h2>100% facility readiness</h2>
+        <div class="facility-grid">
+          <div class="meter" style="--pct:100"><span>100%</span><strong>Power</strong><p>Dedicated IPP supply</p></div>
+          <div class="meter" style="--pct:100"><span>100%</span><strong>Security</strong><p>Gated &amp; patrolled</p></div>
+          <div class="meter" style="--pct:100"><span>100%</span><strong>5G Ready</strong><p>Fiber &amp; mobile coverage</p></div>
+          <div class="meter" style="--pct:100"><span>100%</span><strong>Facilities</strong><p>Roads, water, drainage</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="projects" id="projects">
+      <div class="wrap">
+        <p class="eyebrow">Our cities</p>
+        <h2>Signature projects</h2>
+        <div class="project-grid">
+          <article class="reveal">
+            <img src="https://images.unsplash.com/photo-1449844908441-8829872d2607?w=1000&q=80" alt="Plantation City" loading="lazy" />
+            <h3>Plantation City</h3>
+            <p>Warri, Delta — nature-first masterplan with occupied homes.</p>
+          </article>
+          <article class="reveal">
+            <img src="https://images.unsplash.com/photo-1464146072230-91cabc968266?w=1000&q=80" alt="Southbrook" loading="lazy" />
+            <h3>Southbrook Gardens</h3>
+            <p>Family estates with parks, schools access, and clean titles.</p>
+          </article>
+          <article class="reveal">
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1000&q=80" alt="Ivory Oak" loading="lazy" />
+            <h3>Ivory Oak Terrace</h3>
+            <p>Lagos apartments designed for professionals and families.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="intent" id="contact">
+      <div class="wrap intent-panel">
+        <div>
+          <p class="eyebrow">What are you looking for?</p>
+          <h2>Lands · Bungalows · Duplexes</h2>
+          <p>Sample contact form for demo purposes only.</p>
+        </div>
+        <form onsubmit="event.preventDefault(); this.querySelector('.ok').hidden=false;">
+          <input type="text" placeholder="Your name" required />
+          <input type="tel" placeholder="Phone number" required />
+          <select>
+            <option>Land</option>
+            <option>Bungalow</option>
+            <option>Duplex</option>
+          </select>
+          <button type="submit">Message us</button>
+          <p class="ok" hidden>Received — demo only, nothing was sent.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">Delta Mega Trend sample · deltamega.kelvinoz.com · Inspired by deltamegatrend.ng</div>
+  </footer>
+  <script src="main.js"></script>
+</body>
+</html>

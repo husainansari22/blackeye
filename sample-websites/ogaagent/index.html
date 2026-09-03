@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OgaAgent — Find Homes to Buy or Rent</title>
+  <meta name="description" content="Sample property marketplace with Nigerian states, buy and rent search." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="#top">Oga<span>Agent</span></a>
+    <nav>
+      <a href="#listings">For Sale</a>
+      <a href="#listings">For Rent</a>
+      <a href="#about">About</a>
+      <a href="#search" class="pill">Search</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-copy">
+        <p class="brand-line">OgaAgent</p>
+        <h1>Find legit homes to buy or rent</h1>
+        <p>Search verified listings across Nigerian states — no country picker, just where you want to live.</p>
+      </div>
+
+      <div class="search-panel" id="search">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-intent="buy" role="tab" aria-selected="true">Buy</button>
+          <button class="tab" data-intent="rent" role="tab" aria-selected="false">Rent</button>
+        </div>
+        <form class="filters" id="searchForm">
+          <label>Type
+            <select name="type">
+              <option value="">Any type</option>
+              <option>Flat / Apartment</option>
+              <option>Duplex</option>
+              <option>Bungalow</option>
+              <option>Terrace</option>
+              <option>Land</option>
+            </select>
+          </label>
+          <label>State
+            <select name="state" id="stateSelect">
+              <option value="">Select state</option>
+              <option>Lagos</option>
+              <option>Abuja (FCT)</option>
+              <option>Rivers</option>
+              <option>Delta</option>
+              <option>Edo</option>
+              <option>Oyo</option>
+              <option>Ogun</option>
+              <option>Anambra</option>
+            </select>
+          </label>
+          <label>City
+            <select name="city" id="citySelect">
+              <option value="">Select city</option>
+            </select>
+          </label>
+          <label>Budget
+            <select name="budget">
+              <option value="">Any budget</option>
+              <option>Under ₦5M</option>
+              <option>₦5M – ₦20M</option>
+              <option>₦20M – ₦50M</option>
+              <option>₦50M+</option>
+            </select>
+          </label>
+          <label>Beds
+            <select name="beds">
+              <option value="">Any</option>
+              <option>1+</option>
+              <option>2+</option>
+              <option>3+</option>
+              <option>4+</option>
+            </select>
+          </label>
+          <button class="search-btn" type="submit">Search properties</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="listings" id="listings">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Latest listings</h2>
+          <p id="resultNote">Showing buy &amp; rent options across states</p>
+        </div>
+        <div class="grid" id="listingGrid"></div>
+      </div>
+    </section>
+
+    <section class="about" id="about">
+      <div class="wrap about-grid">
+        <div>
+          <p class="eyebrow">Why OgaAgent</p>
+          <h2>State-first property search</h2>
+          <p>This sample marketplace focuses on Buy and Rent with cascading state → city filters — no countries.</p>
+        </div>
+        <ul>
+          <li>Verified agent badges</li>
+          <li>Buy &amp; Rent intents</li>
+          <li>Nigerian state coverage</li>
+          <li>Clear price tags in ₦</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <strong>OgaAgent</strong> sample · ogaagent.kelvinoz.com · Inspired by ogaagent.com
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
