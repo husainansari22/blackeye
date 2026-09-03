@@ -5,7 +5,7 @@ cd "$APP_DIR"
 source venv/bin/activate
 
 PY_SITE="$APP_DIR/venv/lib/python3.12/site-packages"
-export LD_LIBRARY_PATH="$PY_SITE/nvidia/cudnn/lib:$PY_SITE/nvidia/cublas/lib:$PY_SITE/nvidia/cuda_runtime/lib:${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$PY_SITE/nvidia/cudnn/lib:$PY_SITE/nvidia/cublas/lib:$PY_SITE/nvidia/cuda_runtime/lib:$PY_SITE/nvidia/cuda_nvrtc/lib:$PY_SITE/nvidia/cufft/lib:${LD_LIBRARY_PATH:-}"
 
 export HF_HOME="${APP_DIR}/.cache/huggingface"
 export APP_PASSWORD="${APP_PASSWORD:-@535846.oZ}"
