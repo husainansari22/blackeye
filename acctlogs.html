@@ -62,7 +62,7 @@
                 <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
                     <i class="fa-regular fa-bell text-lg"></i>
                 </button>
-                <button type="button" onclick="toggleLeftMenu()" class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 hover:border-brandPrimary transition" title="Profile">
+                <button type="button" onclick="openProfile()" class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 hover:border-brandPrimary transition" title="My Profile">
                     <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80" class="w-full h-full object-cover" alt="Profile">
                 </button>
             </div>
@@ -448,6 +448,83 @@
             </div>
         </div>
 
+        <!-- TAB: MY PROFILE (profile avatar — separate from hamburger nav) -->
+        <div id="tab_profile" class="app-tab hidden space-y-5">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-neutral-800 pb-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-neutral-600 flex items-center justify-center text-slate-600 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white">My Profile</h2>
+            </div>
+
+            <div class="border border-brandPrimary/40 dark:border-brandPrimary/30 rounded-2xl p-4 bg-lightCard dark:bg-darkCard">
+                <div class="flex items-start gap-4">
+                    <div class="relative shrink-0">
+                        <div id="profileAvatar" class="w-20 h-20 rounded-full bg-brandPrimary/10 border-2 border-brandPrimary flex items-center justify-center overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160" class="w-full h-full object-cover hidden" id="profileAvatarImg" alt="Profile">
+                            <i class="fa-solid fa-user text-brandPrimary text-2xl" id="profileAvatarIcon"></i>
+                        </div>
+                        <button type="button" onclick="uploadProfilePhoto()" class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-md border-2 border-white dark:border-darkCard">
+                            <i class="fa-solid fa-camera text-[10px]"></i>
+                        </button>
+                        <input type="file" id="profilePhotoInput" accept="image/*" class="hidden" onchange="handleProfilePhoto(event)">
+                    </div>
+                    <div class="min-w-0 pt-1">
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Kelvin</h3>
+                        <p class="text-sm text-brandPrimary truncate">kelvinsmith535846@gmail.com</p>
+                        <p class="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">+234 8064987447</p>
+                    </div>
+                </div>
+                <p class="text-xs text-brandPrimary/80 mt-3">Tap the camera to upload a profile picture</p>
+            </div>
+
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-neutral-800 rounded-2xl divide-y divide-slate-200 dark:divide-neutral-800 text-sm">
+                <div class="flex justify-between items-center px-4 py-3.5">
+                    <span class="text-slate-600 dark:text-neutral-400">Wallet balance</span>
+                    <span class="font-bold text-slate-900 dark:text-white">$502.00</span>
+                </div>
+                <div class="flex justify-between items-center px-4 py-3.5">
+                    <span class="text-slate-600 dark:text-neutral-400">Member since</span>
+                    <span class="font-medium text-slate-900 dark:text-white">Aug 21, 2026</span>
+                </div>
+                <div class="flex justify-between items-center px-4 py-3.5">
+                    <span class="text-slate-600 dark:text-neutral-400">Referral code</span>
+                    <span class="font-mono font-bold text-brandPrimary">gJ9eE</span>
+                </div>
+            </div>
+
+            <nav class="space-y-1">
+                <a href="#" onclick="openAccountSettings()" class="flex items-center gap-4 px-1 py-3.5 text-[15px] text-slate-800 dark:text-white hover:text-brandPrimary transition border-b border-slate-100 dark:border-neutral-800">
+                    <span class="w-8 h-8 rounded-lg bg-brandPrimary/10 flex items-center justify-center text-brandPrimary"><i class="fa-solid fa-gear text-sm"></i></span>
+                    Account settings
+                </a>
+                <a href="#" onclick="switchTab('wallet')" class="flex items-center gap-4 px-1 py-3.5 text-[15px] text-slate-800 dark:text-white hover:text-brandPrimary transition border-b border-slate-100 dark:border-neutral-800">
+                    <span class="w-8 h-8 rounded-lg bg-brandPrimary/10 flex items-center justify-center text-brandPrimary"><i class="fa-solid fa-wallet text-sm"></i></span>
+                    Wallet
+                </a>
+                <a href="#" onclick="switchTab('orders')" class="flex items-center gap-4 px-1 py-3.5 text-[15px] text-slate-800 dark:text-white hover:text-brandPrimary transition border-b border-slate-100 dark:border-neutral-800">
+                    <span class="w-8 h-8 rounded-lg bg-brandPrimary/10 flex items-center justify-center text-brandPrimary"><i class="fa-solid fa-clipboard-check text-sm"></i></span>
+                    My purchases
+                </a>
+                <a href="#" onclick="switchTab('referral')" class="flex items-center gap-4 px-1 py-3.5 text-[15px] text-slate-800 dark:text-white hover:text-brandPrimary transition border-b border-slate-100 dark:border-neutral-800">
+                    <span class="w-8 h-8 rounded-lg bg-brandPrimary/10 flex items-center justify-center text-brandPrimary"><i class="fa-solid fa-users text-sm"></i></span>
+                    Referral
+                </a>
+                <a href="#" onclick="openSupportCenter()" class="flex items-center gap-4 px-1 py-3.5 text-[15px] text-slate-800 dark:text-white hover:text-brandPrimary transition border-b border-slate-100 dark:border-neutral-800">
+                    <span class="w-8 h-8 rounded-lg bg-brandPrimary/10 flex items-center justify-center text-brandPrimary"><i class="fa-solid fa-headset text-sm"></i></span>
+                    Support
+                </a>
+                <button type="button" onclick="toggleDarkMode()" class="w-full flex items-center gap-4 px-1 py-3.5 text-[15px] text-slate-800 dark:text-white hover:text-brandPrimary transition text-left border-b border-slate-100 dark:border-neutral-800">
+                    <span class="w-8 h-8 rounded-lg bg-brandPrimary/10 flex items-center justify-center text-brandPrimary"><i class="fa-solid fa-moon text-sm" id="profileThemeIcon"></i></span>
+                    <span id="profileThemeText">Dark Mode</span>
+                </button>
+                <a href="#" onclick="handleLogout()" class="flex items-center gap-4 px-1 py-3.5 text-[15px] text-red-500 hover:text-red-600 transition">
+                    <span class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500"><i class="fa-solid fa-arrow-right-from-bracket text-sm"></i></span>
+                    Log Out
+                </a>
+            </nav>
+        </div>
+
     </main>
 
     <!-- NOTIFICATION DRAWER -->
@@ -500,69 +577,35 @@
         </div>
     </div>
 
-    <!-- LEFT MENU DRAWER (FULL PROFILE & SETTINGS) -->
-    <div id="leftMenu" class="fixed inset-0 top-[57px] bg-lightCard dark:bg-black z-[70] hidden flex justify-center transition-opacity">
-        <div class="w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
-            <!-- Back -->
-            <div class="px-4 pt-4 pb-2">
-                <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-700 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
-                </button>
+    <!-- LEFT MENU DRAWER (HAMBURGER — site navigation only) -->
+    <div id="leftMenu" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeLeftMenu()"></div>
+        <div class="absolute left-0 top-0 bottom-0 w-[85%] max-w-sm bg-lightCard dark:bg-darkCard border-r border-slate-200 dark:border-neutral-800 flex flex-col shadow-2xl overflow-y-auto">
+            <div class="flex justify-between items-center px-5 py-4 border-b border-slate-200 dark:border-neutral-800">
+                <span class="font-bold text-lg text-brandPrimary">Menu</span>
+                <button type="button" onclick="closeLeftMenu()" class="text-slate-400 hover:text-brandPrimary transition"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
+            <div class="flex-1 p-5 space-y-2 text-sm font-medium text-slate-700 dark:text-neutral-200">
+                <a href="#" onclick="switchTab('home'); closeLeftMenu();" class="flex items-center gap-3 py-3 hover:text-brandPrimary transition"><i class="fa-solid fa-house w-5 text-brandPrimary"></i> Home Feed</a>
+                <a href="#" onclick="switchTab('market'); closeLeftMenu();" class="flex items-center gap-3 py-3 hover:text-brandPrimary transition"><i class="fa-solid fa-border-all w-5 text-slate-400"></i> Marketplace</a>
+                <a href="#" onclick="switchTab('orders'); closeLeftMenu();" class="flex items-center gap-3 py-3 hover:text-brandPrimary transition"><i class="fa-regular fa-clipboard w-5 text-slate-400"></i> Purchases</a>
+                <a href="#" onclick="switchTab('ads'); closeLeftMenu();" class="flex items-center gap-3 py-3 hover:text-brandPrimary transition"><i class="fa-solid fa-bullhorn w-5 text-slate-400"></i> Active Ads</a>
+                <a href="#" onclick="switchTab('wallet'); closeLeftMenu();" class="flex items-center gap-3 py-3 hover:text-brandPrimary transition"><i class="fa-solid fa-wallet w-5 text-slate-400"></i> Wallet & Escrow</a>
+                <a href="#" onclick="switchTab('plans'); closeLeftMenu();" class="flex items-center gap-3 py-3 hover:text-brandPrimary transition"><i class="fa-solid fa-award w-5 text-slate-400"></i> Plans & Pricing</a>
+                <a href="#" onclick="openProfile(); closeLeftMenu();" class="flex items-center gap-3 py-3 hover:text-brandPrimary transition"><i class="fa-solid fa-user w-5 text-slate-400"></i> My Profile</a>
 
-            <!-- Profile -->
-            <div class="px-5 pb-5 space-y-3">
-                <div class="flex items-start gap-3">
-                    <div class="w-12 h-12 rounded-md bg-brandPrimary flex items-center justify-center text-white shrink-0">
-                        <i class="fa-solid fa-question text-xl"></i>
-                    </div>
-                    <div class="min-w-0 pt-0.5">
-                        <h3 class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug">ODUWA ELVIS OSAZEMWINDE</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">elvissmith5544@gmail.com</p>
+                <div class="border-t border-slate-200 dark:border-neutral-800 pt-4 mt-2">
+                    <p class="text-xs text-slate-400 font-bold mb-3 uppercase tracking-wider">Quick Categories</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-normal">
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-neutral-900 cursor-pointer hover:bg-brandPrimary/10 hover:text-brandPrimary border border-slate-200 dark:border-neutral-800 transition text-center" onclick="filterCategory('Social'); closeLeftMenu();">Social Media</span>
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-neutral-900 cursor-pointer hover:bg-brandPrimary/10 hover:text-brandPrimary border border-slate-200 dark:border-neutral-800 transition text-center" onclick="filterCategory('SMS'); closeLeftMenu();">Messaging</span>
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-neutral-900 cursor-pointer hover:bg-brandPrimary/10 hover:text-brandPrimary border border-slate-200 dark:border-neutral-800 transition text-center" onclick="filterCategory('VPN'); closeLeftMenu();">VPN & Proxies</span>
+                        <span class="p-2.5 rounded-lg bg-slate-50 dark:bg-neutral-900 cursor-pointer hover:bg-brandPrimary/10 hover:text-brandPrimary border border-slate-200 dark:border-neutral-800 transition text-center" onclick="filterCategory('Giftcard'); closeLeftMenu();">Giftcards</span>
                     </div>
                 </div>
-                <button onclick="openBecomeVerified(); toggleLeftMenu();" class="border border-brandPrimary text-brandPrimary text-xs px-4 py-2 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
-                    Become Verified
-                </button>
             </div>
-
-            <!-- Nav list -->
-            <nav class="flex-1 px-2 pb-4">
-                <a href="#" onclick="switchTab('account_dashboard'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-border-all w-5 text-center"></i> Account Dashboard
-                </a>
-                <a href="#" onclick="switchTab('referral'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-users w-5 text-center"></i> Referral
-                </a>
-                <a href="#" onclick="switchTab('plans'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-award w-5 text-center"></i> Plans
-                </a>
-                <a href="#" onclick="switchTab('orders'); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Purchase
-                </a>
-                <a href="#" onclick="openAccountSettings(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
-                </a>
-                <a href="#" onclick="openSupportCenter(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-headset w-5 text-center"></i> Support
-                </a>
-                <a href="#" onclick="openMyStories(); toggleLeftMenu();" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-camera w-5 text-center"></i> My Stories
-                </a>
-                <button type="button" onclick="toggleDarkMode()" class="w-full flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition text-left">
-                    <i class="fa-solid fa-moon w-5 text-center" id="themeIcon"></i>
-                    <span id="themeText">Dark Mode</span>
-                </button>
-                <a href="#" onclick="handleLogout()" class="flex items-center gap-4 px-3 py-3.5 text-[15px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
-                    <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
-                </a>
-            </nav>
-
-            <!-- CTA -->
-            <div class="px-5 pb-8 pt-2 mt-auto">
-                <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm">
-                    Sell Product
-                </button>
+            <div class="p-5 border-t border-slate-200 dark:border-neutral-800 pb-safe">
+                <button onclick="openSellProductWizard(); closeLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm">Sell Product</button>
             </div>
         </div>
     </div>
@@ -707,12 +750,36 @@
 
         function toggleLeftMenu() {
             const menu = document.getElementById('leftMenu');
-            const nav = document.querySelector('nav.fixed.bottom-0');
             menu.classList.toggle('hidden');
-            if (nav) {
-                nav.classList.toggle('hidden', !menu.classList.contains('hidden'));
-            }
         }
+
+        function closeLeftMenu() {
+            document.getElementById('leftMenu').classList.add('hidden');
+        }
+
+        function openProfile() {
+            closeLeftMenu();
+            switchTab('profile');
+        }
+
+        function uploadProfilePhoto() {
+            document.getElementById('profilePhotoInput').click();
+        }
+
+        function handleProfilePhoto(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('profileAvatarImg');
+                const icon = document.getElementById('profileAvatarIcon');
+                img.src = e.target.result;
+                img.classList.remove('hidden');
+                icon.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
         function toggleRightMenu() { document.getElementById('rightMenu').classList.toggle('hidden'); }
         function toggleNotificationDrawer() { document.getElementById('notificationDrawer').classList.toggle('hidden'); }
         function toggleFilterDrawer() { document.getElementById('filterDrawer').classList.toggle('hidden'); }
@@ -910,16 +977,22 @@
             const isDark = htmlEl.classList.toggle('dark');
             const text = document.getElementById('themeText');
             const icon = document.getElementById('themeIcon');
+            const profileText = document.getElementById('profileThemeText');
+            const profileIcon = document.getElementById('profileThemeIcon');
             const themeMeta = document.querySelector('meta[name="theme-color"]');
             
             if (isDark) {
-                text.innerText = 'Light Mode';
-                icon.className = 'fa-solid fa-sun w-5 text-center text-brandPrimary';
+                if (text) { text.innerText = 'Light Mode'; }
+                if (icon) { icon.className = 'fa-solid fa-sun w-5 text-center text-brandPrimary'; }
+                if (profileText) { profileText.innerText = 'Light Mode'; }
+                if (profileIcon) { profileIcon.className = 'fa-solid fa-sun text-sm'; }
                 themeMeta.setAttribute('content', '#000000');
                 localStorage.setItem('theme', 'dark');
             } else {
-                text.innerText = 'Dark Mode';
-                icon.className = 'fa-solid fa-moon w-5 text-center text-slate-700 dark:text-white';
+                if (text) { text.innerText = 'Dark Mode'; }
+                if (icon) { icon.className = 'fa-solid fa-moon w-5 text-center text-slate-700 dark:text-white'; }
+                if (profileText) { profileText.innerText = 'Dark Mode'; }
+                if (profileIcon) { profileIcon.className = 'fa-solid fa-moon text-sm'; }
                 themeMeta.setAttribute('content', '#FF4500');
                 localStorage.setItem('theme', 'light');
             }
@@ -930,8 +1003,14 @@
             const themeMeta = document.querySelector('meta[name="theme-color"]');
             if(savedTheme === 'dark') {
                 document.documentElement.classList.add('dark');
-                document.getElementById('themeText').innerText = 'Light Mode';
-                document.getElementById('themeIcon').className = 'fa-solid fa-sun w-5 text-center text-brandPrimary';
+                const text = document.getElementById('themeText');
+                const icon = document.getElementById('themeIcon');
+                const profileText = document.getElementById('profileThemeText');
+                const profileIcon = document.getElementById('profileThemeIcon');
+                if (text) { text.innerText = 'Light Mode'; }
+                if (icon) { icon.className = 'fa-solid fa-sun w-5 text-center text-brandPrimary'; }
+                if (profileText) { profileText.innerText = 'Light Mode'; }
+                if (profileIcon) { profileIcon.className = 'fa-solid fa-sun text-sm'; }
                 themeMeta.setAttribute('content', '#000000');
             }
         });
