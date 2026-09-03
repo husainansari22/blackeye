@@ -21,7 +21,7 @@ except ImportError:
 API_BASE = "https://developers.hostinger.com"
 USERNAME = "u343769360"
 DOMAIN = "live.kelvinoz.com"
-GPU_BACKEND = os.environ.get("GPU_BACKEND", "http://69.162.106.209:20001")
+GPU_BACKEND = os.environ.get("GPU_BACKEND", "http://216.245.209.185:20000")
 ARCHIVE_NAME = "live-proxy.zip"
 ROOT = Path(__file__).resolve().parent
 PROXY_DIR = ROOT / "live-proxy"
