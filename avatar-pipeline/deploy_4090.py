@@ -22,6 +22,7 @@ LOCAL_DIR = Path(__file__).resolve().parent
 UPLOAD = [
     "app.py",
     "web_ui.html",
+    "hybrid_engine.py",
     "body_engine.py",
     "faceswap_engine.py",
     "quality_engine.py",

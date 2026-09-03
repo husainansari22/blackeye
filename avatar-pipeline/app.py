@@ -206,9 +206,15 @@ USE_STREAM = os.environ.get("USE_STREAM", "0") == "1"
 USE_QUALITY = os.environ.get("USE_QUALITY", "0") == "1"
 USE_FACESWAP = os.environ.get("USE_FACESWAP", "0") == "1"
 USE_BODY = os.environ.get("USE_BODY", "0") == "1"
-USE_STREAM_IP = os.environ.get("USE_STREAM_IP", "1") == "1"
+USE_STREAM_IP = os.environ.get("USE_STREAM_IP", "0") == "1"
+USE_HYBRID = os.environ.get("USE_HYBRID", "1") == "1"
 
-if USE_STREAM_IP:
+if USE_HYBRID:
+    from hybrid_engine import HybridEngine
+
+    pipeline = HybridEngine()
+    logger.info("Using Hybrid: StreamDiffusion (no ref) + InsightFace inswapper (with ref)")
+elif USE_STREAM_IP:
     from stream_ip_engine import StreamIPEngine
 
     pipeline = StreamIPEngine()
@@ -269,9 +275,11 @@ async def login(body: dict):
 
 @app.get("/api/status")
 async def status(token: str = Depends(require_token)):
-    has_ref = getattr(pipeline, "_reference_rgb", None) is not None or getattr(
-        pipeline, "_reference", None
-    ) is not None
+    has_ref = (
+        getattr(pipeline, "_reference_rgb", None) is not None
+        or getattr(pipeline, "_reference", None) is not None
+        or getattr(pipeline, "_source_face", None) is not None
+    )
     mode = getattr(pipeline, "mode", "faceswap")
     if has_ref and "+ref" not in mode:
         if mode.startswith("stream"):
