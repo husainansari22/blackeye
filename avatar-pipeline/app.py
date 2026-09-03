@@ -205,9 +205,15 @@ USE_REALTIME = os.environ.get("USE_REALTIME", "0") == "1"
 USE_STREAM = os.environ.get("USE_STREAM", "0") == "1"
 USE_QUALITY = os.environ.get("USE_QUALITY", "0") == "1"
 USE_FACESWAP = os.environ.get("USE_FACESWAP", "0") == "1"
-USE_BODY = os.environ.get("USE_BODY", "1") == "1"
+USE_BODY = os.environ.get("USE_BODY", "0") == "1"
+USE_STREAM_IP = os.environ.get("USE_STREAM_IP", "1") == "1"
 
-if USE_BODY:
+if USE_STREAM_IP:
+    from stream_ip_engine import StreamIPEngine
+
+    pipeline = StreamIPEngine()
+    logger.info("Using StreamDiffusion + IP-Adapter (30fps path + reference identity)")
+elif USE_BODY:
     from body_engine import BodyTransformEngine
 
     pipeline = BodyTransformEngine()
