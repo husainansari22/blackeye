@@ -22,7 +22,7 @@ from PIL import Image
 logger = logging.getLogger("avatar.hybrid")
 
 FRAME_SIZE = int(os.environ.get("FRAME_SIZE", "512"))
-SWAP_SIZE = int(os.environ.get("SWAP_SIZE", "640"))
+SWAP_SIZE = int(os.environ.get("SWAP_SIZE", "768"))
 STREAM_ROOT = Path(__file__).resolve().parent / "StreamDiffusion"
 MODELS_DIR = Path(os.environ.get("INSIGHTFACE_ROOT", Path(__file__).resolve().parent / "models"))
 ENGINE_DIR = os.environ.get("STREAM_ENGINES", str(Path(__file__).resolve().parent / "engines"))

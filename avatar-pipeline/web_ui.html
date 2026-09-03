@@ -170,17 +170,18 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 
   <div class="card">
     <input type="file" id="ref-file" accept="image/*" hidden onchange="uploadRef(event)"/>
-    <button class="btn-red" onclick="document.getElementById('ref-file').click()">⬆ Upload Image</button>
+    <button class="btn-red" onclick="document.getElementById('ref-file').click()">⬆ Upload Face Reference</button>
+    <p class="stats-bar" style="margin:8px 0 0">Reference face replaces your face; camera keeps pose &amp; body.</p>
     <div id="ref-card" class="ref-card hidden">
       <img id="ref-thumb" alt="reference"/>
-      <div class="meta"><strong>Image ready</strong><small id="ref-name">reference.jpg</small></div>
+      <div class="meta"><strong>Face locked</strong><small id="ref-name">reference.jpg</small></div>
       <button class="ref-x" onclick="clearRef()">✕</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-hdr"><span class="ico">✨</span> Edit Ai Output with Prompt</div>
-    <textarea id="prompt">full body photo of the same person from the reference image, same pose as camera, same hair and clothes as reference, photorealistic, sharp focus</textarea>
+    <div class="card-hdr"><span class="ico">✨</span> Style prompt (no-reference mode)</div>
+    <textarea id="prompt">photorealistic portrait, sharp focus, natural skin, detailed face</textarea>
     <div class="chips">
       <button class="chip spark" onclick="applyPreset('portrait')">✨</button>
       <button class="chip" data-preset="hotel" onclick="applyPreset('hotel')">🏨 Hotel Room</button>

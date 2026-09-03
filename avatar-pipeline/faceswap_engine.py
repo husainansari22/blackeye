@@ -91,7 +91,9 @@ class FaceSwapEngine:
         return max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
 
     def _extract_source_face(self, rgb: np.ndarray) -> Any:
-        faces = self._face_app.get(rgb)
+        # InsightFace expects BGR
+        bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        faces = self._face_app.get(bgr)
         face = self._pick_largest(faces)
         if face is None:
             raise ValueError("No face found in reference photo — use a clear front-facing portrait")
