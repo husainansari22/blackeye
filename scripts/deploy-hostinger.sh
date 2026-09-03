@@ -89,7 +89,6 @@ FILES=(
   ".htaccess"
   "index.html"
   "company.html"
-<<<<<<< HEAD
   "dashboard.html"
   "listing.html"
   "seller.html"
@@ -98,9 +97,6 @@ FILES=(
   "css/admin-app.css"
   "css/tailwind.css"
   "img/brand/verified.svg"
-=======
-  ".htaccess"
->>>>>>> 3af3153 (Restore iOS-style Owner Admin UI accidentally overwritten by deploy)
   "js/acctventa.js"
   "js/api-client.js"
   "js/api-sync.js"
