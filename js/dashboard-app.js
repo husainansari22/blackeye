@@ -253,10 +253,12 @@
   }
 
   function sellerAvatarFaceHtml(avatarUrl, initials, imgClass) {
-    const ini = escapeHtml(initials || '?');
+    const rawIni = String(initials || '').trim() || '?';
+    const ini = escapeHtml(rawIni);
     const url = String(avatarUrl || '').trim();
     if (url) {
-      return `<img src="${escapeAttr(url)}" alt="" class="${imgClass || 'w-full h-full object-cover rounded-full'}" loading="lazy" onerror="this.style.display='none';this.parentNode && (this.parentNode.textContent='${ini}');">`;
+      // Eager load for Top Merchants (above the fold). onerror falls back to initials.
+      return `<img src="${escapeAttr(url)}" alt="${ini}" class="${imgClass || 'w-full h-full object-cover rounded-full'}" loading="eager" decoding="async" onerror="this.onerror=null;this.removeAttribute('src');this.alt='';this.style.display='none';if(this.parentNode){this.parentNode.textContent='${ini}';}">`;
     }
     return ini;
   }
@@ -372,11 +374,18 @@
       const map = {};
       list.forEach((i) => {
         if (!map[i.sellerEmail]) {
+          const name = i.sellerName || 'Seller';
+          const parts = String(name).trim().split(/\s+/).filter(Boolean);
+          const fallbackIni = !parts.length
+            ? '?'
+            : parts.length === 1
+              ? parts[0].slice(0, 2).toUpperCase()
+              : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
           map[i.sellerEmail] = {
-            name: i.sellerName,
+            name,
             email: i.sellerEmail,
             merchantSlug: i.sellerMerchantSlug || '',
-            initials: i.sellerInitials,
+            initials: i.sellerInitials || fallbackIni,
             avatarUrl: i.sellerAvatar || '',
             sellerId: i.sellerId || '',
             sales: 0,
