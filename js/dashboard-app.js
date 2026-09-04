@@ -252,6 +252,15 @@
     return hit ? hit.groupId : '';
   }
 
+  function sellerAvatarFaceHtml(avatarUrl, initials, imgClass) {
+    const ini = escapeHtml(initials || '?');
+    const url = String(avatarUrl || '').trim();
+    if (url) {
+      return `<img src="${escapeAttr(url)}" alt="" class="${imgClass || 'w-full h-full object-cover rounded-full'}" loading="lazy" onerror="this.style.display='none';this.parentNode && (this.parentNode.textContent='${ini}');">`;
+    }
+    return ini;
+  }
+
   function listingCard(item, compact) {
     const logo = productLogoFor(item);
     const group = productGroupFor(item);
@@ -362,22 +371,62 @@
     if (merchants) {
       const map = {};
       list.forEach((i) => {
-        if (!map[i.sellerEmail]) map[i.sellerEmail] = { name: i.sellerName, email: i.sellerEmail, merchantSlug: i.sellerMerchantSlug || '', initials: i.sellerInitials, sales: 0 };
+        if (!map[i.sellerEmail]) {
+          map[i.sellerEmail] = {
+            name: i.sellerName,
+            email: i.sellerEmail,
+            merchantSlug: i.sellerMerchantSlug || '',
+            initials: i.sellerInitials,
+            avatarUrl: i.sellerAvatar || '',
+            sellerId: i.sellerId || '',
+            sales: 0,
+            hasStory: false,
+          };
+        }
         map[i.sellerEmail].sales += 1;
         if (!map[i.sellerEmail].merchantSlug && i.sellerMerchantSlug) map[i.sellerEmail].merchantSlug = i.sellerMerchantSlug;
+        if (!map[i.sellerEmail].avatarUrl && i.sellerAvatar) map[i.sellerEmail].avatarUrl = i.sellerAvatar;
+        if (!map[i.sellerEmail].sellerId && i.sellerId) map[i.sellerEmail].sellerId = i.sellerId;
       });
-      const arr = Object.values(map).slice(0, 10);
+      const storyFeed = window.__acctventaStoryFeed || [];
+      storyFeed.forEach((m) => {
+        const email = String(m.sellerEmail || '').toLowerCase();
+        if (email && map[email]) {
+          map[email].hasStory = Array.isArray(m.stories) && m.stories.length > 0;
+          if (!map[email].avatarUrl && m.sellerAvatar) map[email].avatarUrl = m.sellerAvatar;
+        } else if (email && Array.isArray(m.stories) && m.stories.length) {
+          // Sellers with stories but no live ads still show in Top Merchants
+          map[email] = {
+            name: m.sellerName,
+            email: m.sellerEmail,
+            merchantSlug: m.sellerMerchantSlug || '',
+            initials: (m.sellerName || '?').slice(0, 2).toUpperCase(),
+            avatarUrl: m.sellerAvatar || '',
+            sellerId: m.sellerId || '',
+            sales: 0,
+            hasStory: true,
+          };
+        }
+      });
+      const arr = Object.values(map)
+        .sort((a, b) => Number(b.hasStory) - Number(a.hasStory) || b.sales - a.sales)
+        .slice(0, 12);
       if (!arr.length) {
         merchants.innerHTML = `<p class="text-xs text-slate-400 py-2">Merchants will appear after approved sales listings go live.</p>`;
       } else {
         merchants.innerHTML = arr
-          .map(
-            (m) => `<button type="button" onclick="goToSellerStore('${escapeAttr(m.merchantSlug || m.email)}')" class="flex flex-col items-center shrink-0 text-center w-16">
-          <div class="w-14 h-14 rounded-full border-2 border-brandPrimary mb-1 bg-brandPrimary/20 text-brandPrimary flex items-center justify-center font-bold">${escapeHtml(m.initials)}</div>
-          <span class="text-xs font-bold truncate w-full">${escapeHtml(m.name)}</span>
-          <span class="text-[10px] text-slate-500">${m.sales} live</span>
-        </button>`
-          )
+          .map((m) => {
+            const ring = m.hasStory ? 'av-merchant-ring has-story' : 'av-merchant-ring';
+            const face = sellerAvatarFaceHtml(m.avatarUrl, m.initials, 'av-merchant-face-img');
+            const action = m.hasStory
+              ? `openMerchantStory('${escapeAttr(m.email)}')`
+              : `goToSellerStore('${escapeAttr(m.merchantSlug || m.email)}')`;
+            return `<button type="button" onclick="${action}" class="av-merchant-chip flex flex-col items-center shrink-0 text-center w-16">
+          <span class="${ring}"><span class="av-merchant-face">${face}</span></span>
+          <span class="text-xs font-bold truncate w-full mt-1">${escapeHtml(m.name)}</span>
+          <span class="text-[10px] text-slate-500">${m.hasStory ? 'Story' : m.sales + ' live'}</span>
+        </button>`;
+          })
           .join('');
       }
     }
@@ -2094,7 +2143,7 @@
         </div>
         <div class="av-listing-badge${isAuto ? '' : ' av-listing-badge--manual'}">${isAuto ? '<i class="fa-solid fa-bolt"></i> Instant Delivery' : '<i class="fa-solid fa-clock"></i> Manual delivery'}</div>
         <div class="av-listing-seller">
-          <div class="av-listing-seller__avatar">${escapeHtml(item.sellerInitials || 'S')}</div>
+          <div class="av-listing-seller__avatar">${sellerAvatarFaceHtml(item.sellerAvatar, item.sellerInitials || 'S', 'av-listing-seller__avatar-img')}</div>
           <div class="av-listing-seller__body">
             <p class="av-listing-seller__name inline-flex items-center gap-0.5 flex-wrap">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</p>
             <p class="av-listing-seller__stats">${escapeHtml(salesLabel)}</p>
@@ -2331,6 +2380,233 @@
   };
 
   window.openSellerProfile = window.goToSellerStore;
+
+  function findStoryBundle(sellerEmail) {
+    const email = String(sellerEmail || '').toLowerCase();
+    const feed = window.__acctventaStoryFeed || [];
+    return feed.find((m) => String(m.sellerEmail || '').toLowerCase() === email) || null;
+  }
+
+  let storyViewerTimer = null;
+  let storyViewerIdx = 0;
+  let storyViewerBundle = null;
+
+  function ensureStoryViewer() {
+    let el = document.getElementById('avStoryViewer');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'avStoryViewer';
+    el.className = 'av-story-viewer hidden';
+    el.innerHTML = `
+      <div class="av-story-viewer__shade" data-close-story="1"></div>
+      <div class="av-story-viewer__card">
+        <div class="av-story-viewer__bars" id="avStoryBars"></div>
+        <div class="av-story-viewer__top">
+          <div class="av-story-viewer__who">
+            <span class="av-story-viewer__avatar" id="avStoryAvatar"></span>
+            <div>
+              <p class="av-story-viewer__name" id="avStoryName"></p>
+              <p class="av-story-viewer__time" id="avStoryTime"></p>
+            </div>
+          </div>
+          <button type="button" class="av-story-viewer__close" data-close-story="1" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <img id="avStoryImage" class="av-story-viewer__img" alt="">
+        <p class="av-story-viewer__caption" id="avStoryCaption"></p>
+        <button type="button" class="av-story-viewer__nav av-story-viewer__nav--prev" id="avStoryPrev" aria-label="Previous"></button>
+        <button type="button" class="av-story-viewer__nav av-story-viewer__nav--next" id="avStoryNext" aria-label="Next"></button>
+        <a href="#" class="av-story-viewer__store" id="avStoryStore">View store</a>
+      </div>`;
+    document.body.appendChild(el);
+    el.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-close-story]')) closeStoryViewer();
+    });
+    document.getElementById('avStoryPrev').onclick = () => showStoryAt(storyViewerIdx - 1);
+    document.getElementById('avStoryNext').onclick = () => showStoryAt(storyViewerIdx + 1);
+    return el;
+  }
+
+  function closeStoryViewer() {
+    if (storyViewerTimer) {
+      clearTimeout(storyViewerTimer);
+      storyViewerTimer = null;
+    }
+    const el = document.getElementById('avStoryViewer');
+    if (el) el.classList.add('hidden');
+    storyViewerBundle = null;
+  }
+
+  function formatStoryAge(iso) {
+    const t = new Date(iso).getTime();
+    if (!t || isNaN(t)) return 'now';
+    const min = Math.max(0, Math.floor((Date.now() - t) / 60000));
+    if (min < 60) return min + 'm';
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return hr + 'h';
+    return Math.floor(hr / 24) + 'd';
+  }
+
+  function showStoryAt(idx) {
+    if (!storyViewerBundle || !Array.isArray(storyViewerBundle.stories)) return;
+    const stories = storyViewerBundle.stories;
+    if (idx < 0) {
+      closeStoryViewer();
+      return;
+    }
+    if (idx >= stories.length) {
+      closeStoryViewer();
+      const slug = storyViewerBundle.sellerMerchantSlug || storyViewerBundle.sellerEmail;
+      if (slug) goToSellerStore(slug);
+      return;
+    }
+    storyViewerIdx = idx;
+    const s = stories[idx];
+    const bars = document.getElementById('avStoryBars');
+    bars.innerHTML = stories
+      .map((_, i) => `<span class="av-story-bar${i < idx ? ' is-done' : ''}${i === idx ? ' is-active' : ''}"><i></i></span>`)
+      .join('');
+    const avatar = document.getElementById('avStoryAvatar');
+    avatar.innerHTML = sellerAvatarFaceHtml(
+      storyViewerBundle.sellerAvatar || s.sellerAvatar,
+      (storyViewerBundle.sellerName || 'S').slice(0, 2).toUpperCase(),
+      'av-merchant-face-img'
+    );
+    document.getElementById('avStoryName').textContent = storyViewerBundle.sellerName || 'Seller';
+    document.getElementById('avStoryTime').textContent = formatStoryAge(s.createdAt);
+    document.getElementById('avStoryImage').src = s.imageUrl || '';
+    document.getElementById('avStoryCaption').textContent = s.caption || '';
+    document.getElementById('avStoryCaption').classList.toggle('hidden', !(s.caption || '').trim());
+    const store = document.getElementById('avStoryStore');
+    const slug = storyViewerBundle.sellerMerchantSlug || storyViewerBundle.sellerEmail || '';
+    store.href = '/seller/' + encodeURIComponent(slug);
+    store.onclick = (e) => {
+      e.preventDefault();
+      closeStoryViewer();
+      goToSellerStore(slug);
+    };
+    if (storyViewerTimer) clearTimeout(storyViewerTimer);
+    storyViewerTimer = setTimeout(() => showStoryAt(idx + 1), 5200);
+  }
+
+  window.openMerchantStory = async function (sellerEmail) {
+    let bundle = findStoryBundle(sellerEmail);
+    if ((!bundle || !(bundle.stories || []).length) && window.AcctventaApi) {
+      try {
+        const res = await window.AcctventaApi.storiesBySeller({ sellerEmail });
+        if (res.stories && res.stories.length) {
+          bundle = {
+            sellerEmail,
+            sellerName: res.stories[0].sellerName,
+            sellerAvatar: res.stories[0].sellerAvatar,
+            sellerMerchantSlug: res.stories[0].sellerMerchantSlug,
+            stories: res.stories,
+          };
+        }
+      } catch (e) {}
+    }
+    if (!bundle || !(bundle.stories || []).length) {
+      goToSellerStore(sellerEmail);
+      return;
+    }
+    storyViewerBundle = bundle;
+    ensureStoryViewer().classList.remove('hidden');
+    showStoryAt(0);
+  };
+
+  window.openMyStories = async function () {
+    const u = requireAuth({ message: 'Sign in to manage your stories' });
+    if (!u) return;
+    const body = document.getElementById('modalBody');
+    if (!body) return;
+    body.innerHTML = `<h3 class="font-bold text-lg mb-1">My Stories</h3>
+      <p class="text-xs text-slate-500 mb-3">Photos stay live for 24 hours on Top Merchants.</p>
+      <div id="myStoriesList" class="space-y-2 mb-4 text-sm text-slate-500">Loading…</div>
+      <label class="block text-xs font-medium text-slate-500 mb-1">Caption (optional)</label>
+      <input type="text" id="storyCaption" maxlength="280" placeholder="Say something…" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm mb-3">
+      <input type="file" id="storyPhotoInput" accept="image/jpeg,image/png,image/webp" class="hidden">
+      <button type="button" id="storyUploadBtn" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3 rounded-xl mb-2"><i class="fa-solid fa-camera mr-2"></i>Add story photo</button>
+      <button type="button" onclick="closeModal()" class="w-full border border-slate-300 dark:border-slate-700 py-2.5 rounded-xl text-sm font-semibold">Close</button>`;
+    (function () {
+      const m = document.getElementById('appModal');
+      if (!m) return;
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    })();
+
+    async function refreshMine() {
+      const box = document.getElementById('myStoriesList');
+      if (!box) return;
+      try {
+        const res = await window.AcctventaApi.storiesMine();
+        const stories = res.stories || [];
+        if (!stories.length) {
+          box.innerHTML = '<p class="text-xs text-slate-500">You haven\'t posted any stories yet.</p>';
+          return;
+        }
+        box.innerHTML = stories
+          .map(
+            (s) => `<div class="flex gap-2 items-center border border-slate-200 dark:border-slate-800 rounded-xl p-2">
+            <img src="${escapeAttr(s.imageUrl)}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">
+            <div class="min-w-0 flex-1"><p class="text-xs truncate">${escapeHtml(s.caption || 'No caption')}</p><p class="text-[10px] text-slate-400">${escapeHtml(formatStoryAge(s.createdAt))} ago</p></div>
+            <button type="button" class="text-red-500 text-xs font-bold px-2" data-del-story="${escapeAttr(String(s.id))}">Delete</button>
+          </div>`
+          )
+          .join('');
+        box.querySelectorAll('[data-del-story]').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            try {
+              await window.AcctventaApi.storiesDelete({ id: btn.getAttribute('data-del-story') });
+              refreshMine();
+              if (window.AcctventaApi.storiesFeed) {
+                const feed = await window.AcctventaApi.storiesFeed().catch(() => ({ merchants: [] }));
+                window.__acctventaStoryFeed = feed.merchants || [];
+                renderMarketplace();
+              }
+            } catch (e) {
+              alert(e.message || 'Could not delete');
+            }
+          });
+        });
+      } catch (e) {
+        box.innerHTML = `<p class="text-xs text-red-500">${escapeHtml(e.message || 'Could not load stories')}</p>`;
+      }
+    }
+
+    refreshMine();
+    const fileInput = document.getElementById('storyPhotoInput');
+    const uploadBtn = document.getElementById('storyUploadBtn');
+    uploadBtn.onclick = () => fileInput.click();
+    fileInput.onchange = () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) {
+        alert('Photo is too large (max 3MB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading…';
+        try {
+          const caption = (document.getElementById('storyCaption') || {}).value || '';
+          await window.AcctventaApi.storiesCreate({ image: reader.result, caption });
+          fileInput.value = '';
+          if (document.getElementById('storyCaption')) document.getElementById('storyCaption').value = '';
+          const feed = await window.AcctventaApi.storiesFeed().catch(() => ({ merchants: [] }));
+          window.__acctventaStoryFeed = feed.merchants || [];
+          renderMarketplace();
+          await refreshMine();
+          if (window.AcctventaToast) window.AcctventaToast.success('Story posted');
+        } catch (e) {
+          alert(e.message || 'Could not post story');
+        } finally {
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = '<i class="fa-solid fa-camera mr-2"></i>Add story photo';
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+  };
 
   window.copyMerchantLink = function () {
     const el = document.getElementById('profileMerchantUrl');

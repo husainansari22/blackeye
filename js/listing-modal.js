@@ -88,6 +88,7 @@
       sellerRating: Number(row.sellerRating) || 0,
       sellerReviews: Number(row.sellerReviews) || 0,
       sellerCompletedSales: Number(row.sellerCompletedSales) || 0,
+      sellerAvatar: row.sellerAvatar || row.seller_avatar || row.avatarUrl || '',
       sellerInitials: initials,
       stock: row.stock != null ? Number(row.stock) : 1,
       createdAt: row.created_at || row.createdAt || '',
@@ -173,7 +174,11 @@
           (isAuto ? '<i class="fa-solid fa-bolt"></i> Instant Delivery' : '<i class="fa-solid fa-clock"></i> Manual delivery') +
         '</div>' +
         '<div class="av-listing-seller">' +
-          '<div class="av-listing-seller__avatar">' + escHtml(item.sellerInitials || 'S') + '</div>' +
+          '<div class="av-listing-seller__avatar">' +
+            (item.sellerAvatar
+              ? '<img src="' + escAttr(item.sellerAvatar) + '" alt="" class="av-listing-seller__avatar-img" loading="lazy" onerror="this.remove()">'
+              : escHtml(item.sellerInitials || 'S')) +
+          '</div>' +
           '<div class="av-listing-seller__body">' +
             '<p class="av-listing-seller__name inline-flex items-center gap-0.5 flex-wrap">' + nameWithVerify(item.sellerName || 'Seller', item.sellerVerified) + '</p>' +
             '<p class="av-listing-seller__stats">' + escHtml(salesLabel) + '</p>' +

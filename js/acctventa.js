@@ -577,6 +577,7 @@
             ...ad,
             sellerEmail: u.email,
             sellerName: u.name,
+            sellerAvatar: u.avatarUrl || u.avatar || '',
             sellerInitials: getInitials(u.name)
           });
         }

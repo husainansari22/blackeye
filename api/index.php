@@ -194,10 +194,11 @@ try {
             ensure_marketplace_extras();
             ensure_commerce_features();
             ensure_merchant_slug_column();
+            ensure_user_avatar_column();
             $rows = db()->query("SELECT a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
                 a.public_slug AS publicSlug, a.created_at,
                 a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified,
-                u.merchant_slug AS sellerMerchantSlug,
+                u.merchant_slug AS sellerMerchantSlug, u.avatar_url AS sellerAvatar,
                 (SELECT COUNT(*) FROM orders o WHERE o.seller_id = a.seller_id AND o.status = 'completed') AS sellerCompletedSales
                 FROM ads a JOIN users u ON u.id = a.seller_id
                 WHERE a.status = 'active' AND a.stock > 0 AND u.is_banned = 0
@@ -1789,6 +1790,52 @@ try {
                 'listings' => $adsRows,
                 'reviews' => $rev->fetchAll(),
             ]);
+        }
+
+        case 'stories.feed': {
+            ensure_stories_tables();
+            json_out(['ok' => true, 'merchants' => stories_feed(50)]);
+        }
+
+        case 'stories.mine': {
+            $u = require_user();
+            json_out(['ok' => true, 'stories' => stories_for_user((int)$u['id'], false)]);
+        }
+
+        case 'stories.bySeller': {
+            ensure_stories_tables();
+            ensure_user_avatar_column();
+            $sellerId = (int)($body['sellerId'] ?? $_GET['sellerId'] ?? 0);
+            $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
+            if ($sellerId < 1 && $sellerEmail !== '') {
+                $s = db()->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+                $s->execute([$sellerEmail]);
+                $sellerId = (int)(($s->fetch()['id'] ?? 0));
+            }
+            if ($sellerId < 1) json_out(['ok' => false, 'error' => 'Seller required'], 422);
+            json_out(['ok' => true, 'stories' => stories_for_user($sellerId, false)]);
+        }
+
+        case 'stories.create': {
+            $u = require_user();
+            $image = (string)($body['image'] ?? $body['photo'] ?? '');
+            $caption = trim((string)($body['caption'] ?? ''));
+            if ($image === '') json_out(['ok' => false, 'error' => 'Photo is required'], 422);
+            try {
+                $story = create_story((int)$u['id'], $image, $caption);
+            } catch (Throwable $e) {
+                json_out(['ok' => false, 'error' => $e->getMessage()], 422);
+            }
+            json_out(['ok' => true, 'story' => $story]);
+        }
+
+        case 'stories.delete': {
+            $u = require_user();
+            $id = (int)($body['id'] ?? $body['storyId'] ?? 0);
+            if ($id < 1) json_out(['ok' => false, 'error' => 'Story id required'], 422);
+            $ok = delete_story((int)$u['id'], $id);
+            if (!$ok) json_out(['ok' => false, 'error' => 'Story not found'], 404);
+            json_out(['ok' => true]);
         }
 
         case 'kyc.status':

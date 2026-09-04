@@ -106,6 +106,7 @@
       sellerRating: Number(row.sellerRating) || 0,
       sellerReviews: Number(row.sellerReviews) || 0,
       sellerCompletedSales: Number(row.sellerCompletedSales || row.seller_completed_sales) || 0,
+      sellerAvatar: row.sellerAvatar || row.seller_avatar || row.avatarUrl || row.avatar_url || '',
       sellerInitials: initials,
       stock: row.stock != null ? Number(row.stock) : 1,
       publicSlug: row.publicSlug || row.public_slug || '',
@@ -175,6 +176,12 @@
       const marketRes = await Api.market().catch(() => ({ listings: [] }));
       global.__acctventaApiMarket = (marketRes.listings || []).map(mapListing);
       patchMarketListingsOnly();
+      try {
+        const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
+        global.__acctventaStoryFeed = feed.merchants || [];
+      } catch (e2) {
+        global.__acctventaStoryFeed = [];
+      }
       return true;
     } catch (e) {
       console.warn('Public market hydrate failed', e);
@@ -297,6 +304,12 @@
       } catch (e) {}
 
       global.__acctventaApiMarket = (marketRes.listings || []).map(mapListing);
+      try {
+        const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
+        global.__acctventaStoryFeed = feed.merchants || [];
+      } catch (eFeed) {
+        global.__acctventaStoryFeed = global.__acctventaStoryFeed || [];
+      }
 
       if (cfgRes && cfgRes.config) {
         A.saveSettings({

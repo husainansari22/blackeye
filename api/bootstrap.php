@@ -747,6 +747,7 @@ require_once __DIR__ . '/support.php';
 require_once __DIR__ . '/marketplace_extras.php';
 require_once __DIR__ . '/commerce_features.php';
 require_once __DIR__ . '/kyc.php';
+require_once __DIR__ . '/stories.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     json_out(['ok' => true]);

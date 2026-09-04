@@ -132,6 +132,7 @@
       const rating = Number(listing.sellerRating) || 0;
       const reviews = Number(listing.sellerReviews) || 0;
       const preview = listing.previewLink || listing.preview_link || '';
+      const sellerAvatar = listing.sellerAvatar || listing.seller_avatar || listing.avatarUrl || '';
       const buyUrl = '/dashboard.html#home?buy=' + encodeURIComponent(listing.id);
       const descLong = desc.length > 160;
 
@@ -171,7 +172,11 @@
           (isAuto ? '<i class="fa-solid fa-bolt"></i> Instant Delivery' : '<i class="fa-solid fa-clock"></i> Manual delivery') +
         '</div>' +
         '<div class="av-listing-seller">' +
-          '<div class="av-listing-seller__avatar">' + escapeHtml(initials(seller)) + '</div>' +
+          '<div class="av-listing-seller__avatar">' +
+            (sellerAvatar
+              ? '<img src="' + escapeAttr(sellerAvatar) + '" alt="" class="av-listing-seller__avatar-img" loading="lazy" onerror="this.remove()">'
+              : escapeHtml(initials(seller))) +
+          '</div>' +
           '<div class="av-listing-seller__body">' +
             '<p class="av-listing-seller__name">' + escapeHtml(seller) + (verified ? verifyBadge() : '') + '</p>' +
             '<p class="av-listing-seller__stats">' + escapeHtml(sales) + '</p>' +
@@ -190,7 +195,7 @@
           '<div class="av-listing-checkout__row">' +
             '<div><p class="av-listing-checkout__total-label">Total (1 item)</p><p class="av-listing-checkout__total">' + money(price) + '</p></div>' +
           '</div>' +
-          '<button type="button" class="av-listing-pay-btn" data-buy-listing="' + esc(String(listing.id)) + '">Pay ' + money(price) + ' Securely</button>' +
+          '<button type="button" class="av-listing-pay-btn" data-buy-listing="' + escapeAttr(String(listing.id)) + '">Pay ' + money(price) + ' Securely</button>' +
           '<p class="av-listing-protect"><i class="fa-solid fa-shield-halved"></i> Your payment is protected by Acctventa Buyer Protection.</p>' +
         '</div></div>';
 

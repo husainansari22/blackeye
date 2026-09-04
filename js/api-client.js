@@ -468,6 +468,21 @@
     sellerStorefront(query) {
       return request('sellers.storefront', { query });
     },
+    storiesFeed() {
+      return request('stories.feed');
+    },
+    storiesMine() {
+      return request('stories.mine');
+    },
+    storiesBySeller(query) {
+      return request('stories.bySeller', { query: query || {} });
+    },
+    storiesCreate(payload) {
+      return request('stories.create', { method: 'POST', body: payload });
+    },
+    storiesDelete(payload) {
+      return request('stories.delete', { method: 'POST', body: payload });
+    },
   };
 
   global.AcctventaApi = Api;

@@ -113,8 +113,8 @@ FILES=(
   "api/marketplace_extras.php"
   "api/support.php"
   "api/commerce_features.php"
+  "api/stories.php"
   "owner/index.php"
-  "css/admin-app.css"
   "admin/index.html"
 )
 
