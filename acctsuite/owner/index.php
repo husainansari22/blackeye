@@ -1170,16 +1170,6 @@ $tab = $_GET['tab'] ?? 'overview';
               <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
             </button>
           </form>
-          <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" class="av-settings-row-form" onsubmit="return confirm('Permanently delete this user and their listings? This cannot be undone.');">
-            <input type="hidden" name="form" value="delete_user">
-            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-            <button type="submit" class="av-settings-row av-settings-row-btn">
-              <span class="av-settings-icon" style="background:#b91c1c"><i class="fa-solid fa-trash"></i></span>
-              <span class="av-settings-label">Delete this user</span>
-              <span class="av-settings-value">Permanent</span>
-              <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
-            </button>
-          </form>
           <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" target="_blank" class="av-settings-row-form">
             <input type="hidden" name="form" value="login_as_user">
             <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
@@ -1238,11 +1228,7 @@ $tab = $_GET['tab'] ?? 'overview';
         $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>
       <div class="av-page av-settings-page">
         <h2 class="av-settings-title">Users</h2>
-        <p class="av-page-sub" style="margin:-0.35rem 0 0.85rem">Tap a user to ban, verify, adjust balance, delete, or login as them.</p>
-        <form method="post" class="mb-3" onsubmit="return confirm('Delete ALL @acctsuite.local demo users and their ads?');">
-          <input type="hidden" name="form" value="purge_demo_users">
-          <button type="submit" class="av-btn" style="background:#b91c1c;color:#fff">Purge demo users (@acctsuite.local)</button>
-        </form>
+        <p class="av-page-sub" style="margin:-0.35rem 0 0.85rem">Tap a user to ban, verify, adjust balance, or login as them.</p>
         <div class="av-settings-group">
           <?php if (!$users): ?>
             <div class="av-empty">No users yet.</div>

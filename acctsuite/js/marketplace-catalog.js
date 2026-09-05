@@ -219,7 +219,7 @@
 
   function localLogoUrl(product) {
     if (!product) return '';
-    return '/img/products/' + productLogoSlug(product.name, product.domain) + '.png?v=20260905full2';
+    return '/img/products/' + productLogoSlug(product.name, product.domain) + '.png?v=20260905logos3';
   }
 
   function letterLogoDataUri(name) {
