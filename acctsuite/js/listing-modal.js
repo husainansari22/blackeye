@@ -430,7 +430,13 @@
     close: close,
   };
 
+  /** Buy from a seller storefront without leaving the page. */
   global.openStoreBuy = function (listingId) {
     open(listingId, { onSellerStore: true });
+  };
+  // Back-compat aliases used by older seller.html handlers
+  global.openListingModal = global.openStoreBuy;
+  global.openListingDetail = function (listingId) {
+    open(listingId, { onSellerStore: /\/seller\//i.test(global.location.pathname) });
   };
 })(window);

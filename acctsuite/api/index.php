@@ -1364,8 +1364,8 @@ try {
             $user = trim((string)($body['username'] ?? ''));
             $pass = (string)($body['password'] ?? '');
             $cfg = app_config();
-            $okOwner = ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? ''));
-            $okAdmin = ($user === 'admin' && admin_password_verify($pass));
+            $okOwner = ($user === owner_username() && owner_password_verify($pass));
+            $okAdmin = ($user === admin_username() && admin_password_verify($pass));
             if (!$okOwner && !$okAdmin) {
                 json_out(['ok' => false, 'error' => 'Invalid staff credentials'], 401);
             }
@@ -1376,16 +1376,12 @@ try {
         }
 
         case 'admin.changePassword': {
-            $current = (string)($body['currentPassword'] ?? '');
-            $next = (string)($body['newPassword'] ?? '');
-            if (!admin_password_verify($current)) {
-                json_out(['ok' => false, 'error' => 'Current password is wrong', 'code' => 'bad_current'], 400);
-            }
-            if (strlen($next) < 6) {
-                json_out(['ok' => false, 'error' => 'New password must be at least 6 characters'], 422);
-            }
-            admin_password_set($next);
-            json_out(['ok' => true, 'message' => 'Website admin password updated']);
+            // Staff admin cannot self-change credentials — Owner Admin → Settings → Admin logins only.
+            json_out([
+                'ok' => false,
+                'error' => 'Change staff username/password from Owner Admin → Settings → Admin logins',
+                'code' => 'owner_only',
+            ], 403);
         }
 
         case 'chat.file': {

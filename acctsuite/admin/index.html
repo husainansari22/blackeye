@@ -54,7 +54,7 @@
         <p id="loginError" class="text-xs text-red-500 hidden"></p>
         <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
       </form>
-      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. After you change it in Security, the new password is stored on the server.</p>
+      <p class="text-[11px] text-slate-400 text-center">Staff login is managed by the <strong>Owner</strong> in Owner Admin → Settings → Admin logins.</p>
       <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
     </div>
   </div>
@@ -85,8 +85,7 @@
         <button class="av-tab admin-tab" data-tab="wallet" onclick="showTab('wallet')">Withdrawals</button>
         <button class="av-tab admin-tab" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
         <button class="av-tab admin-tab" data-tab="users" onclick="showTab('users')">Users</button>
-        <button class="av-tab admin-tab" data-tab="security" onclick="showTab('security')">Security</button>
-      </div>
+</div>
 
       <!-- SUPPORT CHAT INBOX -->
       <section id="tab_support" class="admin-panel">
@@ -233,44 +232,14 @@
           <div class="av-panel"><div id="usersAdminList" class="overflow-x-auto"></div></div>
         </div>
       </section>
-
-      <!-- SECURITY -->
-      <section id="tab_security" class="admin-panel hidden">
-        <div class="av-page">
-          <div class="av-page-head">
-            <div>
-              <h2 class="av-page-title">Security</h2>
-              <p class="av-page-sub">This password is saved on the server so you can sign in from any phone or browser.</p>
-            </div>
-          </div>
-          <div class="av-panel">
-            <div class="av-panel-body space-y-4 max-w-xl">
-              <div>
-                <label class="text-xs av-muted">Current password</label>
-                <input id="pw_current" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
-              </div>
-              <div>
-                <label class="text-xs av-muted">New password</label>
-                <input id="pw_new" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
-              </div>
-              <div>
-                <label class="text-xs av-muted">Confirm new password</label>
-                <input id="pw_confirm" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
-              </div>
-              <button onclick="changePassword()" class="av-btn av-btn-primary" type="button">Update password</button>
-              <p id="pwMsg" class="text-xs av-muted"></p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+</div>
   </div>
 
   <script>
     const A = () => window.AcctSuite;
 
     function showTab(name) {
-      if (!name) name = 'support';
+      if (!name || name === 'security') name = 'support';
       document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
       const panel = document.getElementById('tab_' + name);
       if (panel) panel.classList.remove('hidden');
@@ -582,8 +551,6 @@
             window.__acctsuiteAdminOk = true;
             document.getElementById('loginError').classList.add('hidden');
             enterDash();
-            showTab('security');
-            document.getElementById('pwMsg').textContent = 'Logged in with fallback. Re-upload js/acctsuite.js for full Admin features.';
             return false;
           }
           showLoginError('Login script missing. Upload public_html/js/acctsuite.js then hard-refresh.');
@@ -600,13 +567,6 @@
                 serverOk = true;
               } catch (apiErr) {
                 const localTry = window.AcctSuite.adminLogin(user, pass);
-                if (localTry.ok && pass !== 'admin123') {
-                  try {
-                    await Api.changeAdminPassword({ currentPassword: 'admin123', newPassword: pass });
-                    await Api.staffLogin({ username: user, password: pass });
-                    serverOk = true;
-                  } catch (_) {}
-                }
                 if (!serverOk && !localTry.ok) {
                   showLoginError((apiErr && apiErr.message) || localTry.error || 'Invalid admin username or password.');
                   return false;
@@ -614,10 +574,6 @@
                 if (!serverOk && localTry.ok) {
                   document.getElementById('loginError').classList.add('hidden');
                   enterDash();
-                  if (localTry.admin && localTry.admin.mustChangePassword) {
-                    showTab('security');
-                    document.getElementById('pwMsg').textContent = 'Please change the default password now — it must be saved on the server.';
-                  }
                   return false;
                 }
               }
@@ -645,10 +601,7 @@
         }
         document.getElementById('loginError').classList.add('hidden');
         enterDash();
-        if (res.admin && res.admin.mustChangePassword) {
-          showTab('security');
-          document.getElementById('pwMsg').textContent = 'Please change the default password now.';
-        }
+        // Password changes are owner-only (Owner Admin → Settings → Admin logins).
       } catch (err) {
         showLoginError('Sign in error: ' + (err && err.message ? err.message : 'unknown'));
       } finally {
@@ -904,6 +857,9 @@
     }
 
     async function changePassword() {
+      alert("Change staff credentials from Owner Admin → Settings → Admin logins.");
+      return;
+      /* disabled
       const current = document.getElementById('pw_current').value || '';
       const next = document.getElementById('pw_new').value || '';
       const confirm = (document.getElementById('pw_confirm') || {}).value || '';

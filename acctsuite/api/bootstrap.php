@@ -90,6 +90,58 @@ function admin_password_set(string $newPass): void {
     setting_set('admin_api_password', '');
 }
 
+/** Staff admin login username (default: admin). Overridable from Owner settings. */
+function admin_username(): string {
+    $u = trim((string)setting_get('admin_username', ''));
+    return $u !== '' ? $u : 'admin';
+}
+
+function admin_username_set(string $username): void {
+    $u = trim($username);
+    if ($u === '') {
+        throw new InvalidArgumentException('Admin username cannot be empty');
+    }
+    if (!preg_match('/^[A-Za-z0-9._-]{3,40}$/', $u)) {
+        throw new InvalidArgumentException('Admin username must be 3–40 letters, numbers, . _ or -');
+    }
+    setting_set('admin_username', $u);
+}
+
+/** Owner panel login — settings override api/config.php defaults. */
+function owner_username(): string {
+    $u = trim((string)setting_get('owner_username', ''));
+    if ($u !== '') return $u;
+    return (string)(app_config()['owner_username'] ?? 'owner');
+}
+
+function owner_username_set(string $username): void {
+    $u = trim($username);
+    if ($u === '') {
+        throw new InvalidArgumentException('Owner username cannot be empty');
+    }
+    if (!preg_match('/^[A-Za-z0-9._-]{3,40}$/', $u)) {
+        throw new InvalidArgumentException('Owner username must be 3–40 letters, numbers, . _ or -');
+    }
+    setting_set('owner_username', $u);
+}
+
+function owner_password_verify(string $pass): bool {
+    if ($pass === '') return false;
+    $hash = (string)setting_get('owner_password_hash', '');
+    if ($hash !== '') {
+        return password_verify($pass, $hash);
+    }
+    $plain = (string)(app_config()['owner_password'] ?? '');
+    return $plain !== '' && hash_equals($plain, $pass);
+}
+
+function owner_password_set(string $newPass): void {
+    if (strlen($newPass) < 6) {
+        throw new InvalidArgumentException('Owner password must be at least 6 characters');
+    }
+    setting_set('owner_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
+}
+
 function money_f($n): string {
     return number_format((float)$n, 2, '.', '');
 }

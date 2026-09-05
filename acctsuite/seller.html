@@ -25,8 +25,8 @@
     .dark .av-storefront-ad__logo{background:#0f172a;box-shadow:0 0 0 1px rgba(51,65,85,.9)}
   </style>
   <script src="/js/api-client.js?v=20260827wallet2"></script>
-  <script src="/js/marketplace-catalog.js?v=20260905logo3"></script>
-  <script src="/js/listing-modal.js?v=20260905logo3"></script>
+  <script src="/js/marketplace-catalog.js?v=20260905buy1"></script>
+  <script src="/js/listing-modal.js?v=20260905buy1"></script>
 </head>
 <body class="bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
   <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
@@ -158,8 +158,18 @@
       root.querySelectorAll('[data-buy-listing]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           const id = btn.getAttribute('data-buy-listing');
-          if (window.openListingModal) window.openListingModal(id);
-          else location.href = '/dashboard.html#home';
+          if (!id) return;
+          // Open purchase modal on this storefront (do NOT bounce to home).
+          if (typeof window.openStoreBuy === 'function') {
+            window.openStoreBuy(id);
+            return;
+          }
+          if (window.AcctSuiteListingModal && typeof window.AcctSuiteListingModal.open === 'function') {
+            window.AcctSuiteListingModal.open(id, { onSellerStore: true });
+            return;
+          }
+          // Fallback: dedicated listing page keeps the buy flow off-home.
+          location.href = '/listing.html?id=' + encodeURIComponent(id);
         });
       });
     } catch (e) {

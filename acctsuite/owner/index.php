@@ -18,7 +18,7 @@ if (isset($_GET['logout'])) {
 if (($_POST['form'] ?? '') === 'login') {
     $user = trim((string)($_POST['username'] ?? ''));
     $pass = (string)($_POST['password'] ?? '');
-    if ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? '')) {
+    if ($user === owner_username() && owner_password_verify($pass)) {
         $_SESSION['owner_ok'] = true;
         header('Location: /owner/');
         exit;
@@ -56,6 +56,48 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
+        }
+        if ($form === 'credentials') {
+            $notes = [];
+            $ownerUser = trim((string)($_POST['owner_username'] ?? ''));
+            if ($ownerUser !== '' && $ownerUser !== owner_username()) {
+                owner_username_set($ownerUser);
+                $notes[] = 'owner username';
+            }
+            $ownerPass = (string)($_POST['owner_password'] ?? '');
+            $ownerPass2 = (string)($_POST['owner_password_confirm'] ?? '');
+            if ($ownerPass !== '' || $ownerPass2 !== '') {
+                if ($ownerPass !== $ownerPass2) {
+                    throw new RuntimeException('Owner passwords do not match.');
+                }
+                if (strlen($ownerPass) < 6) {
+                    throw new RuntimeException('Owner password must be at least 6 characters.');
+                }
+                owner_password_set($ownerPass);
+                $notes[] = 'owner password';
+            }
+            $adminUser = trim((string)($_POST['admin_username'] ?? ''));
+            if ($adminUser !== '' && $adminUser !== admin_username()) {
+                admin_username_set($adminUser);
+                $notes[] = 'admin username';
+            }
+            $adminPass = (string)($_POST['admin_password'] ?? '');
+            $adminPass2 = (string)($_POST['admin_password_confirm'] ?? '');
+            if ($adminPass !== '' || $adminPass2 !== '') {
+                if ($adminPass !== $adminPass2) {
+                    throw new RuntimeException('Admin passwords do not match.');
+                }
+                if (strlen($adminPass) < 6) {
+                    throw new RuntimeException('Admin password must be at least 6 characters.');
+                }
+                admin_password_set($adminPass);
+                $notes[] = 'admin password';
+            }
+            if (!$notes) {
+                $flash = 'No credential changes submitted.';
+            } else {
+                $flash = 'Updated: ' . implode(', ', $notes) . '.';
+            }
         }
         if ($form === 'plan') {
             $id = preg_replace('/[^a-z0-9_]/', '', strtolower((string)$_POST['plan_id']));
@@ -2165,6 +2207,49 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctsuite.com')) ?>"></div>
             </div>
             <button class="av-btn av-btn-primary">Save settings</button>
+          </div>
+        </form>
+
+        <form method="post" class="av-panel" style="margin-top:1rem">
+          <input type="hidden" name="form" value="credentials">
+          <div class="av-panel-head"><span>Admin logins</span></div>
+          <div class="av-panel-body space-y-4">
+            <p class="text-[12px] av-muted">Change Owner panel and Staff admin usernames/passwords here only. Leave a password blank to keep the current one.</p>
+            <div class="av-admin-card">
+              <h3 class="av-row-title" style="margin-bottom:0.45rem">Owner admin <span class="av-muted" style="font-weight:500">(/owner)</span></h3>
+              <div class="av-form-grid cols-2">
+                <div class="av-field-block">
+                  <label>Username</label>
+                  <input name="owner_username" value="<?= h(owner_username()) ?>" autocomplete="off" required>
+                </div>
+                <div class="av-field-block">
+                  <label>New password</label>
+                  <input name="owner_password" type="password" autocomplete="new-password" placeholder="Leave blank to keep">
+                </div>
+                <div class="av-field-block" style="grid-column:1/-1">
+                  <label>Confirm owner password</label>
+                  <input name="owner_password_confirm" type="password" autocomplete="new-password" placeholder="Repeat new password">
+                </div>
+              </div>
+            </div>
+            <div class="av-admin-card">
+              <h3 class="av-row-title" style="margin-bottom:0.45rem">Staff admin <span class="av-muted" style="font-weight:500">(/admin)</span></h3>
+              <div class="av-form-grid cols-2">
+                <div class="av-field-block">
+                  <label>Username</label>
+                  <input name="admin_username" value="<?= h(admin_username()) ?>" autocomplete="off" required>
+                </div>
+                <div class="av-field-block">
+                  <label>New password</label>
+                  <input name="admin_password" type="password" autocomplete="new-password" placeholder="Leave blank to keep">
+                </div>
+                <div class="av-field-block" style="grid-column:1/-1">
+                  <label>Confirm admin password</label>
+                  <input name="admin_password_confirm" type="password" autocomplete="new-password" placeholder="Repeat new password">
+                </div>
+              </div>
+            </div>
+            <button class="av-btn av-btn-primary">Save credentials</button>
           </div>
         </form>
       </div>
