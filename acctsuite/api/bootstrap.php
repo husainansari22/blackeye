@@ -263,7 +263,12 @@ function create_session(int $userId): string {
     $token = uid_token(24);
     $stmt = db()->prepare('INSERT INTO api_sessions (token, user_id, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))');
     $stmt->execute([$token, $userId]);
-    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    // PWA / Add-to-Home-Screen is always HTTPS on production — force Secure so
+    // standalone web-app sessions keep the auth cookie.
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+        || (isset($_SERVER['SERVER_PORT']) && (string)$_SERVER['SERVER_PORT'] === '443');
+    $secure = $https || (isset($_SERVER['HTTP_HOST']) && str_contains((string)$_SERVER['HTTP_HOST'], 'acctsuite.com'));
     setcookie('acctsuite_token', $token, [
         'expires' => time() + 60 * 60 * 24 * 30,
         'path' => '/',
@@ -284,7 +289,10 @@ function destroy_session(?string $token): void {
             // ignore
         }
     }
-    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+        || (isset($_SERVER['SERVER_PORT']) && (string)$_SERVER['SERVER_PORT'] === '443');
+    $secure = $https || (isset($_SERVER['HTTP_HOST']) && str_contains((string)$_SERVER['HTTP_HOST'], 'acctsuite.com'));
     setcookie('acctsuite_token', '', [
         'expires' => time() - 3600,
         'path' => '/',

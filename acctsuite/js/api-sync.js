@@ -149,7 +149,11 @@
     A.__apiMarketPatched = true;
     const origMarket = A.getMarketplaceListings.bind(A);
     A.getMarketplaceListings = function () {
-      if (global.__acctsuiteApiMarket) return global.__acctsuiteApiMarket;
+      // IMPORTANT: [] is truthy — only use the API cache when it is a real array
+      // that was successfully hydrated (including a legitimately empty market).
+      if (Array.isArray(global.__acctsuiteApiMarket) && global.__acctsuiteMarketOnline === true) {
+        return global.__acctsuiteApiMarket;
+      }
       return origMarket();
     };
     const origFind = A.findListingById.bind(A);

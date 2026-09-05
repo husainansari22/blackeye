@@ -160,14 +160,16 @@ try {
         case 'auth.login': {
             $email = strtolower(trim((string)($body['email'] ?? '')));
             $password = (string)($body['password'] ?? '');
+            if ($email === '' || $password === '') {
+                json_out(['ok' => false, 'error' => 'Enter your email and password', 'code' => 'missing_fields'], 400);
+            }
             $stmt = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
             $stmt->execute([$email]);
             $u = $stmt->fetch();
-            if (!$u) {
-                json_out(['ok' => false, 'error' => 'User does not exist', 'code' => 'user_not_found'], 404);
-            }
-            if (!password_verify($password, $u['password_hash'])) {
-                json_out(['ok' => false, 'error' => 'Invalid email or password', 'code' => 'invalid_credentials'], 401);
+            // Same message for missing user / bad password — avoids confusing PWA users and
+            // doesn't leak which emails are registered.
+            if (!$u || !password_verify($password, $u['password_hash'])) {
+                json_out(['ok' => false, 'error' => 'Invalid email or password. Use the account you registered on acctsuite.com (Add to Home Screen uses the same login).', 'code' => 'invalid_credentials'], 401);
             }
             if ((int)$u['is_banned'] === 1) json_out(['ok' => false, 'error' => 'Account banned', 'code' => 'banned'], 403);
             $token = create_session((int)$u['id']);

@@ -34,6 +34,12 @@ return [
     'support_email' => 'support@acctsuite.com',
 
     // Create this mailbox in Hostinger → Emails first
-    'mail_from' => 'support@acctsuite.com',
-    'mail_from_name' => 'AcctSuite',
+  'mail_from' => 'support@acctsuite.com',
+  'mail_from_name' => 'AcctSuite',
+
+  // Optional SMTP (Hostinger mailbox). If set, used instead of PHP mail().
+  // 'smtp_host' => 'smtp.hostinger.com',
+  // 'smtp_port' => 465,
+  // 'smtp_user' => 'support@acctsuite.com',
+  // 'smtp_pass' => 'YOUR_MAILBOX_PASSWORD',
 ];

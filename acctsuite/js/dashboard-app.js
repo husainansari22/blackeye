@@ -401,7 +401,9 @@
     if (merchants) {
       const map = {};
       list.forEach((i) => {
-        if (!map[i.sellerEmail]) {
+        const emailKey = String(i.sellerEmail || '').trim().toLowerCase();
+        if (!emailKey) return;
+        if (!map[emailKey]) {
           const name = i.sellerName || 'Seller';
           const parts = String(name).trim().split(/\s+/).filter(Boolean);
           const fallbackIni = !parts.length
@@ -409,9 +411,9 @@
             : parts.length === 1
               ? parts[0].slice(0, 2).toUpperCase()
               : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-          map[i.sellerEmail] = {
+          map[emailKey] = {
             name,
-            email: i.sellerEmail,
+            email: emailKey,
             merchantSlug: i.sellerMerchantSlug || '',
             initials: i.sellerInitials || fallbackIni,
             avatarUrl: i.sellerAvatar || '',
@@ -420,22 +422,22 @@
             hasStory: false,
           };
         }
-        map[i.sellerEmail].sales += 1;
-        if (!map[i.sellerEmail].merchantSlug && i.sellerMerchantSlug) map[i.sellerEmail].merchantSlug = i.sellerMerchantSlug;
-        if (!map[i.sellerEmail].avatarUrl && i.sellerAvatar) map[i.sellerEmail].avatarUrl = i.sellerAvatar;
-        if (!map[i.sellerEmail].sellerId && i.sellerId) map[i.sellerEmail].sellerId = i.sellerId;
+        map[emailKey].sales += 1;
+        if (!map[emailKey].merchantSlug && i.sellerMerchantSlug) map[emailKey].merchantSlug = i.sellerMerchantSlug;
+        if (!map[emailKey].avatarUrl && i.sellerAvatar) map[emailKey].avatarUrl = i.sellerAvatar;
+        if (!map[emailKey].sellerId && i.sellerId) map[emailKey].sellerId = i.sellerId;
       });
       const storyFeed = window.__acctsuiteStoryFeed || [];
       storyFeed.forEach((m) => {
-        const email = String(m.sellerEmail || '').toLowerCase();
+        const email = String(m.sellerEmail || m.email || '').trim().toLowerCase();
         if (email && map[email]) {
           map[email].hasStory = Array.isArray(m.stories) && m.stories.length > 0;
           if (!map[email].avatarUrl && m.sellerAvatar) map[email].avatarUrl = m.sellerAvatar;
         } else if (email && Array.isArray(m.stories) && m.stories.length) {
           // Sellers with stories but no live ads still show in Top Merchants
           map[email] = {
-            name: m.sellerName,
-            email: m.sellerEmail,
+            name: m.sellerName || email.split('@')[0],
+            email,
             merchantSlug: m.sellerMerchantSlug || '',
             initials: (m.sellerName || '?').slice(0, 2).toUpperCase(),
             avatarUrl: m.sellerAvatar || '',
