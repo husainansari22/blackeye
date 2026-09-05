@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/js/theme-init.js?v=20260827theme1"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Listing | AcctSuite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+  <meta name="description" content="View this digital product listing on AcctSuite.">
+  <link rel="canonical" id="canonicalLink" href="https://acctsuite.com/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <meta name="theme-color" content="#6366f1">
+  <meta property="og:site_name" content="AcctSuite">
+  <meta property="og:title" id="ogTitle" content="AcctSuite Listing">
+  <meta property="og:description" id="ogDesc" content="Buy digital accounts securely with escrow on AcctSuite.">
+  <meta property="og:url" id="ogUrl" content="https://acctsuite.com/">
+  <meta property="og:image" content="https://acctsuite.com/img/brand/og-cover.png">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
+  <link rel="stylesheet" href="/css/legal.css?v=20260823c1">
+  <link rel="stylesheet" href="/css/profile.css?v=20260827listing1">
+  <style>
+    .av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.1rem;height:1.1rem;min-width:1.1rem;margin-left:.28rem;line-height:0;flex-shrink:0;vertical-align:middle}
+    .av-verify-badge img{width:100%;height:100%;display:block}
+  </style>
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+</head>
+<body class="av-pub bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+  <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/img/brand/icon-192.png" alt="AcctSuite" class="w-8 h-8 rounded-lg">
+        <span class="font-extrabold tracking-tight">acctsuite</span>
+      </a>
+      <div class="flex gap-3 text-sm font-semibold">
+        <a href="/dashboard.html#home" class="text-brandPrimary">Marketplace</a>
+        <a href="/login" class="text-slate-600 dark:text-slate-300">Login</a>
+      </div>
+    </div>
+  </header>
+  <main class="av-pub-wrap max-w-2xl mx-auto px-4 py-6" id="listingRoot">
+    <p class="text-sm text-slate-500">Loading listing…</p>
+  </main>
+  <script src="/js/api-client.js?v=20260827wallet2"></script>
+  <script src="/js/marketplace-catalog.js?v=20260823c1"></script>
+  <script src="/js/listing-modal.js?v=20260827wallet2"></script>
+  <script>
+  window.openListingBuy = function (listingId) {
+    if (window.AcctSuiteListingModal) {
+      window.AcctSuiteListingModal.open(listingId, { onSellerStore: false });
+    }
+  };
+
+  (async function () {
+    const root = document.getElementById('listingRoot');
+    const parts = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    const key = parts[parts.length - 1] || new URLSearchParams(location.search).get('id') || '';
+    if (!key) {
+      root.innerHTML = '<h1>Listing not found</h1><p><a href="/dashboard.html#home">Browse marketplace</a></p>';
+      return;
+    }
+
+    function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));}
+    function escapeAttr(s){return escapeHtml(s).replace(/`/g,'');}
+    function money(n){var v=Number(n)||0;return (v<0?'-$'+Math.abs(v).toFixed(2):'$'+v.toFixed(2));}
+    function formatTimeAgo(iso){
+      if(!iso)return 'recently';
+      var t=new Date(iso).getTime(); if(!t||isNaN(t))return 'recently';
+      var sec=Math.max(0,Math.floor((Date.now()-t)/1000));
+      if(sec<60)return 'just now';
+      var min=Math.floor(sec/60); if(min<60)return min+'m ago';
+      var hr=Math.floor(min/60); if(hr<48)return hr+'h ago';
+      var day=Math.floor(hr/24); if(day<14)return day+'d ago';
+      return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    }
+    function formatSalesLabel(n){
+      var v=Number(n)||0;
+      if(v>=1000){var k=v/1000,s=k>=10?Math.round(k)+'k':k.toFixed(1).replace(/\.0$/,'')+'k';return s+'+ Sales';}
+      return v+' Sales';
+    }
+    function starsRow(rating,count){
+      var r=Math.max(0,Math.min(5,Number(rating)||0)),full=Math.floor(r),half=r-full>=0.35?1:0,out='';
+      for(var i=0;i<5;i++){
+        if(i<full) out+='<i class="fa-solid fa-star"></i>';
+        else if(i===full&&half) out+='<i class="fa-solid fa-star-half-stroke"></i>';
+        else out+='<i class="fa-regular fa-star text-slate-300 dark:text-slate-600"></i>';
+      }
+      return '<span class="av-listing-stars">'+out+(count?'<em>('+count+')</em>':'')+'</span>';
+    }
+    function verifyBadge(){
+      return '<span class="av-verify-badge" title="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>';
+    }
+    function productLogo(listing){
+      var Cat=window.AcctSuiteCatalog;
+      if(!Cat)return '';
+      var hit=Cat.findProduct(listing.category||listing.title||'');
+      return hit?hit.logo:Cat.logoUrl({domain:''});
+    }
+    function initials(name){
+      var p=String(name||'').trim().split(/\s+/).filter(Boolean);
+      if(!p.length)return '?';
+      if(p.length===1)return p[0].slice(0,2).toUpperCase();
+      return (p[0][0]+p[p.length-1][0]).toUpperCase();
+    }
+
+    try {
+      let res;
+      if (window.AcctSuiteApi && typeof window.AcctSuiteApi.marketGet === 'function') {
+        res = await window.AcctSuiteApi.marketGet({ id: key, slug: key });
+      } else {
+        res = await fetch('/api/index.php?action=market.get&id=' + encodeURIComponent(key) + '&slug=' + encodeURIComponent(key)).then(r => r.json());
+      }
+      if (!res.ok) throw new Error(res.error || 'Not found');
+      const listing = res.listing || res.ad || res;
+      const title = listing.title || 'Listing';
+      const price = Number(listing.price || 0);
+      const desc = listing.description || 'Digital product on AcctSuite.';
+      const seller = listing.sellerName || listing.seller_name || 'Seller';
+      const sellerId = listing.sellerId || listing.seller_id || '';
+      const sellerSlug = listing.sellerMerchantSlug || listing.seller_merchant_slug || sellerId || seller;
+      const slug = listing.publicSlug || listing.public_slug || listing.id;
+      const url = 'https://acctsuite.com/listing/' + encodeURIComponent(slug);
+      const stock = Math.max(1, Number(listing.stock) || 1);
+      const isAuto = (listing.releaseType || listing.release_type || 'auto') !== 'manual';
+      const logo = productLogo(listing);
+      const sales = formatSalesLabel(listing.sellerCompletedSales || 0);
+      const added = formatTimeAgo(listing.created_at || listing.createdAt);
+      const verified = !!(listing.sellerVerified || listing.seller_verified);
+      const rating = Number(listing.sellerRating) || 0;
+      const reviews = Number(listing.sellerReviews) || 0;
+      const preview = listing.previewLink || listing.preview_link || '';
+      const sellerAvatar = listing.sellerAvatar || listing.seller_avatar || listing.avatarUrl || '';
+      const buyUrl = '/dashboard.html#home?buy=' + encodeURIComponent(listing.id);
+      const descLong = desc.length > 160;
+
+      document.title = title + ' | AcctSuite';
+      document.getElementById('canonicalLink').href = url;
+      document.getElementById('ogTitle').content = title;
+      document.getElementById('ogDesc').content = desc.slice(0, 140);
+      document.getElementById('ogUrl').content = url;
+
+      var accountRows = '';
+      for (var i = 0; i < stock; i++) {
+        accountRows += '<div class="av-listing-account-row is-selected">' +
+          '<div class="av-listing-account-row__check"><i class="fa-solid fa-check"></i></div>' +
+          '<span class="av-listing-account-row__label">Account ' + (i + 1) + '</span>' +
+          '<span class="av-listing-account-row__price">' + money(price) + '</span>' +
+          (preview ? '<a class="av-listing-eye" href="' + escapeAttr(preview) + '" target="_blank" rel="noopener" title="Preview link"><i class="fa-solid fa-eye"></i></a>' :
+            '<span class="av-listing-eye" style="opacity:.35"><i class="fa-solid fa-eye"></i></span>') +
+          '<a class="av-listing-cart-btn" href="' + buyUrl + '">Buy</a></div>';
+      }
+
+      root.innerHTML = '<div class="av-listing-detail bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">' +
+        '<div class="av-listing-detail__head">' +
+          '<img src="' + escapeAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="av-listing-detail__title-row">' +
+              '<h1 class="av-listing-detail__title">' + escapeHtml(title) + '</h1>' +
+              '<span class="av-listing-detail__price">' + money(price) + '</span>' +
+            '</div>' +
+            '<div class="av-listing-detail__meta">' +
+              (rating ? starsRow(rating, reviews) : '') +
+              (verified ? verifyBadge() : '') +
+              '<span>● ' + stock + ' available, added ' + escapeHtml(added) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="av-listing-badge' + (isAuto ? '' : ' av-listing-badge--manual') + '">' +
+          (isAuto ? '<i class="fa-solid fa-bolt"></i> Instant Delivery' : '<i class="fa-solid fa-clock"></i> Manual delivery') +
+        '</div>' +
+        '<div class="av-listing-seller">' +
+          '<div class="av-listing-seller__avatar">' +
+            (sellerAvatar
+              ? '<img src="' + escapeAttr(sellerAvatar) + '" alt="" class="av-listing-seller__avatar-img" loading="lazy" onerror="this.remove()">'
+              : escapeHtml(initials(seller))) +
+          '</div>' +
+          '<div class="av-listing-seller__body">' +
+            '<p class="av-listing-seller__name">' + escapeHtml(seller) + (verified ? verifyBadge() : '') + '</p>' +
+            '<p class="av-listing-seller__stats">' + escapeHtml(sales) + '</p>' +
+          '</div>' +
+          '<a class="av-listing-seller__link" href="/seller/' + encodeURIComponent(sellerSlug) + '">View store →</a>' +
+        '</div>' +
+        '<div class="av-listing-desc">' +
+          '<p id="listingDescText" class="av-listing-desc__text' + (descLong ? ' is-clamped' : '') + '">' + escapeHtml(desc) + '</p>' +
+          (descLong ? '<button type="button" id="listingDescToggle" class="av-listing-desc__more">Show more &gt;</button>' : '') +
+        '</div>' +
+        '<div class="av-listing-accounts">' +
+          '<div class="av-listing-accounts__head"><h4>Select account</h4><span class="av-listing-accounts__count">(1 of ' + stock + ' selected)</span></div>' +
+          accountRows +
+        '</div>' +
+        '<div class="av-listing-checkout">' +
+          '<div class="av-listing-checkout__row">' +
+            '<div><p class="av-listing-checkout__total-label">Total (1 item)</p><p class="av-listing-checkout__total">' + money(price) + '</p></div>' +
+          '</div>' +
+          '<button type="button" class="av-listing-pay-btn" data-buy-listing="' + escapeAttr(String(listing.id)) + '">Pay ' + money(price) + ' Securely</button>' +
+          '<p class="av-listing-protect"><i class="fa-solid fa-shield-halved"></i> Your payment is protected by AcctSuite Buyer Protection.</p>' +
+        '</div></div>';
+
+      var toggle = document.getElementById('listingDescToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          var el = document.getElementById('listingDescText');
+          if (!el) return;
+          var clamped = el.classList.toggle('is-clamped');
+          toggle.textContent = clamped ? 'Show more >' : 'Show less';
+        });
+      }
+      root.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-buy-listing]');
+        if (!btn) return;
+        ev.preventDefault();
+        if (window.AcctSuiteListingModal) {
+          window.AcctSuiteListingModal.open(btn.getAttribute('data-buy-listing'));
+        }
+      });
+    } catch (e) {
+      root.innerHTML = '<h1>This listing is unavailable</h1><p class="text-sm text-slate-500">' + escapeHtml(e.message || 'Not found') + '</p><p class="mt-4"><a class="text-brandPrimary" href="/dashboard.html#home">Browse marketplace</a></p>';
+    }
+  })();
+  </script>
+  
+</body>
+</html>

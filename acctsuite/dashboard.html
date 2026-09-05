@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="/js/theme-init.js?v=20260827theme1"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>A cctsuite — Marketplace Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png" type="image/png" sizes="96x96">
+    <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
+    <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
+    <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png">
+    <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
+    
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+    <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
+    <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
+    <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
+    <link rel="stylesheet" href="/css/profile.css?v=20260904story3">
+    <style>
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+        .modal-scroll::-webkit-scrollbar { display: none; }
+        .modal-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        html, body { overflow-x: hidden; max-width: 100%; }
+        header, main, nav, .app-tab { max-width: 100%; }
+        /* Compact density (acctbazaar-like) */
+        .app-tab { gap: 0.65rem !important; }
+        .av-compact-card { border-radius: 0.85rem; padding: 0.65rem 0.75rem; }
+        .filter-chip { padding: 0.35rem 0.7rem !important; font-size: 0.7rem !important; }
+        .av-filter-drawer {
+          width: min(86vw, 20.5rem);
+          max-width: 86vw;
+          height: calc(100dvh - 3.5rem);
+          box-shadow: 8px 0 30px rgba(0,0,0,.35);
+        }
+        .av-filter-row {
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.28rem 0;
+          font-size: 0.8rem;
+          line-height: 1.2;
+        }
+        .av-filter-row input[type="checkbox"] {
+          width: 0.95rem;
+          height: 0.95rem;
+          flex-shrink: 0;
+          accent-color: #0ea5e9;
+        }
+        .av-prod-logo {
+          width: 1.15rem;
+          height: 1.15rem;
+          border-radius: 0.28rem;
+          object-fit: cover;
+          background: #1e293b;
+          flex-shrink: 0;
+        }
+        .av-cat-head {
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.45rem 0;
+          font-size: 0.84rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .av-sell-pick-item {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          width: 100%;
+          text-align: left;
+          padding: 0.45rem 0.55rem;
+          border: 0;
+          border-bottom: 1px solid rgba(148,163,184,.2);
+          background: transparent;
+          color: inherit;
+          font-size: 0.84rem;
+        }
+        .av-sell-pick-item:hover, .av-sell-pick-item.is-active {
+          background: color-mix(in srgb, #0ea5e9 14%, transparent);
+        }
+        .av-sell-pick-list {
+          max-height: 14rem;
+          overflow-y: auto;
+          border: 1px solid var(--tw-border, #334155);
+          border-radius: 0.75rem;
+          background: #0f172a;
+        }
+        html:not(.dark) .av-sell-pick-list { background: #fff; border-color: #e2e8f0; }
+        /* Bottom nav — full-width evenly spaced tabs (never flex on the nav root) */
+        #bottomNav:not(.hidden) { display: block !important; }
+        #bottomNav .av-bottom-nav-inner {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+            justify-content: space-around;
+        }
+        #bottomNav .nav-item {
+            flex: 1 1 0;
+            min-width: 0;
+            max-width: 5rem;
+            padding: 0.35rem 0.15rem 0.5rem;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+        #bottomNav .nav-item span {
+            display: block;
+            font-size: 0.65rem;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        #bottomNav .nav-item i { font-size: 1.15rem; line-height: 1; }
+        #bottomNav .nav-item.is-active { color: #0ea5e9; }
+        #bottomNav .nav-item.is-idle { color: #9ca3af; }
+        .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
+    </style>
+    <script src="/js/mobile-fix.js?v=20260822tap1"></script>
+    <script src="/js/ui-toast.js?v=20260821toast2"></script>
+    <script src="/js/marketplace-catalog.js?v=20260902vpn1"></script>
+</head>
+<body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
+
+    <!-- TOP HEADER: guest = logo + theme/menu right · signed-in = hamburger+logo left, shortcuts right -->
+    <header class="fixed top-0 z-[100] w-full border-b border-slate-200 dark:border-slate-800 bg-lightCard dark:bg-darkBg shadow backdrop-blur-sm">
+        <div class="mx-auto flex h-14 max-w-[500px] items-center justify-between px-4">
+            <div class="flex items-center gap-3 min-w-0">
+                <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0" onclick="toggleLeftMenu()" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-1.5 min-w-0">
+                    <div class="size-7 sm:size-8 rounded-lg bg-brandPrimary flex items-center justify-center text-white font-black text-base shadow-sm shrink-0">A</div>
+                    <span class="whitespace-nowrap text-[20px] font-semibold tracking-tight"><span class="text-indigo-500">A</span><span class="text-slate-900 dark:text-white"> cctsuite</span></span>
+                </a>
+            </div>
+            <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
+                <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-3">
+                    <button type="button" onclick="openSupportCenter()" class="border-r border-slate-200 dark:border-slate-700 pr-2 hover:text-brandPrimary transition" title="Support">
+                        <i class="fa-solid fa-headset text-lg"></i>
+                    </button>
+                    <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller">
+                        <i class="fa-solid fa-desktop text-lg"></i>
+                    </button>
+                    <button type="button" id="headerCartBtn" onclick="window.CommerceUI ? window.CommerceUI.openCartDrawer() : (typeof openCartDrawer==='function'&&openCartDrawer())" class="relative hover:text-brandPrimary transition" title="Cart">
+                        <i class="fa-solid fa-cart-shopping text-lg"></i>
+                        <span id="cartBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
+                    </button>
+                    <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
+                        <i class="fa-regular fa-bell text-lg"></i>
+                        <span id="notifBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
+                    </button>
+                    <button type="button" onclick="openProfileOrSignIn()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
+                        <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-brandPrimary text-white text-xs font-bold uppercase overflow-hidden">?</span>
+                    </button>
+                </div>
+                <div id="headerGuestRight" data-guest-only class="flex items-center gap-2.5">
+                    <button type="button" id="headerThemeBtn" onclick="toggleDarkMode()" class="w-9 h-9 flex items-center justify-center text-slate-800 dark:text-white hover:text-brandPrimary transition" title="Light / dark mode" aria-label="Toggle light and dark mode">
+                        <i id="headerThemeIcon" class="fa-solid fa-moon text-lg"></i>
+                    </button>
+                    <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 flex items-center justify-center rounded-md border-2 border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-white transition" aria-label="Menu">
+                        <i class="fa-solid fa-bars text-base"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="h-14"></div>
+
+    <!-- MAIN VIEWS -->
+    <main class="max-w-md mx-auto px-4 py-3">
+
+        <!-- TAB: HOME -->
+        <div id="tab_home" class="app-tab space-y-3">
+            <!-- Top Merchants -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                </div>
+                <div id="topMerchantsRow" class="flex gap-3 overflow-x-auto pb-1 scrollbar-none"></div>
+            </div>
+
+            <!-- Search Bar & Filter Button -->
+            <div class="relative flex items-center gap-2">
+                <div class="relative flex-1">
+                    <input type="text" id="searchInput" placeholder="Search accounts, VPN, numbers..." oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+                <button onclick="toggleFilterDrawer()" class="w-9 h-9 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-md hover:bg-brandHover transition" title="Filters"><i class="fa-solid fa-bars-staggered text-sm"></i></button>
+            </div>
+
+            <!-- Filter Chips (built from catalog) -->
+            <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
+
+            <!-- Platform banner -->
+            <div class="bg-gradient-to-r from-sky-600 to-blue-900 rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+                <div class="relative z-10 pr-2 min-w-0">
+                    <span class="text-sky-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
+                    <p class="font-bold text-sm mt-0.5 leading-snug">Buy & sell with escrow protection</p>
+                    <p class="text-[10px] text-sky-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
+                </div>
+                <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
+            </div>
+
+            <!-- Social proof (#11) -->
+            <p id="socialProofLine" class="hidden text-[11px] text-slate-500 dark:text-slate-400 px-1"></p>
+
+            <!-- Trending Catalog -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                </div>
+                <div id="homeListings" class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none"></div>
+            </div>
+
+            <!-- Other products (AcctBazaar-style vertical list) -->
+            <div id="homeOtherSection">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">Other product</h3>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                </div>
+                <div id="homeOtherListings" class="space-y-2.5"></div>
+            </div>
+        </div>
+
+        <!-- TAB: MARKETPLACE -->
+        <div id="tab_market" class="app-tab hidden space-y-4">
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <h2 class="text-xl font-bold">Marketplace</h2>
+            </div>
+            <div class="relative flex items-center gap-2">
+                <input type="text" id="marketSearch" placeholder="Search marketplace..." oninput="handleMarketSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
+                <button onclick="toggleFilterDrawer()" class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 text-xs px-3.5 py-2.5 rounded-xl hover:border-brandPrimary transition">Filter <i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+            </div>
+            <p class="text-xs text-slate-500" id="resultCount">0 results found</p>
+            <div class="space-y-3" id="marketListings"></div>
+            <div id="noResultsState" class="hidden text-center py-12 space-y-3">
+                <i class="fa-solid fa-filter-circle-xmark text-4xl text-slate-300 dark:text-slate-700"></i>
+                <p class="font-bold text-sm text-slate-600 dark:text-slate-400">No Results Found</p>
+            </div>
+        </div>
+
+        <!-- TAB: PURCHASE (buyer — left menu only) -->
+        <div id="tab_purchase" class="app-tab hidden space-y-4">
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                <div>
+                    <h2 class="text-xl font-bold">My Purchase</h2>
+                    <p class="text-xs text-slate-500">Accounts and products you bought.</p>
+                </div>
+            </div>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input id="purchaseSearchInput" type="search" placeholder="Search" oninput="setPurchaseSearch(this.value)" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brandPrimary" />
+            </div>
+            <div class="flex border-b border-slate-200 dark:border-slate-800 text-xs">
+                <button data-filter="all" onclick="setPurchaseFilter('all')" class="purchase-filter-btn flex-1 py-2 font-medium text-brandPrimary border-b-2 border-brandPrimary">All</button>
+                <button data-filter="pending" onclick="setPurchaseFilter('pending')" class="purchase-filter-btn flex-1 py-2 font-medium text-slate-400">Pending</button>
+                <button data-filter="completed" onclick="setPurchaseFilter('completed')" class="purchase-filter-btn flex-1 py-2 font-medium text-slate-400">Completed</button>
+                <button data-filter="cancelled" onclick="setPurchaseFilter('cancelled')" class="purchase-filter-btn flex-1 py-2 font-medium text-slate-400">Cancelled</button>
+            </div>
+            <div class="space-y-3" id="purchaseListContainer"></div>
+        </div>
+
+        <!-- TAB: ORDERS (seller — bottom nav only) -->
+        <div id="tab_orders" class="app-tab hidden space-y-4">
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                <div>
+                    <h2 class="text-xl font-bold">My Orders</h2>
+                    <p class="text-xs text-slate-500">Sales on your listings — seller side.</p>
+                </div>
+            </div>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input id="ordersSearchInput" type="search" placeholder="Search" oninput="setOrdersSearch(this.value)" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brandPrimary" />
+            </div>
+            <div class="flex border-b border-slate-200 dark:border-slate-800 text-xs">
+                <button data-filter="all" onclick="setOrdersFilter('all')" class="orders-filter-btn flex-1 py-2 font-medium text-brandPrimary border-b-2 border-brandPrimary">All</button>
+                <button data-filter="pending" onclick="setOrdersFilter('pending')" class="orders-filter-btn flex-1 py-2 font-medium text-slate-400">Pending</button>
+                <button data-filter="completed" onclick="setOrdersFilter('completed')" class="orders-filter-btn flex-1 py-2 font-medium text-slate-400">Completed</button>
+                <button data-filter="cancelled" onclick="setOrdersFilter('cancelled')" class="orders-filter-btn flex-1 py-2 font-medium text-slate-400">Cancelled</button>
+            </div>
+            <div id="disputesBanner" class="hidden"></div>
+            <div class="space-y-3" id="ordersListContainer"></div>
+        </div>
+
+        <!-- TAB: ADS -->
+        <div id="tab_ads" class="app-tab hidden space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                    <div>
+                        <h2 class="text-xl font-bold">My Ads</h2>
+                        <p class="text-xs text-slate-500">All of your product ads show here</p>
+                    </div>
+                </div>
+                <button onclick="openSellProductWizard()" class="w-10 h-10 rounded-xl bg-brandPrimary hover:bg-brandHover text-white flex items-center justify-center shadow-md"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800 text-xs scrollbar-none">
+                <button data-filter="all" onclick="setAdsFilter('all')" class="ads-filter-btn px-3 py-2 font-medium text-brandPrimary border-b-2 border-brandPrimary shrink-0">All</button>
+                <button data-filter="active" onclick="setAdsFilter('active')" class="ads-filter-btn px-3 py-2 font-medium text-slate-400 shrink-0">Active</button>
+                <button data-filter="pending" onclick="setAdsFilter('pending')" class="ads-filter-btn px-3 py-2 font-medium text-slate-400 shrink-0">Pending</button>
+                <button data-filter="denied" onclick="setAdsFilter('denied')" class="ads-filter-btn px-3 py-2 font-medium text-slate-400 shrink-0">Denied</button>
+                <button data-filter="removed" onclick="setAdsFilter('removed')" class="ads-filter-btn px-3 py-2 font-medium text-slate-400 shrink-0">Removed</button>
+            </div>
+            <div id="adsListContainer" class="space-y-3"></div>
+        </div>
+
+        <!-- TAB: WALLET -->
+        <div id="tab_wallet" class="app-tab hidden space-y-5 pb-4">
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                <div>
+                    <h2 class="text-xl font-bold">Wallet</h2>
+                    <p class="text-xs text-slate-500">Manage your balance and transactions securely</p>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-sky-500 via-brandPrimary to-sky-700 p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
+                <div class="absolute right-3 top-3 opacity-30 text-6xl"><i class="fa-solid fa-wallet"></i></div>
+                <div class="relative z-10">
+                    <p class="text-xs text-sky-100 font-medium">Account balance</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight">$0.00</h3>
+                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-sky-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
+                    </div>
+                    <p class="text-[11px] text-sky-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
+                </div>
+                <div class="flex gap-2 relative z-10">
+                    <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-2.5 rounded-full text-xs shadow-md">Deposit</button>
+                    <button onclick="openWalletModal('withdraw')" class="flex-1 bg-white/20 text-white font-bold py-2.5 rounded-full text-xs border border-white/35">Withdraw</button>
+                </div>
+            </div>
+
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-arrow-down"></i></span>
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase font-semibold">Total Deposit</p>
+                            <p id="walletDepositsDisplay" class="font-extrabold text-base">$0.00</p>
+                            <p class="text-[10px] text-slate-400">All time</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 min-w-0 text-right">
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase font-semibold">Total Withdrawal</p>
+                            <p id="walletWithdrawalsDisplay" class="font-extrabold text-base">$0.00</p>
+                            <p class="text-[10px] text-slate-400">All time</p>
+                        </div>
+                        <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-solid fa-arrow-up"></i></span>
+                    </div>
+                </div>
+                <div class="border-t border-slate-200 dark:border-slate-800 pt-3 flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center"><i class="fa-solid fa-shield-halved"></i></span>
+                    <div class="flex-1">
+                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Escrow Locked</p>
+                        <p id="walletEscrowDisplay" class="font-extrabold text-sm">$0.00</p>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-semibold">Protected</span>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex gap-4 border-b border-slate-200 dark:border-slate-800 mb-3 overflow-x-auto scrollbar-none">
+                    <button type="button" data-wallet-hist="deposit" onclick="setWalletHistoryTab('deposit')" class="wallet-hist-tab pb-2 text-sm font-bold text-brandPrimary border-b-2 border-brandPrimary whitespace-nowrap">Deposit History</button>
+                    <button type="button" data-wallet-hist="withdrawal" onclick="setWalletHistoryTab('withdrawal')" class="wallet-hist-tab pb-2 text-sm font-semibold text-slate-400 whitespace-nowrap">Withdrawal History</button>
+                    <button type="button" data-wallet-hist="others" onclick="setWalletHistoryTab('others')" class="wallet-hist-tab pb-2 text-sm font-semibold text-slate-400 whitespace-nowrap">Others</button>
+                    <button type="button" data-wallet-hist="all" onclick="setWalletHistoryTab('all')" class="wallet-hist-tab pb-2 text-sm font-semibold text-slate-400 whitespace-nowrap">All</button>
+                </div>
+                <div id="txHistoryList" class="space-y-2.5"></div>
+            </div>
+        </div>
+
+        <!-- TAB: ACCOUNT DASHBOARD -->
+        <div id="tab_account_dashboard" class="app-tab hidden space-y-5">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Dashboard</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Overview of your account performance</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-brandPrimary mb-2"><i class="fa-solid fa-wallet text-sm"></i></div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Balance</p>
+                    <h4 id="dashBalanceDisplay" class="font-extrabold text-lg mt-1">$0.00</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 mb-2"><i class="fa-solid fa-bullhorn text-sm"></i></div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Active Ads</p>
+                    <h4 id="dashActiveAds" class="font-extrabold text-lg mt-1">0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-500 mb-2"><i class="fa-solid fa-layer-group text-sm"></i></div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Total accounts</p>
+                    <h4 id="dashTotalAccounts" class="font-extrabold text-lg mt-1">0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 mb-2"><i class="fa-solid fa-circle-check text-sm"></i></div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Accounts sold</p>
+                    <h4 id="dashAccountsSold" class="font-extrabold text-lg mt-1">0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm col-span-2">
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Accounts approved</p>
+                    <h4 id="dashAccountsApproved" class="font-extrabold text-lg mt-1">0</h4>
+                    <p class="text-[11px] text-slate-400 mt-1">Current plan: <span id="currentPlanLabel" class="text-brandPrimary font-semibold">Free (Default)</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: REFERRAL -->
+        <div id="tab_referral" class="app-tab hidden space-y-5">
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Earn more when you invite friends to A cctsuite</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-brandPrimary mb-2">
+                        <i class="fa-solid fa-users text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Invitees</p>
+                    <h4 id="referralInviteesCount" class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">0</h4>
+                </div>
+                <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
+                    <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 mb-2">
+                        <i class="fa-solid fa-money-bill-wave text-sm"></i>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Total Earned</p>
+                    <h4 class="font-extrabold text-lg text-slate-800 dark:text-white mt-1">$0.00</h4>
+                </div>
+            </div>
+
+            <div class="bg-brandPrimary/10 border border-brandPrimary/30 rounded-xl p-4 flex flex-col items-center text-center space-y-3">
+                <div class="w-12 h-12 bg-white dark:bg-darkCard text-brandPrimary rounded-full flex items-center justify-center text-xl font-bold shadow">
+                    🎁
+                </div>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Receive $5 reward instantly</h3>
+                <p class="text-xs text-slate-600 dark:text-slate-400">When your friend registers, funds wallet with minimum of $50 and purchases at least one account, you get rewarded instantly.</p>
+                <div class="w-full text-left space-y-1 pt-1">
+                    <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">How to use invitation code</p>
+                    <p class="text-[11px] text-slate-500">Share invitation link/code with friends</p>
+                    <p class="text-[11px] text-slate-500">Let friends sign up and fund wallet with minimum of $50</p>
+                </div>
+                <div class="w-full bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-700 p-3 rounded-xl mt-2 flex justify-between items-center gap-2">
+                    <div class="min-w-0 text-left">
+                        <span class="text-[10px] text-slate-400 block">Your Referral link:</span>
+                        <span id="referralLinkText" class="text-xs truncate text-brandPrimary font-mono font-medium block">acctsuite.com/auth/sign-up</span>
+                    </div>
+                    <button onclick="copyReferralLink()" class="text-slate-500 hover:text-brandPrimary transition pl-2 border-l border-slate-200 dark:border-slate-700 shrink-0">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+                <button onclick="shareReferralLink()" class="w-full bg-brandPrimary hover:bg-brandHover transition py-3 rounded-xl text-white font-bold text-sm shadow-md mt-2">Share Invitation link</button>
+            </div>
+
+            <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                <h4 class="font-bold text-sm text-slate-800 dark:text-white px-4 pt-4 pb-2">Referral Record</h4>
+                <div class="flex border-b border-slate-200 dark:border-slate-800">
+                    <button class="flex-1 px-3 py-2 text-xs font-medium text-brandPrimary border-b-2 border-brandPrimary">Pending</button>
+                    <button class="flex-1 px-3 py-2 text-xs font-medium text-slate-400">Completed</button>
+                    <button class="flex-1 px-3 py-2 text-xs font-medium text-slate-400">Cancel</button>
+                </div>
+                <div id="referralRecordsList" class="px-4 py-8 text-center">
+                    <p class="text-xs text-slate-400">No referrals yet. Share your link to invite friends.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PLANS PAGE -->
+        <div id="tab_plans" class="app-tab hidden space-y-5">
+            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                <div>
+                    <h2 class="text-xl font-bold">Packages & Pricing</h2>
+                    <p id="plansPageSubtitle" class="text-xs text-slate-500 mt-0.5">New accounts start on Free — 5 uploads per day. Paid plans unlock higher daily upload limits via Flutterwave or wallet.</p>
+                </div>
+            </div>
+            <div id="plansListContainer" class="space-y-4"></div>
+        </div>
+
+    </main>
+
+    <!-- NOTIFICATION DRAWER — same 3-line style as left menu -->
+    <div id="notificationDrawer" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-darkBg">
+        <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
+            <div class="flex items-center gap-3 px-4 pt-3 pb-2">
+                <button type="button" onclick="toggleNotificationDrawer()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notifications</h3>
+            </div>
+            <div id="notificationsList" class="flex-1 overflow-y-auto px-4 py-2 space-y-1">
+                <div id="notificationsEmptyState" class="text-center py-16 space-y-2">
+                    <i class="fa-regular fa-bell-slash text-3xl text-slate-300 dark:text-slate-700"></i>
+                    <p class="text-sm font-medium text-slate-500">No notifications yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER DRAWER — left sidebar like acctbazaar -->
+    <div id="filterDrawer" class="fixed inset-0 z-[80] hidden">
+        <button type="button" class="absolute inset-0 bg-black/50" onclick="toggleFilterDrawer()" aria-label="Close filters"></button>
+        <aside class="av-filter-drawer absolute left-0 top-14 bottom-0 bg-lightCard dark:bg-[#0b1120] overflow-y-auto px-3 pb-6">
+            <div class="flex items-center justify-between pt-3 pb-2 sticky top-0 bg-lightCard dark:bg-[#0b1120] z-10">
+                <h3 class="font-bold text-base text-slate-800 dark:text-white">Filter</h3>
+                <button type="button" onclick="toggleFilterDrawer()" class="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-sm" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] font-semibold text-slate-500 mb-1">Account Category</p>
+            <div id="filterCategoryTree" class="pb-2"></div>
+            <div class="pt-3 border-t border-slate-200 dark:border-slate-800 mt-2">
+                <p class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">Price range</p>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-slate-500">Minimum</label>
+                        <input type="number" id="minPrice" value="0" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-xs outline-none focus:border-brandPrimary">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-slate-500">Maximum</label>
+                        <input type="number" id="maxPrice" value="1000" oninput="applyFilters()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-xs outline-none focus:border-brandPrimary">
+                    </div>
+                </div>
+            </div>
+            <button onclick="resetFilters();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-2.5 rounded-xl mt-4 text-sm transition"><i class="fa-solid fa-rotate-left mr-1.5"></i>Reset filters</button>
+        </aside>
+    </div>
+
+    <!-- LEFT MENU DRAWER — matches acctbazaar profile menu layout, your blue accents -->
+    <div id="leftMenu" class="fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-darkBg">
+        <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
+            <!-- Back navigation (same place as acctbazaar) -->
+            <div class="flex items-center px-4 pt-3 pb-1">
+                <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Profile (signed-in only — hidden for guest browse) -->
+            <div id="leftProfileBlock" data-auth-only class="hidden px-5 pb-2 space-y-2 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-start gap-3">
+                    <div id="leftProfileAvatar" class="w-11 h-11 rounded-full bg-brandPrimary flex items-center justify-center text-white shrink-0 text-sm font-bold uppercase overflow-hidden">?</div>
+                    <div class="min-w-0 pt-0.5">
+                        <div class="flex items-center gap-0.5 min-w-0">
+                            <h3 id="leftProfileName" class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug truncate">Guest</h3>
+                            <span id="leftProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
+                        </div>
+                        <p id="leftProfileEmail" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">—</p>
+                    </div>
+                </div>
+                <button type="button" id="leftBecomeVerifiedBtn" onclick="openBecomeVerified()" class="kyc-side-btn border border-brandPrimary text-brandPrimary text-xs px-4 py-1.5 rounded-md font-medium bg-transparent hover:bg-brandPrimary/10 transition">
+                    Become Verified
+                </button>
+            </div>
+
+            <!-- Nav list -->
+            <nav class="px-2 pt-1">
+                <a href="#" onclick="switchTab('home'); toggleLeftMenu(); return false;" data-guest-only class="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-house w-5 text-center"></i> Home
+                </a>
+                <a href="/#features" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-white/5 transition" data-guest-only>
+                    About
+                </a>
+                <a href="/#features" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-white/5 transition" data-guest-only>
+                    Features
+                </a>
+                <a href="/#howitworks" class="flex items-center gap-3 px-3 py-2.5 text-[14px] text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-white/5 transition" data-guest-only>
+                    How it Works
+                </a>
+                <a href="#" data-auth-only onclick="switchTab('market'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-store w-5 text-center"></i> Marketplace
+                </a>
+                <a href="#" data-auth-only onclick="switchTab('account_dashboard'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-border-all w-5 text-center"></i> Account Dashboard
+                </a>
+                <a href="#" data-auth-only onclick="switchTab('referral'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-users w-5 text-center"></i> Referral
+                </a>
+                <a href="#" data-auth-only onclick="switchTab('plans'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-award w-5 text-center"></i> Plans
+                </a>
+                <a href="#" data-auth-only onclick="switchTab('purchase'); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Purchase
+                </a>
+                <a href="#" data-auth-only onclick="openAccountSettings(); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-gear w-5 text-center"></i> Account settings
+                </a>
+                <a href="#" data-auth-only onclick="openSupportCenter(); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-headset w-5 text-center"></i> Support
+                </a>
+                <a href="#" data-auth-only onclick="openMyStories(); toggleLeftMenu(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-camera w-5 text-center"></i> My Stories
+                </a>
+                <div data-auth-only class="hidden flex items-center justify-between px-3 py-2 text-[14px] text-slate-800 dark:text-white">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-moon w-5 text-center" id="themeIcon"></i> <span id="themeText">Dark Mode</span></span>
+                    <div id="themeToggleSwitch" onclick="toggleDarkMode()" class="w-10 h-6 bg-slate-300 dark:bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner">
+                        <div class="w-4 h-4 bg-white rounded-full absolute left-1 dark:translate-x-4 top-1 transition-transform shadow" id="themeThumb"></div>
+                    </div>
+                </div>
+                <a href="#" data-auth-only onclick="handleLogout(); return false;" class="hidden items-center gap-3 px-3 py-2 text-[14px] text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition">
+                    <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Log Out
+                </a>
+            </nav>
+
+            <!-- Guest: Login / Sign up (acctbazaar-style) -->
+            <div id="leftGuestAuth" class="px-5 pt-6 pb-6 space-y-2.5 mt-auto">
+                <a href="/login" class="block w-full text-center border-2 border-brandPrimary text-brandPrimary font-semibold py-3 rounded-xl transition text-sm hover:bg-brandPrimary/10">
+                    Log in
+                </a>
+                <a href="/signup" class="block w-full text-center bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
+                    Sign up
+                </a>
+            </div>
+
+            <div id="leftAuthSell" data-auth-only class="hidden px-5 pt-3 pb-6">
+                <button onclick="openSellProductWizard(); toggleLeftMenu();" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
+                    Sell Product
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PROFILE PANEL — signed-in user's details -->
+    <div id="rightMenu" class="profile-panel fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-darkBg">
+        <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
+            <div class="flex items-center gap-3 px-4 pt-3 pb-2">
+                <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-brandPrimary/40 text-brandPrimary flex items-center justify-center hover:bg-brandPrimary hover:text-white transition" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">My Profile</h3>
+            </div>
+
+            <div class="profile-hero">
+                <div class="flex items-center gap-4">
+                    <button type="button" class="profile-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
+                        <div id="rightProfileAvatar" class="av-user-avatar av-user-avatar--lg">?</div>
+                        <span class="profile-avatar-cam"><i class="fa-solid fa-camera"></i></span>
+                    </button>
+                    <input id="profilePhotoInput" type="file" accept="image/*" hidden onchange="window.AcctSuiteUI && window.AcctSuiteUI.onProfilePhoto(this)">
+                    <div class="profile-hero-meta min-w-0">
+                        <div class="flex items-center gap-0.5 min-w-0">
+                            <h4 id="rightProfileName" class="truncate">Guest</h4>
+                            <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
+                        </div>
+                        <a id="rightProfileEmail" class="profile-email" href="#">—</a>
+                        <p id="rightProfilePhone" class="profile-phone">—</p>
+                    </div>
+                </div>
+                <p class="profile-hint">Tap the camera to upload a profile picture</p>
+            </div>
+
+            <div class="profile-stats">
+                <div class="profile-stat">
+                    <span>Wallet balance</span>
+                    <span id="rightProfileBalance" class="profile-stat-val">$0.00</span>
+                </div>
+                <div class="profile-stat">
+                    <span>Member since</span>
+                    <span id="rightProfileJoined" class="profile-stat-val">—</span>
+                </div>
+                <div class="profile-stat">
+                    <span>Referral code</span>
+                    <span id="rightProfileRefCode" class="profile-stat-val profile-stat-val--brand">—</span>
+                </div>
+            </div>
+
+            <div id="profileMerchantLink" class="hidden profile-merchant-link mx-3 mb-3">
+                <p class="profile-merchant-link__label">Merchant link</p>
+                <div class="profile-merchant-link__row">
+                    <span id="profileMerchantUrl" class="profile-merchant-link__url" data-full="">—</span>
+                    <button type="button" onclick="copyMerchantLink()" class="profile-merchant-link__copy" aria-label="Copy merchant link"><i class="fa-solid fa-copy"></i></button>
+                </div>
+            </div>
+
+            <nav class="profile-nav px-3 pt-1 pb-8">
+                <a href="#" onclick="openAccountSettings(); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-gear"></i> Account settings
+                </a>
+                <a href="#" onclick="switchTab('wallet'); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-wallet"></i> Wallet
+                </a>
+                <a href="#" onclick="switchTab('purchase'); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-clipboard-check"></i> My Purchase
+                </a>
+                <a href="#" onclick="switchTab('referral'); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-users"></i> Referral
+                </a>
+                <a href="#" onclick="openSupportCenter(); toggleRightMenu(); return false;">
+                    <i class="fa-solid fa-headset"></i> Support
+                </a>
+                <a href="#" onclick="handleLogout(); return false;" class="profile-nav-out">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- CART DRAWER (populated by js/commerce-ui.js) -->
+    <div id="cartDrawer" class="fixed inset-0 z-[145] hidden"></div>
+
+    <!-- DISPUTE MODAL (populated by js/commerce-ui.js) -->
+    <div id="disputeModal" class="fixed inset-0 z-[146] hidden"></div>
+
+    <!-- GENERAL MODAL CONTAINER (above app header so back arrow is never covered) -->
+    <div id="appModal" class="fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4">
+        <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-scroll">
+            <button type="button" onclick="closeModal()" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 bg-lightCard dark:bg-darkCard flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Go back">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+            </button>
+            <div id="modalBody" class="pt-8"></div>
+        </div>
+    </div>
+
+    <!-- FULL SCREEN WALLET DEPOSIT / WITHDRAW (back arrow always visible top-left) -->
+    <div id="walletFlowOverlay" class="fixed inset-0 bg-lightBg dark:bg-darkBg z-[135] hidden flex-col">
+        <div class="flex items-center gap-3 px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <button type="button" id="walletFlowBackBtn" onclick="closeWalletFlow()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white shrink-0" aria-label="Go back">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+            </button>
+            <div class="min-w-0">
+                <h2 id="walletFlowTitle" class="font-bold text-base truncate">Wallet</h2>
+                <p id="walletFlowSubtitle" class="text-[10px] text-slate-400 truncate">Back to wallet</p>
+            </div>
+        </div>
+        <div id="walletFlowBody" class="flex-1 overflow-y-auto px-4 py-4 pb-10 modal-scroll"></div>
+    </div>
+
+    <!-- BUSINESS KYC VERIFICATION -->
+    <div id="kycOverlay" class="fixed inset-0 bg-lightBg dark:bg-darkBg hidden flex-col">
+        <div class="flex items-center gap-3 px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <button type="button" onclick="window.AcctSuiteKyc && window.AcctSuiteKyc.close()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-white shrink-0" aria-label="Go back">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+            </button>
+            <div class="min-w-0">
+                <h2 class="font-bold text-base truncate">Become Verified</h2>
+                <p id="kycStepText" class="text-[10px] text-slate-400 truncate">Business KYC</p>
+            </div>
+        </div>
+        <div id="kycFlowBody" class="flex-1 overflow-y-auto px-4 py-4 pb-4 modal-scroll"></div>
+        <div id="kycFlowFooter" class="kyc-flow-footer hidden"></div>
+    </div>
+
+    <!-- FULL SCREEN SELL PRODUCT WIZARD OVERLAY -->
+    <div id="sellWizardOverlay" class="fixed inset-0 bg-lightBg dark:bg-darkBg z-[140] hidden flex-col transition-opacity">
+        <div class="flex items-center justify-between px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="closeSellProductWizard()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                <h2 class="text-lg font-bold">Sell Account</h2>
+            </div>
+            <span class="text-xs text-brandPrimary font-medium" id="sellWizardStepText">Step 1 of 3 — Add account</span>
+        </div>
+        <div class="flex gap-3 px-4 py-2 text-[11px] text-slate-400 border-b border-slate-100 dark:border-slate-800 overflow-x-auto scrollbar-none">
+            <span class="sell-step-label text-brandPrimary font-bold shrink-0">Add account</span>
+            <span class="sell-step-label shrink-0">Credentials</span>
+            <span class="sell-step-label shrink-0">Review</span>
+        </div>
+        <div class="mx-4 mt-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-[11px] rounded-xl px-3 py-2 flex gap-2 items-start">
+            <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i>
+            <div>
+                <span id="uploadLimitBannerText">You are on Free (Default). Uploads left today: 5 of 5.</span>
+                <button type="button" onclick="closeSellProductWizard(); switchTab('plans');" class="block mt-1 font-bold underline">Choose Your Plan Here</button>
+            </div>
+        </div>
+
+        <div id="sellStep1" class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            <p class="text-xs text-slate-500">You can only select one account at a time</p>
+            <div>
+                <label class="block mb-1 text-xs font-medium text-slate-500">Select Account Category *</label>
+                <input type="hidden" id="wizardCat" value="">
+                <div class="relative">
+                    <input type="search" id="wizardCatSearch" autocomplete="off" placeholder="Select Account Category" oninput="renderSellCategoryPicker(this.value)" onfocus="renderSellCategoryPicker(this.value || '')" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3.5 pr-9 py-2.5 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400 text-xs"></i>
+                </div>
+                <div id="wizardCatSelected" class="hidden mt-1.5 av-filter-row text-xs text-slate-500"></div>
+                <div id="wizardCatPicker" class="av-sell-pick-list mt-1.5 hidden"></div>
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-medium text-slate-500">Name *</label>
+                <input type="text" id="wizardTitle" placeholder="For e.g., 4 Years Facebook Account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm">
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-medium text-slate-500">Description</label>
+                <textarea id="wizardDesc" rows="2" placeholder="Describe the account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm"></textarea>
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-medium text-slate-500">Enter your price</label>
+                <div class="relative"><span class="absolute left-3 top-2.5 text-slate-400">$</span>
+                <input type="number" id="wizardPrice" step="0.01" placeholder="Enter amount" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-7 pr-3 py-2.5 text-sm"></div>
+            </div>
+            <p class="text-xs font-bold pt-1 border-t border-slate-200 dark:border-slate-800">Release options</p>
+            <div class="space-y-2">
+                <label onclick="selectWizardRelease('auto')" id="wizardCardAuto" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer">
+                    <input type="radio" name="wizardRelease" value="auto" checked class="mt-0.5 accent-sky-500">
+                    <div>
+                        <span class="font-bold text-sm flex items-center gap-1">Auto Confirm Order <span class="text-[9px] bg-emerald-500/20 text-emerald-600 px-1.5 py-0.5 rounded">Recommended</span></span>
+                        <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">Logins are sent and the order is confirmed automatically.</p>
+                    </div>
+                </label>
+                <label onclick="selectWizardRelease('manual')" id="wizardCardManual" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer">
+                    <input type="radio" name="wizardRelease" value="manual" class="mt-0.5 accent-sky-500">
+                    <div>
+                        <span class="font-bold text-sm">Manual Release</span>
+                        <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">For products that need a code or extra authentication.</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div id="sellStep2" class="flex-1 overflow-y-auto px-4 py-5 space-y-4 hidden">
+            <h3 class="font-bold text-center">Account Credentials</h3>
+            <div>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">Username *</label>
+                <input type="text" id="wizardUser" placeholder="Type your Account Username here." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">Account Password *</label>
+                <input type="text" id="wizardPass" placeholder="Type your Account Password here" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">Preview link of account</label>
+                <input type="url" id="wizardPreview" placeholder="https://www.facebook.com/..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
+                <p class="text-[10px] text-slate-400 mt-1">Required for social accounts. Buyers review this link before buying. Wrong links are denied by AI.</p>
+            </div>
+            <p class="text-xs font-bold pt-2 border-t border-slate-200 dark:border-slate-800">Additional information (optional)</p>
+            <div>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">Email attached to account</label>
+                <input type="email" id="wizardEmail" placeholder="Type your email here." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">Password</label>
+                <input type="text" id="wizardEmailPass" placeholder="Email password" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">2FA Code</label>
+                <input type="text" id="wizard2fa" placeholder="Type your 2FA Code here." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
+            </div>
+            <div>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">Additional information</label>
+                <textarea id="wizardExtra" rows="3" placeholder="Extra notes for the buyer..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm"></textarea>
+            </div>
+        </div>
+
+        <div id="sellStep3" class="flex-1 overflow-y-auto px-4 py-5 space-y-4 hidden">
+            <h3 class="font-bold text-center mb-2">Review</h3>
+            <div id="sellReviewSummary" class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-4"></div>
+        </div>
+
+        <div class="p-4 bg-lightCard dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 mt-auto">
+            <button id="sellWizardBtn" onclick="handleSellWizardNext()" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl shadow-md text-sm">Continue</button>
+        </div>
+    </div>
+
+    <!-- ORDER / SUPPORT CHAT OVERLAY -->
+    <div id="chatOverlay" class="fixed inset-0 bg-lightBg dark:bg-darkBg z-[120] hidden flex-col">
+        <div class="flex items-center gap-3 px-4 py-3 bg-lightCard dark:bg-darkCard border-b border-slate-200 dark:border-slate-800">
+            <button type="button" onclick="closeOrderChat()" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+            <div class="min-w-0 flex-1">
+                <h2 id="chatTitle" class="font-bold text-sm">Order Chat</h2>
+                <p id="chatSubtitle" class="text-[10px] text-slate-400 truncate"></p>
+            </div>
+            <button type="button" id="chatReportBtn" onclick="reportSellerFromChat()" class="hidden text-[11px] font-bold text-red-500 border border-red-300 dark:border-red-800 px-2.5 py-1.5 rounded-lg shrink-0">Report</button>
+            <span id="chatOnlineDot" class="hidden w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+        </div>
+        <div id="chatRulesBanner" class="hidden px-3 py-2 text-[11px] leading-snug bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300">
+            <i class="fa-solid fa-shield-halved mr-1"></i>Chat is only for this purchased order. Do not share WhatsApp, Telegram, or phone numbers. Off-platform contact is blocked.
+        </div>
+        <div id="chatMessages" class="flex-1 overflow-y-auto px-4 py-4 space-y-2"></div>
+        <p id="chatTyping" class="px-4 text-[11px] text-slate-400 h-5"></p>
+        <div class="p-3 bg-lightCard dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center">
+            <input type="file" id="chatFileInput" class="hidden" accept="image/*,.pdf,.txt,.doc,.docx,.zip" onchange="onChatFileSelected(event)">
+            <button type="button" onclick="document.getElementById('chatFileInput').click()" class="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 shrink-0" title="Upload photo or file" aria-label="Upload"><i class="fa-solid fa-paperclip text-sm"></i></button>
+            <input id="chatInput" type="text" placeholder="Send a message" autocomplete="off" class="flex-1 min-w-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2.5 text-base" oninput="onChatTyping()" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
+            <button onclick="sendChatMessage()" class="w-10 h-10 rounded-full bg-brandPrimary text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-paper-plane text-sm"></i></button>
+        </div>
+        <p id="chatAttachHint" class="hidden px-4 pb-2 text-[10px] text-slate-400 truncate"></p>
+    </div>
+
+    <!-- BOTTOM NAVIGATION — signed-in only (hidden for guest browse marketplace) -->
+    <nav id="bottomNav" data-auth-only class="hidden fixed bottom-0 inset-x-0 z-40 w-full bg-white dark:bg-darkBg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,0px)]">
+        <div class="av-bottom-nav-inner mx-auto w-full max-w-[500px] px-1 pt-2 pb-2">
+            <button type="button" onclick="switchTab('home')" class="nav-item is-active flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-house"></i><span>Home</span>
+            </button>
+            <button type="button" onclick="switchTab('market')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-border-all"></i><span>Market</span>
+            </button>
+            <button type="button" onclick="switchTab('orders')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-bag-shopping"></i><span>Orders</span>
+            </button>
+            <button type="button" onclick="switchTab('ads')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-bullhorn"></i><span>Ads</span>
+            </button>
+            <button type="button" onclick="switchTab('wallet')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
+                <i class="fa-solid fa-wallet"></i><span>Wallet</span>
+            </button>
+        </div>
+    </nav>
+
+    <script src="/js/acctsuite.js?v=20260904story3"></script>
+    <script src="/js/api-client.js?v=20260904story3"></script>
+    <script src="/js/api-sync.js?v=20260904story3"></script>
+    <script src="/js/kyc-app.js?v=20260904story3"></script>
+    <script src="/js/av-confirm.js?v=20260904story3"></script>
+    <script src="/js/commerce-ui.js?v=20260904story3"></script>
+    <script src="/js/listing-modal.js?v=20260904story3"></script>
+    <script src="/js/dashboard-app.js?v=20260904story3"></script>
+    <!-- SCRIPT LOGIC (shell) -->
+    <script>
+        const DASH_TABS = [
+            'home', 'market', 'orders', 'purchase', 'ads', 'wallet',
+            'account_dashboard', 'referral', 'plans', 'support'
+        ];
+        const AUTH_TABS = ['orders', 'purchase', 'ads', 'wallet', 'account_dashboard', 'referral', 'plans'];
+        const DASH_TAB_KEY = 'acctsuite_dash_tab';
+
+        function dashIsLoggedIn() {
+            try {
+                if (window.AcctSuiteUI && typeof window.AcctSuiteUI.isLoggedIn === 'function') {
+                    return !!window.AcctSuiteUI.isLoggedIn();
+                }
+                return localStorage.getItem('isLoggedIn') === 'true';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function promptDashSignIn(msg) {
+            if (window.AcctSuiteUI && window.AcctSuiteUI.promptSignIn) {
+                window.AcctSuiteUI.promptSignIn(msg || 'You are not logged in');
+            } else if (window.AcctSuiteToast) {
+                window.AcctSuiteToast.error(msg || 'You are not logged in');
+            } else {
+                alert(msg || 'You are not logged in');
+            }
+        }
+
+        function openProfileOrSignIn() {
+            if (!dashIsLoggedIn()) {
+                promptDashSignIn('You are not logged in. Sign in first.');
+                return;
+            }
+            toggleRightMenu();
+        }
+
+        function switchTab(tabId) {
+            if (!tabId) tabId = 'home';
+            if (AUTH_TABS.includes(tabId) && !dashIsLoggedIn()) {
+                promptDashSignIn('You are not logged in. Sign in first.');
+                return;
+            }
+            document.querySelectorAll('.app-tab').forEach((t) => t.classList.add('hidden'));
+            const el = document.getElementById('tab_' + tabId);
+            if (el) {
+                el.classList.remove('hidden');
+            } else {
+                tabId = 'home';
+                const home = document.getElementById('tab_home');
+                if (home) home.classList.remove('hidden');
+            }
+            try {
+                sessionStorage.setItem(DASH_TAB_KEY, tabId);
+                localStorage.setItem(DASH_TAB_KEY, tabId);
+                if (history.replaceState) {
+                    history.replaceState(null, '', '#' + tabId);
+                } else {
+                    location.hash = tabId;
+                }
+            } catch (e) {}
+            syncBottomNav(tabId);
+            window.scrollTo({ top: 0, behavior: 'auto' });
+            if (window.AcctSuiteUI) window.AcctSuiteUI.refreshAll();
+        }
+
+        function syncBottomNav(tabId) {
+            const map = { home: 0, market: 1, orders: 2, ads: 3, wallet: 4 };
+            const items = document.querySelectorAll('#bottomNav .nav-item');
+            if (!items.length) return;
+            const idx = map[tabId];
+            items.forEach((i, n) => {
+                const on = idx !== undefined && n === idx;
+                i.classList.toggle('is-active', on);
+                i.classList.toggle('is-idle', !on);
+            });
+        }
+
+        function restoreDashTab() {
+            let tab = '';
+            try {
+                tab = (location.hash || '').replace(/^#/, '').split(/[?&]/)[0];
+            } catch (e) {}
+            if (!DASH_TABS.includes(tab)) {
+                try {
+                    tab = sessionStorage.getItem(DASH_TAB_KEY) || localStorage.getItem(DASH_TAB_KEY) || '';
+                } catch (e) {
+                    tab = '';
+                }
+            }
+            if (!DASH_TABS.includes(tab)) tab = 'home';
+            if (AUTH_TABS.includes(tab) && !dashIsLoggedIn()) tab = 'home';
+            switchTab(tab);
+        }
+
+        function setActiveNav(el) {
+            document.querySelectorAll('#bottomNav .nav-item').forEach((i) => {
+                i.classList.remove('is-active');
+                i.classList.add('is-idle');
+            });
+            if (el) {
+                el.classList.remove('is-idle');
+                el.classList.add('is-active');
+            }
+        }
+        function toggleLeftMenu() { document.getElementById('leftMenu').classList.toggle('hidden'); }
+        function toggleRightMenu() { document.getElementById('rightMenu').classList.toggle('hidden'); }
+        function toggleNotificationDrawer() {
+            document.getElementById('notificationDrawer').classList.toggle('hidden');
+            if (window.AcctSuiteUI) window.AcctSuiteUI.refreshAll();
+        }
+        function toggleFilterDrawer() {
+            const el = document.getElementById('filterDrawer');
+            const opening = el.classList.contains('hidden');
+            el.classList.toggle('hidden');
+            if (opening) buildFilterCategoryTree();
+        }
+        function toggleAccordion(id) {
+            const panel = document.getElementById(id);
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            const icon = document.getElementById('icon_' + id);
+            if (icon) {
+                icon.classList.toggle('fa-chevron-down');
+                icon.classList.toggle('fa-chevron-up');
+            }
+        }
+        function openModal() {
+            const el = document.getElementById('appModal');
+            if (!el) return;
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+        function closeModal() {
+            const el = document.getElementById('appModal');
+            if (!el) return;
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+            el.classList.remove('av-listing-modal');
+        }
+        function toggleWishlist(icon) { icon.classList.toggle('fa-regular'); icon.classList.toggle('fa-solid'); icon.classList.toggle('text-red-500'); }
+
+        function buildHomeChips() {
+            const box = document.getElementById('homeFilterChips');
+            if (!box || !window.AcctSuiteCatalog) return;
+            const chips = window.AcctSuiteCatalog.chipGroups();
+            box.innerHTML = chips.map(function (c, i) {
+                const on = i === 0;
+                return '<button type="button" data-chip="' + c.id + '" onclick="filterCategory(\'' + c.id + '\')" class="filter-chip rounded-full font-medium shrink-0 flex items-center gap-1.5 transition ' +
+                    (on ? 'bg-brandPrimary text-white' : 'bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 hover:border-brandPrimary hover:text-brandPrimary') +
+                    '"><i class="' + c.icon + '"></i> ' + c.name + '</button>';
+            }).join('');
+        }
+
+        function buildFilterCategoryTree() {
+            const box = document.getElementById('filterCategoryTree');
+            if (!box || !window.AcctSuiteCatalog) return;
+            const groups = window.AcctSuiteCatalog.GROUPS || [];
+            box.innerHTML = groups.map(function (g) {
+                const id = 'acc_' + g.id;
+                const items = (g.products || []).map(function (p) {
+                    const logo = window.AcctSuiteCatalog.logoUrl(p);
+                    return '<label class="av-filter-row cursor-pointer hover:text-brandPrimary">' +
+                        '<input type="checkbox" class="filter-chk" value="' + String(p.name).replace(/"/g, '&quot;') + '" data-group="' + g.id + '" onchange="applyFilters()">' +
+                        '<img class="av-prod-logo" src="' + logo + '" alt="" loading="lazy" onerror="this.style.opacity=.3">' +
+                        '<span>' + p.name + '</span></label>';
+                }).join('');
+                return '<div class="border-b border-slate-200/60 dark:border-slate-800/80">' +
+                    '<div class="av-cat-head" onclick="toggleAccordion(\'' + id + '\')">' +
+                    '<i class="' + g.icon + ' w-4 text-center text-slate-400 text-xs"></i>' +
+                    '<span class="flex-1 text-slate-800 dark:text-white">' + g.name + '</span>' +
+                    '<i class="fa-solid fa-chevron-down text-[10px] text-slate-400" id="icon_' + id + '"></i></div>' +
+                    '<div id="' + id + '" class="hidden pl-1 pb-1">' + items + '</div></div>';
+            }).join('');
+        }
+
+        function filterCategory(cat) {
+            switchTab('market');
+            document.querySelectorAll('#homeFilterChips .filter-chip').forEach(function (b) {
+                const on = b.getAttribute('data-chip') === cat;
+                b.classList.toggle('bg-brandPrimary', on);
+                b.classList.toggle('text-white', on);
+                b.classList.toggle('bg-lightCard', !on);
+                b.classList.toggle('dark:bg-darkCard', !on);
+                b.classList.toggle('border', !on);
+                b.classList.toggle('border-slate-200', !on);
+                b.classList.toggle('dark:border-slate-800', !on);
+            });
+            if (!window.AcctSuiteCatalog) return;
+            const group = (window.AcctSuiteCatalog.GROUPS || []).find(function (g) { return g.id === cat; });
+            const names = group ? group.products.map(function (p) { return p.name.toLowerCase(); }) : null;
+            const items = document.querySelectorAll('.product-item');
+            let count = 0;
+            items.forEach(function (item) {
+                const c = (item.getAttribute('data-category') || '').toLowerCase();
+                const g = (item.getAttribute('data-group') || '').toLowerCase();
+                let show = true;
+                if (cat && cat !== 'trending') {
+                    show = g === cat || (names && names.indexOf(c) !== -1) || c.indexOf(String(cat).toLowerCase()) !== -1;
+                }
+                item.classList.toggle('hidden', !show);
+                if (show) count++;
+            });
+            const rc = document.getElementById('resultCount');
+            if (rc) rc.innerText = count + ' results found';
+        }
+
+        function handleSearch(q) { handleMarketSearch(q); }
+        function handleMarketSearch(query) {
+            const q = (query || '').toLowerCase();
+            const items = document.querySelectorAll('.product-item');
+            let count = 0;
+            items.forEach(item => {
+                const show = !q || item.innerText.toLowerCase().includes(q) || (item.getAttribute('data-category') || '').toLowerCase().includes(q);
+                item.classList.toggle('hidden', !show);
+                if (show) count++;
+            });
+            const rc = document.getElementById('resultCount');
+            if (rc) rc.innerText = count + ' results found';
+            const nr = document.getElementById('noResultsState');
+            if (nr) nr.classList.toggle('hidden', count > 0 || !q);
+        }
+        function applyFilters() {
+            const min = parseFloat(document.getElementById('minPrice').value) || 0;
+            const max = parseFloat(document.getElementById('maxPrice').value) || 10000;
+            const checked = Array.from(document.querySelectorAll('.filter-chk:checked')).map(function (cb) { return cb.value.toLowerCase(); });
+            const items = document.querySelectorAll('.product-item');
+            let count = 0;
+            items.forEach(item => {
+                const price = parseFloat(item.getAttribute('data-price')) || 0;
+                const cat = (item.getAttribute('data-category') || '').toLowerCase();
+                const inPrice = price >= min && price <= max;
+                const inCat = !checked.length || checked.indexOf(cat) !== -1 || checked.some(function (c) { return cat.indexOf(c) !== -1; });
+                const show = inPrice && inCat;
+                item.classList.toggle('hidden', !show);
+                if (show) count++;
+            });
+            const rc = document.getElementById('resultCount');
+            if (rc) rc.innerText = count + ' results found';
+            switchTab('market');
+        }
+        function resetFilters() {
+            document.querySelectorAll('.filter-chk').forEach(cb => cb.checked = false);
+            document.getElementById('minPrice').value = 0;
+            document.getElementById('maxPrice').value = 1000;
+            applyFilters();
+        }
+
+        function renderSellCategoryPicker(q) {
+            const box = document.getElementById('wizardCatPicker');
+            if (!box || !window.AcctSuiteCatalog) return;
+            const list = window.AcctSuiteCatalog.searchProducts(q).slice(0, 80);
+            box.classList.remove('hidden');
+            if (!list.length) {
+                box.innerHTML = '<p class="p-3 text-xs text-slate-400">No matches</p>';
+                return;
+            }
+            const selected = (document.getElementById('wizardCat') || {}).value || '';
+            box.innerHTML = list.map(function (p) {
+                return '<button type="button" class="av-sell-pick-item ' + (selected === p.name ? 'is-active' : '') + '" onclick="selectSellCategory(\'' + String(p.name).replace(/'/g, "\\'") + '\')">' +
+                    '<img class="av-prod-logo" src="' + p.logo + '" alt="" loading="lazy" onerror="this.style.opacity=.3">' +
+                    '<span class="min-w-0"><span class="font-semibold block truncate">' + p.name + '</span>' +
+                    '<span class="text-[10px] text-slate-500">' + p.groupName + '</span></span></button>';
+            }).join('');
+        }
+        function selectSellCategory(name) {
+            const cat = document.getElementById('wizardCat');
+            const search = document.getElementById('wizardCatSearch');
+            const selected = document.getElementById('wizardCatSelected');
+            const picker = document.getElementById('wizardCatPicker');
+            if (cat) cat.value = name;
+            if (search) search.value = name;
+            const prod = window.AcctSuiteCatalog && window.AcctSuiteCatalog.findProduct(name);
+            if (selected && prod) {
+                selected.classList.remove('hidden');
+                selected.innerHTML = '<img class="av-prod-logo" src="' + prod.logo + '" alt=""><span class="font-semibold text-slate-800 dark:text-white">' + prod.name + '</span><span class="text-slate-500">· ' + prod.groupName + '</span>';
+            }
+            if (picker) picker.classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            buildHomeChips();
+            buildFilterCategoryTree();
+        });
+        document.addEventListener('click', function (e) {
+            const picker = document.getElementById('wizardCatPicker');
+            const search = document.getElementById('wizardCatSearch');
+            if (!picker || picker.classList.contains('hidden')) return;
+            if (picker.contains(e.target) || (search && search.contains(e.target))) return;
+            picker.classList.add('hidden');
+        });
+        function openAccountSettings() {
+            const u = window.AcctSuite && window.AcctSuite.getCurrentUser();
+            if (!u) {
+                promptDashSignIn('You are not logged in. Sign in first.');
+                return;
+            }
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-lg mb-4">Account Settings</h3>
+                <label class="block text-xs text-slate-500 mb-1">Full name</label>
+                <input id="settingsName" type="text" value="${(u.name||'').replace(/"/g,'&quot;')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 text-sm">
+                <label class="block text-xs text-slate-500 mb-1">Email</label>
+                <input type="email" value="${(u.email||'').replace(/"/g,'&quot;')}" readonly class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 text-sm text-slate-500">
+                <label class="block text-xs text-slate-500 mb-1">Phone</label>
+                <input id="settingsPhone" type="text" value="${(u.phone||'').replace(/"/g,'&quot;')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4 text-sm">
+                <button onclick="saveAccountSettings()" class="w-full bg-brandPrimary py-3.5 rounded-xl text-white font-bold mb-3">Save Changes</button>
+                <div class="border-t border-slate-200 dark:border-slate-800 pt-4 mt-1">
+                  <p class="text-xs font-bold text-slate-500 mb-2">Change password</p>
+                  <input id="settingsCurPass" type="password" placeholder="Current password" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-2 text-sm">
+                  <input id="settingsNewPass" type="password" placeholder="New password (min 6)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 text-sm">
+                  <button onclick="saveAccountPassword()" class="w-full border border-brandPrimary text-brandPrimary py-3 rounded-xl font-bold text-sm">Update password</button>
+                </div>`;
+            openModal();
+        }
+        async function saveAccountSettings() {
+            const u = window.AcctSuite.getCurrentUser();
+            const name = (document.getElementById('settingsName').value || '').trim();
+            const phone = (document.getElementById('settingsPhone').value || '').trim();
+            if (!name) { alert('Name is required'); return; }
+            try {
+                if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.usingApi()) {
+                    await window.AcctSuiteApi.updateProfile({ name, phone });
+                    await window.AcctSuiteApiSync.hydrateFromApi();
+                } else {
+                    u.name = name;
+                    u.phone = phone;
+                    window.AcctSuite.persistUser(u);
+                }
+                window.AcctSuiteUI.refreshAll();
+                closeModal();
+            } catch (e) {
+                alert(e.message || 'Could not save');
+            }
+        }
+        async function saveAccountPassword() {
+            const cur = document.getElementById('settingsCurPass').value || '';
+            const next = document.getElementById('settingsNewPass').value || '';
+            if (next.length < 6) { alert('New password must be at least 6 characters'); return; }
+            try {
+                if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.usingApi()) {
+                    await window.AcctSuiteApi.changePassword({ currentPassword: cur, newPassword: next });
+                    alert('Password updated. A confirmation email was sent.');
+                    closeModal();
+                } else {
+                    alert('Password change requires the live backend.');
+                }
+            } catch (e) {
+                alert(e.message || 'Could not update password');
+            }
+        }
+        function openSupportCenter() {
+            const c = (window.AcctSuite && window.AcctSuite.CONFIG) || {};
+            const em = c.supportEmail || 'support@acctsuite.com';
+            const tg = 'https://t.me/acctsuite_support';
+            const tgHandle = '@acctsuite_support';
+            const gmailLogo = `<svg viewBox="0 0 24 24" class="w-8 h-8" aria-hidden="true"><path fill="#EA4335" d="M12 12.713L1.5 5.25V18c0 .825.675 1.5 1.5 1.5h4.5V11.1L12 15.087 16.5 11.1V19.5H21c.825 0 1.5-.675 1.5-1.5V5.25L12 12.713z"/><path fill="#34A853" d="M21 4.5h-1.5L12 10.087 4.5 4.5H3c-.45 0-.862.2-1.125.525L12 12.713l10.125-7.688A1.49 1.49 0 0 0 21 4.5z"/><path fill="#4285F4" d="M3 4.5v14.25c0 .225.05.437.15.637L7.5 11.1V4.5H3z"/><path fill="#FBBC05" d="M21 4.5h-4.5v6.6l4.35 8.287c.1-.2.15-.412.15-.637V4.5z"/></svg>`;
+            const tgLogo = `<span class="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center text-white text-xl"><i class="fa-brands fa-telegram"></i></span>`;
+            const chatLogo = `<span class="w-10 h-10 rounded-full bg-brandPrimary flex items-center justify-center text-white text-xl"><i class="fa-solid fa-comments"></i></span>`;
+            document.getElementById('modalBody').innerHTML = `
+              <div class="space-y-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-bold text-xl tracking-tight">Support Center</h3>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">Need help? Our team is ready to assist you. Choose your preferred channel below.</p>
+                  </div>
+                  <div class="shrink-0 w-14 h-14 rounded-2xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-headset"></i>
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-brandPrimary/40 bg-brandPrimary/10 px-3 py-2.5 text-[11px] text-slate-300 flex gap-2 items-start">
+                  <i class="fa-solid fa-circle-info text-brandPrimary mt-0.5 shrink-0"></i>
+                  <span>Please use one channel only per issue. Do not send the same message across Chat Support, Telegram, and email simultaneously.</span>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <p class="text-sm font-bold">Contact channels</p>
+                    <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">● Fast response usually in minutes</span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="closeModal(); openSupportChat();" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
+                      ${chatLogo}
+                      <p class="text-xs font-bold mt-2">Chat Support</p>
+                      <p class="text-[9px] text-emerald-500 mt-0.5">Available</p>
+                    </button>
+                    <a href="${tg}" target="_blank" rel="noopener" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
+                      ${tgLogo}
+                      <p class="text-xs font-bold mt-2">Telegram</p>
+                      <p class="text-[9px] text-slate-400 mt-0.5">${tgHandle}</p>
+                    </a>
+                    <a href="mailto:${em}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex flex-col items-center text-center hover:border-brandPrimary transition">
+                      <span class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden">${gmailLogo}</span>
+                      <p class="text-xs font-bold mt-2">Email</p>
+                      <p class="text-[9px] text-slate-400 mt-0.5 truncate max-w-full px-0.5">${em}</p>
+                    </a>
+                  </div>
+                </div>
+
+                <div>
+                  <p class="text-sm font-bold mb-2">Before you reach out</p>
+                  <div class="space-y-2">
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex gap-3 items-start">
+                      <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-regular fa-clock"></i></span>
+                      <div>
+                        <p class="text-xs font-bold">Response Time</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Our team typically replies within a few minutes to a few hours depending on volume.</p>
+                      </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex gap-3 items-start">
+                      <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-solid fa-pen"></i></span>
+                      <div>
+                        <p class="text-xs font-bold">What to Include</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Share your registered email, order details, and a clear description of your issue to help us resolve it faster.</p>
+                      </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex gap-3 items-start">
+                      <span class="w-9 h-9 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center shrink-0"><i class="fa-solid fa-shield-halved"></i></span>
+                      <div>
+                        <p class="text-xs font-bold">Safe &amp; Secure</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Never share your password with anyone, including our support team. We will never ask for it.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>`;
+            openModal();
+        }
+        function openBecomeVerified() {
+            if (window.AcctSuiteKyc) window.AcctSuiteKyc.open();
+            else alert('Verification is loading — try again in a moment.');
+        }
+        function openMerchantStore(name) { alert('Merchant store: ' + name); }
+        function toggleDarkMode() {
+            const isDark = window.AcctSuiteTheme ? window.AcctSuiteTheme.toggle() : document.documentElement.classList.toggle('dark');
+            const headerIcon = document.getElementById('headerThemeIcon');
+            const thumb = document.getElementById('themeThumb');
+            const text = document.getElementById('themeText');
+            const icon = document.getElementById('themeIcon');
+            const switchBg = document.getElementById('themeToggleSwitch');
+            if (isDark) {
+                if (headerIcon) headerIcon.className = 'fa-solid fa-sun text-lg text-amber-400';
+                if (thumb) thumb.style.transform = 'translateX(16px)';
+                if (text) text.innerText = 'Light Mode';
+                if (icon) icon.className = 'fa-solid fa-sun w-5 text-yellow-500';
+                if (switchBg) switchBg.className = 'w-10 h-6 bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                if (headerIcon) headerIcon.className = 'fa-solid fa-moon text-lg';
+                if (thumb) thumb.style.transform = 'translateX(0px)';
+                if (text) text.innerText = 'Dark Mode';
+                if (icon) icon.className = 'fa-solid fa-moon w-5 text-slate-400';
+                if (switchBg) switchBg.className = 'w-10 h-6 bg-slate-300 rounded-full relative cursor-pointer transition shadow-inner';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        function applyThemeFromStorage() {
+            if (window.AcctSuiteTheme) {
+                window.AcctSuiteTheme.apply();
+            } else {
+                const dark = localStorage.getItem('theme') === 'dark';
+                document.documentElement.classList.toggle('dark', dark);
+            }
+            const dark = window.AcctSuiteTheme ? window.AcctSuiteTheme.isDark() : localStorage.getItem('theme') === 'dark';
+            const headerIcon = document.getElementById('headerThemeIcon');
+            const thumb = document.getElementById('themeThumb');
+            const text = document.getElementById('themeText');
+            const icon = document.getElementById('themeIcon');
+            const switchBg = document.getElementById('themeToggleSwitch');
+            if (headerIcon) {
+                headerIcon.className = dark ? 'fa-solid fa-sun text-lg text-amber-400' : 'fa-solid fa-moon text-lg';
+            }
+            if (thumb) thumb.style.transform = dark ? 'translateX(16px)' : 'translateX(0px)';
+            if (text) text.innerText = dark ? 'Light Mode' : 'Dark Mode';
+            if (icon) icon.className = dark ? 'fa-solid fa-sun w-5 text-yellow-500' : 'fa-solid fa-moon w-5 text-slate-400';
+            if (switchBg) {
+                switchBg.className = dark
+                    ? 'w-10 h-6 bg-brandPrimary rounded-full relative cursor-pointer transition shadow-inner'
+                    : 'w-10 h-6 bg-slate-300 rounded-full relative cursor-pointer transition shadow-inner';
+            }
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            applyThemeFromStorage();
+            restoreDashTab();
+        });
+        window.addEventListener('hashchange', () => {
+            try {
+                const tab = (location.hash || '').replace(/^#/, '').split(/[?&]/)[0];
+                if (DASH_TABS.includes(tab)) switchTab(tab);
+                if (typeof window.handleBuyDeepLink === 'function') window.handleBuyDeepLink();
+            } catch (e) {}
+        });
+        window.addEventListener('pageshow', () => {
+            try { restoreDashTab(); } catch (e) {}
+        });
+        async function handleLogout() {
+            const ok = window.AcctSuiteConfirm
+                ? await window.AcctSuiteConfirm({
+                    title: 'Log out',
+                    message: 'Are you sure you want to log out?',
+                    okText: 'Log out',
+                    icon: 'fa-right-from-bracket',
+                    danger: true,
+                })
+                : confirm('Are you sure you want to log out?');
+            if (!ok) return;
+            const finish = () => {
+                try {
+                    sessionStorage.removeItem(DASH_TAB_KEY);
+                    localStorage.removeItem(DASH_TAB_KEY);
+                } catch (e) {}
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('acctsuite_session');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userPhone');
+                localStorage.removeItem('walletBalance');
+                localStorage.removeItem('acctsuite_backend');
+                localStorage.removeItem('acctsuite_api_token');
+                window.location.href = '/index.html';
+            };
+            if (window.AcctSuiteApi) {
+                window.AcctSuiteApi.logout().finally(finish);
+            } else {
+                finish();
+            }
+        }
+    </script>
+</body>
+</html>

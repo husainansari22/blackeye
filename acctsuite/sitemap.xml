@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://acctsuite.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://acctsuite.com/user/login</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://acctsuite.com/login</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://acctsuite.com/signup</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://acctsuite.com/register</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://acctsuite.com/browse</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://acctsuite.com/marketplace</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://acctsuite.com/sell</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://acctsuite.com/guidelines</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://acctsuite.com/company</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://acctsuite.com/privacy</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://acctsuite.com/terms</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+</urlset>
