@@ -4,4 +4,3 @@ api/*.local.php
 .env.*
 node_modules/
 npm-debug.log*
-config.php

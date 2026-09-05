@@ -241,8 +241,22 @@
   function productLogoFor(item) {
     const Cat = window.AcctSuiteCatalog;
     if (!Cat) return '';
-    const hit = Cat.findProduct(item.platform || item.category || item.title);
-    return hit ? hit.logo : Cat.logoUrl({ domain: '' });
+    const hit = Cat.findProduct(item.platform || item.category || item.title) || {
+      name: item.platform || item.category || item.title || '',
+      domain: item.domain || '',
+    };
+    return Cat.logoUrl(hit);
+  }
+
+  function productLogoMarkFor(item, className) {
+    const Cat = window.AcctSuiteCatalog;
+    if (!Cat) return '';
+    const hit = Cat.findProduct(item.platform || item.category || item.title) || {
+      name: item.platform || item.category || item.title || '',
+      domain: item.domain || '',
+    };
+    if (typeof Cat.logoMarkHtml === 'function') return Cat.logoMarkHtml(hit, className || 'av-prod-logo');
+    return `<img src="${escapeAttr(Cat.logoUrl(hit))}" alt="" class="${className || 'av-prod-logo'}" loading="lazy" onerror="this.style.opacity=.3">`;
   }
 
   function productGroupFor(item) {
@@ -274,7 +288,7 @@
     if (compact) {
       return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 w-40 shrink-0 relative" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
         <div class="flex items-center gap-1.5 mb-1.5">
-          <img src="${escapeAttr(logo)}" alt="" class="av-prod-logo" loading="lazy" onerror="this.style.opacity=.3">
+          ${productLogoMarkFor(item, 'av-prod-logo')}
           <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
@@ -288,7 +302,7 @@
       </div>`;
     }
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      <img src="${escapeAttr(logo)}" alt="" class="w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0" loading="lazy" onerror="this.style.opacity=.3">
+      ${productLogoMarkFor(item, 'w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0')}
       <div class="min-w-0 flex-1">
         <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
         <p class="text-[10px] text-slate-500 truncate flex items-center gap-0.5">By <span class="inline-flex items-center min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span> · ${escapeHtml(cat)}</p>
@@ -308,7 +322,7 @@
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-stretch" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      <img src="${escapeAttr(logo)}" alt="" class="w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center" loading="lazy" onerror="this.style.opacity=.3">
+      ${productLogoMarkFor(item, 'w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center')}
       <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
         <h4 class="font-bold text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
         ${item.sellerRating ? `<div>${starsRowHtml(item.sellerRating, item.sellerReviews)}</div>` : ''}
@@ -2137,7 +2151,7 @@
     return `
       <div class="av-listing-detail" data-listing-id="${escapeAttr(item.id)}">
         <div class="av-listing-detail__head">
-          <img src="${escapeAttr(logo)}" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">
+          ${productLogoMarkFor(item, 'av-listing-detail__logo')}
           <div class="min-w-0 flex-1">
             <div class="av-listing-detail__title-row">
               <h3 class="av-listing-detail__title">${escapeHtml(item.title)}</h3>

@@ -188,15 +188,40 @@
 
 
   function productLogoSlug(name, domain) {
-    var base = String(domain || name || '').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+    var base = String(domain || name || '').trim().toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .split('/')[0];
     if (base.indexOf('.') !== -1) base = base.split('.')[0];
-    base = base.replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    base = base.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    // map common aliases to on-disk filenames
+    var aliases = {
+      'x': 'twitter',
+      'twitter-com': 'twitter',
+      'fb': 'facebook',
+      'ig': 'instagram',
+      'yt': 'youtube',
+      'wa': 'whatsapp',
+      'tg': 'telegram',
+      'express-vpn': 'expressvpn',
+      'nord-vpn': 'nordvpn',
+      'pia': 'privateinternetaccess',
+      'private-internet-access': 'privateinternetaccess',
+      'proton-mail': 'protonmail',
+      'outlook-com': 'outlook',
+      'hotmail-com': 'hotmail',
+      'yahoo-com': 'yahoo',
+      'gmail-com': 'gmail',
+    };
+    if (aliases[base]) base = aliases[base];
     return base || 'product';
   }
+
   function localLogoUrl(product) {
     if (!product) return '';
-    return '/img/products/' + productLogoSlug(product.name, product.domain) + '.png?v=20260905full1';
+    return '/img/products/' + productLogoSlug(product.name, product.domain) + '.png?v=20260905full2';
   }
+
   function letterLogoDataUri(name) {
     var letter = String(name || '?').trim().charAt(0).toUpperCase() || '?';
     return (
@@ -209,46 +234,43 @@
     );
   }
 
+  function googleLogoUrl(product) {
+    var domain = String((product && product.domain) || '').trim();
+    if (!domain) return '';
+    return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128';
+  }
+
   function logoUrl(product) {
     if (!product) return letterLogoDataUri('?');
-    if (product.logo && String(product.logo).indexOf('/img/products/') === -1) {
-      // keep explicit remote/custom logos; local path is rebuilt below for cache-bust
-      if (/^https?:\/\//i.test(String(product.logo)) || String(product.logo).indexOf('data:') === 0) {
-        return product.logo;
-      }
-    }
+    if (product.logo && /^https?:\/\//i.test(String(product.logo))) return product.logo;
+    if (product.logo && String(product.logo).indexOf('data:') === 0) return product.logo;
     var local = localLogoUrl(product);
-    var domain = String(product.domain || '').trim();
-    var google = domain
-      ? 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128'
-      : '';
-    // Prefer local product pack; callers with onerror can fall back.
+    var google = googleLogoUrl(product);
     return local || google || letterLogoDataUri(product.name || '?');
   }
 
   function logoMarkHtml(product, className) {
     var name = (product && product.name) || '?';
-    var domain = String((product && product.domain) || '').trim();
     var cls = className || 'av-prod-logo';
     var local = localLogoUrl(product);
-    var google = domain
-      ? 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128'
-      : '';
+    var google = googleLogoUrl(product);
     var letter = letterLogoDataUri(name);
     var src = local || google || letter;
-    var fb = local ? google || letter : letter;
+    var fb1 = local ? (google || letter) : (google ? letter : letter);
+    var fb2 = letter;
     return (
       '<img class="' +
       cls +
       '" src="' +
       src +
-      '" alt="" width="48" height="48" decoding="async" loading="lazy" data-fb="' +
-      String(fb).replace(/"/g, '&quot;') +
-      '" data-letter="' +
-      letter.replace(/"/g, '&quot;') +
-      '" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;return;}var L=this.getAttribute(\'data-letter\');if(L){this.onerror=null;this.src=L;}">'
+      '" alt="" width="48" height="48" decoding="async" loading="lazy" data-fb1="' +
+      String(fb1).replace(/"/g, '&quot;') +
+      '" data-fb2="' +
+      String(fb2).replace(/"/g, '&quot;') +
+      '" onerror="var i=this,s=i.getAttribute(\'data-fb1\');if(s){i.setAttribute(\'data-fb1\',\'\');i.src=s;}else{s=i.getAttribute(\'data-fb2\');if(s){i.setAttribute(\'data-fb2\',\'\');i.src=s;}else{i.onerror=null;i.style.opacity=.35;}}">'
     );
   }
+
 
   function allProducts() {
     var out = [];
@@ -349,6 +371,7 @@
     NO_PREVIEW_GROUP_IDS: NO_PREVIEW_GROUP_IDS,
     logoUrl: logoUrl,
     logoMarkHtml: logoMarkHtml,
+    localLogoUrl: localLogoUrl,
     allProducts: allProducts,
     findProduct: findProduct,
     searchProducts: searchProducts,

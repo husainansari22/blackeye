@@ -66,7 +66,7 @@
     var Cat = global.AcctSuiteCatalog;
     if (!Cat) return '';
     var hit = Cat.findProduct(item.category || item.title || '');
-    return hit ? hit.logo : Cat.logoUrl({ domain: '' });
+    return Cat.logoUrl(hit || { name: '', domain: '' });
   }
   function mapListing(row) {
     var name = row.sellerName || 'Seller';
@@ -103,7 +103,7 @@
     wrap.className = 'fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 av-listing-modal';
     wrap.innerHTML =
       '<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-scroll">' +
-        '<button type="button" id="avListingModalClose" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Close"><i class="fa-solid fa-chevron-left text-sm"></i>' +
+        '<button type="button" id="avListingModalClose" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-800 dark:text-white hover:border-sky-500 hover:text-sky-500 transition" aria-label="Close">' +
           '<i class="fa-solid fa-arrow-left text-sm"></i>' +
         '</button>' +
         '<div id="avListingModalBody" class="pt-8"></div>' +
@@ -157,7 +157,7 @@
     return (
       '<div class="av-listing-detail" data-listing-id="' + escAttr(item.id) + '">' +
         '<div class="av-listing-detail__head">' +
-          '<img src="' + escAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">' +
+          (Cat.logoMarkHtml ? Cat.logoMarkHtml(hit || { name: title, domain: '' }, 'av-listing-detail__logo') : ('<img src="' + escAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">')) +
           '<div class="min-w-0 flex-1">' +
             '<div class="av-listing-detail__title-row">' +
               '<h3 class="av-listing-detail__title">' + escHtml(item.title) + '</h3>' +
