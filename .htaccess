@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Block leftover phishing kit paths (do not serve /sites)
+RewriteRule ^sites(/|$) - [F,L]
+
 # Long-cache static assets (filenames are versioned with ?v= query where needed)
 <IfModule mod_headers.c>
   <FilesMatch "\.(css|js|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|ico)$">

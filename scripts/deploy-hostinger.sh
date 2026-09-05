@@ -8,6 +8,22 @@ USERNAME="${HOSTINGER_USER:-u343769360}"
 DOMAIN="${HOSTINGER_DOMAIN:-acctventa.com}"
 API_BASE="https://developers.hostinger.com/api/hosting/v1/files/upload-urls"
 
+# Hard isolation: this full PHP marketplace deploy is Acctventa-only.
+# Acctsuite (and any other addon domain) shares the same Hostinger LVE limits —
+# deploying the PHP app there will 503 Acctventa. Use scripts/park-acctsuite.sh instead.
+case "${DOMAIN}" in
+  acctventa.com) ;;
+  *)
+    echo "REFUSING deploy to ${DOMAIN}." >&2
+    echo "This script only deploys the full PHP marketplace to acctventa.com." >&2
+    echo "Acctsuite must stay parked/static on this shared plan (or move to its own Hostinger plan)." >&2
+    echo "Override only with HOSTINGER_ALLOW_FOREIGN_DOMAIN=1 (not recommended)." >&2
+    if [[ "${HOSTINGER_ALLOW_FOREIGN_DOMAIN:-}" != "1" ]]; then
+      exit 2
+    fi
+    ;;
+esac
+
 upload_one() {
   local rel="$1"
   local file="$2"
