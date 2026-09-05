@@ -9,11 +9,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png" type="image/png" sizes="96x96">
-    <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
-    <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
-    <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png">
-    <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
+    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png?v=bagA4" type="image/png" sizes="96x96">
+    <link rel="icon" href="https://acctsuite.com/favicon-48x48.png?v=bagA4" type="image/png" sizes="48x48">
+    <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico?v=bagA4">
+    <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png?v=bagA4">
+    <link rel="manifest" href="https://acctsuite.com/site.webmanifest?v=bagA4">
     <meta name="theme-color" content="#8B5CF6">
     <link rel="stylesheet" href="/css/tailwind.css?v=20260905fix1">
     
@@ -139,7 +139,7 @@
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-0 min-w-0">
-                    <img src="/img/brand/logo-mark-violet.svg?v=20260905fix1" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
+                    <img src="/img/brand/logo-mark-violet.svg?v=bagA4" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
                 </a>
             </div>
             <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
@@ -332,19 +332,19 @@
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-violet-500 via-brandPrimary to-violet-700 p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
-                <div class="absolute right-3 top-3 opacity-30 text-6xl"><i class="fa-solid fa-wallet"></i></div>
-                <div class="relative z-10">
-                    <p class="text-xs text-violet-100 font-medium">Account balance</p>
+            <div class="bg-brandPrimary p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden" style="background:linear-gradient(135deg,#8B5CF6 0%,#7C3AED 55%,#6D28D9 100%);">
+                <div class="absolute right-3 top-3 opacity-25 text-6xl text-white"><i class="fa-solid fa-wallet"></i></div>
+                <div class="relative z-10 text-white">
+                    <p class="text-xs font-medium text-white/90">Account balance</p>
                     <div class="flex items-center gap-2 mt-1">
-                        <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight">$0.00</h3>
-                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-violet-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
+                        <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight text-white">$0.00</h3>
+                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-white/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
                     </div>
-                    <p class="text-[11px] text-violet-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
+                    <p class="text-[11px] text-white/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
                 </div>
                 <div class="flex gap-2 relative z-10">
                     <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-2.5 rounded-full text-xs shadow-md">Deposit</button>
-                    <button onclick="openWalletModal('withdraw')" class="flex-1 bg-white/20 text-white font-bold py-2.5 rounded-full text-xs border border-white/35">Withdraw</button>
+                    <button onclick="openWalletModal('withdraw')" class="flex-1 bg-white/15 text-white font-bold py-2.5 rounded-full text-xs border border-white/40">Withdraw</button>
                 </div>
             </div>
 

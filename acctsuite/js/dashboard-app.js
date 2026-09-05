@@ -2130,7 +2130,7 @@
     const salesLabel = formatSalesLabel(item.sellerCompletedSales);
     const added = formatTimeAgo(item.createdAt);
     const isAuto = item.releaseType !== 'manual';
-    const storeKey = escapeAttr(item.sellerMerchantSlug || item.sellerId || item.sellerEmail || '');
+    const storeKey = escapeAttr(item.sellerMerchantSlug || item.sellerSlug || item.merchantSlug || (item.sellerId != null ? String(item.sellerId) : '') || item.sellerEmail || '');
 
     const accountRows = [];
     for (let i = 0; i < stock; i++) {
@@ -2399,6 +2399,7 @@
       return;
     }
     if (typeof closeModal === 'function') closeModal();
+    // Prefer merchant slug; emails are supported by sellers.storefront fallback.
     window.location.href = '/seller/' + encodeURIComponent(key);
   };
 

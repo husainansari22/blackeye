@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Choose a new password · AcctSuite</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="/favicon.ico" sizes="48x48">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" href="/favicon.svg?v=bagA3" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico?v=bagA3" sizes="48x48">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=bagA3">
   <meta name="robots" content="noindex,nofollow">
     <link rel="stylesheet" href="/css/tailwind.css?v=20260905fix1">
     
@@ -19,7 +19,7 @@
   <div class="w-full max-w-md">
     <div class="mb-8 text-center">
       <div class="inline-flex items-center gap-2 text-2xl font-extrabold tracking-tight">
-        <span class="text-skyBrand">●</span> acctsuite
+        <span class="text-brandPrimary">●</span> cctsuite
       </div>
       <p class="text-sm text-slate-400 mt-2">Secure password reset</p>
     </div>
@@ -33,24 +33,24 @@
           <label class="block text-xs text-slate-300 mb-1.5">New password</label>
           <div class="relative">
             <input id="np" type="password" minlength="6" required placeholder="At least 6 characters"
-              class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-sm focus:outline-none focus:border-skyBrand">
+              class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-sm focus:outline-none focus:border-brandPrimary">
             <i class="fa-regular fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer" onclick="toggle('np', this)"></i>
           </div>
         </div>
         <div>
           <label class="block text-xs text-slate-300 mb-1.5">Confirm password</label>
           <input id="np2" type="password" minlength="6" required placeholder="Type it again"
-            class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-skyBrand">
+            class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-brandPrimary">
         </div>
         <p id="err" class="hidden text-xs text-red-400"></p>
-        <button id="btn" type="submit" class="w-full bg-skyBrand hover:bg-skyHover text-white font-bold py-3.5 rounded-xl transition">
+        <button id="btn" type="submit" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl transition">
           Update password
         </button>
       </form>
     </div>
 
     <p class="text-center text-xs text-slate-500 mt-6">
-      <a href="/index.html?page=login" class="text-skyBrand hover:underline">Back to login</a>
+      <a href="/index.html?page=login" class="text-brandPrimary hover:underline">Back to login</a>
     </p>
   </div>
 
@@ -90,12 +90,12 @@
         await window.AcctSuiteApi.resetPassword({ token, password: p1 });
         document.getElementById('card').innerHTML = `
           <div class="text-center py-4">
-            <div class="mx-auto w-14 h-14 rounded-full bg-skyBrand/15 text-skyBrand flex items-center justify-center text-2xl mb-4">
+            <div class="mx-auto w-14 h-14 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center text-2xl mb-4">
               <i class="fa-solid fa-check"></i>
             </div>
             <h2 class="text-lg font-bold mb-2">Password updated</h2>
             <p class="text-xs text-slate-400 mb-5">You’re all set. Sign in with your new password.</p>
-            <a href="/index.html?page=login" class="inline-block w-full bg-skyBrand hover:bg-skyHover text-white font-bold py-3.5 rounded-xl">Go to login</a>
+            <a href="/index.html?page=login" class="inline-block w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl">Go to login</a>
           </div>`;
       } catch (ex) {
         err.textContent = ex.message || 'Could not reset password.';
@@ -110,7 +110,7 @@
         <div class="text-center py-2">
           <h2 class="text-lg font-bold mb-2">Link not found</h2>
           <p class="text-xs text-slate-400 mb-5">Request a fresh reset link from the login page.</p>
-          <a href="/index.html?page=login" class="text-skyBrand text-sm font-semibold">Back to login</a>
+          <a href="/index.html?page=login" class="text-brandPrimary text-sm font-semibold">Back to login</a>
         </div>`;
     }
   </script>

@@ -1742,6 +1742,11 @@ try {
                     $s->execute([(int)$key]);
                     $seller = $s->fetch() ?: null;
                 }
+                if (!$seller && strpos($key, '@') !== false) {
+                    $s = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
+                    $s->execute([strtolower($key)]);
+                    $seller = $s->fetch() ?: null;
+                }
             }
             if (!$seller && $sellerEmail !== '') {
                 $s = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');

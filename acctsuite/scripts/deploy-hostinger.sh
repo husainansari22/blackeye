@@ -64,7 +64,7 @@ upload_one() {
   echo "OK $rel"
 }
 
-BUMP="20260905pr26full"
+BUMP="bagA4fix"
 
 FILES=(
   "site.webmanifest"
@@ -82,6 +82,15 @@ FILES=(
   "wallet-return.html"
   "owner-login-as.html"
   "apple-touch-icon.png"
+  "apple-touch-icon-precomposed.png"
+  "apple-touch-icon-180x180.png"
+  "favicon.ico"
+  "favicon.svg"
+  "favicon-16x16.png"
+  "favicon-32x32.png"
+  "favicon-48.png"
+  "favicon-48x48.png"
+  "favicon-96x96.png"
   "css/tailwind.css"
   "css/admin-app.css"
   "css/profile.css"

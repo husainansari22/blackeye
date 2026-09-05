@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <meta name="description" content="Browse this merchant's listings on AcctSuite.">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.svg?v=bagA4" type="image/svg+xml">
   <meta name="theme-color" content="#8B5CF6">
   <link rel="stylesheet" href="/css/tailwind.css?v=20260905fix1">
   <link rel="stylesheet" href="/css/profile.css?v=20260905fix1">
@@ -25,10 +25,7 @@
 <body class="bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
   <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
     <div class="max-w-lg mx-auto flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2">
-        <img src="/img/brand/icon-192.png" alt="AcctSuite" class="w-8 h-8 rounded-lg">
-        <span class="font-extrabold tracking-tight">acctsuite</span>
-      </a>
+      <a href="/" class="flex items-center gap-0 min-w-0"><img src="/img/brand/logo-mark-violet.svg?v=bagA4" alt="" class="h-8 w-8 shrink-0 -mr-1.5" width="32" height="32" decoding="async"><span class="font-extrabold tracking-tight whitespace-nowrap text-slate-900 dark:text-white">cctsuite</span></a>
       <a href="/dashboard.html#home" class="text-sm font-semibold text-brandPrimary">Marketplace</a>
     </div>
   </header>
@@ -60,9 +57,9 @@
     try {
       let res;
       if (window.AcctSuiteApi && window.AcctSuiteApi.sellerStorefront) {
-        res = await window.AcctSuiteApi.sellerStorefront({ slug: key, id: key, sellerId: key });
+        res = await window.AcctSuiteApi.sellerStorefront({ slug: key, id: key, sellerId: key, sellerEmail: key.includes('@') ? key : '' });
       } else {
-        res = await fetch('/api/index.php?action=sellers.storefront&slug=' + encodeURIComponent(key) + '&id=' + encodeURIComponent(key)).then(r => r.json());
+        res = await fetch('/api/index.php?action=sellers.storefront&slug=' + encodeURIComponent(key) + '&id=' + encodeURIComponent(key) + (key.includes('@') ? ('&sellerEmail=' + encodeURIComponent(key)) : '')).then(r => r.json());
       }
       if (!res.ok) throw new Error(res.error || 'Seller not found');
       const seller = res.seller || {};

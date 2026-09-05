@@ -57,6 +57,76 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
         }
+
+        if ($form === 'staff_passwords') {
+            $msgs = [];
+            $adminPass = (string)($_POST['website_admin_password'] ?? '');
+            $adminPass2 = (string)($_POST['website_admin_password_confirm'] ?? '');
+            if ($adminPass !== '' || $adminPass2 !== '') {
+                if (strlen($adminPass) < 6) {
+                    throw new RuntimeException('Website admin password must be at least 6 characters.');
+                }
+                if ($adminPass !== $adminPass2) {
+                    throw new RuntimeException('Website admin password confirmation does not match.');
+                }
+                admin_password_set($adminPass);
+                $msgs[] = 'Website admin password updated.';
+            }
+            $ownerPass = (string)($_POST['owner_admin_password'] ?? '');
+            $ownerPass2 = (string)($_POST['owner_admin_password_confirm'] ?? '');
+            $ownerCurrent = (string)($_POST['owner_admin_current'] ?? '');
+            if ($ownerPass !== '' || $ownerPass2 !== '') {
+                $cfgNow = app_config();
+                if ($ownerCurrent === '' || !hash_equals((string)($cfgNow['owner_password'] ?? ''), $ownerCurrent)) {
+                    throw new RuntimeException('Current owner password is incorrect.');
+                }
+                if (strlen($ownerPass) < 6) {
+                    throw new RuntimeException('Owner admin password must be at least 6 characters.');
+                }
+                if ($ownerPass !== $ownerPass2) {
+                    throw new RuntimeException('Owner admin password confirmation does not match.');
+                }
+                $cfgPath = __DIR__ . '/../api/config.php';
+                if (!is_file($cfgPath) || !is_writable($cfgPath)) {
+                    throw new RuntimeException('Cannot write api/config.php to update owner password.');
+                }
+                $raw = file_get_contents($cfgPath);
+                if ($raw === false) {
+                    throw new RuntimeException('Failed to read api/config.php.');
+                }
+                $count = 0;
+                $escaped = str_replace(['\\', "'"], ['\\\\', "\\'"], $ownerPass);
+                $updated = preg_replace(
+                    "/'owner_password'\s*=>\s*'[^']*'/",
+                    "'owner_password' => '" . $escaped . "'",
+                    $raw,
+                    1,
+                    $count
+                );
+                if (!$count) {
+                    $escapedDq = str_replace(['\\', '"'], ['\\\\', '\\"'], $ownerPass);
+                    $updated = preg_replace(
+                        '/"owner_password"\s*=>\s*"[^"]*"/',
+                        '"owner_password" => "' . $escapedDq . '"',
+                        $raw,
+                        1,
+                        $count
+                    );
+                }
+                if (!$count || $updated === null) {
+                    throw new RuntimeException('Could not find owner_password in api/config.php.');
+                }
+                if (file_put_contents($cfgPath, $updated) === false) {
+                    throw new RuntimeException('Failed to save owner password to api/config.php.');
+                }
+                $msgs[] = 'Owner admin password updated.';
+            }
+            if (!$msgs) {
+                throw new RuntimeException('Enter a new password for website admin and/or owner admin.');
+            }
+            $flash = implode(' ', $msgs);
+        }
+
         if ($form === 'plan') {
             $id = preg_replace('/[^a-z0-9_]/', '', strtolower((string)$_POST['plan_id']));
             $stmt = db()->prepare('UPDATE plans SET name = ?, price = ?, daily_uploads = ?, approval_label = ? WHERE id = ?');
@@ -2167,6 +2237,33 @@ $tab = $_GET['tab'] ?? 'overview';
             <button class="av-btn av-btn-primary">Save settings</button>
           </div>
         </form>
+
+        <form method="post" class="av-panel" style="margin-top:1rem">
+          <input type="hidden" name="form" value="staff_passwords">
+          <div class="av-panel-head"><span>Admin passwords</span></div>
+          <div class="av-panel-body space-y-4">
+            <p class="text-[11px] av-muted">Change the website admin (<code>/admin</code>) and owner admin (<code>/owner</code>) passwords here. Leave a section blank to keep that password unchanged.</p>
+            <div class="av-admin-card">
+              <h3 class="av-row-title" style="margin-bottom:0.45rem">Website admin (staff login)</h3>
+              <p class="text-[11px] av-muted mb-2">Username is always <strong>admin</strong>. Default was admin123 until changed.</p>
+              <div class="av-form-grid cols-2">
+                <div class="av-field-block"><label>New website admin password</label><input type="password" name="website_admin_password" autocomplete="new-password" placeholder="Leave blank to keep"></div>
+                <div class="av-field-block"><label>Confirm website admin password</label><input type="password" name="website_admin_password_confirm" autocomplete="new-password" placeholder="Repeat new password"></div>
+              </div>
+            </div>
+            <div class="av-admin-card">
+              <h3 class="av-row-title" style="margin-bottom:0.45rem">Owner admin</h3>
+              <p class="text-[11px] av-muted mb-2">Requires your current owner password. Updates <code>api/config.php</code>.</p>
+              <div class="av-form-grid cols-2">
+                <div class="av-field-block" style="grid-column:1/-1"><label>Current owner password</label><input type="password" name="owner_admin_current" autocomplete="current-password" placeholder="Required only if changing owner password"></div>
+                <div class="av-field-block"><label>New owner password</label><input type="password" name="owner_admin_password" autocomplete="new-password" placeholder="Leave blank to keep"></div>
+                <div class="av-field-block"><label>Confirm owner password</label><input type="password" name="owner_admin_password_confirm" autocomplete="new-password" placeholder="Repeat new password"></div>
+              </div>
+            </div>
+            <button class="av-btn av-btn-primary" type="submit">Update admin passwords</button>
+          </div>
+        </form>
+
       </div>
     <?php endif; ?>
 
