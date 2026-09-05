@@ -107,7 +107,7 @@
     wrap.className = 'fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 av-listing-modal';
     wrap.innerHTML =
       '<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-scroll">' +
-        '<button type="button" id="avListingModalClose" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-800 dark:text-white hover:border-sky-500 hover:text-sky-500 transition" aria-label="Close">' +
+        '<button type="button" id="avListingModalClose" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-800 dark:text-white hover:border-violet-500 hover:text-violet-500 transition" aria-label="Close">' +
           '<i class="fa-solid fa-arrow-left text-sm"></i>' +
         '</button>' +
         '<div id="avListingModalBody" class="pt-8"></div>' +

@@ -15,7 +15,7 @@
     salesCommissionRate: 0.22, // AI sales settlement: deducted from every successful sale
     depositFeeRate: 0,
     freeDailyUploadLimit: 5,
-    brandPrimary: '#0ea5e9',
+    brandPrimary: '#8B5CF6',
     supportTelegram: 'https://t.me/acctsuite_support',
     groupTelegram: 'https://t.me/acctsuite',
     supportEmail: 'support@acctsuite.com',

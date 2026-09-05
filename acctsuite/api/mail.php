@@ -14,8 +14,8 @@ function mail_cfg(): array {
         'app_url' => rtrim($c['app_url'] ?? 'https://acctsuite.com', '/'),
         'support_email' => $c['support_email'] ?? 'support@acctsuite.com',
         'support_telegram' => $c['support_telegram'] ?? 'https://t.me/acctsuite',
-        'brand' => '#0ea5e9',
-        'brand_hover' => '#0284c7',
+        'brand' => '#8B5CF6',
+        'brand_hover' => '#7C3AED',
     ];
 }
 
@@ -46,7 +46,7 @@ function email_layout(string $title, string $innerHtml, string $preheader = ''):
       <td align="center">
         <table role="presentation" width="100%" style="max-width:560px;background:#111827;border:1px solid #1f2937;border-radius:20px;overflow:hidden;">
           <tr>
-            <td style="padding:28px 28px 12px;background:linear-gradient(135deg,#0c4a6e 0%,#111827 55%,#111827 100%);">
+            <td style="padding:28px 28px 12px;background:linear-gradient(135deg,#5B21B6 0%,#111827 55%,#111827 100%);">
               <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:#fff;">
                 <span style="color:{$brand};">●</span> {$app}
               </div>
@@ -84,7 +84,7 @@ function email_button(string $label, string $href): string {
     $brand = $m['brand'];
     $label = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
     $href = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
-    return '<a href="' . $href . '" style="display:inline-block;background:' . $brand . ';color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:14px 28px;border-radius:12px;box-shadow:0 8px 20px rgba(14,165,233,0.25);">' . $label . '</a>';
+    return '<a href="' . $href . '" style="display:inline-block;background:' . $brand . ';color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:14px 28px;border-radius:12px;box-shadow:0 8px 20px rgba(139,92,246,0.25);">' . $label . '</a>';
 }
 
 function send_app_mail(string $to, string $subject, string $html, string $textFallback = ''): bool {
@@ -171,24 +171,24 @@ function email_order_notice(string $name, string $title, string $role, string $a
     $dash = mail_cfg()['app_url'] . '/dashboard.html#' . ($role === 'seller' ? 'orders' : 'purchase') . ($txid !== '' ? '?txid=' . rawurlencode($txid) : '');
     if ($role === 'seller') {
         $headline = 'Congratulations — you made a sale!';
-        $body = 'Great news! A buyer just purchased <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>.';
+        $body = 'Great news! A buyer just purchased <strong style="color:#fff;">' . $safeTitle . '</strong> for <strong style="color:#8B5CF6;">$' . $safeAmount . '</strong>.';
         if ($releaseNote !== '') {
             $body .= ' ' . htmlspecialchars($releaseNote, ENT_QUOTES, 'UTF-8');
         }
         $subject = '🎉 Sale confirmed · ' . $title . ' · AcctSuite';
         $extra = '
-      <div style="margin:18px 0;padding:16px;border-radius:14px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.35);">
-        <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.04em;">What to do next</p>
+      <div style="margin:18px 0;padding:16px;border-radius:14px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.35);">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#8B5CF6;text-transform:uppercase;letter-spacing:0.04em;">What to do next</p>
         <p style="margin:0;font-size:13px;line-height:1.55;color:#cbd5e1;">Open the order chat inside AcctSuite only. Never share WhatsApp or Telegram contacts — off-platform messages are blocked. Deliver login details in chat so the buyer can confirm.</p>
       </div>';
         $btn = email_button('View your sale', $dash);
     } else {
         $headline = 'Purchase confirmed';
-        $body = 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#0ea5e9;">$' . $safeAmount . '</strong>) is confirmed. Open <strong style="color:#fff;">My Purchase</strong> to view credentials and chat with the seller.';
+        $body = 'Your order for <strong style="color:#fff;">' . $safeTitle . '</strong> (<strong style="color:#8B5CF6;">$' . $safeAmount . '</strong>) is confirmed. Open <strong style="color:#fff;">My Purchase</strong> to view credentials and chat with the seller.';
         $subject = 'Purchase confirmed · ' . $title . ' · AcctSuite';
         $extra = '
-      <div style="margin:18px 0;padding:16px;border-radius:14px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.35);">
-        <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.04em;">Buyer protection</p>
+      <div style="margin:18px 0;padding:16px;border-radius:14px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.35);">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#8B5CF6;text-transform:uppercase;letter-spacing:0.04em;">Buyer protection</p>
         <p style="margin:0;font-size:13px;line-height:1.55;color:#cbd5e1;">You have <strong style="color:#fff;">60 minutes</strong> to open a dispute if login fails or the seller stops responding. After that, contact Support for warranty review (24h).</p>
       </div>';
         $btn = email_button('Open My Purchase', $dash);
@@ -212,7 +212,7 @@ function email_order_status_update(string $name, string $title, string $statusLa
     $subject = 'Order update · ' . $statusLabel . ' · ' . $title;
     $inner = '
       <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">Order update</h1>
-      <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', your order <strong style="color:#fff;">' . $safeTitle . '</strong> is now <strong style="color:#0ea5e9;">' . $safeStatus . '</strong>.</p>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', your order <strong style="color:#fff;">' . $safeTitle . '</strong> is now <strong style="color:#8B5CF6;">' . $safeStatus . '</strong>.</p>
       ' . ($safeTx !== '' ? '<p style="margin:0 0 12px;font-size:13px;color:#94a3b8;">TXID: <strong style="color:#fff;font-family:monospace;">' . $safeTx . '</strong></p>' : '') . '
       ' . ($safeDetail !== '' ? '<p style="margin:0 0 18px;font-size:13px;line-height:1.55;color:#cbd5e1;">' . $safeDetail . '</p>' : '') . '
       <div style="text-align:center;margin:24px 0;">' . email_button('View order', $dash) . '</div>';

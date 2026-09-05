@@ -3,7 +3,7 @@
  * Theme tokens fix dark-mode contrast (no light text on light cards).
  */
 :root {
-  --av-bg: #eef2f7;
+  --av-bg: #faf8ff;
   --av-surface: #ffffff;
   --av-surface-2: #f8fafc;
   --av-text: #0f172a;
@@ -12,41 +12,41 @@
   --av-chat: #e8eef5;
   --av-bubble-in: #ffffff;
   --av-bubble-in-text: #0f172a;
-  --av-bubble-out: #0ea5e9;
+  --av-bubble-out: #8B5CF6;
   --av-bubble-out-text: #ffffff;
   --av-warn-bg: #fffbeb;
   --av-warn-border: #fde68a;
   --av-warn-text: #92400e;
-  --av-info-bg: #f0f9ff;
-  --av-info-border: #bae6fd;
-  --av-info-text: #0c4a6e;
+  --av-info-bg: #F5F3FF;
+  --av-info-border: #DDD6FE;
+  --av-info-text: #5B21B6;
   --av-ok-bg: #ecfdf5;
   --av-ok-border: #a7f3d0;
   --av-ok-text: #065f46;
   --av-danger: #ef4444;
-  --av-brand: #0ea5e9;
+  --av-brand: #8B5CF6;
   --av-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
 }
 
 html.dark {
   color-scheme: dark;
-  --av-bg: #020617;
-  --av-surface: #0f172a;
-  --av-surface-2: #1e293b;
+  --av-bg: #0b0914;
+  --av-surface: #151122;
+  --av-surface-2: #1e1830;
   --av-text: #f8fafc;
   --av-muted: #94a3b8;
-  --av-border: #334155;
-  --av-chat: #020617;
+  --av-border: #2e2640;
+  --av-chat: #0b0914;
   --av-bubble-in: #1e293b;
   --av-bubble-in-text: #f8fafc;
-  --av-bubble-out: #0ea5e9;
+  --av-bubble-out: #8B5CF6;
   --av-bubble-out-text: #ffffff;
   --av-warn-bg: #422006;
   --av-warn-border: #854d0e;
   --av-warn-text: #fde68a;
-  --av-info-bg: #0c4a6e;
-  --av-info-border: #0369a1;
-  --av-info-text: #e0f2fe;
+  --av-info-bg: #5B21B6;
+  --av-info-border: #6D28D9;
+  --av-info-text: #EDE9FE;
   --av-ok-bg: #064e3b;
   --av-ok-border: #047857;
   --av-ok-text: #a7f3d0;
@@ -686,7 +686,7 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   border-color: var(--av-brand);
   color: #fff !important;
 }
-.av-btn-primary:hover { background: #0284c7; border-color: #0284c7; color: #fff !important; }
+.av-btn-primary:hover { background: #7C3AED; border-color: #7C3AED; color: #fff !important; }
 .av-btn-success {
   background: #059669;
   border-color: #059669;
@@ -1467,7 +1467,7 @@ html.dark .av-app .bg-amber-50\/30 {
   color: var(--av-warn-text) !important;
   border-color: var(--av-warn-border) !important;
 }
-html.dark .av-app .bg-sky-50 {
+html.dark .av-app .bg-violet-50 {
   background: var(--av-info-bg) !important;
   color: var(--av-info-text) !important;
   border-color: var(--av-info-border) !important;
