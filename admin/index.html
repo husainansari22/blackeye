@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en" class="light" id="adminHtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Acctventa Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta name="robots" content="noindex,nofollow">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
+    <script>
+    (function(){try{var t=localStorage.getItem('acctventa_admin_theme')||'light';if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');}}catch(e){}})();
+  </script>
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260822kyc3">
+  <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
+  <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
+  <script src="/js/mobile-fix.js?v=20260822tap1"></script>
+  <script src="/js/ui-toast.js?v=20260821toast2"></script>
+  <script src="/js/acctventa.js?v=20260822adm1"></script>
+  <script src="/js/api-client.js?v=20260822adm1"></script>
+  <script src="/js/staff-alerts.js?v=20260821toast2"></script>
+  <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+  <script src="/js/av-confirm.js?v=20260823confirm1"></script>
+  <style>
+    @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
+    html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  </style>
+</head>
+<body class="av-app min-h-screen font-['Plus_Jakarta_Sans',system-ui,sans-serif]">
+  <!-- LOGIN -->
+  <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-brandPrimary text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
+        <h1 class="text-xl font-bold">Admin Login</h1>
+        <p class="text-xs text-slate-500 mt-1">Manage fees, plans, gateways & reviews</p>
+      </div>
+      <form id="adminLoginForm" action="#" method="post" class="space-y-4">
+        <div>
+          <label class="text-xs text-slate-500" for="adminUser">Username</label>
+          <input id="adminUser" name="username" autocomplete="username" value="admin" class="mt-1 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500" for="adminPass">Password</label>
+          <input id="adminPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" class="mt-1 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
+        </div>
+        <p id="loginError" class="text-xs text-red-500 hidden"></p>
+        <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
+      </form>
+      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. After you change it in Security, the new password is stored on the server.</p>
+      <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashView" class="hidden">
+    <header class="av-topbar">
+      <div class="av-topbar-inner">
+        <div class="av-brand"><span class="av-brand-mark">A</span><span class="title truncate">Acctventa Admin</span></div>
+        <div class="av-top-actions">
+          <button type="button" id="adminThemeBtn" onclick="toggleAdminTheme()" class="av-icon-btn" aria-label="Toggle theme">Dark</button>
+          <a href="/dashboard.html" class="av-link-btn">App</a>
+          <button onclick="doLogout()" class="av-link-btn danger">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="av-shell space-y-4 py-4 av-shell-wide" id="adminShell">
+      <div class="av-panel">
+        <div class="av-panel-body">
+          <p class="text-xs av-muted m-0"><strong class="av-text">Website Admin</strong> — live inbox &amp; reviews. Fees, gateways, KYC, and wallet live in <a href="/owner/" class="underline" style="color:var(--av-brand)">Owner Admin</a>.</p>
+        </div>
+      </div>
+
+      <div class="av-tabs">
+        <button class="av-tab admin-tab av-tab-active" data-tab="support" onclick="showTab('support')">Inbox</button>
+        <button class="av-tab admin-tab" data-tab="chats" onclick="showTab('chats')">Order chats</button>
+        <button class="av-tab admin-tab" data-tab="wallet" onclick="showTab('wallet')">Withdrawals</button>
+        <button class="av-tab admin-tab" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
+        <button class="av-tab admin-tab" data-tab="users" onclick="showTab('users')">Users</button>
+        <button class="av-tab admin-tab" data-tab="security" onclick="showTab('security')">Security</button>
+      </div>
+
+      <!-- SUPPORT CHAT INBOX -->
+      <section id="tab_support" class="admin-panel">
+        <div class="av-inbox">
+          <div class="av-inbox-toolbar">
+            <div>
+              <h2 class="av-inbox-title">Support inbox</h2>
+              <p class="av-inbox-sub">WhatsApp-style queue — search users, unread badges, mobile list ↔ chat.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <div id="adminInboxStats" class="av-inbox-stats"></div>
+              <button onclick="enableAdminNotifications()" id="staffNotifBtn" class="av-icon-btn" type="button">Enable alerts</button>
+            </div>
+          </div>
+          <p id="staffNotifStatus" class="text-[10px] av-muted -mt-1">In-app alerts</p>
+          <div id="staffLoginBox" class="av-warn p-3 space-y-2">
+            <p class="text-xs">Connect with Owner credentials (same as <code>/owner</code>).</p>
+            <div class="grid sm:grid-cols-3 gap-2">
+              <input id="staffUser" placeholder="Owner username" class="av-input px-3 py-2 text-sm" value="owner">
+              <input id="staffPass" type="password" placeholder="Owner password" class="av-input px-3 py-2 text-sm">
+              <button onclick="staffConnect()" class="av-send" type="button">Connect inbox</button>
+            </div>
+            <p id="staffLoginMsg" class="text-xs"></p>
+          </div>
+          <div id="supportInbox" class="hidden av-chat-shell">
+            <div class="av-chat-list">
+              <div class="av-chat-list-head flex justify-between items-center gap-2">
+                <span>Conversations</span>
+                <button onclick="loadSupportThreads()" class="av-icon-btn" type="button">Refresh</button>
+              </div>
+              <div class="av-chat-search">
+                <input id="adminThreadSearch" type="search" placeholder="Search name, email, message…" oninput="renderSupportThreads()" autocomplete="off">
+              </div>
+              <div id="supportThreadList" class="av-thread-scroll"></div>
+            </div>
+            <div class="av-chat-pane">
+              <div id="supportChatHeader" class="av-chat-pane-head"></div>
+              <div id="supportChatMsgs" class="av-chat-msgs"></div>
+              <p id="supportTyping" class="px-3 text-[11px] av-muted h-5 shrink-0"></p>
+              <div class="av-composer">
+                <input type="file" id="adminSupportFile" class="hidden" accept="image/*,.pdf,.txt,.doc,.docx,.zip" onchange="onAdminSupportFile(event)">
+                <button type="button" onclick="document.getElementById('adminSupportFile').click()" class="av-icon-btn" title="Attach">📎</button>
+                <input id="supportReplyInput" type="text" placeholder="Type a reply…" oninput="staffTypingSignal()" onkeydown="if(event.key==='Enter'){staffSendReply();}">
+                <button onclick="staffSendReply()" class="av-send" type="button">Send</button>
+              </div>
+              <p id="adminSupportAttachHint" class="hidden px-3 pb-2 text-[10px] av-muted"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORDER CHATS -->
+      <section id="tab_chats" class="admin-panel hidden">
+        <div class="av-inbox">
+          <div class="av-inbox-toolbar">
+            <div>
+              <h2 class="av-inbox-title">Order chats</h2>
+              <p class="av-inbox-sub">Buyer ↔ seller threads — connect Support inbox first, then browse or search TXID.</p>
+            </div>
+            <div id="adminOrderStats" class="av-inbox-stats"></div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <input id="adminTxSearch" placeholder="TXID / email…" class="av-input px-3 py-2 text-base flex-1 min-w-[180px]">
+            <button onclick="adminSearchTx()" class="av-send" type="button">Search</button>
+            <button onclick="loadAdminOrderChats()" class="av-icon-btn" type="button">Refresh list</button>
+          </div>
+          <div id="adminTxResult" class="text-xs space-y-2"></div>
+          <div id="adminOrderShell" class="av-chat-shell">
+            <div class="av-chat-list">
+              <div class="av-chat-list-head">Threads</div>
+              <div class="av-chat-search">
+                <input id="adminOrderListSearch" type="search" placeholder="Filter threads…" oninput="renderAdminOrderChats()" autocomplete="off">
+              </div>
+              <div id="adminOrderChatList" class="av-thread-scroll"></div>
+            </div>
+            <div class="av-chat-pane">
+              <div id="adminOrderChatHeader" class="av-chat-pane-head"></div>
+              <div id="adminOrderChatMsgs" class="av-chat-msgs"></div>
+              <div id="adminOrderChatActions" class="p-3 space-y-2 hidden" style="border-top:1px solid var(--av-border)">
+                <div id="adminOrderDisputeBox" class="hidden rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] space-y-2">
+                  <p class="font-bold text-amber-700 dark:text-amber-200">Dispute review</p>
+                  <p id="adminOrderDisputeMeta" class="text-slate-600 dark:text-slate-300"></p>
+                  <textarea id="adminOrderDisputeNote" rows="2" class="w-full rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2 text-xs" placeholder="Admin note (optional)"></textarea>
+                  <div class="flex flex-wrap gap-2">
+                    <button type="button" id="adminOrderDisputeRefundBtn" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Refund buyer (resolve)</button>
+                    <button type="button" id="adminOrderDisputeDenyBtn" class="px-3 py-2 rounded-lg bg-slate-700 text-white text-[11px] font-bold">Deny dispute</button>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button id="adminOrderRefundBtn" class="av-send" style="background:#ef4444" type="button">Refund buyer (seller debt OK)</button>
+                  <button id="adminOrderWarrantyBtn" class="px-3 py-2 rounded-lg bg-orange-600 text-white text-[11px] font-bold" type="button">24h warranty · deduct seller + refund</button>
+                </div>
+                <p class="text-[10px] text-slate-500">Use warranty deduct when a buyer proves the account was banned within 24h without their edits. Commission is clawed back from the seller settlement.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- WITHDRAWALS -->
+      <section id="tab_wallet" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Withdrawals</h2>
+              <p class="av-page-sub">Approve to pay via Flutterwave (when enabled in Owner → Gateways), or mark paid manually / reject to refund.</p>
+            </div>
+            <div class="av-page-meta">
+              <button onclick="loadAdminWithdrawals()" class="av-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <div id="adminWithdrawList" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- ADS -->
+      <section id="tab_ads" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Ad reviews</h2>
+              <p class="av-page-sub">Override AI — approve or deny listings manually.</p>
+            </div>
+            <div class="av-page-meta">
+              <button onclick="loadAds()" class="av-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <div id="adsAdminList" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- USERS -->
+      <section id="tab_users" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Users</h2>
+              <p class="av-page-sub">Local browser users (demo mode). Live accounts are in Owner Admin.</p>
+            </div>
+            <div class="av-page-meta">
+              <button onclick="loadUsers()" class="av-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <div class="av-panel"><div id="usersAdminList" class="overflow-x-auto"></div></div>
+        </div>
+      </section>
+
+      <!-- SECURITY -->
+      <section id="tab_security" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Security</h2>
+              <p class="av-page-sub">This password is saved on the server so you can sign in from any phone or browser.</p>
+            </div>
+          </div>
+          <div class="av-panel">
+            <div class="av-panel-body space-y-4 max-w-xl">
+              <div>
+                <label class="text-xs av-muted">Current password</label>
+                <input id="pw_current" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-xs av-muted">New password</label>
+                <input id="pw_new" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-xs av-muted">Confirm new password</label>
+                <input id="pw_confirm" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <button onclick="changePassword()" class="av-btn av-btn-primary" type="button">Update password</button>
+              <p id="pwMsg" class="text-xs av-muted"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const A = () => window.Acctventa;
+
+    function showTab(name) {
+      if (!name) name = 'support';
+      document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
+      const panel = document.getElementById('tab_' + name);
+      if (panel) panel.classList.remove('hidden');
+      else {
+        name = 'support';
+        const fallback = document.getElementById('tab_support');
+        if (fallback) fallback.classList.remove('hidden');
+      }
+      document.querySelectorAll('.admin-tab').forEach(b => {
+        const on = b.dataset.tab === name;
+        b.className = on ? 'av-tab admin-tab av-tab-active' : 'av-tab admin-tab';
+      });
+      try {
+        sessionStorage.setItem('acctventa_admin_tab', name);
+        if (history.replaceState) history.replaceState(null, '', '#' + name);
+      } catch (e) {}
+      if (name === 'ads') loadAds();
+      if (name === 'users') loadUsers();
+      if (name === 'support') initSupportInbox();
+      if (name === 'wallet') loadAdminWithdrawals();
+      if (name === 'chats') {
+        renderAdminOrderHeader(null);
+        loadAdminOrderChats();
+      }
+    }
+    function restoreAdminTab() {
+      let name = '';
+      try { name = (location.hash || '').replace(/^#/, ''); } catch (e) {}
+      if (!name) {
+        try { name = sessionStorage.getItem('acctventa_admin_tab') || ''; } catch (e) {}
+      }
+      if (!document.getElementById('tab_' + name)) name = 'support';
+      showTab(name);
+    }
+
+    function toggleAdminTheme() {
+      const html = document.documentElement;
+      const dark = html.classList.toggle('dark');
+      html.classList.toggle('light', !dark);
+      try { localStorage.setItem('acctventa_admin_theme', dark ? 'dark' : 'light'); } catch (e) {}
+      const btn = document.getElementById('adminThemeBtn');
+      if (btn) btn.textContent = dark ? 'Light' : 'Dark';
+    }
+    (function () {
+      const dark = document.documentElement.classList.contains('dark');
+      const btn = document.getElementById('adminThemeBtn');
+      if (btn) btn.textContent = dark ? 'Light' : 'Dark';
+    })();
+
+    let adminActiveOrder = null;
+    let adminOrderChatsCache = [];
+    const Inbox = () => window.AcctventaStaffInbox;
+    function adminOrderShell() { return document.getElementById('adminOrderShell'); }
+    function renderAdminOrderHeader(o) {
+      const head = document.getElementById('adminOrderChatHeader');
+      if (!head) return;
+      if (!o) {
+        head.innerHTML = Inbox() ? Inbox().headerHtml(null, { showBack: true }) : 'Select a chat';
+      } else {
+        head.innerHTML =
+          '<button type="button" class="av-back-chat" data-inbox-back aria-label="Back">←</button>' +
+          '<span class="av-avatar">' + escHtml(String(o.public_id || 'OR').slice(0, 2).toUpperCase()) + '</span>' +
+          '<div class="head-main"><div class="head-title truncate font-mono">' + escHtml(o.public_id) + ' · ' + escHtml(o.status) + '</div>' +
+          '<div class="head-sub truncate">' + escHtml(o.title) + ' · ' + escHtml(o.buyer_name) + ' ↔ ' + escHtml(o.seller_name) + '</div></div>';
+      }
+      const back = head.querySelector('[data-inbox-back]');
+      if (back) back.onclick = () => {
+        adminActiveOrder = null;
+        if (Inbox()) Inbox().setChatOpen(adminOrderShell(), false);
+        renderAdminOrderHeader(null);
+        document.getElementById('adminOrderChatMsgs').innerHTML = '<div class="av-empty-chat"><i class="fa-regular fa-comments"></i><p>Select a conversation</p></div>';
+        const acts = document.getElementById('adminOrderChatActions');
+        if (acts) acts.classList.add('hidden');
+        renderAdminOrderChats();
+      };
+    }
+    function renderAdminOrderChats() {
+      const box = document.getElementById('adminOrderChatList');
+      const q = (document.getElementById('adminOrderListSearch') || {}).value || '';
+      const stats = document.getElementById('adminOrderStats');
+      if (stats) stats.innerHTML = '<span class="av-chip"><strong>' + adminOrderChatsCache.length + '</strong> threads</span>';
+      if (!box) return;
+      if (!Inbox()) return;
+      const filtered = Inbox().filterThreads(adminOrderChatsCache, q);
+      if (!filtered.length) {
+        box.innerHTML = '<div class="av-empty-chat"><i class="fa-regular fa-comments"></i><p>No order chats match.</p></div>';
+        return;
+      }
+      box.innerHTML = filtered.map(c => {
+        const label = String(c.public_id || 'OR');
+        return '<button type="button" class="av-thread ' + (adminActiveOrder === c.id ? 'is-active' : '') + '" data-order-id="' + escHtml(c.id) + '">' +
+          '<span class="av-avatar">' + escHtml(label.slice(0, 2).toUpperCase()) + '</span>' +
+          '<span class="mid min-w-0"><p class="name truncate font-mono">' + escHtml(c.public_id) + '</p>' +
+          '<p class="meta truncate">' + escHtml(c.title || '') + ' · ' + escHtml(c.status || '') + '</p>' +
+          '<p class="preview">' + escHtml(c.buyer_name) + ' ↔ ' + escHtml(c.seller_name) + (c.last_body ? ' · ' + escHtml(c.last_body) : '') + '</p></span>' +
+          '<span class="side"><span class="time">' + escHtml(Inbox().relativeTime(c.last_message_at || c.updated_at || c.created_at)) + '</span></span></button>';
+      }).join('');
+      box.querySelectorAll('[data-order-id]').forEach(btn => {
+        btn.addEventListener('click', () => openAdminOrderChat(Number(btn.getAttribute('data-order-id'))));
+      });
+    }
+    async function loadAdminOrderChats() {
+      const Api = window.AcctventaApi;
+      if (!Api || !Api.getStaffToken()) {
+        document.getElementById('adminOrderChatList').innerHTML = '<div class="av-empty-chat"><p>Connect Support inbox with Owner credentials first.</p></div>';
+        return;
+      }
+      try {
+        const res = await Api.staffOrderChats();
+        adminOrderChatsCache = res.chats || [];
+        renderAdminOrderChats();
+      } catch (e) {
+        document.getElementById('adminOrderChatList').innerHTML = '<p class="p-3 text-xs text-red-500">' + escHtml(e.message) + '</p>';
+      }
+    }
+    async function openAdminOrderChat(id) {
+      adminActiveOrder = id;
+      if (Inbox()) Inbox().setChatOpen(adminOrderShell(), true);
+      const Api = window.AcctventaApi;
+      const res = await Api.staffOrderGet({ orderId: id });
+      const o = res.order || {};
+      renderAdminOrderHeader(o);
+      const msgs = res.messages || [];
+      const box = document.getElementById('adminOrderChatMsgs');
+      box.innerHTML = msgs.length
+        ? msgs.map(m => `<div class="av-bubble av-bubble-in"><p class="who">${escHtml(m.fromName)}</p><p class="body">${escHtml(m.text || m.body || '')}</p>${renderAttachHtml(m)}</div>`).join('')
+        : '<div class="av-empty-chat"><i class="fa-regular fa-comment-dots"></i><p>No messages</p></div>';
+      box.scrollTop = box.scrollHeight;
+      const actions = document.getElementById('adminOrderChatActions');
+      if (actions) actions.classList.toggle('hidden', o.status === 'cancelled');
+      const btn = document.getElementById('adminOrderRefundBtn');
+      if (btn) {
+        btn.onclick = async () => {
+          if (!(await AcctventaConfirm({ title: 'Refund order', message: 'Refund buyer and deduct seller (negative OK)?', okText: 'Refund buyer', icon: 'fa-rotate-left', danger: true }))) return;
+          try {
+            const r = await Api.staffOrderRefund({ orderId: id });
+            alert('Refunded. Seller balance $' + Number(r.sellerBalance).toFixed(2));
+            openAdminOrderChat(id);
+          } catch (e) { alert(e.message); }
+        };
+      }
+      const warrantyBtn = document.getElementById('adminOrderWarrantyBtn');
+      if (warrantyBtn) {
+        warrantyBtn.onclick = async () => {
+          if (!(await AcctventaConfirm({ title: 'Warranty refund', message: '24h warranty refund: deduct seller (incl. commission clawback) and refund buyer full price?', okText: 'Process refund', icon: 'fa-shield-halved', danger: true }))) return;
+          try {
+            await Api.staffDeductRefund({ orderId: id, note: 'Admin warranty replacement' });
+            alert('Warranty refund completed.');
+            openAdminOrderChat(id);
+          } catch (e) { alert(e.message); }
+        };
+      }
+      (async () => {
+        const dbox = document.getElementById('adminOrderDisputeBox');
+        const meta = document.getElementById('adminOrderDisputeMeta');
+        if (!dbox || !meta) return;
+        try {
+          const dres = await Api.staffDisputesList({ status: 'open' });
+          const under = await Api.staffDisputesList({ status: 'under_review' });
+          const all = [...(dres.disputes || []), ...(under.disputes || [])];
+          const d = all.find(x => Number(x.order_id || x.orderId) === Number(id));
+          if (!d) { dbox.classList.add('hidden'); return; }
+          dbox.classList.remove('hidden');
+          meta.textContent = '#' + d.id + ' · ' + (d.status || '') + ' · ' + (d.reason || 'No reason') + ' · buyer ' + (d.buyer_name || d.buyerName || '');
+          const noteEl = document.getElementById('adminOrderDisputeNote');
+          document.getElementById('adminOrderDisputeRefundBtn').onclick = async () => {
+            if (!(await AcctventaConfirm({ title: 'Resolve dispute', message: 'Resolve dispute with refund to buyer?', okText: 'Refund buyer', icon: 'fa-gavel', danger: true }))) return;
+            try {
+              await Api.staffDisputeResolve({ disputeId: d.id, decision: 'refund_buyer', note: (noteEl && noteEl.value) || '' });
+              alert('Dispute resolved — buyer refunded.');
+              openAdminOrderChat(id);
+            } catch (e) { alert(e.message); }
+          };
+          document.getElementById('adminOrderDisputeDenyBtn').onclick = async () => {
+            if (!(await AcctventaConfirm({ title: 'Deny dispute', message: 'Deny this dispute?', okText: 'Deny dispute', icon: 'fa-ban', danger: true }))) return;
+            try {
+              await Api.staffDisputeResolve({ disputeId: d.id, decision: 'deny', note: (noteEl && noteEl.value) || '' });
+              alert('Dispute denied.');
+              openAdminOrderChat(id);
+            } catch (e) { alert(e.message); }
+          };
+        } catch (e) { dbox.classList.add('hidden'); }
+      })();
+      renderAdminOrderChats();
+    }
+    async function adminSearchTx() {
+      const q = (document.getElementById('adminTxSearch').value || '').trim();
+      const box = document.getElementById('adminTxResult');
+      if (!q) return;
+      try {
+        const res = await window.AcctventaApi.staffOrdersSearch(q);
+        const rows = res.orders || [];
+        box.innerHTML = rows.length
+          ? rows.map(o => `<button type="button" onclick="openAdminOrderChat(${o.id})" class="block w-full text-left border dark:border-slate-700 rounded-lg p-2">
+              <span class="font-mono font-bold">${escHtml(o.public_id)}</span> · ${escHtml(o.title)} · ${escHtml(o.status)}
+            </button>`).join('')
+          : '<p class="text-slate-500">No matches</p>';
+      } catch (e) {
+        box.innerHTML = '<p class="text-red-500">' + escHtml(e.message) + '</p>';
+      }
+    }
+    async function loadAdminWithdrawals() {
+      const box = document.getElementById('adminWithdrawList');
+      if (!box) return;
+      const Api = window.AcctventaApi;
+      if (!Api || !Api.getStaffToken()) {
+        box.innerHTML = '<p class="text-sm text-slate-500">Connect Support inbox with Owner/Admin credentials first.</p>';
+        return;
+      }
+      box.innerHTML = '<p class="text-sm text-slate-500">Loading…</p>';
+      try {
+        const res = await Api.staffWalletPending();
+        const rows = res.withdrawals || [];
+        if (!rows.length) {
+          box.innerHTML = '<p class="text-sm text-slate-500">No pending withdrawals.</p>';
+          return;
+        }
+        box.innerHTML = rows.map(t => {
+          const id = Number(t.id);
+          return `<div class="av-panel"><div class="av-panel-body space-y-2 text-xs">
+            <p class="font-bold text-sm av-text">${escHtml(t.name)} · ${escHtml(t.email)}</p>
+            <p>$${Number(t.amount||0).toFixed(2)} · fee $${Number(t.fee||0).toFixed(2)} · payout <strong>$${Number(t.payout||0).toFixed(2)}</strong> · ${escHtml(t.method||'')}</p>
+            <p class="break-all text-slate-500">${escHtml(t.note||'')}</p>
+            <p class="font-mono text-[10px] text-slate-400">${escHtml(t.reference||'')}</p>
+            <textarea id="wdNote_${id}" rows="2" class="w-full av-input px-2 py-1.5 text-xs" placeholder="Optional note / bankCode=044">${escHtml(t.note||'')}</textarea>
+            <label class="flex items-center gap-2 text-[11px] text-slate-500"><input type="checkbox" id="wdManual_${id}"> Mark paid manually (skip Flutterwave)</label>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="av-send" style="background:#059669" onclick="adminApproveWd(${id})">Approve &amp; pay</button>
+              <button type="button" class="av-send" style="background:#ef4444" onclick="adminRejectWd(${id})">Reject + refund</button>
+            </div>
+          </div></div>`;
+        }).join('');
+      } catch (e) {
+        box.innerHTML = '<p class="text-sm text-red-500">' + escHtml(e.message) + '</p>';
+      }
+    }
+    async function adminApproveWd(id) {
+      const Api = window.AcctventaApi;
+      const noteEl = document.getElementById('wdNote_' + id);
+      const manEl = document.getElementById('wdManual_' + id);
+      if (!(await AcctventaConfirm({ title: 'Approve withdrawal', message: manEl && manEl.checked ? 'Mark this withdrawal paid manually (you already sent the money)?' : 'Approve this withdrawal? Flutterwave will pay the bank if Withdraw gateway is set to Flutterwave.', okText: 'Approve', icon: 'fa-circle-check' }))) return;
+      try {
+        const r = await Api.staffApproveWithdrawal({
+          txId: id,
+          note: noteEl ? noteEl.value : '',
+          forceManual: !!(manEl && manEl.checked),
+        });
+        const mode = (r.result && r.result.mode) || '';
+        alert(mode === 'flutterwave' ? (r.result.awaiting ? 'Sent via Flutterwave — waiting on bank.' : 'Sent via Flutterwave.') : 'Marked paid manually.');
+        loadAdminWithdrawals();
+      } catch (e) { alert(e.message); }
+    }
+    async function adminRejectWd(id) {
+      if (!(await AcctventaConfirm({ title: 'Reject withdrawal', message: 'Reject and refund this withdrawal to the user?', okText: 'Reject & refund', icon: 'fa-xmark', danger: true }))) return;
+      try {
+        await window.AcctventaApi.staffRejectWithdrawal({ txId: id });
+        alert('Rejected and refunded.');
+        loadAdminWithdrawals();
+      } catch (e) { alert(e.message); }
+    }
+
+    function escHtml(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function renderAttachHtml(m) {
+      if (Inbox()) return Inbox().attachHtml(m);
+      if (!m || !m.attachmentUrl) return '';
+      const url = escHtml(m.attachmentUrl);
+      const mime = String(m.attachmentMime || '');
+      const isImg = mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|heic)$/i.test(m.attachmentUrl);
+      if (isImg) return `<a href="${url}" target="_blank" rel="noopener"><img class="av-attach" src="${url}" alt="${escHtml(m.attachmentName || 'image')}"></a>`;
+      return `<a class="av-file" href="${url}" target="_blank" rel="noopener">📎 ${escHtml(m.attachmentName || 'Download file')}</a>`;
+    }
+    let adminSupportAttach = null;
+    function onAdminSupportFile(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) { alert('Max 8MB'); ev.target.value=''; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        adminSupportAttach = { dataUrl: reader.result, name: file.name };
+        const hint = document.getElementById('adminSupportAttachHint');
+        if (hint) { hint.classList.remove('hidden'); hint.textContent = 'Attached: ' + file.name; }
+      };
+      reader.readAsDataURL(file);
+      ev.target.value = '';
+    }
+
+
+    function showLoginError(msg) {
+      const err = document.getElementById('loginError');
+      err.textContent = msg;
+      err.classList.remove('hidden');
+    }
+
+    async function doLogin(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const user = (document.getElementById('adminUser').value || '').trim();
+      const pass = document.getElementById('adminPass').value || '';
+      const btn = document.getElementById('adminSignInBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
+      }
+      try {
+        if (!window.Acctventa || typeof window.Acctventa.adminLogin !== 'function') {
+          if (user === 'admin' && pass === 'admin123') {
+            window.__acctventaAdminOk = true;
+            document.getElementById('loginError').classList.add('hidden');
+            enterDash();
+            showTab('security');
+            document.getElementById('pwMsg').textContent = 'Logged in with fallback. Re-upload js/acctventa.js for full Admin features.';
+            return false;
+          }
+          showLoginError('Login script missing. Upload public_html/js/acctventa.js then hard-refresh.');
+          return false;
+        }
+
+        const Api = window.AcctventaApi;
+        let serverOk = false;
+        if (Api && typeof Api.isAvailable === 'function') {
+          try {
+            if (await Api.isAvailable()) {
+              try {
+                await Api.staffLogin({ username: user, password: pass });
+                serverOk = true;
+              } catch (apiErr) {
+                const localTry = window.Acctventa.adminLogin(user, pass);
+                if (localTry.ok && pass !== 'admin123') {
+                  try {
+                    await Api.changeAdminPassword({ currentPassword: 'admin123', newPassword: pass });
+                    await Api.staffLogin({ username: user, password: pass });
+                    serverOk = true;
+                  } catch (_) {}
+                }
+                if (!serverOk && !localTry.ok) {
+                  showLoginError((apiErr && apiErr.message) || localTry.error || 'Invalid admin username or password.');
+                  return false;
+                }
+                if (!serverOk && localTry.ok) {
+                  document.getElementById('loginError').classList.add('hidden');
+                  enterDash();
+                  if (localTry.admin && localTry.admin.mustChangePassword) {
+                    showTab('security');
+                    document.getElementById('pwMsg').textContent = 'Please change the default password now — it must be saved on the server.';
+                  }
+                  return false;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (serverOk) {
+          if (window.Acctventa.setAdminPasswordLocal) window.Acctventa.setAdminPasswordLocal(pass);
+          try {
+            sessionStorage.setItem('acctventa_admin_session', JSON.stringify({ at: Date.now(), user: user || 'admin' }));
+          } catch (e) {
+            window.__acctventaAdminOk = true;
+          }
+          document.getElementById('loginError').classList.add('hidden');
+          enterDash();
+          initSupportInbox();
+          return false;
+        }
+
+        const res = window.Acctventa.adminLogin(user, pass);
+        if (!res.ok) {
+          showLoginError(res.error || 'Login failed.');
+          return false;
+        }
+        document.getElementById('loginError').classList.add('hidden');
+        enterDash();
+        if (res.admin && res.admin.mustChangePassword) {
+          showTab('security');
+          document.getElementById('pwMsg').textContent = 'Please change the default password now.';
+        }
+      } catch (err) {
+        showLoginError('Sign in error: ' + (err && err.message ? err.message : 'unknown'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Sign in';
+        }
+      }
+      return false;
+    }
+
+    function doLogout() {
+      if (window.Acctventa) window.Acctventa.adminLogout();
+      if (window.AcctventaApi && window.AcctventaApi.setStaffToken) window.AcctventaApi.setStaffToken('');
+      document.getElementById('dashView').classList.add('hidden');
+      document.getElementById('loginView').classList.remove('hidden');
+    }
+
+    function enterDash() {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('dashView').classList.remove('hidden');
+      restoreAdminTab();
+    }
+
+    function fillForms() {
+      // retained for compatibility — live fees/gateways live in /owner
+    }
+
+
+    let activeSupportThread = null;
+    let activeSupportMeta = null;
+    let supportThreadsCache = [];
+    let supportPoll = null;
+    let lastStaffMsgFingerprint = '';
+    let staffTypingTimer = null;
+
+    function supportShell() { return document.getElementById('supportInbox'); }
+
+    function enableAdminNotifications() {
+      if (window.AcctventaStaffAlerts) {
+        window.AcctventaStaffAlerts.enable({ buttonId: 'staffNotifBtn' });
+      } else {
+        alert('Alert helper failed to load. Hard-refresh and try again.');
+      }
+    }
+
+    function staffNotify(title, body) {
+      if (window.AcctventaStaffAlerts) window.AcctventaStaffAlerts.notify(title, body);
+    }
+
+    function renderSupportHeader() {
+      const head = document.getElementById('supportChatHeader');
+      if (!head || !Inbox()) return;
+      head.innerHTML = Inbox().headerHtml(activeSupportMeta, { showBack: true });
+      const back = head.querySelector('[data-inbox-back]');
+      if (back) back.onclick = () => {
+        activeSupportThread = null;
+        activeSupportMeta = null;
+        Inbox().setChatOpen(supportShell(), false);
+        renderSupportHeader();
+        document.getElementById('supportChatMsgs').innerHTML = '<div class="av-empty-chat"><i class="fa-regular fa-comments"></i><p>Select a conversation</p></div>';
+        document.getElementById('supportTyping').textContent = '';
+        renderSupportThreads();
+      };
+    }
+
+    function renderSupportThreads() {
+      if (!Inbox()) return;
+      const q = (document.getElementById('adminThreadSearch') || {}).value || '';
+      Inbox().renderStats(document.getElementById('adminInboxStats'), supportThreadsCache);
+      Inbox().renderThreadList({
+        box: document.getElementById('supportThreadList'),
+        threads: supportThreadsCache,
+        query: q,
+        activeId: activeSupportThread,
+        onOpen: (id) => openSupportThread(id),
+      });
+    }
+
+    async function staffConnect() {
+      const msg = document.getElementById('staffLoginMsg');
+      try {
+        if (!window.AcctventaApi || !(await window.AcctventaApi.isAvailable())) {
+          msg.textContent = 'Live API not available. Deploy /api on Hostinger first.';
+          return;
+        }
+        const user = document.getElementById('staffUser').value.trim();
+        const pass = document.getElementById('staffPass').value;
+        await window.AcctventaApi.staffLogin({ username: user, password: pass });
+        msg.textContent = 'Connected.';
+        document.getElementById('staffLoginBox').classList.add('hidden');
+        document.getElementById('supportInbox').classList.remove('hidden');
+        if (window.AcctventaStaffAlerts) {
+          window.AcctventaStaffAlerts.enable({ silent: true, buttonId: 'staffNotifBtn' });
+          window.AcctventaStaffAlerts.updateButton('staffNotifBtn');
+        }
+        renderSupportHeader();
+        loadSupportThreads();
+        if (supportPoll) clearInterval(supportPoll);
+        supportPoll = setInterval(() => {
+          loadSupportThreads(true);
+          if (activeSupportThread) openSupportThread(activeSupportThread, true);
+        }, 3000);
+      } catch (e) {
+        msg.textContent = e.message || 'Login failed';
+      }
+    }
+
+    function initSupportInbox() {
+      if (window.AcctventaApi && window.AcctventaApi.getStaffToken && window.AcctventaApi.getStaffToken()) {
+        document.getElementById('staffLoginBox').classList.add('hidden');
+        document.getElementById('supportInbox').classList.remove('hidden');
+        renderSupportHeader();
+        loadSupportThreads();
+        if (!supportPoll) {
+          supportPoll = setInterval(() => {
+            loadSupportThreads(true);
+            if (activeSupportThread) openSupportThread(activeSupportThread, true);
+          }, 3000);
+        }
+      }
+    }
+
+    async function loadSupportThreads(silent) {
+      const box = document.getElementById('supportThreadList');
+      if (!box || !window.AcctventaApi) return;
+      try {
+        const res = await window.AcctventaApi.staffSupportThreads();
+        const threads = res.threads || [];
+        const fp = threads.map(t => t.id + ':' + (t.lastMessageAt||'') + ':' + (t.unreadCount||0) + ':' + (t.lastBody||'')).join('|');
+        if (fp !== lastStaffMsgFingerprint && lastStaffMsgFingerprint) {
+          const hot = threads.find(t => (Number(t.unreadCount) || 0) > 0) || threads[0];
+          if (hot && hot.lastBody) staffNotify('New support message', (hot.userName || 'User') + ': ' + hot.lastBody);
+        }
+        lastStaffMsgFingerprint = fp;
+        supportThreadsCache = threads;
+        if (activeSupportThread) {
+          activeSupportMeta = threads.find(t => Number(t.id) === Number(activeSupportThread)) || activeSupportMeta;
+        }
+        renderSupportThreads();
+        renderSupportHeader();
+      } catch (e) {
+        if (!silent) box.innerHTML = '<p class="p-3 text-xs text-red-500">' + escHtml(e.message||'Failed') + '</p>';
+      }
+    }
+
+    async function openSupportThread(id, silent) {
+      activeSupportThread = id;
+      if (Inbox()) Inbox().setChatOpen(supportShell(), true);
+      try {
+        const res = await window.AcctventaApi.staffSupportMessages(id);
+        const t = res.thread || {};
+        const cached = supportThreadsCache.find(x => Number(x.id) === Number(id)) || {};
+        activeSupportMeta = Object.assign({}, cached, t, {
+          userName: cached.userName || t.userName,
+          userEmail: cached.userEmail || t.userEmail,
+          userPlan: cached.userPlan,
+          userOnline: t.userOnline != null ? t.userOnline : cached.userOnline,
+        });
+        renderSupportHeader();
+        document.getElementById('supportTyping').textContent = activeSupportMeta.userTyping ? 'User is typing…' : '';
+        if (Inbox()) {
+          Inbox().renderMessages(document.getElementById('supportChatMsgs'), res.messages || [], activeSupportMeta, { preserveScroll: !!silent });
+        }
+        supportThreadsCache = supportThreadsCache.map(x => Number(x.id) === Number(id) ? Object.assign({}, x, { unreadCount: 0 }) : x);
+        renderSupportThreads();
+      } catch (e) {
+        if (!silent) alert(e.message || 'Could not open thread');
+      }
+    }
+
+    function staffTypingSignal() {
+      if (!activeSupportThread || !window.AcctventaApi) return;
+      clearTimeout(staffTypingTimer);
+      window.AcctventaApi.staffSupportTyping({ threadId: activeSupportThread, typing: true }).catch(()=>{});
+      staffTypingTimer = setTimeout(() => {
+        window.AcctventaApi.staffSupportTyping({ threadId: activeSupportThread, typing: false }).catch(()=>{});
+      }, 1500);
+    }
+
+    async function staffSendReply() {
+      const input = document.getElementById('supportReplyInput');
+      const text = (input.value || '').trim();
+      if ((!text && !adminSupportAttach) || !activeSupportThread) return;
+      try {
+        const payload = { threadId: activeSupportThread, text: text || '' };
+        if (adminSupportAttach) {
+          payload.attachment = adminSupportAttach.dataUrl;
+          payload.fileName = adminSupportAttach.name;
+        }
+        await window.AcctventaApi.staffSupportSend(payload);
+        input.value = '';
+        adminSupportAttach = null;
+        const hint = document.getElementById('adminSupportAttachHint');
+        if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
+        openSupportThread(activeSupportThread);
+      } catch (e) {
+        alert(e.message || 'Send failed');
+      }
+    }
+
+    function loadAds() {
+      const list = A().listPendingAds();
+      const box = document.getElementById('adsAdminList');
+      if (!list.length) {
+        box.innerHTML = '<p class="text-sm text-slate-400">No pending/denied ads in this browser.</p>';
+        return;
+      }
+      box.innerHTML = list.map(a => `
+        <div class="border border-slate-200 rounded-xl p-4 space-y-2">
+          <div class="flex justify-between gap-3">
+            <div>
+              <p class="font-semibold text-sm">${escapeHtml(a.title)}</p>
+              <p class="text-[11px] text-slate-500">${escapeHtml(a.sellerName)} · ${escapeHtml(a.sellerEmail)} · ${escapeHtml(a.status)}</p>
+              <p class="text-[11px] text-slate-400 break-all">${escapeHtml(a.previewLink || 'No preview link')}</p>
+              ${a.denyReason ? `<p class="text-[11px] text-red-500">${escapeHtml(a.denyReason)}</p>` : ''}
+            </div>
+            <p class="font-bold text-brandPrimary">${A().formatMoney(a.price)}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="modAd('${escapeHtml(a.sellerEmail)}','${a.id}','active')" class="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-semibold">Approve</button>
+            <button onclick="denyAd('${escapeHtml(a.sellerEmail)}','${a.id}')" class="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg font-semibold">Deny</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function modAd(email, id, status) {
+      const res = A().adminSetAdStatus(email, id, status, '');
+      if (!res.ok) alert(res.error); else loadAds();
+    }
+    function denyAd(email, id) {
+      const reason = prompt('Reason for denied:') || 'Denied by admin';
+      const res = A().adminSetAdStatus(email, id, 'denied', reason);
+      if (!res.ok) alert(res.error); else loadAds();
+    }
+
+    function loadUsers() {
+      const users = A().listAllUsersSummary();
+      const box = document.getElementById('usersAdminList');
+      if (!users.length) {
+        box.innerHTML = '<p class="text-sm text-slate-400">No users in this browser yet. Sign up on the main site first.</p>';
+        return;
+      }
+      box.innerHTML = `<table class="w-full text-left text-xs">
+        <thead><tr class="text-slate-500 border-b"><th class="py-2 pr-2">Name</th><th class="py-2 pr-2">Email</th><th class="py-2 pr-2">Plan</th><th class="py-2 pr-2">Balance</th><th class="py-2">Ads</th></tr></thead>
+        <tbody>${users.map(u => `<tr class="border-b border-slate-100">
+          <td class="py-2 pr-2 font-medium">${escapeHtml(u.name)}</td>
+          <td class="py-2 pr-2">${escapeHtml(u.email)}</td>
+          <td class="py-2 pr-2">${escapeHtml(u.plan)}</td>
+          <td class="py-2 pr-2">${A().formatMoney(u.balance)}</td>
+          <td class="py-2">${u.ads} (${u.pendingAds} pending)</td>
+        </tr>`).join('')}</tbody></table>`;
+    }
+
+    async function changePassword() {
+      const current = document.getElementById('pw_current').value || '';
+      const next = document.getElementById('pw_new').value || '';
+      const confirm = (document.getElementById('pw_confirm') || {}).value || '';
+      const msg = document.getElementById('pwMsg');
+      msg.className = 'text-xs av-muted';
+      if (next.length < 6) {
+        msg.textContent = 'New password must be at least 6 characters.';
+        msg.className = 'text-xs text-red-500';
+        return;
+      }
+      if (confirm !== next) {
+        msg.textContent = 'New password and confirmation do not match.';
+        msg.className = 'text-xs text-red-500';
+        return;
+      }
+      msg.textContent = 'Saving on the server…';
+      const Api = window.AcctventaApi;
+      let serverOk = false;
+      let lastErr = '';
+      if (Api && typeof Api.isAvailable === 'function') {
+        try {
+          if (await Api.isAvailable()) {
+            const tries = [current];
+            if (current !== 'admin123') tries.push('admin123');
+            for (let i = 0; i < tries.length; i++) {
+              try {
+                await Api.changeAdminPassword({ currentPassword: tries[i], newPassword: next });
+                serverOk = true;
+                break;
+              } catch (e) {
+                lastErr = (e && e.message) || 'Could not save';
+              }
+            }
+          }
+        } catch (e) {
+          lastErr = (e && e.message) || 'Could not reach the server';
+        }
+      }
+      if (A() && A().setAdminPasswordLocal) A().setAdminPasswordLocal(next);
+      else if (A() && A().changeAdminPassword) A().changeAdminPassword(current, next);
+      if (serverOk) {
+        msg.textContent = 'Password updated on the server. Sign in with the new password from any device.';
+        msg.className = 'text-xs text-emerald-600';
+        document.getElementById('pw_current').value = '';
+        document.getElementById('pw_new').value = '';
+        const c = document.getElementById('pw_confirm');
+        if (c) c.value = '';
+        try {
+          if (Api && Api.staffLogin) await Api.staffLogin({ username: 'admin', password: next });
+        } catch (_) {}
+      } else {
+        msg.textContent = lastErr
+          ? ('Could not save on the server: ' + lastErr + ' (saved on this phone only)')
+          : 'Password updated on this device only. Check your connection and try again.';
+        msg.className = 'text-xs text-amber-600';
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('adminLoginForm');
+      if (form) form.addEventListener('submit', doLogin);
+
+      if (window.Acctventa) {
+        try {
+          window.Acctventa.ensureAdminInitialized();
+          if (window.Acctventa.isAdminLoggedIn()) enterDash();
+        } catch (e) {}
+      }
+      // If script missing, do not lock the page — fallback login still works on submit
+    });
+  </script>
+</body>
+</html>
