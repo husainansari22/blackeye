@@ -245,14 +245,39 @@
       });
     });
     el.querySelectorAll('[data-add-cart]').forEach(function (btn) {
-      btn.addEventListener('click', function (ev) {
+      btn.addEventListener('click', async function (ev) {
         ev.stopPropagation();
         var id = btn.getAttribute('data-add-cart');
+        if (!id) return;
+        // Prefer dashboard CommerceUI when present (badge + drawer).
         if (global.CommerceUI && global.CommerceUI.addToCart) {
           global.CommerceUI.addToCart(id);
           return;
         }
-        global.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(id);
+        // Seller storefront / standalone modal: add via API and stay on this page.
+        var Api = global.AcctSuiteApi;
+        if (!isProbablyLoggedIn()) {
+          if (confirm('Sign in to add items to your cart?')) {
+            global.location.href = '/login?next=' + encodeURIComponent(global.location.pathname + global.location.search);
+          }
+          return;
+        }
+        if (!Api || typeof Api.cartAdd !== 'function') {
+          alert('Cart unavailable right now. Try again from the marketplace.');
+          return;
+        }
+        try {
+          btn.disabled = true;
+          await Api.cartAdd({ listingId: Number(id) || id });
+          if (global.showToast) global.showToast('Added to cart', 'success');
+          else alert('Added to cart');
+        } catch (e) {
+          var msg = (e && e.message) || 'Could not add to cart';
+          if (global.showToast) global.showToast(msg, 'error');
+          else alert(msg);
+        } finally {
+          btn.disabled = false;
+        }
       });
     });
     el.querySelectorAll('[data-buy-listing]').forEach(function (btn) {
