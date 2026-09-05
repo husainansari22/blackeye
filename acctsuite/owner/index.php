@@ -506,16 +506,16 @@ $tab = $_GET['tab'] ?? 'overview';
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <meta name="robots" content="noindex,nofollow">
-  <link rel="preload" href="/css/tailwind.css?v=20260905navy2" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905navy2">
+  <link rel="preload" href="/css/tailwind.css?v=20260905preview1" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905preview1">
   <script>
     (function(){try{var t=localStorage.getItem('acctsuite_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905navy2">
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905navy2">
-<link rel="stylesheet" href="/css/admin-app.css?v=20260905navy2">
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905preview1">
+<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905preview1">
+<link rel="stylesheet" href="/css/admin-app.css?v=20260905preview1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -531,7 +531,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <form method="post" class="w-full max-w-sm av-card p-6 space-y-4">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
-        <img src="/img/brand/logo-mark.svg?v=20260905navy2" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
+        <img src="/img/brand/logo-mark.svg?v=20260905preview1" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
         <h1 class="text-xl font-bold">Owner Admin</h1>
         <p class="text-xs text-slate-500">Full website control (users, money, ads, gateways)</p>
       </div>
@@ -595,7 +595,7 @@ $tab = $_GET['tab'] ?? 'overview';
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
-      <div class="av-brand"><img src="/img/brand/logo-mark.svg?v=20260905navy2" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">Owner Admin</span></div>
+      <div class="av-brand"><img src="/img/brand/logo-mark.svg?v=20260905preview1" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">Owner Admin</span></div>
       <div class="av-top-actions">
         <button type="button" id="ownerThemeBtn" onclick="toggleOwnerTheme()" class="av-icon-btn">Dark</button>
         <a href="/dashboard.html" class="av-link-btn">App</a>

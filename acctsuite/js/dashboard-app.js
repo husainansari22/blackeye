@@ -1922,7 +1922,30 @@
       el.classList.toggle('text-brandPrimary', i === step - 1);
       el.classList.toggle('font-bold', i === step - 1);
     });
+    if (step === 2) updateWizardPreviewHint();
     if (step === 3) fillSellReview();
+  }
+
+  function updateWizardPreviewHint() {
+    const needs =
+      window.AcctSuite && typeof window.AcctSuite.categoryRequiresPreviewLink === 'function'
+        ? window.AcctSuite.categoryRequiresPreviewLink(sellDraft.category)
+        : !!(
+            window.AcctSuiteCatalog &&
+            typeof window.AcctSuiteCatalog.categoryRequiresPreviewLink === 'function' &&
+            window.AcctSuiteCatalog.categoryRequiresPreviewLink(sellDraft.category)
+          );
+    const req = document.getElementById('wizardPreviewReq');
+    const hint = document.getElementById('wizardPreviewHint');
+    if (req) {
+      req.textContent = needs ? '(required)' : '(optional)';
+      req.className = needs ? 'text-rose-500 font-semibold' : 'text-slate-400 font-normal';
+    }
+    if (hint) {
+      hint.textContent = needs
+        ? 'Required for social media accounts. Buyers review this link before buying. Wrong links are denied by AI.'
+        : 'Optional for WhatsApp, VPS, email, VPN, and similar. Only social media accounts need a preview link.';
+    }
   }
 
   window.selectWizardRelease = function (type) {
@@ -1991,6 +2014,16 @@
       const extraInfo = document.getElementById('wizardExtra').value.trim();
       if (!username || !password) {
         alert('Username and account password are required.');
+        return;
+      }
+      const needsPreview =
+        (window.AcctSuite && typeof window.AcctSuite.categoryRequiresPreviewLink === 'function'
+          ? window.AcctSuite.categoryRequiresPreviewLink(sellDraft.category)
+          : window.AcctSuiteCatalog && typeof window.AcctSuiteCatalog.categoryRequiresPreviewLink === 'function'
+            ? window.AcctSuiteCatalog.categoryRequiresPreviewLink(sellDraft.category)
+            : false);
+      if (needsPreview && !previewLink) {
+        alert('A preview link is required for social media accounts so buyers can verify the profile.');
         return;
       }
       sellDraft = { ...sellDraft, username, password, previewLink, attachedEmail, attachedEmailPassword, twoFA, extraInfo };

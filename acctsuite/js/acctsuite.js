@@ -422,8 +422,13 @@
       return window.AcctSuiteCatalog.categoryRequiresPreviewLink(category);
     }
     const lower = String(category || '').toLowerCase();
-    if (/\b(vpn|proxy|proxies|giftcard|gift card)\b/.test(lower)) return false;
-    return ['facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp'].some((p) => lower.includes(p));
+    if (/\b(vpn|vps|rdp|proxy|proxies|giftcard|gift card|whatsapp|telegram|signal|wechat|gmail|outlook|hotmail)\b/.test(lower)) {
+      return false;
+    }
+    // Fallback: only clear social-media product names require a public link
+    return ['facebook', 'instagram', 'tiktok', 'twitter', 'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit'].some(
+      (p) => lower.includes(p)
+    );
   }
 
   function allowedHostsForCategory(category) {
@@ -1176,6 +1181,7 @@
     getUploadsToday,
     getRemainingUploads,
     canUploadToday,
+    categoryRequiresPreviewLink,
     aiReviewListing,
     runAiReviewOnAd,
     createAd,

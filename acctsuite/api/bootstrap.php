@@ -559,33 +559,41 @@ function category_requires_preview_link(string $category): bool {
     if ($cat === '') return false;
     $lower = strtolower($cat);
 
+    // Credential-only: messaging numbers, email logins, VPN/VPS, gift cards, etc.
     $no_preview_groups = [
-        'vpn & proxys', 'vpn & proxies', 'giftcards', 'gift cards', 'gift card',
-        'accounts & subscriptions', 'gaming', 'e-commerce platforms', 'websites', 'others',
+        'emails & messaging', 'emails & messaging service', 'vpn & proxys', 'vpn & proxies',
+        'giftcards', 'gift cards', 'gift card', 'accounts & subscriptions', 'gaming',
+        'e-commerce platforms', 'websites', 'others',
     ];
     foreach ($no_preview_groups as $g) {
         if ($lower === $g || strpos($lower, $g) !== false) return false;
     }
-    if (preg_match('/\b(vpn|proxy|proxies|giftcard|gift\s+card)\b/i', $cat)) return false;
 
     $no_preview_products = [
+        'whatsapp', 'telegram', 'signal', 'wechat', 'google voice', 'textnow', 'textplus',
+        'gmail', 'ymail', 'hotmail', 'mailru', 'outlook', 'yahoo',
+        'vps', 'rdp', 'ssh', 'server', 'hosting', 'cpanel',
         'windscribe', 'nord', '911 proxy', 'pia', 'express', 'ip vanish', 'cyberghost',
-        'private', 'total', 'surfshark', 'netflix', 'spotify', 'steam', 'playstation',
-        'xbox', 'epic', 'amazon', 'ebay', 'shopify',
+        'surfshark', 'netflix', 'spotify', 'steam', 'playstation', 'xbox', 'epic',
+        'amazon', 'ebay', 'shopify',
     ];
     foreach ($no_preview_products as $p) {
         if ($lower === $p || strpos($lower, $p) !== false) return false;
     }
+    if (preg_match('/\b(vpn|vps|rdp|proxy|proxies|giftcard|gift\s+card|whatsapp|telegram)\b/i', $cat)) {
+        return false;
+    }
 
-    $preview_groups = ['social media', 'emails & messaging'];
+    // Only Social Media accounts need a public profile/preview link
+    $preview_groups = ['social media'];
     foreach ($preview_groups as $g) {
         if (strpos($lower, $g) !== false) return true;
     }
 
     $social_products = [
-        'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
-        'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
-        'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
+        'facebook', 'instagram', 'tiktok', 'twitter', 'snapchat', 'linkedin',
+        'pinterest', 'threads', 'discord', 'reddit', 'tinder', 'bumble', 'hinge',
+        'bereal', 'lemon8', 'quora',
     ];
     foreach ($social_products as $p) {
         if ($lower === $p || strpos($lower, $p) !== false) return true;

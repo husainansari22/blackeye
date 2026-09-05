@@ -182,7 +182,13 @@
       id: 'others',
       name: 'Others',
       icon: 'fa-regular fa-face-smile',
-      products: [P('Other', '')],
+      products: [
+        P('Other', ''),
+        P('VPS', ''),
+        P('RDP', ''),
+        P('SSH / Server', ''),
+        P('Hosting / cPanel', ''),
+      ],
     },
   ];
 
@@ -359,8 +365,16 @@
     );
   }
 
-  /** Credential-only groups — no public profile link to verify (VPN, gift cards, etc.) */
-  var NO_PREVIEW_GROUP_IDS = ['vpn', 'giftcards', 'accounts', 'gaming', 'ecommerce', 'websites', 'others'];
+  /**
+   * Only Social Media listings need a public profile/preview link.
+   * WhatsApp, Telegram, email, VPN/VPS, gift cards, gaming, etc. are credential-only.
+   */
+  var NO_PREVIEW_GROUP_IDS = ['email', 'vpn', 'giftcards', 'accounts', 'gaming', 'ecommerce', 'websites', 'others'];
+  var NO_PREVIEW_PRODUCTS = [
+    'whatsapp', 'telegram', 'signal', 'wechat', 'google voice', 'textnow', 'textplus',
+    'gmail', 'ymail', 'hotmail', 'mailru', 'outlook', 'yahoo',
+    'vps', 'rdp', 'ssh', 'server', 'hosting', 'cpanel',
+  ];
 
   function resolveCategory(name) {
     var cat = String(name || '').trim();
@@ -380,18 +394,28 @@
 
   function categoryRequiresPreviewLink(name) {
     var resolved = resolveCategory(name);
-    if (resolved && NO_PREVIEW_GROUP_IDS.indexOf(resolved.groupId) !== -1) return false;
     var lower = String(name || '').toLowerCase();
-    if (/\b(vpn|proxy|proxies|giftcard|gift card)\b/.test(lower)) return false;
-    if (resolved && (resolved.groupId === 'social' || resolved.groupId === 'email')) return true;
-    var socialEmail = [
-      'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
-      'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
-      'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
-    ];
+    var productLower = resolved && resolved.productName ? String(resolved.productName).toLowerCase() : lower;
     var i;
-    for (i = 0; i < socialEmail.length; i++) {
-      if (lower === socialEmail[i] || lower.indexOf(socialEmail[i]) !== -1) return true;
+    for (i = 0; i < NO_PREVIEW_PRODUCTS.length; i++) {
+      var p = NO_PREVIEW_PRODUCTS[i];
+      if (productLower === p || productLower.indexOf(p) !== -1 || lower === p || lower.indexOf(p) !== -1) {
+        return false;
+      }
+    }
+    if (resolved && NO_PREVIEW_GROUP_IDS.indexOf(resolved.groupId) !== -1) return false;
+    if (/\b(vpn|vps|rdp|proxy|proxies|giftcard|gift card|whatsapp|telegram|signal|wechat)\b/.test(lower)) {
+      return false;
+    }
+    // Only Social Media group (Facebook, Instagram, TikTok, etc.)
+    if (resolved && resolved.groupId === 'social') return true;
+    var socialOnly = [
+      'facebook', 'instagram', 'tiktok', 'twitter', 'x.com', 'snapchat', 'linkedin',
+      'pinterest', 'threads', 'discord', 'reddit', 'tinder', 'bumble', 'hinge',
+      'bereal', 'lemon8', 'quora',
+    ];
+    for (i = 0; i < socialOnly.length; i++) {
+      if (lower === socialOnly[i] || lower.indexOf(socialOnly[i]) !== -1) return true;
     }
     return false;
   }
