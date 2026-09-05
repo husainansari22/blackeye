@@ -506,21 +506,22 @@ $tab = $_GET['tab'] ?? 'overview';
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <meta name="robots" content="noindex,nofollow">
-  <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
+  <link rel="preload" href="/css/tailwind.css?v=20260905violet1" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
   <script>
     (function(){try{var t=localStorage.getItem('acctsuite_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905perf1">
+<link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1"></noscript>
   <link rel="stylesheet" href="/css/admin-app.css?v=20260905violet1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
-  <script src="/js/mobile-fix.js?v=20260822tap1"></script>
-  <script src="/js/ui-toast.js?v=20260821toast2"></script>
-  <script src="/js/av-confirm.js?v=20260823confirm1"></script>
+  <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
+  <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
+  <script defer src="/js/av-confirm.js?v=20260823confirm1"></script>
   <style>
     body.av-app{font-family:"Plus Jakarta Sans",system-ui,sans-serif}
   </style>
@@ -774,8 +775,8 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-alerts.js?v=20260821toast2"></script>
-      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+      <script defer src="/js/staff-alerts.js?v=20260821toast2"></script>
+      <script defer src="/js/staff-inbox.js?v=20260821toast2"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctsuite_staff_token', OWNER_STAFF_TOKEN);
@@ -1618,7 +1619,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+      <script defer src="/js/staff-inbox.js?v=20260821toast2"></script>
       <script>
         localStorage.setItem('acctsuite_staff_token', <?= json_encode($staffToken) ?>);
         const FOCUS_ORDER = <?= (int)$focusOrder ?>;

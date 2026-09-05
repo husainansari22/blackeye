@@ -5,11 +5,10 @@
   <script src="/js/theme-init.js?v=20260827theme1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Listing | AcctSuite</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
-  <meta name="description" content="View this digital product listing on AcctSuite.">
+    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905perf1">
+<meta name="description" content="View this digital product listing on AcctSuite.">
   <link rel="canonical" id="canonicalLink" href="https://acctsuite.com/">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -19,6 +18,7 @@
   <meta property="og:description" id="ogDesc" content="Buy digital accounts securely with escrow on AcctSuite.">
   <meta property="og:url" id="ogUrl" content="https://acctsuite.com/">
   <meta property="og:image" content="https://acctsuite.com/img/brand/og-cover.png">
+    <link rel="preload" href="/css/tailwind.css?v=20260905violet1" as="style">
     <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
   <link rel="stylesheet" href="/css/legal.css?v=20260823c1">
   <link rel="stylesheet" href="/css/profile.css?v=20260905violet1">
@@ -26,7 +26,8 @@
     .av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.1rem;height:1.1rem;min-width:1.1rem;margin-left:.28rem;line-height:0;flex-shrink:0;vertical-align:middle}
     .av-verify-badge img{width:100%;height:100%;display:block}
   </style>
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+  <link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1"></noscript>
 </head>
 <body class="av-pub bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
   <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
@@ -44,9 +45,9 @@
   <main class="av-pub-wrap max-w-2xl mx-auto px-4 py-6" id="listingRoot">
     <p class="text-sm text-slate-500">Loading listing…</p>
   </main>
-  <script src="/js/api-client.js?v=20260827wallet2"></script>
-  <script src="/js/marketplace-catalog.js?v=20260823c1"></script>
-  <script src="/js/listing-modal.js?v=20260827wallet2"></script>
+  <script defer src="/js/api-client.min.js?v=20260827wallet2"></script>
+  <script defer src="/js/marketplace-catalog.js?v=20260823c1"></script>
+  <script defer src="/js/listing-modal.min.js?v=20260827wallet2"></script>
   <script>
   window.openListingBuy = function (listingId) {
     if (window.AcctSuiteListingModal) {

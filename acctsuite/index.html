@@ -5,10 +5,9 @@
     <script src="/js/theme-init.js?v=20260827theme1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>AcctSuite — Digital Marketplace</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905perf1">
     <meta name="description" content="The marketplace for digital products and services. Buy and sell social media accounts, VPNs, emails, and more from trusted sellers with escrow protection.">
     <link rel="canonical" href="https://acctsuite.com/">
     <!-- Google SERP favicon: PNG 48/96 first (absolute URLs). SVG is optional for modern browsers. -->
@@ -84,14 +83,16 @@
       ]
     }
     </script>
+    <link rel="preload" href="/css/tailwind.css?v=20260905violet1" as="style">
     <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
-    <script src="/js/api-client.js?v=20260821flw2"></script>
+    <script defer src="/js/api-client.min.js?v=20260905perf1"></script>
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1"></noscript>
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
-    <script src="/js/mobile-fix.js?v=20260822tap1"></script>
-    <script src="/js/ui-toast.js?v=20260821toast2"></script>
+    <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
+    <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
     <style>
         @keyframes floatLogo {
             0%, 100% { transform: translateY(0) scale(1); }
@@ -124,7 +125,7 @@
             font-weight: 800;
             font-size: 1.25rem;
             letter-spacing: -0.02em;
-            background: linear-gradient(90deg, #8B5CF6, #8B5CF6);
+            background: linear-gradient(90deg, #7C3AED, #A855F7);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;

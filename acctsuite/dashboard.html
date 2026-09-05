@@ -5,19 +5,20 @@
     <script src="/js/theme-init.js?v=20260827theme1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>cctsuite — Marketplace Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905perf1">
     <link rel="icon" href="https://acctsuite.com/favicon-96x96.png" type="image/png" sizes="96x96">
     <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
     <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
     <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png">
     <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
     <meta name="theme-color" content="#8B5CF6">
+    <link rel="preload" href="/css/tailwind.css?v=20260905violet1" as="style">
     <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1"></noscript>
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
@@ -146,9 +147,9 @@
         #bottomNav .nav-item.is-idle { color: #9ca3af; }
         .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
     </style>
-    <script src="/js/mobile-fix.js?v=20260822tap1"></script>
-    <script src="/js/ui-toast.js?v=20260821toast2"></script>
-    <script src="/js/marketplace-catalog.js?v=20260905logo3"></script>
+    <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
+    <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
+    <script defer src="/js/marketplace-catalog.js?v=20260905perf1"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
@@ -945,14 +946,14 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.js?v=20260904story3"></script>
-    <script src="/js/api-client.js?v=20260904story3"></script>
-    <script src="/js/api-sync.js?v=20260904story3"></script>
-    <script src="/js/kyc-app.js?v=20260904story3"></script>
-    <script src="/js/av-confirm.js?v=20260904story3"></script>
-    <script src="/js/commerce-ui.js?v=20260904story3"></script>
-    <script src="/js/listing-modal.js?v=20260905logo3"></script>
-    <script src="/js/dashboard-app.js?v=20260905logo3"></script>
+    <script src="/js/acctsuite.min.js?v=20260905perf1"></script>
+    <script src="/js/api-client.min.js?v=20260905perf1"></script>
+    <script src="/js/api-sync.min.js?v=20260905perf1"></script>
+    <script src="/js/kyc-app.min.js?v=20260905perf1"></script>
+    <script src="/js/av-confirm.js?v=20260905perf1"></script>
+    <script src="/js/commerce-ui.min.js?v=20260905perf1"></script>
+    <script src="/js/listing-modal.min.js?v=20260905perf1"></script>
+    <script src="/js/dashboard-app.min.js?v=20260905perf1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

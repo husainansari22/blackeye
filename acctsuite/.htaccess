@@ -1,12 +1,22 @@
 RewriteEngine On
 
-# Long-cache static assets (filenames are versioned with ?v= query where needed)
+# Compression (Hostinger often already enables brotli; keep gzip fallback)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+# Long-cache versioned static assets — critical for slow Nigeria mobile networks
 <IfModule mod_headers.c>
-  <FilesMatch "\.(css|js|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|ico)$">
+  <FilesMatch "\.(css|js|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|ico|webmanifest)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
+  # HTML: allow Hostinger CDN edge cache briefly (s-maxage) while browsers revalidate
   <FilesMatch "\.(html)$">
-    Header set Cache-Control "public, max-age=60, must-revalidate"
+    Header set Cache-Control "public, max-age=0, s-maxage=120, stale-while-revalidate=600"
+  </FilesMatch>
+  # Local fonts folder
+  <FilesMatch "^plus-jakarta-sans-.*\.woff2$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
 </IfModule>
 
@@ -31,7 +41,7 @@ RewriteRule ^users/sign-up/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^account/login/?$ /index.html?page=login [L,QSA]
 RewriteRule ^account/register/?$ /index.html?page=signup [L,QSA]
 
-# Optional: /signup and /login shortcuts (directory index pages also exist as fallback)
+# Optional: /signup and /login shortcuts
 RewriteRule ^signup/?$ /index.html?page=signup [L,QSA]
 RewriteRule ^login/?$ /index.html?page=login [L,QSA]
 RewriteRule ^browse/?$ /marketplace.html [L,QSA]
@@ -57,12 +67,3 @@ RewriteRule ^reset/?$ /reset.html [L,QSA]
 
 # Owner control panel
 RewriteRule ^owner/?$ /owner/index.php [L,QSA]
-
-# App HTML must not stick in mobile Safari / home-screen PWA cache
-<IfModule mod_headers.c>
-  <FilesMatch "^(index|dashboard|marketplace|sell)\.html$">
-    Header set Cache-Control "no-cache, no-store, must-revalidate"
-    Header set Pragma "no-cache"
-    Header set Expires "0"
-  </FilesMatch>
-</IfModule>
