@@ -7,22 +7,22 @@
     <title>cctsuite — Marketplace Dashboard</title>
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905perf1">
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905orange2">
     <link rel="icon" href="https://acctsuite.com/favicon-96x96.png" type="image/png" sizes="96x96">
     <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
     <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
     <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png">
     <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
-    <meta name="theme-color" content="#8B5CF6">
-    <link rel="preload" href="/css/tailwind.css?v=20260905violet1" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
+    <meta name="theme-color" content="#F85830">
+    <link rel="preload" href="/css/tailwind.css?v=20260905orange2" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905orange2">
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905perf1"></noscript>
+    <link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905orange2" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905orange2"></noscript>
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260905violet1">
+    <link rel="stylesheet" href="/css/profile.css?v=20260905orange2">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -52,7 +52,7 @@
           width: 0.95rem;
           height: 0.95rem;
           flex-shrink: 0;
-          accent-color: #8B5CF6;
+          accent-color: #F85830;
         }
         .av-prod-logo {
           width: 1.15rem;
@@ -106,7 +106,7 @@
           font-size: 0.84rem;
         }
         .av-sell-pick-item:hover, .av-sell-pick-item.is-active {
-          background: color-mix(in srgb, #8B5CF6 14%, transparent);
+          background: color-mix(in srgb, #F85830 14%, transparent);
         }
         .av-sell-pick-list {
           max-height: 14rem;
@@ -142,8 +142,16 @@
             text-overflow: ellipsis;
             max-width: 100%;
         }
-        #bottomNav .nav-item i { font-size: 1.15rem; line-height: 1; }
-        #bottomNav .nav-item.is-active { color: #8B5CF6; }
+        #bottomNav .nav-item i {
+          font-size: 1.15rem;
+          line-height: 1;
+          width: 1.35rem;
+          height: 1.35rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #bottomNav .nav-item.is-active { color: #F85830; }
         #bottomNav .nav-item.is-idle { color: #9ca3af; }
         .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
     </style>
@@ -225,12 +233,12 @@
             <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
 
             <!-- Platform banner -->
-            <div class="bg-gradient-to-r from-violet-600 to-violet-900 rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-600 to-orange-900 rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
                 <div class="absolute -right-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
                 <div class="relative z-10 pr-2 min-w-0">
-                    <span class="text-violet-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
+                    <span class="text-orange-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
                     <p class="font-bold text-sm mt-0.5 leading-snug">Buy & sell with escrow protection</p>
-                    <p class="text-[10px] text-violet-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
+                    <p class="text-[10px] text-orange-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
                 </div>
                 <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
@@ -355,15 +363,15 @@
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-violet-500 via-violet-600 to-violet-800 p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
+            <div class="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-800 p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
                 <div class="absolute right-3 top-3 opacity-30 text-6xl"><i class="fa-solid fa-wallet"></i></div>
                 <div class="relative z-10">
-                    <p class="text-xs text-violet-100 font-medium">Account balance</p>
+                    <p class="text-xs text-orange-100 font-medium">Account balance</p>
                     <div class="flex items-center gap-2 mt-1">
                         <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight">$0.00</h3>
-                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-violet-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
+                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-orange-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
                     </div>
-                    <p class="text-[11px] text-violet-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
+                    <p class="text-[11px] text-orange-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
                 </div>
                 <div class="flex gap-2 relative z-10">
                     <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-2.5 rounded-full text-xs shadow-md">Deposit</button>
@@ -425,7 +433,7 @@
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
-                    <div class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-brandPrimary mb-2"><i class="fa-solid fa-wallet text-sm"></i></div>
+                    <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-brandPrimary mb-2"><i class="fa-solid fa-wallet text-sm"></i></div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Balance</p>
                     <h4 id="dashBalanceDisplay" class="font-extrabold text-lg mt-1">$0.00</h4>
                 </div>
@@ -466,7 +474,7 @@
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
-                    <div class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-brandPrimary mb-2">
+                    <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-brandPrimary mb-2">
                         <i class="fa-solid fa-users text-sm"></i>
                     </div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Invitees</p>
@@ -840,14 +848,14 @@
             <p class="text-xs font-bold pt-1 border-t border-slate-200 dark:border-slate-800">Release options</p>
             <div class="space-y-2">
                 <label onclick="selectWizardRelease('auto')" id="wizardCardAuto" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer">
-                    <input type="radio" name="wizardRelease" value="auto" checked class="mt-0.5 accent-violet-500">
+                    <input type="radio" name="wizardRelease" value="auto" checked class="mt-0.5 accent-orange-500">
                     <div>
                         <span class="font-bold text-sm flex items-center gap-1">Auto Confirm Order <span class="text-[9px] bg-emerald-500/20 text-emerald-600 px-1.5 py-0.5 rounded">Recommended</span></span>
                         <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">Logins are sent and the order is confirmed automatically.</p>
                     </div>
                 </label>
                 <label onclick="selectWizardRelease('manual')" id="wizardCardManual" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer">
-                    <input type="radio" name="wizardRelease" value="manual" class="mt-0.5 accent-violet-500">
+                    <input type="radio" name="wizardRelease" value="manual" class="mt-0.5 accent-orange-500">
                     <div>
                         <span class="font-bold text-sm">Manual Release</span>
                         <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">For products that need a code or extra authentication.</p>

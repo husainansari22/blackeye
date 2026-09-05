@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CAC Nigeria">
-  <rect width="64" height="64" rx="14" fill="#8B5CF6"/>
+  <rect width="64" height="64" rx="14" fill="#F85830"/>
   <path d="M32 10c-8.5 0-15.5 6.2-15.5 14.2 0 5.8 3.4 10.8 8.5 13.2L32 54l7-16.6c5.1-2.4 8.5-7.4 8.5-13.2C47.5 16.2 40.5 10 32 10z" fill="#fff" opacity=".95"/>
-  <text x="32" y="36" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#7C3AED">CAC</text>
+  <text x="32" y="36" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#E04A28">CAC</text>
 </svg>
