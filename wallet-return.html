@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/js/theme-init.js?v=20260827theme1"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Confirming payment · Acctventa</title>
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
+    
+  <script src="/js/api-client.js?v=20260821plan1"></script>
+  <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
+  <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
+</head>
+<body class="bg-darkBg min-h-screen text-white flex items-center justify-center p-6">
+  <div class="w-full max-w-sm bg-darkCard border border-slate-800 rounded-2xl p-6 text-center">
+    <div id="spin" class="mx-auto w-12 h-12 rounded-full border-2 border-skyBrand border-t-transparent animate-spin mb-4"></div>
+    <h1 id="title" class="text-lg font-bold mb-2">Confirming your payment</h1>
+    <p id="msg" class="text-xs text-slate-400 mb-4">Please wait — we’re verifying with Flutterwave…</p>
+    <a id="go" href="/dashboard.html#wallet" class="hidden inline-block w-full bg-skyBrand hover:bg-skyHover font-bold py-3 rounded-xl">Open wallet</a>
+  </div>
+  <script>
+    (async function () {
+      const params = new URLSearchParams(location.search);
+      const status = (params.get('status') || '').toLowerCase();
+      const txRef = params.get('tx_ref') || params.get('txRef') || '';
+      const transactionId = params.get('transaction_id') || params.get('transactionId') || '';
+      const purposeHint = (params.get('purpose') || '').toLowerCase();
+      const looksLikePlan = purposeHint === 'plan' || String(txRef).toUpperCase().indexOf('AVP') === 0;
+      const title = document.getElementById('title');
+      const msg = document.getElementById('msg');
+      const spin = document.getElementById('spin');
+      const go = document.getElementById('go');
+
+      if (status && status !== 'successful' && status !== 'completed') {
+        spin.classList.add('hidden');
+        title.textContent = 'Payment not completed';
+        msg.textContent = looksLikePlan
+          ? 'Your plan was not upgraded. You can try again from Packages & Pricing.'
+          : 'No funds were added. You can try again from your wallet.';
+        go.classList.remove('hidden');
+        go.textContent = looksLikePlan ? 'Open plans' : 'Open wallet';
+        go.href = looksLikePlan ? '/dashboard.html#plans' : '/dashboard.html#wallet';
+        return;
+      }
+
+      try {
+        if (!window.AcctventaApi || !(await window.AcctventaApi.isAvailable())) {
+          throw new Error('API offline');
+        }
+        const confirmFn = window.AcctventaApi.confirmPayment || window.AcctventaApi.confirmDeposit;
+        const res = await confirmFn.call(window.AcctventaApi, {
+          tx_ref: txRef,
+          transaction_id: transactionId,
+        });
+        spin.classList.add('hidden');
+        const kind = res.kind || (looksLikePlan ? 'plan' : 'deposit');
+        if (kind === 'plan') {
+          title.textContent = res.already ? 'Plan already active' : 'Plan upgraded';
+          msg.textContent = res.already
+            ? 'This payment already activated your plan.'
+            : ((res.planName || 'Your plan') + ' is active' + (res.dailyUploads != null ? ' — ' + res.dailyUploads + ' uploads / day.' : '.'));
+          go.classList.remove('hidden');
+          go.textContent = 'Open plans';
+          go.href = '/dashboard.html#plans';
+        } else {
+          title.textContent = res.already ? 'Already credited' : 'Deposit successful';
+          msg.textContent = res.already
+            ? 'This payment was already added to your wallet.'
+            : ('$' + Number(res.credited || 0).toFixed(2) + ' is now in your wallet.');
+          go.classList.remove('hidden');
+          go.href = '/dashboard.html#wallet';
+        }
+      } catch (e) {
+        spin.classList.add('hidden');
+        title.textContent = 'Still confirming…';
+        msg.textContent = (e && e.message) ? e.message : 'If you were charged, your account will update shortly after Flutterwave confirms.';
+        go.classList.remove('hidden');
+        go.textContent = looksLikePlan ? 'Open plans' : 'Open wallet';
+        go.href = looksLikePlan ? '/dashboard.html#plans' : '/dashboard.html#wallet';
+      }
+    })();
+  </script>
+</body>
+</html>

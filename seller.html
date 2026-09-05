@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/js/theme-init.js?v=20260827theme1"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Seller storefront | Acctventa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <meta name="description" content="Browse this merchant's listings on Acctventa.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
+  <link rel="stylesheet" href="/css/profile.css?v=20260827buy1">
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+  <style>
+    .av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.15rem;height:1.15rem;min-width:1.15rem;margin-left:.25rem;line-height:0;flex-shrink:0;vertical-align:middle}
+    .av-verify-badge img{width:100%;height:100%;display:block}
+  </style>
+  <script src="/js/api-client.js?v=20260827wallet2"></script>
+  <script src="/js/marketplace-catalog.js?v=20260823c1"></script>
+  <script src="/js/listing-modal.js?v=20260827wallet2"></script>
+</head>
+<body class="bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+  <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+    <div class="max-w-lg mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/img/brand/icon-192.png" alt="Acctventa" class="w-8 h-8 rounded-lg">
+        <span class="font-extrabold tracking-tight">acctventa</span>
+      </a>
+      <a href="/dashboard.html#home" class="text-sm font-semibold text-brandPrimary">Marketplace</a>
+    </div>
+  </header>
+  <main id="sellerRoot" class="py-4">
+    <p class="text-sm text-slate-500 text-center py-12">Loading storefront…</p>
+  </main>
+  <script>
+  (async function () {
+    const root = document.getElementById('sellerRoot');
+    const key = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '';
+    const esc = (s) => String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    const money = (n) => { const v = Number(n)||0; return (v<0?'-$'+Math.abs(v).toFixed(2):'$'+v.toFixed(2)); };
+    const initials = (name) => {
+      const p = String(name||'').trim().split(/\s+/).filter(Boolean);
+      if (!p.length) return '?';
+      if (p.length === 1) return p[0].slice(0,2).toUpperCase();
+      return (p[0][0]+p[p.length-1][0]).toUpperCase();
+    };
+    const productLogo = (cat, title) => {
+      const Cat = window.AcctventaCatalog;
+      if (!Cat) return '';
+      const hit = Cat.findProduct(cat || title || '');
+      return hit ? hit.logo : Cat.logoUrl({ domain: '' });
+    };
+    if (!key) {
+      root.innerHTML = '<div class="av-storefront"><h1 class="text-center font-bold px-4">Store not found</h1></div>';
+      return;
+    }
+    try {
+      let res;
+      if (window.AcctventaApi && window.AcctventaApi.sellerStorefront) {
+        res = await window.AcctventaApi.sellerStorefront({ slug: key, id: key, sellerId: key });
+      } else {
+        res = await fetch('/api/index.php?action=sellers.storefront&slug=' + encodeURIComponent(key) + '&id=' + encodeURIComponent(key)).then(r => r.json());
+      }
+      if (!res.ok) throw new Error(res.error || 'Seller not found');
+      const seller = res.seller || {};
+      const listings = res.listings || [];
+      const stats = seller.stats || {};
+      const name = seller.name || 'Seller';
+      const joined = seller.memberSince ? new Date(seller.memberSince).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric' }) : '—';
+      const merchantLink = seller.merchantLink || ('https://acctventa.com/seller/' + (seller.merchantSlug || key));
+      const verify = seller.isVerified ? '<span class="av-verify-badge" title="Verified"><img src="/img/brand/verified.svg" alt="" decoding="async"></span>' : '';
+      const avatar = seller.avatarUrl
+        ? `<img src="${esc(seller.avatarUrl)}" alt="">`
+        : esc(initials(name));
+
+      document.title = name + ' · Store | Acctventa';
+
+      const adsHtml = listings.length
+        ? listings.map((l) => {
+            const logo = productLogo(l.category, l.title);
+            const desc = String(l.description || l.category || '').slice(0, 80);
+            return `<div class="av-storefront-ad">
+              <img src="${esc(logo)}" alt="" class="av-storefront-ad__logo" loading="lazy" onerror="this.style.opacity=.35">
+              <div class="av-storefront-ad__body">
+                <p class="av-storefront-ad__title">${esc(l.title)}</p>
+                <p class="av-storefront-ad__desc">${esc(desc)}${l.releaseType === 'auto' || l.release_type === 'auto' ? ' · ⚡ Instant' : ''}</p>
+              </div>
+              <div class="av-storefront-ad__side">
+                <p class="av-storefront-ad__price">${money(l.price)}</p>
+                <button type="button" class="av-storefront-ad__buy" data-buy-listing="${esc(String(l.id))}">Buy now</button>
+              </div>
+            </div>`;
+          }).join('')
+        : '<p class="text-sm text-slate-500">No live listings right now.</p>';
+
+      root.innerHTML = `<div class="av-storefront">
+        <div class="av-storefront-banner"></div>
+        <div class="av-storefront-head">
+          <div class="av-storefront-avatar">${avatar}</div>
+          <h1 class="av-storefront-name inline-flex items-center flex-wrap">${esc(name)}${verify}</h1>
+          <p class="av-storefront-joined"><i class="fa-regular fa-clock text-red-400"></i> Joined ${esc(joined)}</p>
+        </div>
+        <div class="av-storefront-merchant">
+          <p class="av-storefront-merchant__label">Merchant link</p>
+          <div class="av-storefront-merchant__row">
+            <span class="av-storefront-merchant__url" id="merchantUrl">${esc(merchantLink.replace(/^https?:\/\//,''))}</span>
+            <button type="button" class="av-storefront-merchant__copy" id="copyMerchantBtn" aria-label="Copy link"><i class="fa-solid fa-copy"></i></button>
+          </div>
+        </div>
+        <div class="av-storefront-stats">
+          <div class="av-storefront-stat">
+            <div class="av-storefront-stat__icon av-storefront-stat__icon--blue"><i class="fa-solid fa-chart-column"></i></div>
+            <div class="av-storefront-stat__val">${stats.totalReviews || 0}</div>
+            <div class="av-storefront-stat__lbl">Total Reviews</div>
+            <div class="av-storefront-stat__sub"><span class="up"><i class="fa-solid fa-thumbs-up"></i> ${stats.positivePct || 0}%</span><span class="down"><i class="fa-solid fa-thumbs-down"></i> ${stats.negativePct || 0}%</span></div>
+          </div>
+          <div class="av-storefront-stat">
+            <div class="av-storefront-stat__icon av-storefront-stat__icon--green"><i class="fa-solid fa-chart-column"></i></div>
+            <div class="av-storefront-stat__val">${stats.totalSold || 0}</div>
+            <div class="av-storefront-stat__lbl">Total sold</div>
+          </div>
+          <div class="av-storefront-stat">
+            <div class="av-storefront-stat__icon av-storefront-stat__icon--orange"><i class="fa-solid fa-chart-column"></i></div>
+            <div class="av-storefront-stat__val">${stats.activeAds || listings.length}</div>
+            <div class="av-storefront-stat__lbl">Active Ads</div>
+          </div>
+          <div class="av-storefront-stat">
+            <div class="av-storefront-stat__icon av-storefront-stat__icon--red"><i class="fa-solid fa-chart-column"></i></div>
+            <div class="av-storefront-stat__val">${stats.cancelledOrders || 0}</div>
+            <div class="av-storefront-stat__lbl">Cancelled Orders</div>
+          </div>
+        </div>
+        <div class="av-storefront-ads">
+          <h2 class="av-storefront-ads__title">Ads</h2>
+          ${adsHtml}
+        </div>
+      </div>`;
+
+      document.getElementById('copyMerchantBtn').addEventListener('click', function () {
+        navigator.clipboard.writeText(merchantLink).then(function () {
+          const btn = document.getElementById('copyMerchantBtn');
+          btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+          setTimeout(function () { btn.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 1500);
+        });
+      });
+
+      root.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('[data-buy-listing]');
+        if (!btn) return;
+        ev.preventDefault();
+        if (window.AcctventaListingModal) {
+          window.AcctventaListingModal.open(btn.getAttribute('data-buy-listing'), { onSellerStore: true });
+        }
+      });
+    } catch (e) {
+      root.innerHTML = '<div class="av-storefront px-4"><h1 class="text-xl font-bold mb-2">Storefront unavailable</h1><p class="text-sm text-slate-500">' + esc(e.message) + '</p><p class="mt-4"><a class="text-brandPrimary font-semibold" href="/dashboard.html#home">Browse marketplace</a></p></div>';
+    }
+  })();
+  </script>
+</body>
+</html>
