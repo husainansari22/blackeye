@@ -506,16 +506,16 @@ $tab = $_GET['tab'] ?? 'overview';
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <meta name="robots" content="noindex,nofollow">
-  <link rel="preload" href="/css/tailwind.css?v=20260905navy1" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905navy1">
+  <link rel="preload" href="/css/tailwind.css?v=20260905navy2" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905navy2">
   <script>
     (function(){try{var t=localStorage.getItem('acctsuite_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905navy1">
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905navy1">
-<link rel="stylesheet" href="/css/admin-app.css?v=20260905navy1">
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905navy2">
+<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905navy2">
+<link rel="stylesheet" href="/css/admin-app.css?v=20260905navy2">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -531,7 +531,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <form method="post" class="w-full max-w-sm av-card p-6 space-y-4">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
-        <img src="/img/brand/logo-mark.svg" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
+        <img src="/img/brand/logo-mark.svg?v=20260905navy2" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
         <h1 class="text-xl font-bold">Owner Admin</h1>
         <p class="text-xs text-slate-500">Full website control (users, money, ads, gateways)</p>
       </div>
@@ -595,7 +595,7 @@ $tab = $_GET['tab'] ?? 'overview';
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
-      <div class="av-brand"><img src="/img/brand/logo-mark.svg" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">Owner Admin</span></div>
+      <div class="av-brand"><img src="/img/brand/logo-mark.svg?v=20260905navy2" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">Owner Admin</span></div>
       <div class="av-top-actions">
         <button type="button" id="ownerThemeBtn" onclick="toggleOwnerTheme()" class="av-icon-btn">Dark</button>
         <a href="/dashboard.html" class="av-link-btn">App</a>
@@ -650,7 +650,7 @@ $tab = $_GET['tab'] ?? 'overview';
         <p class="av-section-label">Needs attention</p>
         <div class="av-settings-group">
           <a class="av-settings-row" href="?tab=wallet">
-            <span class="av-settings-icon" style="background:#f59e0b"><i class="fa-solid fa-money-bill-transfer"></i></span>
+            <span class="av-settings-icon" style="background:#0A2748"><i class="fa-solid fa-money-bill-transfer"></i></span>
             <span class="av-settings-label">Withdrawals</span>
             <span class="av-settings-value<?= $stats['withdraw_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['withdraw_pending'] ?> pending</span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
@@ -1346,7 +1346,7 @@ $tab = $_GET['tab'] ?? 'overview';
                     <?php endif; ?>
                     <?php if ($a['deny_reason']): ?><div class="av-ad-detail-span2" style="color:#e11d48"><span class="av-ad-detail-k">Denied</span><span><?= h($a['deny_reason']) ?></span></div><?php endif; ?>
                     <?php if ($soldOut && $st === 'active'): ?>
-                      <div class="av-ad-detail-span2" style="color:#f59e0b">Sold out — not shown on Home/Market until restocked.</div>
+                      <div class="av-ad-detail-span2" style="color:#0A2748">Sold out — not shown on Home/Market until restocked.</div>
                     <?php endif; ?>
                   </div>
                   <div class="av-admin-card-actions av-ad-line-actions">
@@ -1611,7 +1611,7 @@ $tab = $_GET['tab'] ?? 'overview';
               </div>
               <div class="flex flex-wrap gap-2">
                 <button type="button" id="orderChatRefundBtn" class="px-3 py-2 rounded-lg bg-red-500 text-white text-[11px] font-bold">Refund buyer (seller debt OK)</button>
-                <button type="button" id="orderWarrantyRefundBtn" class="px-3 py-2 rounded-lg bg-orange-600 text-white text-[11px] font-bold">24h warranty · deduct seller + refund</button>
+                <button type="button" id="orderWarrantyRefundBtn" class="px-3 py-2 rounded-lg bg-brandPrimary text-white text-[11px] font-bold">24h warranty · deduct seller + refund</button>
               </div>
               <p class="text-[10px] text-slate-500">Use warranty deduct when a buyer proves the account was banned within 24h without their edits. Commission is also clawed back from the seller settlement.</p>
             </div>
@@ -1901,7 +1901,7 @@ $tab = $_GET['tab'] ?? 'overview';
                 <p class="text-slate-600 dark:text-slate-300 break-all"><?= h($t['note']) ?></p>
                 <p class="font-mono text-[10px] text-slate-400">Ref <?= h($t['reference'] ?? '') ?> · <?= h($t['created_at'] ?? '') ?></p>
                 <?php if ($isFlw): ?>
-                  <p class="text-[10px] text-orange-500 font-semibold">Flutterwave — auto-confirm preferred. Use Credit wallet if it stays pending after payment.</p>
+                  <p class="text-[10px] text-brandPrimary font-semibold">Flutterwave — auto-confirm preferred. Use Credit wallet if it stays pending after payment.</p>
                 <?php endif; ?>
               </div>
               <div class="flex flex-wrap gap-2">
@@ -1910,7 +1910,7 @@ $tab = $_GET['tab'] ?? 'overview';
                 <form method="post" target="_blank" class="inline">
                   <input type="hidden" name="form" value="login_as_user">
                   <input type="hidden" name="user_id" value="<?= (int)$t['user_id'] ?>">
-                  <button class="bg-orange-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Open user account</button>
+                  <button class="bg-brandPrimary text-white text-xs font-bold px-3 py-2 rounded-lg">Open user account</button>
                 </form>
               </div>
             </div>
@@ -2012,7 +2012,7 @@ $tab = $_GET['tab'] ?? 'overview';
                     <input name="local[<?= $i ?>][rate]" type="number" step="0.01" min="0.01" value="<?= h((string)($c['rate'] ?? 1)) ?>" class="av-field" style="width:6.5rem" required>
                   </td>
                   <td class="py-3 pr-2 text-center">
-                    <input type="checkbox" name="local[<?= $i ?>][enabled]" value="1" class="accent-orange-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="local[<?= $i ?>][enabled]" value="1" class="accent-brandPrimary w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -2062,7 +2062,7 @@ $tab = $_GET['tab'] ?? 'overview';
                     ?>
                       <div class="av-field-block">
                         <label><?= h($nk) ?> deposit address</label>
-                        <input name="crypto[<?= $i ?>][addr][<?= h($nk) ?>]" value="<?= h($addrVal) ?>" placeholder="Paste <?= h($nk) ?> wallet address" class="font-mono text-xs" style="<?= $addrVal === '' ? 'border-color:#f59e0b' : '' ?>">
+                        <input name="crypto[<?= $i ?>][addr][<?= h($nk) ?>]" value="<?= h($addrVal) ?>" placeholder="Paste <?= h($nk) ?> wallet address" class="font-mono text-xs" style="<?= $addrVal === '' ? 'border-color:#0A2748' : '' ?>">
                         <?php if ($addrVal === ''): ?>
                           <p class="text-[10px] mt-0.5" style="color:#d97706">Empty — users cannot deposit this network yet.</p>
                         <?php endif; ?>

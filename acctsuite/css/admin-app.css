@@ -315,8 +315,8 @@ body.av-app,
 }
 .av-chip strong { color: var(--av-text); font-size: 0.8rem; }
 .av-chip.is-hot {
-  background: color-mix(in srgb, #f59e0b 18%, var(--av-surface));
-  border-color: color-mix(in srgb, #f59e0b 45%, var(--av-border));
+  background: color-mix(in srgb, #0A2748 18%, var(--av-surface));
+  border-color: color-mix(in srgb, #0A2748 45%, var(--av-border));
   color: #b45309;
 }
 html.dark .av-chip.is-hot { color: #fde68a; }
@@ -1462,7 +1462,7 @@ html.dark .av-app .bg-amber-50\/30 {
   color: var(--av-warn-text) !important;
   border-color: var(--av-warn-border) !important;
 }
-html.dark .av-app .bg-orange-50 {
+html.dark .av-app .bg-sky-50 {
   background: var(--av-info-bg) !important;
   color: var(--av-info-text) !important;
   border-color: var(--av-info-border) !important;
@@ -1574,7 +1574,7 @@ html.dark .av-app thead {
   font-variant-numeric: tabular-nums;
 }
 .av-settings-value.is-hot {
-  color: #f59e0b;
+  color: #0A2748;
   font-weight: 700;
 }
 .av-settings-chevron {

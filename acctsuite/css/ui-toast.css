@@ -125,8 +125,8 @@
 .av-toast--warn {
   --av-toast-bg: #1c1810;
   --av-toast-border: #92400e;
-  --av-toast-icon: #f59e0b;
-  --av-toast-bar: #f59e0b;
+  --av-toast-icon: #0A2748;
+  --av-toast-bar: #0A2748;
 }
 
 .av-toast--success {

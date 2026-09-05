@@ -578,7 +578,7 @@
     if (s === 'completed') cls = 'bg-emerald-500/15 text-emerald-500';
     else if (s === 'pending') cls = 'bg-amber-500/15 text-amber-500';
     else if (s === 'cancelled' || s === 'refunded') cls = 'bg-red-500/15 text-red-400';
-    else if (s === 'disputed') cls = 'bg-orange-500/15 text-orange-400';
+    else if (s === 'disputed') cls = 'bg-amber-500/15 text-amber-400';
     return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${cls}">${escapeHtml(status || '—')}</span>`;
   }
 
