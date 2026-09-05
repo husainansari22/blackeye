@@ -28,10 +28,10 @@
   align-items: center;
   justify-content: center;
   font-size: 1.75rem;
-  color: #F85830;
-  background: linear-gradient(160deg, rgba(248, 88, 48, 0.18), rgba(248, 88, 48, 0.04));
-  border: 1px solid rgba(248, 88, 48, 0.35);
-  box-shadow: 0 12px 40px rgba(248, 88, 48, 0.12);
+  color: #0A2748;
+  background: linear-gradient(160deg, rgba(10, 39, 72, 0.18), rgba(10, 39, 72, 0.04));
+  border: 1px solid rgba(10, 39, 72, 0.35);
+  box-shadow: 0 12px 40px rgba(10, 39, 72, 0.12);
 }
 
 .kyc-hero-ok {
@@ -51,7 +51,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 700;
-  color: #F85830;
+  color: #0A2748;
   margin-bottom: 0.5rem;
 }
 
@@ -106,7 +106,7 @@
 }
 
 .kyc-bullets i {
-  color: #F85830;
+  color: #0A2748;
   margin-top: 0.15rem;
   width: 1rem;
   text-align: center;
@@ -129,7 +129,7 @@
   width: 100%;
   max-width: 22rem;
   margin: 0 auto 0.65rem;
-  background: #F85830;
+  background: #0A2748;
   color: #fff;
   font-weight: 700;
   font-size: 0.9rem;
@@ -141,7 +141,7 @@
 }
 
 .kyc-btn-primary:hover {
-  background: #E04A28;
+  background: #081F3A;
 }
 
 .kyc-btn-primary:disabled {
@@ -165,7 +165,7 @@
 }
 
 .kyc-btn-ghost:hover {
-  color: #F85830;
+  color: #0A2748;
 }
 
 .kyc-section {
@@ -195,7 +195,7 @@
 }
 
 .kyc-req {
-  color: #F85830;
+  color: #0A2748;
   font-weight: 800;
 }
 
@@ -223,8 +223,8 @@
 .kyc-field input:focus,
 .kyc-field textarea:focus,
 .kyc-field select:focus {
-  border-color: #F85830;
-  box-shadow: 0 0 0 3px rgba(248, 88, 48, 0.15);
+  border-color: #0A2748;
+  box-shadow: 0 0 0 3px rgba(10, 39, 72, 0.15);
 }
 
 .kyc-flow-footer {
@@ -392,14 +392,14 @@
 }
 
 .kyc-doc-btn-primary {
-  background: #F85830;
-  border-color: #F85830;
+  background: #0A2748;
+  border-color: #0A2748;
   color: #fff;
 }
 
 .dark .kyc-doc-btn-primary {
-  background: #F85830;
-  border-color: #F85830;
+  background: #0A2748;
+  border-color: #0A2748;
   color: #fff;
 }
 

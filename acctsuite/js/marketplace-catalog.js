@@ -199,7 +199,7 @@
     var s = String(str || '');
     var i;
     for (i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-    var palette = ['#E04A28', '#E04A28', '#059669', '#d97706', '#db2777', '#E04A28', '#0d9488', '#e11d48'];
+    var palette = ['#081F3A', '#081F3A', '#059669', '#d97706', '#db2777', '#081F3A', '#0d9488', '#e11d48'];
     return palette[Math.abs(h) % palette.length];
   }
 

@@ -138,9 +138,9 @@
 
 .av-toast--info {
   --av-toast-bg: #0f1720;
-  --av-toast-border: #9A3412;
-  --av-toast-icon: #F85830;
-  --av-toast-bar: #F85830;
+  --av-toast-border: #04101C;
+  --av-toast-icon: #0A2748;
+  --av-toast-bar: #0A2748;
 }
 
 @keyframes avToastBar {

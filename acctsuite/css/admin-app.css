@@ -12,41 +12,41 @@
   --av-chat: #e8eef5;
   --av-bubble-in: #ffffff;
   --av-bubble-in-text: #0f172a;
-  --av-bubble-out: #F85830;
+  --av-bubble-out: #0A2748;
   --av-bubble-out-text: #ffffff;
   --av-warn-bg: #fffbeb;
   --av-warn-border: #fde68a;
   --av-warn-text: #92400e;
-  --av-info-bg: #FFF7ED;
-  --av-info-border: #FFEDD5;
-  --av-info-text: #9A3412;
+  --av-info-bg: #F0F5FA;
+  --av-info-border: #E8EEF5;
+  --av-info-text: #04101C;
   --av-ok-bg: #ecfdf5;
   --av-ok-border: #a7f3d0;
   --av-ok-text: #065f46;
   --av-danger: #ef4444;
-  --av-brand: #F85830;
+  --av-brand: #0A2748;
   --av-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
 }
 
 html.dark {
   color-scheme: dark;
-  --av-bg: #0c0a09;
-  --av-surface: #1a1410;
-  --av-surface-2: #241c16;
+  --av-bg: #061628;
+  --av-surface: #0A2748;
+  --av-surface-2: #0D3558;
   --av-text: #f8fafc;
   --av-muted: #94a3b8;
-  --av-border: #3a2e26;
-  --av-chat: #0c0a09;
+  --av-border: #134A7C;
+  --av-chat: #061628;
   --av-bubble-in: #1e293b;
   --av-bubble-in-text: #f8fafc;
-  --av-bubble-out: #F85830;
+  --av-bubble-out: #1E5A8C;
   --av-bubble-out-text: #ffffff;
   --av-warn-bg: #422006;
   --av-warn-border: #854d0e;
   --av-warn-text: #fde68a;
-  --av-info-bg: #9A3412;
-  --av-info-border: #C2410C;
-  --av-info-text: #FFF7ED;
+  --av-info-bg: #04101C;
+  --av-info-border: #061628;
+  --av-info-text: #F0F5FA;
   --av-ok-bg: #064e3b;
   --av-ok-border: #047857;
   --av-ok-text: #a7f3d0;
@@ -102,14 +102,9 @@ html, body.av-app {
 .av-brand-mark {
   width: 2rem;
   height: 2rem;
-  border-radius: 0.6rem;
-  background: var(--av-brand);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 800;
+  border-radius: 0.55rem;
+  object-fit: contain;
+  display: block;
   flex-shrink: 0;
 }
 
@@ -686,7 +681,7 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   border-color: var(--av-brand);
   color: #fff !important;
 }
-.av-btn-primary:hover { background: #E04A28; border-color: #E04A28; color: #fff !important; }
+.av-btn-primary:hover { background: #081F3A; border-color: #081F3A; color: #fff !important; }
 .av-btn-success {
   background: #059669;
   border-color: #059669;

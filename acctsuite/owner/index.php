@@ -506,16 +506,16 @@ $tab = $_GET['tab'] ?? 'overview';
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <meta name="robots" content="noindex,nofollow">
-  <link rel="preload" href="/css/tailwind.css?v=20260905orange2" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905orange2">
+  <link rel="preload" href="/css/tailwind.css?v=20260905navy1" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905navy1">
   <script>
     (function(){try{var t=localStorage.getItem('acctsuite_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905orange2">
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905iconsfull1">
-<link rel="stylesheet" href="/css/admin-app.css?v=20260905orange2">
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905navy1">
+<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905navy1">
+<link rel="stylesheet" href="/css/admin-app.css?v=20260905navy1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -531,7 +531,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <form method="post" class="w-full max-w-sm av-card p-6 space-y-4">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
-        <div class="w-12 h-12 mx-auto rounded-xl bg-brand text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
+        <img src="/img/brand/logo-mark.svg" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
         <h1 class="text-xl font-bold">Owner Admin</h1>
         <p class="text-xs text-slate-500">Full website control (users, money, ads, gateways)</p>
       </div>
@@ -595,7 +595,7 @@ $tab = $_GET['tab'] ?? 'overview';
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
-      <div class="av-brand"><span class="av-brand-mark">A</span><span class="title truncate">Owner Admin</span></div>
+      <div class="av-brand"><img src="/img/brand/logo-mark.svg" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">Owner Admin</span></div>
       <div class="av-top-actions">
         <button type="button" id="ownerThemeBtn" onclick="toggleOwnerTheme()" class="av-icon-btn">Dark</button>
         <a href="/dashboard.html" class="av-link-btn">App</a>
@@ -662,7 +662,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=kyc">
-            <span class="av-settings-icon" style="background:#F85830"><i class="fa-solid fa-id-card"></i></span>
+            <span class="av-settings-icon" style="background:#0A2748"><i class="fa-solid fa-id-card"></i></span>
             <span class="av-settings-label">KYC review</span>
             <span class="av-settings-value<?= $stats['kyc_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['kyc_pending'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
@@ -678,13 +678,13 @@ $tab = $_GET['tab'] ?? 'overview';
         <p class="av-section-label">Manage</p>
         <div class="av-settings-group">
           <a class="av-settings-row" href="?tab=users">
-            <span class="av-settings-icon" style="background:#F85830"><i class="fa-solid fa-users"></i></span>
+            <span class="av-settings-icon" style="background:#0A2748"><i class="fa-solid fa-users"></i></span>
             <span class="av-settings-label">Users</span>
             <span class="av-settings-value"><?= (int)$stats['users'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=orders">
-            <span class="av-settings-icon" style="background:#F85830"><i class="fa-solid fa-bag-shopping"></i></span>
+            <span class="av-settings-icon" style="background:#0A2748"><i class="fa-solid fa-bag-shopping"></i></span>
             <span class="av-settings-label">Orders</span>
             <span class="av-settings-value"><?= (int)$stats['orders'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
@@ -719,7 +719,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=plans">
-            <span class="av-settings-icon" style="background:#FB923C"><i class="fa-solid fa-crown"></i></span>
+            <span class="av-settings-icon" style="background:#3B82A8"><i class="fa-solid fa-crown"></i></span>
             <span class="av-settings-label">Plans &amp; pricing</span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
@@ -1084,7 +1084,7 @@ $tab = $_GET['tab'] ?? 'overview';
         <p class="av-section-label">Account</p>
         <div class="av-settings-group">
           <div class="av-settings-row is-static">
-            <span class="av-settings-icon" style="background:#F85830"><i class="fa-solid fa-wallet"></i></span>
+            <span class="av-settings-icon" style="background:#0A2748"><i class="fa-solid fa-wallet"></i></span>
             <span class="av-settings-label">Spendable balance</span>
             <span class="av-settings-value">$<?= number_format((float)$u['balance'], 2) ?></span>
           </div>
@@ -1094,7 +1094,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <span class="av-settings-value">$<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?></span>
           </div>
           <div class="av-settings-row is-static">
-            <span class="av-settings-icon" style="background:#FB923C"><i class="fa-solid fa-crown"></i></span>
+            <span class="av-settings-icon" style="background:#3B82A8"><i class="fa-solid fa-crown"></i></span>
             <span class="av-settings-label">Plan</span>
             <span class="av-settings-value"><?= h($u['plan'] ?: 'free') ?></span>
           </div>
@@ -1133,7 +1133,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <input type="hidden" name="form" value="login_as_user">
             <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
             <button type="submit" class="av-settings-row av-settings-row-btn" <?= $banned ? 'disabled' : '' ?>>
-              <span class="av-settings-icon" style="background:#F85830"><i class="fa-solid fa-right-to-bracket"></i></span>
+              <span class="av-settings-icon" style="background:#0A2748"><i class="fa-solid fa-right-to-bracket"></i></span>
               <span class="av-settings-label">Login as this user</span>
               <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
             </button>

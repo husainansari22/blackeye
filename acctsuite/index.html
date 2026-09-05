@@ -7,7 +7,7 @@
     <title>AcctSuite — Digital Marketplace</title>
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905orange2">
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905navy1">
     <meta name="description" content="The marketplace for digital products and services. Buy and sell social media accounts, VPNs, emails, and more from trusted sellers with escrow protection.">
     <link rel="canonical" href="https://acctsuite.com/">
     <!-- Google SERP favicon: PNG 48/96 first (absolute URLs). SVG is optional for modern browsers. -->
@@ -19,8 +19,8 @@
     <link rel="icon" href="https://acctsuite.com/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png" sizes="180x180">
     <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
-    <meta name="theme-color" content="#F85830">
-    <meta name="msapplication-TileColor" content="#F85830">
+    <meta name="theme-color" content="#0A2748">
+    <meta name="msapplication-TileColor" content="#0A2748">
     <meta name="msapplication-TileImage" content="https://acctsuite.com/img/brand/icon-192.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AcctSuite">
@@ -83,11 +83,11 @@
       ]
     }
     </script>
-    <link rel="preload" href="/css/tailwind.css?v=20260905orange2" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905orange2">
+    <link rel="preload" href="/css/tailwind.css?v=20260905navy1" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905navy1">
     <script defer src="/js/api-client.min.js?v=20260905perf1"></script>
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905iconsfull1">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905navy1">
 <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
@@ -106,25 +106,19 @@
             100% { background-position: 200% 50%; }
         }
         .live-logo-mark {
-            width: 2rem;
-            height: 2rem;
-            border-radius: 0.5rem;
-            background: linear-gradient(135deg, #F85830 0%, #E04A28 100%);
-            color: #fff;
-            font-weight: 900;
-            font-size: 1.125rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.65rem;
+            display: inline-block;
             flex-shrink: 0;
+            object-fit: contain;
             animation: floatLogo 3s ease-in-out infinite;
-            box-shadow: 0 0 14px rgba(99, 102, 241, 0.45);
         }
         .brand-wordmark {
             font-weight: 800;
             font-size: 1.25rem;
             letter-spacing: -0.02em;
-            background: linear-gradient(90deg, #E04A28, #FB923C);
+            background: linear-gradient(90deg, #081F3A, #3B82A8);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -139,8 +133,8 @@
             font-weight: 700;
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: #C2410C;
-            background: linear-gradient(90deg, #ffedd5, #FFF7ED, #ffedd5);
+            color: #061628;
+            background: linear-gradient(90deg, #E8EEF5, #F0F5FA, #E8EEF5);
             background-size: 200% 100%;
             animation: escrowShimmer 4s linear infinite;
             border: 1px solid rgba(99, 102, 241, 0.25);
@@ -178,7 +172,7 @@
         }
         .auth-field:focus {
             outline: none;
-            border-color: #F85830;
+            border-color: #0A2748;
         }
         .auth-field:-webkit-autofill,
         .auth-field:-webkit-autofill:hover,
@@ -195,7 +189,7 @@
             border-radius: 0.75rem;
             overflow: hidden;
         }
-        .auth-phone-wrap:focus-within { border-color: #F85830; }
+        .auth-phone-wrap:focus-within { border-color: #0A2748; }
         html { scroll-behavior: smooth; }
     </style>
 </head>
@@ -205,7 +199,7 @@
     <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
         <div class="max-w-md mx-auto flex items-center justify-between">
             <div class="flex items-center gap-2 cursor-pointer min-w-0" onclick="switchPage('home')" aria-label="AcctSuite home">
-                <div class="live-logo-mark" aria-hidden="true">A</div>
+                <img src="/img/brand/logo-mark.svg" alt="" class="live-logo-mark" width="40" height="40" decoding="async">
                 <span class="brand-wordmark">cctsuite</span>
             </div>
 
@@ -366,7 +360,7 @@
         <footer class="bg-white dark:bg-darkCard border-t border-gray-200 dark:border-gray-800 px-4 py-8 mt-6">
             <div class="max-w-md mx-auto space-y-6 text-sm">
                 <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-lg bg-skyBrand flex items-center justify-center text-white font-bold text-sm">A</div>
+                    <img src="/img/brand/logo-mark.svg" alt="" class="w-7 h-7 rounded-lg" width="28" height="28" decoding="async">
                     <span class="font-bold text-lg tracking-tight">acctsuite</span>
                 </div>
 

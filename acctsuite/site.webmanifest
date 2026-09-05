@@ -4,8 +4,8 @@
   "description": "Buy and sell digital accounts securely with escrow protection.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#F85830",
+  "background_color": "#061628",
+  "theme_color": "#0A2748",
   "icons": [
     { "src": "/favicon-96x96.png", "sizes": "96x96", "type": "image/png" },
     { "src": "/img/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
