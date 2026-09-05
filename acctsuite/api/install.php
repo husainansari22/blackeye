@@ -67,7 +67,7 @@ try {
     body{font-family:system-ui,sans-serif;background:#f1f5f9;margin:0;padding:24px}
     .card{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
     .ok{color:#059669}.err{color:#dc2626}
-    a{color:#081F3A} code{background:#f1f5f9;padding:2px 6px;border-radius:6px}
+    a{color:#7C3AED} code{background:#f1f5f9;padding:2px 6px;border-radius:6px}
   </style>
 </head>
 <body>

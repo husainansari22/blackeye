@@ -286,7 +286,7 @@
   }
 
   function listingCard(item, compact) {
-    const logoMark = productLogoMarkHtml(item, 'av-prod-logo av-market-logo w-5 h-5 rounded object-contain bg-white dark:bg-slate-900');
+    const logoMark = productLogoMarkHtml(item, 'av-prod-logo av-market-logo av-app-icon w-6 h-6');
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
@@ -310,7 +310,7 @@
       </div>`;
     }
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      ${productLogoMarkHtml(item, 'w-11 h-11 rounded-xl object-contain bg-white dark:bg-slate-900 shrink-0 av-market-logo')}
+      ${productLogoMarkHtml(item, 'w-11 h-11 shrink-0 av-market-logo av-app-icon')}
       <div class="min-w-0 flex-1">
         <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
         <p class="text-[10px] text-slate-500 truncate flex items-center gap-0.5">By <span class="inline-flex items-center min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span> · ${escapeHtml(cat)}</p>
@@ -325,7 +325,7 @@
 
   /** Full-width home row — AcctBazaar “Other product” pattern */
   function homeOtherListingCard(item) {
-    const logoMark = productLogoMarkHtml(item, 'w-12 h-12 rounded-xl object-contain bg-white dark:bg-slate-900 shrink-0 self-center av-market-logo');
+    const logoMark = productLogoMarkHtml(item, 'w-12 h-12 shrink-0 self-center av-market-logo av-app-icon');
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
@@ -595,9 +595,9 @@
         window.AcctSuiteCatalog &&
         (window.AcctSuiteCatalog.findProduct(cat) || window.AcctSuiteCatalog.findProduct(o.title));
       if (prod && window.AcctSuiteCatalog.logoMarkHtml) {
-        logoMark = window.AcctSuiteCatalog.logoMarkHtml(prod, 'w-5 h-5 rounded object-cover');
+        logoMark = window.AcctSuiteCatalog.logoMarkHtml(prod, 'w-6 h-6 av-app-icon');
       } else if (prod && prod.logo) {
-        logoMark = `<img src="${escapeAttr(prod.logo)}" alt="" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'">`;
+        logoMark = `<img src="${escapeAttr(prod.logo)}" alt="" class="w-6 h-6 av-app-icon" onerror="this.style.display='none'">`;
       }
     } catch (e) {}
     const icon = logoMark || `<i class="fa-solid fa-box text-slate-400 text-xs"></i>`;

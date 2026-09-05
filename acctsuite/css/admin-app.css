@@ -12,7 +12,7 @@
   --av-chat: #e8eef5;
   --av-bubble-in: #ffffff;
   --av-bubble-in-text: #0f172a;
-  --av-bubble-out: #0A2748;
+  --av-bubble-out: #8B5CF6;
   --av-bubble-out-text: #ffffff;
   --av-warn-bg: #fffbeb;
   --av-warn-border: #fde68a;
@@ -24,19 +24,19 @@
   --av-ok-border: #a7f3d0;
   --av-ok-text: #065f46;
   --av-danger: #ef4444;
-  --av-brand: #0A2748;
+  --av-brand: #8B5CF6;
   --av-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
 }
 
 html.dark {
   color-scheme: dark;
-  --av-bg: #061628;
-  --av-surface: #0A2748;
+  --av-bg: #0c0a14;
+  --av-surface: #8B5CF6;
   --av-surface-2: #0D3558;
   --av-text: #f8fafc;
   --av-muted: #94a3b8;
   --av-border: #134A7C;
-  --av-chat: #061628;
+  --av-chat: #0c0a14;
   --av-bubble-in: #1e293b;
   --av-bubble-in-text: #f8fafc;
   --av-bubble-out: #1E5A8C;
@@ -45,7 +45,7 @@ html.dark {
   --av-warn-border: #854d0e;
   --av-warn-text: #fde68a;
   --av-info-bg: #04101C;
-  --av-info-border: #061628;
+  --av-info-border: #0c0a14;
   --av-info-text: #F0F5FA;
   --av-ok-bg: #064e3b;
   --av-ok-border: #047857;
@@ -315,8 +315,8 @@ body.av-app,
 }
 .av-chip strong { color: var(--av-text); font-size: 0.8rem; }
 .av-chip.is-hot {
-  background: color-mix(in srgb, #0A2748 18%, var(--av-surface));
-  border-color: color-mix(in srgb, #0A2748 45%, var(--av-border));
+  background: color-mix(in srgb, #8B5CF6 18%, var(--av-surface));
+  border-color: color-mix(in srgb, #8B5CF6 45%, var(--av-border));
   color: #b45309;
 }
 html.dark .av-chip.is-hot { color: #fde68a; }
@@ -681,7 +681,7 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   border-color: var(--av-brand);
   color: #fff !important;
 }
-.av-btn-primary:hover { background: #081F3A; border-color: #081F3A; color: #fff !important; }
+.av-btn-primary:hover { background: #7C3AED; border-color: #7C3AED; color: #fff !important; }
 .av-btn-success {
   background: #059669;
   border-color: #059669;
@@ -1574,7 +1574,7 @@ html.dark .av-app thead {
   font-variant-numeric: tabular-nums;
 }
 .av-settings-value.is-hot {
-  color: #0A2748;
+  color: #8B5CF6;
   font-weight: 700;
 }
 .av-settings-chevron {

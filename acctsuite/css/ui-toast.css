@@ -125,8 +125,8 @@
 .av-toast--warn {
   --av-toast-bg: #1c1810;
   --av-toast-border: #92400e;
-  --av-toast-icon: #0A2748;
-  --av-toast-bar: #0A2748;
+  --av-toast-icon: #8B5CF6;
+  --av-toast-bar: #8B5CF6;
 }
 
 .av-toast--success {
@@ -139,8 +139,8 @@
 .av-toast--info {
   --av-toast-bg: #0f1720;
   --av-toast-border: #04101C;
-  --av-toast-icon: #0A2748;
-  --av-toast-bar: #0A2748;
+  --av-toast-icon: #8B5CF6;
+  --av-toast-bar: #8B5CF6;
 }
 
 @keyframes avToastBar {

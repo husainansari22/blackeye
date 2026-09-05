@@ -7,21 +7,21 @@
     <title>cctsuite — Marketplace Dashboard</title>
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905preview1">
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905violet1">
     <link rel="icon" href="https://acctsuite.com/favicon-96x96.png" type="image/png" sizes="96x96">
     <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
     <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
     <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png">
     <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
-    <meta name="theme-color" content="#0A2748">
-    <link rel="preload" href="/css/tailwind.css?v=20260905preview1" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905preview1">
+    <meta name="theme-color" content="#8B5CF6">
+    <link rel="preload" href="/css/tailwind.css?v=20260905violet1" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905preview1">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905violet1">
 <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260905preview1">
+    <link rel="stylesheet" href="/css/profile.css?v=20260905violet1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -51,7 +51,7 @@
           width: 0.95rem;
           height: 0.95rem;
           flex-shrink: 0;
-          accent-color: #0A2748;
+          accent-color: #8B5CF6;
         }
         .av-prod-logo {
           width: 1.15rem;
@@ -105,7 +105,7 @@
           font-size: 0.84rem;
         }
         .av-sell-pick-item:hover, .av-sell-pick-item.is-active {
-          background: color-mix(in srgb, #0A2748 14%, transparent);
+          background: color-mix(in srgb, #8B5CF6 14%, transparent);
         }
         .av-sell-pick-list {
           max-height: 14rem;
@@ -171,14 +171,14 @@
         #headerAuthMenuBtn { display: none; align-items: center; justify-content: center; }
         body.is-authed #headerAuthMenuBtn { display: inline-flex !important; }
 
-        #bottomNav .nav-item.is-active { color: #0A2748; }
+        #bottomNav .nav-item.is-active { color: #8B5CF6; }
         .dark #bottomNav .nav-item.is-active { color: #5BA3E0; }
         #bottomNav .nav-item.is-idle { color: #9ca3af; }
         .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
     </style>
     <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
     <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
-    <script defer src="/js/marketplace-catalog.js?v=20260905preview1"></script>
+    <script defer src="/js/marketplace-catalog.js?v=20260905violet1"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
@@ -190,7 +190,7 @@
                     <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-1.5 min-w-0">
-                    <img src="/img/brand/logo-mark.svg?v=20260905preview1" alt="AcctSuite" class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-sm shrink-0" width="36" height="36" decoding="async">
+                    <img src="/img/brand/logo-mark.svg?v=20260905violet1" alt="AcctSuite" class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-sm shrink-0" width="36" height="36" decoding="async">
                     <span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
                 </a>
             </div>
@@ -384,7 +384,7 @@
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-[#1A4A6E] via-brandPrimary to-brandHover p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
+            <div class="bg-gradient-to-br from-[#7C3AED] via-brandPrimary to-brandHover p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
                 <div class="absolute right-3 top-3 opacity-30 text-6xl"><i class="fa-solid fa-wallet"></i></div>
                 <div class="relative z-10">
                     <p class="text-xs text-sky-100 font-medium">Account balance</p>
@@ -975,14 +975,14 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.min.js?v=20260905preview1"></script>
-    <script src="/js/api-client.min.js?v=20260905preview1"></script>
-    <script src="/js/api-sync.min.js?v=20260905preview1"></script>
-    <script src="/js/kyc-app.min.js?v=20260905preview1"></script>
-    <script src="/js/av-confirm.js?v=20260905preview1"></script>
-    <script src="/js/commerce-ui.min.js?v=20260905preview1"></script>
-    <script src="/js/listing-modal.min.js?v=20260905preview1"></script>
-    <script src="/js/dashboard-app.min.js?v=20260905preview1"></script>
+    <script src="/js/acctsuite.min.js?v=20260905violet1"></script>
+    <script src="/js/api-client.min.js?v=20260905violet1"></script>
+    <script src="/js/api-sync.min.js?v=20260905violet1"></script>
+    <script src="/js/kyc-app.min.js?v=20260905violet1"></script>
+    <script src="/js/av-confirm.js?v=20260905violet1"></script>
+    <script src="/js/commerce-ui.min.js?v=20260905violet1"></script>
+    <script src="/js/listing-modal.min.js?v=20260905violet1"></script>
+    <script src="/js/dashboard-app.min.js?v=20260905violet1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

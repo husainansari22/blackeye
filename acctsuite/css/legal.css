@@ -2,15 +2,15 @@
 .av-pub { font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
 .av-pub-wrap { max-width: 42rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 .av-pub h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; margin: 0.5rem 0 0.75rem; }
-.av-pub h2 { font-size: 1.1rem; font-weight: 800; margin: 1.5rem 0 0.5rem; color: #0A2748; }
+.av-pub h2 { font-size: 1.1rem; font-weight: 800; margin: 1.5rem 0 0.5rem; color: #8B5CF6; }
 .av-pub p, .av-pub li { font-size: 0.9rem; line-height: 1.65; color: #475569; }
 .dark .av-pub p, .dark .av-pub li { color: #94a3b8; }
 .av-pub ul { padding-left: 1.15rem; margin: 0.4rem 0 0.8rem; }
 .av-pub li { margin: 0.3rem 0; }
-.av-pub a { color: #0A2748; }
+.av-pub a { color: #8B5CF6; }
 .av-pub-nav { display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; font-size: 0.75rem; margin-top: 0.75rem; }
-.av-pub-cta { display: inline-flex; align-items: center; justify-content: center; background: #0A2748; color: #fff !important; font-weight: 700; padding: 0.8rem 1.1rem; border-radius: 0.85rem; text-decoration: none; margin-top: 0.5rem; }
-.av-pub-cta:hover { background: #081F3A; }
+.av-pub-cta { display: inline-flex; align-items: center; justify-content: center; background: #8B5CF6; color: #fff !important; font-weight: 700; padding: 0.8rem 1.1rem; border-radius: 0.85rem; text-decoration: none; margin-top: 0.5rem; }
+.av-pub-cta:hover { background: #7C3AED; }
 
 .av-cac-badge {
   display: flex;
@@ -67,7 +67,7 @@
 .av-cac-cert__placeholder-icon { opacity: 0.9; }
 .av-cac-cert__placeholder-title { margin: 0.35rem 0 0; font-size: 0.95rem; font-weight: 800; color: #0f172a; }
 .dark .av-cac-cert__placeholder-title { color: #f8fafc; }
-.av-cac-cert__placeholder-sub { margin: 0; font-size: 0.82rem; font-weight: 700; color: #081F3A; }
+.av-cac-cert__placeholder-sub { margin: 0; font-size: 0.82rem; font-weight: 700; color: #7C3AED; }
 .av-cac-cert__placeholder-note { margin: 0.5rem 0 0; max-width: 18rem; font-size: 0.72rem; line-height: 1.5; color: #64748b; }
 .dark .av-cac-cert__placeholder-note { color: #94a3b8; }
 

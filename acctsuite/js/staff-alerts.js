@@ -42,7 +42,7 @@
     const style = document.createElement('style');
     style.id = 'acctsuiteStaffAlertStyles';
     style.textContent =
-      '#acctsuiteStaffToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120%);z-index:99999;max-width:min(92vw,380px);background:#0f172a;color:#fff;border:1px solid #0A2748;border-radius:14px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.35);transition:transform .25s ease;font-family:system-ui,sans-serif}' +
+      '#acctsuiteStaffToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120%);z-index:99999;max-width:min(92vw,380px);background:#0f172a;color:#fff;border:1px solid #8B5CF6;border-radius:14px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.35);transition:transform .25s ease;font-family:system-ui,sans-serif}' +
       '#acctsuiteStaffToast.show{transform:translateX(-50%) translateY(0)}' +
       '#acctsuiteStaffToast .t{font-weight:700;font-size:13px;margin:0 0 4px}' +
       '#acctsuiteStaffToast .b{font-size:12px;opacity:.9;margin:0;line-height:1.35}' +

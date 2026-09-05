@@ -192,7 +192,7 @@
     },
   ];
 
-  var LOGO_CACHE_KEY = 'acctsuite_logo_ok_v2';
+  var LOGO_CACHE_KEY = 'av_logo_ok_v5_violet';
   var logoOkCache = {};
   try {
     logoOkCache = JSON.parse(sessionStorage.getItem(LOGO_CACHE_KEY) || '{}') || {};
@@ -205,7 +205,7 @@
     var s = String(str || '');
     var i;
     for (i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-    var palette = ['#081F3A', '#081F3A', '#059669', '#d97706', '#db2777', '#081F3A', '#0d9488', '#e11d48'];
+    var palette = ['#7C3AED', '#7C3AED', '#059669', '#d97706', '#db2777', '#7C3AED', '#0d9488', '#e11d48'];
     return palette[Math.abs(h) % palette.length];
   }
 
@@ -226,6 +226,26 @@
     );
   }
 
+  function productLogoSlug(name, domain) {
+    var base = String(domain || name || '')
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .split('/')[0];
+    if (base.indexOf('.') !== -1) base = base.split('.')[0];
+    base = base.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return base || 'product';
+  }
+
+  function localLogoUrl(product) {
+    if (!product) return '';
+    var slug = productLogoSlug(product.name, product.domain);
+    if (!slug) return '';
+    // Cache-busted local high-res app icons (modern squircle / glass style where available).
+    return '/img/products/' + slug + '.png?v=20260905violet1';
+  }
+
   function remoteLogoCandidates(domain) {
     var d = String(domain || '')
       .trim()
@@ -233,9 +253,11 @@
       .replace(/^https?:\/\//, '')
       .split('/')[0];
     if (!d) return [];
-    // High-res Google favicons (Acctventa-style brand marks), DuckDuckGo fallback.
+    // Prefer full-color brand marks, then high-res favicons.
     return [
-      'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=128',
+      'https://logo.clearbit.com/' + d,
+      'https://icon.horse/icon/' + d,
+      'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=256',
       'https://icons.duckduckgo.com/ip3/' + d + '.ico',
     ];
   }
@@ -251,6 +273,8 @@
 
   function remoteLogoUrl(product) {
     if (!product) return '';
+    var local = localLogoUrl(product);
+    if (local) return local;
     var domain = String(product.domain || '').trim().toLowerCase();
     if (!domain) return '';
     if (logoOkCache[domain]) return logoOkCache[domain];
@@ -259,20 +283,20 @@
   }
 
   /**
-   * Brand logo URL — same approach as Acctventa (Google favicon CDN).
-   * Returns letter SVG only when no domain is available.
+   * Brand logo URL — local modern icons first, then Clearbit / icon.horse / Google.
    */
   function logoUrl(product) {
     if (!product) return letterLogoDataUri('?');
-    if (product.logo && /^https?:\/\//i.test(String(product.logo))) return product.logo;
+    if (product.logo && (/^https?:\/\//i.test(String(product.logo)) || String(product.logo).indexOf('/img/') === 0)) {
+      return product.logo;
+    }
     var remote = remoteLogoUrl(product);
     if (remote) return remote;
     return letterLogoDataUri(product.name || '?');
   }
 
   /**
-   * Listing/market logo markup (Acctventa look): crisp brand favicon in a rounded tile.
-   * Falls back to a letter avatar if the favicon fails.
+   * Listing/market logo markup: modern local app icon with CDN fallbacks.
    */
   function logoMarkHtml(product, className) {
     var name = (product && product.name) || '?';
@@ -280,30 +304,33 @@
       .trim()
       .toLowerCase();
     var letter = letterLogoDataUri(name);
-    var cls = className || 'av-prod-logo';
-    var src = logoUrl(product);
-    var cands = remoteLogoCandidates(domain);
+    var cls = className || 'av-prod-logo av-app-icon';
+    if (cls.indexOf('av-app-icon') === -1) cls += ' av-app-icon';
+    var local = localLogoUrl(product);
+    var cands = [];
+    if (local) cands.push(local);
+    cands = cands.concat(remoteLogoCandidates(domain));
     if (logoOkCache[domain]) {
-      src = logoOkCache[domain];
       cands = [logoOkCache[domain]].concat(cands.filter(function (u) { return u !== logoOkCache[domain]; }));
     }
-    var fallback = '';
-    if (cands.length && cands[0] === src && cands[1]) fallback = cands[1];
-    else if (cands.length && cands[0] !== src) fallback = cands[0];
+    var src = cands[0] || letter;
+    var fallback = cands[1] || '';
+    var rest = cands.slice(2).join('|');
     var domainAttr = domain.replace(/"/g, '');
-    // Single <img> like Acctventa — no forced 20×20 (that made large tiles blurry).
     return (
       '<img class="' +
       cls +
       '" src="' +
       src +
-      '" alt="" decoding="async" loading="lazy" data-domain="' +
+      '" alt="" width="48" height="48" decoding="async" loading="lazy" data-domain="' +
       domainAttr +
       '" data-letter="' +
       letter.replace(/"/g, '&quot;') +
       '" data-fb="' +
       String(fallback).replace(/"/g, '&quot;') +
-      '" onload="try{var d=this.getAttribute(\'data-domain\');if(d&&window.AcctSuiteCatalog&&window.AcctSuiteCatalog.rememberLogo&&this.src.indexOf(\'data:\')!==0)window.AcctSuiteCatalog.rememberLogo(d,this.src);}catch(e){}" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;return;}var L=this.getAttribute(\'data-letter\');if(L){this.onerror=null;this.src=L;}">'
+      '" data-rest="' +
+      String(rest).replace(/"/g, '&quot;') +
+      '" onload="try{var d=this.getAttribute(\'data-domain\');if(d&&window.AcctSuiteCatalog&&window.AcctSuiteCatalog.rememberLogo&&this.src.indexOf(\'data:\')!==0)window.AcctSuiteCatalog.rememberLogo(d,this.src);}catch(e){}" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;return;}var rest=this.getAttribute(\'data-rest\')||\'\';if(rest){var parts=rest.split(\'|\');this.setAttribute(\'data-rest\',parts.slice(1).join(\'|\'));this.src=parts[0];return;}var L=this.getAttribute(\'data-letter\');if(L){this.onerror=null;this.src=L;}">'
     );
   }
 

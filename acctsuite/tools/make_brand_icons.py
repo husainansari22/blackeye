@@ -6,7 +6,7 @@ import struct
 import zlib
 
 OUT = os.path.join(os.path.dirname(__file__), "..")
-BRAND = (10, 39, 72, 255)  # #0A2748
+BRAND = (10, 39, 72, 255)  # #8B5CF6
 WHITE = (255, 255, 255, 255)
 
 
@@ -125,7 +125,7 @@ def draw_icon(size, radius_ratio=0.22):
 
 def draw_og(w=1200, h=630):
     buf = bytearray(w * h * 4)
-    # dark navy bg
+    # dark violet bg
     bg = (15, 23, 42, 255)
     for i in range(0, len(buf), 4):
         buf[i : i + 4] = bytes(bg)
