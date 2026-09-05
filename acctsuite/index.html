@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="/js/theme-init.js?v=20260827theme1"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>AcctSuite — Digital Marketplace</title>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905violet2">
+    <meta name="description" content="The marketplace for digital products and services. Buy and sell social media accounts, VPNs, emails, and more from trusted sellers with escrow protection.">
+    <link rel="canonical" href="https://acctsuite.com/">
+    <!-- Google SERP favicon: PNG 48/96 first (absolute URLs). SVG is optional for modern browsers. -->
+    <link rel="icon" href="https://acctsuite.com/favicon-96-v5.png" type="image/png" sizes="96x96">
+    <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
+    <link rel="icon" href="https://acctsuite.com/favicon-32x32.png" type="image/png" sizes="32x32">
+    <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
+    <link rel="icon" href="https://acctsuite.com/favicon.ico" sizes="any">
+    <link rel="icon" href="https://acctsuite.com/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon-v5.png" sizes="180x180">
+    <link rel="manifest" href="https://acctsuite.com/site.webmanifest?v=20260905v3">
+    <meta name="theme-color" content="#8B5CF6">
+    <meta name="msapplication-TileColor" content="#8B5CF6">
+    <meta name="msapplication-TileImage" content="https://acctsuite.com/img/brand/icon-192-v3.png">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AcctSuite">
+    <meta property="og:title" content="AcctSuite">
+    <meta property="og:description" content="The marketplace for digital products and services. Buy social media accounts, VPNs, emails, and virtual numbers from trusted sellers.">
+    <meta property="og:url" content="https://acctsuite.com/">
+    <meta property="og:image" content="https://acctsuite.com/img/brand/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="AcctSuite">
+    <meta name="twitter:description" content="Buy and sell digital accounts securely.">
+    <meta name="twitter:image" content="https://acctsuite.com/img/brand/icon-512-v3.png">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "AcctSuite",
+      "alternateName": "cctsuite",
+      "url": "https://acctsuite.com/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://acctsuite.com/marketplace?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "AcctSuite",
+      "legalName": "AcctSuite Services",
+      "url": "https://acctsuite.com/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://acctsuite.com/img/brand/icon-512-v3.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://acctsuite.com/img/brand/google-favicon.png",
+      "email": "support@acctsuite.com",
+      "identifier": {
+        "@type": "PropertyValue",
+        "propertyID": "CAC Business Name Registration",
+        "value": "9796330"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Benin City",
+        "addressRegion": "Edo State",
+        "addressCountry": "NG"
+      },
+      "sameAs": [
+        "https://instagram.com/acctsuite",
+        "https://x.com/acctsuite",
+        "https://t.me/acctsuite",
+        "https://t.me/acctsuite_support",
+        "https://tiktok.com/@acctsuite"
+      ]
+    }
+    </script>
+    <link rel="preload" href="/css/tailwind.css?v=20260905violet2" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet2">
+    <script defer src="/js/api-client.min.js?v=20260905violet2"></script>
+    
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905violet2">
+<link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
+    <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
+    <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
+    <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
+    <style>
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-2px) scale(1.04); }
+        }
+        @keyframes escrowPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.92); }
+        }
+        @keyframes escrowShimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .live-logo-mark {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.65rem;
+            display: inline-block;
+            flex-shrink: 0;
+            object-fit: contain;
+            animation: floatLogo 3s ease-in-out infinite;
+        }
+        .brand-wordmark {
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #7C3AED, #A78BFA);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header-escrow-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.28rem 0.65rem;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #0c0a14;
+            background: linear-gradient(90deg, #E8EEF5, #F0F5FA, #E8EEF5);
+            background-size: 200% 100%;
+            animation: escrowShimmer 4s linear infinite;
+            border: 1px solid rgba(99, 102, 241, 0.25);
+        }
+        .dark .header-escrow-badge {
+            color: #c7d2fe;
+            background: linear-gradient(90deg, rgba(91,33,182,0.55), rgba(139,92,246,0.45), rgba(91,33,182,0.55));
+            background-size: 200% 100%;
+            border-color: rgba(129, 140, 248, 0.35);
+        }
+        .header-escrow-dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 999px;
+            background: #10b981;
+            animation: escrowPulse 1.8s ease-in-out infinite;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+        }
+        /* Auth inputs: compiled CSS lacks bg-inputBg — force visible typing */
+        .auth-field {
+            width: 100%;
+            background: #0c0a14 !important;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            color: #f8fafc !important;
+            -webkit-text-fill-color: #f8fafc;
+            caret-color: #818cf8;
+            font-size: 0.875rem;
+            transition: border-color 0.15s ease;
+        }
+        .auth-field::placeholder {
+            color: #64748b;
+            -webkit-text-fill-color: #64748b;
+            opacity: 1;
+        }
+        .auth-field:focus {
+            outline: none;
+            border-color: #8B5CF6;
+        }
+        .auth-field:-webkit-autofill,
+        .auth-field:-webkit-autofill:hover,
+        .auth-field:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f8fafc !important;
+            caret-color: #818cf8;
+            box-shadow: 0 0 0 1000px #0c0a14 inset !important;
+            transition: background-color 99999s ease-out;
+        }
+        .auth-phone-wrap {
+            display: flex;
+            background: #0c0a14;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        .auth-phone-wrap:focus-within { border-color: #8B5CF6; }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+
+    <!-- HEADER / NAVBAR -->
+    <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-0.5 cursor-pointer min-w-0" onclick="switchPage('home')" aria-label="AcctSuite home">
+                <img src="/img/brand/logo-mark-violet-v6.svg?v=20260905bag6" alt="" class="live-logo-mark" width="40" height="40" decoding="async" style="border-radius:0;box-shadow:none">
+                <span class="brand-wordmark">cctsuite</span>
+            </div>
+
+            <div class="header-escrow-badge" title="Protected by escrow">
+                <span class="header-escrow-dot" aria-hidden="true"></span>
+                Escrow
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="themeToggle" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                    <i class="fa-solid fa-sun dark:hidden"></i>
+                    <i class="fa-solid fa-moon hidden dark:block"></i>
+                </button>
+                <button onclick="toggleMenu()" class="w-9 h-9 rounded-full bg-skyBrand text-white flex items-center justify-center focus:outline-none">
+                    <i class="fa-solid fa-bars" id="menuIcon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- DROPDOWN MENU -->
+        <div id="mobileMenu" class="hidden absolute top-full left-0 w-full bg-white dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 shadow-xl py-4 px-6 space-y-4">
+            <div class="flex flex-col space-y-3 font-medium text-sm">
+                <a href="#" onclick="switchPage('home'); toggleMenu();" class="hover:text-skyBrand">Home</a>
+                <a href="#features" onclick="toggleMenu()" class="hover:text-skyBrand">Features</a>
+                <a href="#howitworks" onclick="toggleMenu()" class="hover:text-skyBrand">How it Works</a>
+                <a href="#whyus" onclick="toggleMenu()" class="hover:text-skyBrand">Why Us</a>
+                <a href="/marketplace" class="hover:text-skyBrand">Go to Marketplace</a>
+                <a href="/sell" class="hover:text-skyBrand">Become a Merchant</a>
+                <a href="/guidelines" class="hover:text-skyBrand">Community Standards</a>
+                <a href="/login" onclick="switchPage('login'); toggleMenu(); return false;" class="text-skyBrand font-bold pt-2 border-t border-gray-100 dark:border-gray-800"><i class="fa-solid fa-right-to-bracket mr-2"></i> Login</a>
+                <a href="/signup" onclick="switchPage('signup'); toggleMenu(); return false;" class="bg-skyBrand text-white text-center py-2.5 rounded-xl font-bold"><i class="fa-solid fa-user-plus mr-2"></i> Sign Up</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- PAGE 1: HOME PAGE -->
+    <div id="page_home" class="block pb-10">
+        <!-- HERO SECTION -->
+        <section class="px-4 pt-10 pb-6 text-center max-w-md mx-auto">
+            <div class="inline-flex items-center gap-1.5 bg-sky-100 dark:bg-brandPrimary/40 text-skyBrand text-xs px-3 py-1.5 rounded-full font-medium mb-6">
+                <span class="animate-pulse">✨</span> Trusted by 300k+ users
+            </div>
+
+            <h1 class="text-3xl font-extrabold tracking-tight mb-4 leading-tight">
+                The Marketplace for Digital Products & Services.
+            </h1>
+
+            <p class="text-gray-600 dark:text-gray-400 text-sm mb-8 leading-relaxed">
+                Buy and sell digital products, business tools, subscriptions, virtual numbers, gift cards, and more through verified merchants with secure escrow protection.
+            </p>
+
+            <div class="flex flex-col gap-3">
+                <button onclick="handleBrowseMarket()" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-store"></i> Browse Marketplace
+                </button>
+                <button onclick="openAppInstallModal()" class="w-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-mobile-screen"></i> Mobile App
+                </button>
+                <a href="https://t.me/acctsuite" target="_blank" rel="noopener noreferrer" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-paper-plane"></i> Join Groupchat
+                </a>
+                <div class="pt-2">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Follow us on social media</p>
+                    <div class="flex justify-center gap-3">
+                        <a href="https://instagram.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on Instagram" class="w-10 h-10 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand hover:bg-skyBrand hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://x.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on X" class="w-10 h-10 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand hover:bg-skyBrand hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-x-twitter"></i></a>
+                        <a href="https://tiktok.com/@acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on TikTok" class="w-10 h-10 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand hover:bg-skyBrand hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-tiktok"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES SECTION -->
+        <section id="features" class="px-4 py-8 max-w-md mx-auto space-y-6">
+            <div class="text-center">
+                <span class="bg-sky-100 dark:bg-brandPrimary/40 text-skyBrand text-xs px-4 py-1.5 rounded-full font-semibold">Features</span>
+                <h2 class="text-2xl font-bold mt-4">Buy & Sell Verified Digital Products Securely</h2>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Verified Digital Products Marketplace</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Buy and sell TikTok accounts, Telegram numbers, social media accounts, VPN accounts, email accounts, and websites from verified sellers on AcctSuite.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Secure Escrow Transactions</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    All purchases are protected through secure escrow payments, ensuring buyers receive their digital accounts before funds are released to sellers.
+                </p>
+                <div class="bg-gray-100 dark:bg-gray-900 p-4 rounded-xl text-center">
+                    <div class="w-full bg-skyBrand text-white text-xs py-2 rounded-lg font-bold">Pay</div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Chat With Sellers Before Buying</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Message sellers directly to verify account details, ask questions, and confirm delivery before purchasing digital accounts.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Buyer Reviews & Seller Ratings</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    View seller ratings, buyer reviews, and transaction history to safely buy verified digital accounts from trusted merchants.
+                </p>
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS SECTION -->
+        <section id="howitworks" class="px-4 py-8 max-w-md mx-auto space-y-6">
+            <div class="text-center">
+                <span class="bg-sky-100 dark:bg-brandPrimary/40 text-skyBrand text-xs px-4 py-1.5 rounded-full font-semibold">How It Works</span>
+                <h2 class="text-2xl font-bold mt-4">Buy & Sell Digital Products in 3 Simple Steps</h2>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-sky-100 dark:bg-brandPrimary/40 text-skyBrand flex items-center justify-center font-bold text-sm mb-4">01</span>
+                <h3 class="font-bold text-base mb-2">Browse Digital Accounts Marketplace</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Search and explore TikTok accounts, Telegram numbers, email accounts, VPN accounts, and other digital products listed by verified sellers on AcctSuite.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-sky-100 dark:bg-brandPrimary/40 text-skyBrand flex items-center justify-center font-bold text-sm mb-4">02</span>
+                <h3 class="font-bold text-base mb-2">Secure Payment & Escrow Protection</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Payments are protected through escrow until the digital accounts are fully delivered.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-sky-100 dark:bg-brandPrimary/40 text-skyBrand flex items-center justify-center font-bold text-sm mb-4">03</span>
+                <h3 class="font-bold text-base mb-2">Receive Your Digital Product Instantly</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Get your TikTok account, Telegram number, VPN access, or other digital product delivered instantly or within the seller's delivery time.
+                </p>
+            </div>
+        </section>
+
+        <!-- WHY US SECTION -->
+        <section id="whyus" class="px-4 py-8 max-w-md mx-auto space-y-4">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold">Why Choose AcctSuite</h2>
+            </div>
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3 text-xs text-gray-600 dark:text-gray-300">
+                <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>Trusted Digital Accounts Marketplace:</strong> Buy and sell verified accounts safely.</p>
+                <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>Secure Escrow Protection:</strong> Every purchase is guarded against fraud.</p>
+                <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>Instant Delivery:</strong> Automated dispatch for digital assets.</p>
+                <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>CAC Registered Business:</strong> Operated by AcctSuite Services (BN 9796330), Nigeria.</p>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="bg-white dark:bg-darkCard border-t border-gray-200 dark:border-gray-800 px-4 py-8 mt-6">
+            <div class="max-w-md mx-auto space-y-6 text-sm">
+                <div class="flex items-center gap-2">
+                    <img src="/img/brand/logo-mark-violet-v6.svg?v=20260905bag6" alt="" class="w-7 h-7" width="28" height="28" decoding="async">
+                    <span class="font-bold text-lg tracking-tight -ml-0.5">acctsuite</span>
+                </div>
+
+                <a href="/company" class="flex items-center gap-3 p-3.5 rounded-xl border border-brandPrimary/30 bg-brandPrimary/10 no-underline text-inherit">
+                    <img src="/img/trust/cac-nigeria.svg" alt="" class="w-8 h-8 shrink-0" width="32" height="32">
+                    <div>
+                        <strong class="block text-xs font-bold text-slate-900 dark:text-white">CAC registered · Nigeria</strong>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug m-0">AcctSuite Services · BN 9796330 · View registration</p>
+                    </div>
+                </a>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    AcctSuite is a global marketplace for digital products and services. Browse virtual numbers, VPN services, subscriptions, gift cards, software tools, and other digital solutions from verified merchants.
+                </p>
+
+                <div class="flex gap-3">
+                    <a href="https://instagram.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on Instagram" class="w-9 h-9 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand hover:bg-skyBrand hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://x.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on X" class="w-9 h-9 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand hover:bg-skyBrand hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://tiktok.com/@acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on TikTok" class="w-9 h-9 rounded-full bg-sky-100 dark:bg-gray-800 text-skyBrand hover:bg-skyBrand hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-tiktok"></i></a>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold">Quick Links</h4>
+                    <div class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <a href="/">Home</a>
+                        <a href="/login">Login to your account</a>
+                        <a href="/signup">Sign up</a>
+                        <a href="/marketplace">Go to Marketplace</a>
+                        <a href="/sell">Become a Merchant</a>
+                        <a href="/guidelines">Community Standards</a>
+                        <a href="/company">Company &amp; CAC</a>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold">Contact Us</h4>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                        <p>support@acctsuite.com</p>
+                        <p>Support Telegram: <a href="https://t.me/acctsuite_support" target="_blank" rel="noopener noreferrer" class="text-skyBrand hover:underline">@acctsuite_support</a></p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+                    <span>Copyright © 2026 AcctSuite. All rights reserved</span>
+                    <span class="flex gap-3">
+                      <a href="/privacy">Privacy Policy</a>
+                      <a href="/terms">Terms</a>
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- PAGE 2: SIGN UP PAGE -->
+    <div id="page_signup" class="hidden min-h-screen bg-black px-6 py-10 flex flex-col max-w-md mx-auto relative">
+        <div class="mb-6 mt-4">
+            <h1 class="text-2xl font-bold text-white mb-1">Welcome to AcctSuite 👋</h1>
+            <p class="text-gray-400 text-sm">Already have an account? <span class="text-skyBrand cursor-pointer font-medium" onclick="switchPage('login')">Login</span></p>
+        </div>
+
+        <form class="space-y-4" onsubmit="handleSignup(event)">
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Full Name <span class="text-red-500">*</span></label>
+                <input type="text" id="su_name" placeholder="Type your full name" class="auth-field px-4 py-3" required>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Email address <span class="text-red-500">*</span></label>
+                <input type="email" id="su_email" placeholder="Type your Email address" class="auth-field px-4 py-3" required>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                <div class="auth-phone-wrap">
+                    <div class="flex items-center px-3 border-r border-slate-600 text-white text-sm gap-2 shrink-0">
+                        <img id="country_flag" src="https://flagcdn.com/24x18/ng.png" alt="flag" class="w-6 h-4 rounded-sm object-cover">
+                        <span id="country_code" class="text-xs font-semibold">+234</span>
+                    </div>
+                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-white text-sm focus:outline-none auth-field" style="border:0;border-radius:0;background:transparent!important" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="su_pass" placeholder="Type your Password" class="auth-field pl-4 pr-10 py-3" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_pass', this)"></i>
+                </div>
+                <ul class="text-gray-500 text-xs mt-1.5 space-y-0.5 list-disc pl-4">
+                    <li>Minimum length of 3-30 characters</li>
+                    <li>Only lowercase, numeric and symbols allowed</li>
+                </ul>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Confirm password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="auth-field pl-4 pr-10 py-3" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_cpass', this)"></i>
+                </div>
+            </div>
+
+            <div class="flex items-start gap-2.5 mt-2">
+                <input type="checkbox" id="su_terms" class="mt-1 w-4 h-4 rounded border-gray-600 bg-inputBg focus:ring-skyBrand" required>
+                <p class="text-xs text-gray-400 leading-tight">By clicking on this, I give consent to AcctSuite <a href="/privacy" class="text-skyBrand underline">Privacy Policy</a> and <a href="/terms" class="text-skyBrand underline">Terms of Use</a></p>
+            </div>
+
+            <button type="submit" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl transition mt-3">
+                Sign up
+            </button>
+        </form>
+        
+        <button class="absolute top-4 left-4 text-gray-400 hover:text-white" onclick="switchPage('home')">
+            <i class="fa-solid fa-arrow-left text-lg"></i>
+        </button>
+    </div>
+
+    <!-- PAGE 3: LOGIN PAGE -->
+    <div id="page_login" class="hidden min-h-screen bg-black px-6 py-12 flex flex-col max-w-md mx-auto relative justify-center">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Login to your account</h1>
+            <p class="text-gray-400 text-sm">Don't have an account? <span class="text-skyBrand cursor-pointer font-medium" onclick="switchPage('signup')">Sign up</span></p>
+        </div>
+
+        <form class="space-y-5" onsubmit="handleLogin(event)">
+            <div>
+                <label class="block text-xs text-gray-300 mb-1.5">Email address <span class="text-red-500">*</span></label>
+                <input type="email" id="li_email" placeholder="Type your Email address" class="auth-field px-4 py-3.5" required>
+            </div>
+            
+            <div>
+                <label class="block text-xs text-gray-300 mb-1.5">Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="li_pass" placeholder="Type your Password" class="auth-field pl-4 pr-10 py-3.5" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('li_pass', this)"></i>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <a href="#" onclick="openForgotPassword(event)" class="text-xs text-skyBrand hover:underline">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="w-full bg-slate-900 border border-slate-600 text-gray-300 hover:bg-skyBrand hover:text-white hover:border-skyBrand font-semibold py-3.5 rounded-xl transition">
+                Login
+            </button>
+        </form>
+        
+        <button class="absolute top-6 left-6 text-gray-400 hover:text-white" onclick="switchPage('home')">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+        </button>
+    </div>
+
+    <!-- MODAL POPUP (FORGOT PASSWORD & MOBILE APP INSTALL) -->
+    <div id="appModal" class="hidden fixed inset-0 bg-black/80 z-50 items-center justify-center p-4">
+        <div class="bg-darkCard border border-gray-800 w-full max-w-sm rounded-2xl p-6 relative space-y-4 text-white">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function switchPage(pageId) {
+            document.getElementById('page_home').classList.add('hidden');
+            document.getElementById('page_signup').classList.add('hidden');
+            document.getElementById('page_login').classList.add('hidden');
+            document.getElementById('page_' + pageId).classList.remove('hidden');
+            window.scrollTo(0, 0);
+            const titles = {
+                home: 'AcctSuite',
+                login: 'Login to your account | AcctSuite',
+                signup: 'Sign up | AcctSuite'
+            };
+            document.title = titles[pageId] || titles.home;
+        }
+
+        function togglePass(fieldId, icon) {
+            const input = document.getElementById(fieldId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function showAuthToast(message) {
+            if (window.AcctSuiteToast) {
+                window.AcctSuiteToast.show(message || 'Something went wrong', { type: 'error', duration: 4500 });
+                return;
+            }
+            alert(message || 'Something went wrong');
+        }
+
+        function hideAuthToast() {
+            /* legacy no-op — toasts auto-dismiss */
+        }
+
+        function openForgotPassword(e) {
+            e.preventDefault();
+            const modal = document.getElementById('appModal');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="pr-4">
+                  <div class="w-11 h-11 rounded-xl bg-skyBrand/15 text-skyBrand flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-key"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-1.5 tracking-tight">Forgot your password?</h3>
+                  <p class="text-xs text-gray-400 mb-5 leading-relaxed">Enter the email on your AcctSuite account. We’ll send a secure link so you can choose a new password.</p>
+                  <label class="block text-xs text-gray-300 mb-1.5">Email address</label>
+                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="auth-field p-3.5 mb-3" required>
+                  <p id="forgotErr" class="hidden text-xs text-red-400 mb-3"></p>
+                  <button id="forgotBtn" onclick="submitForgotPassword()" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm transition">Send reset link</button>
+                  <p class="text-[11px] text-gray-500 mt-4 text-center">Remembered it? <button type="button" onclick="closeModal()" class="text-skyBrand font-medium">Back to login</button></p>
+                </div>
+            `;
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            const known = document.getElementById('li_email');
+            if (known && known.value) document.getElementById('forgotEmail').value = known.value;
+        }
+
+        async function submitForgotPassword() {
+            const email = (document.getElementById('forgotEmail').value || '').trim().toLowerCase();
+            const err = document.getElementById('forgotErr');
+            const btn = document.getElementById('forgotBtn');
+            err.classList.add('hidden');
+            if (!email) {
+                err.textContent = 'Please enter your email address.';
+                err.classList.remove('hidden');
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Sending…';
+            try {
+                if (!window.AcctSuiteApi || !(await window.AcctSuiteApi.isAvailable())) {
+                    throw new Error('Email service is not connected yet. Make sure the backend is installed.');
+                }
+                await window.AcctSuiteApi.forgotPassword({ email });
+                showForgotSuccess(email);
+            } catch (ex) {
+                const code = (ex.data && ex.data.code) || '';
+                if (code === 'user_not_found' || /does not exist|not found|no account/i.test(ex.message || '')) {
+                    showForgotNotRegistered(email);
+                    return;
+                }
+                err.textContent = ex.message || 'Could not send reset email.';
+                err.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Send reset link';
+            }
+        }
+
+        function showForgotNotRegistered(email) {
+            const safe = String(email || '').replace(/</g, '&lt;');
+            showAuthToast('User does not exist');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-center py-2">
+                  <div class="mx-auto w-14 h-14 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center text-2xl mb-4">
+                    <i class="fa-solid fa-user-xmark"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-2 tracking-tight">No account found</h3>
+                  <p class="text-sm text-gray-300 mb-1">We couldn’t find</p>
+                  <p class="text-sm font-semibold text-skyBrand mb-4 break-all">${safe}</p>
+                  <p class="text-xs text-gray-400 mb-5 leading-relaxed">That email isn’t registered on AcctSuite yet. Create an account to get started.</p>
+                  <button onclick="closeModal(); switchPage('signup');" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm mb-2">Create an account</button>
+                  <button onclick="openForgotPassword(event)" class="w-full text-xs text-gray-400 py-2">Try a different email</button>
+                </div>
+            `;
+        }
+
+        function showForgotSuccess(email) {
+            const safe = String(email || '').replace(/</g, '&lt;');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-center py-2">
+                  <div class="mx-auto w-14 h-14 rounded-full bg-skyBrand/15 text-skyBrand flex items-center justify-center text-2xl mb-4">
+                    <i class="fa-regular fa-envelope"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-2 tracking-tight">Check your inbox</h3>
+                  <p class="text-sm text-gray-300 mb-1">We sent a reset link to</p>
+                  <p class="text-sm font-semibold text-skyBrand mb-4 break-all">${safe}</p>
+                  <div class="bg-black/40 border border-gray-800 rounded-xl p-3 text-left mb-5">
+                    <p class="text-[11px] text-gray-400 leading-relaxed">Open the email from <strong class="text-gray-200">AcctSuite</strong>, tap <strong class="text-gray-200">Choose a new password</strong>, and you’re done. The link expires in 30 minutes. Check spam if you don’t see it.</p>
+                  </div>
+                  <button onclick="closeModal()" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm">Back to login</button>
+                </div>
+            `;
+        }
+
+        let deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+        });
+
+        function openAppInstallModal() {
+            const modal = document.getElementById('appModal');
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-xl mb-1 text-white">Install the AcctSuite App</h3>
+                <p class="text-xs text-gray-400 mb-4">Add <strong class="text-skyBrand">acctsuite.com</strong> to your home screen and use it like a native app — no app store required.</p>
+                
+                <div class="bg-darkBg p-4 rounded-xl border border-gray-800 space-y-2 mb-3">
+                    <div class="flex items-center gap-2 text-sm font-bold text-white">
+                        <i class="fa-brands fa-apple text-xl"></i> iOS (Safari)
+                    </div>
+                    <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
+                        <li>Open <a href="https://acctsuite.com/" class="text-skyBrand underline">acctsuite.com</a> in Safari</li>
+                        <li>Tap the Share icon in the toolbar</li>
+                        <li>Select <strong>Add to Home Screen</strong></li>
+                    </ol>
+                </div>
+
+                <div class="bg-darkBg p-4 rounded-xl border border-gray-800 space-y-2 mb-4">
+                    <div class="flex items-center gap-2 text-sm font-bold text-white">
+                        <i class="fa-brands fa-android text-emerald-400 text-xl"></i> Android (Chrome)
+                    </div>
+                    <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
+                        <li>Open <a href="https://acctsuite.com/" class="text-skyBrand underline">acctsuite.com</a> in Chrome</li>
+                        <li>Tap the menu (⋮) top-right corner</li>
+                        <li>Select <strong>Install app</strong> or <strong>Add to Home screen</strong></li>
+                    </ol>
+                </div>
+
+                <button type="button" onclick="downloadAcctSuiteApp()" class="w-full bg-skyBrand hover:bg-skyHover text-white py-3.5 rounded-xl font-bold text-sm transition shadow-lg">Download Now</button>
+            `;
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        async function downloadAcctSuiteApp() {
+            // Prefer the browser's native install prompt when available
+            if (deferredPwaPrompt) {
+                try {
+                    deferredPwaPrompt.prompt();
+                    await deferredPwaPrompt.userChoice;
+                    deferredPwaPrompt = null;
+                    closeModal();
+                    if (window.AcctSuiteToast) window.AcctSuiteToast.success('Install started');
+                    return;
+                } catch (e) {}
+            }
+
+            const ua = navigator.userAgent || '';
+            const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(ua);
+
+            if (isIOS) {
+                if (window.AcctSuiteToast) {
+                    window.AcctSuiteToast.info('On Safari: tap Share → Add to Home Screen');
+                } else {
+                    alert('On Safari: tap Share → Add to Home Screen to install AcctSuite.');
+                }
+                closeModal();
+                // Stay on the main site so they can add the current page
+                if (location.hostname !== 'acctsuite.com' && location.hostname !== 'www.acctsuite.com') {
+                    location.href = 'https://acctsuite.com/';
+                }
+                return;
+            }
+
+            if (isAndroid) {
+                if (window.AcctSuiteToast) {
+                    window.AcctSuiteToast.info('Tap menu (⋮) → Install app / Add to Home screen');
+                } else {
+                    alert('In Chrome: tap menu (⋮) → Install app or Add to Home screen.');
+                }
+                closeModal();
+                if (location.hostname !== 'acctsuite.com' && location.hostname !== 'www.acctsuite.com') {
+                    location.href = 'https://acctsuite.com/';
+                }
+                return;
+            }
+
+            // Desktop / other: open the live app
+            closeModal();
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                location.href = '/dashboard.html';
+            } else {
+                location.href = '/login';
+            }
+        }
+
+        function handleBrowseMarket() {
+            // Anyone can browse listings; buy/sell still require sign-in on the dashboard
+            window.location.href = '/dashboard.html#home';
+        }
+
+        function getUsers() {
+            try { return JSON.parse(localStorage.getItem('acctsuite_users') || '{}'); }
+            catch (e) { return {}; }
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('acctsuite_users', JSON.stringify(users));
+        }
+
+        function setSession(user) {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('acctsuite_session', user.email.toLowerCase());
+            localStorage.setItem('userName', user.name);
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userPhone', user.phone || '');
+            localStorage.setItem('walletBalance', String(user.balance ?? 0));
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const name = (document.getElementById('su_name').value || '').trim();
+            const email = (document.getElementById('su_email').value || '').trim().toLowerCase();
+            const phone = (document.getElementById('su_phone').value || '').trim();
+            const pass = document.getElementById('su_pass').value || '';
+            const cpass = document.getElementById('su_cpass').value || '';
+            const code = document.getElementById('country_code') ? document.getElementById('country_code').innerText : '';
+
+            if (!name || !email || !phone || !pass) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            if (pass !== cpass) {
+                alert('Passwords do not match.');
+                return;
+            }
+
+            const fullPhone = (code ? code + ' ' : '') + phone;
+            const ref = new URLSearchParams(window.location.search).get('ref') || '';
+
+            // Prefer MySQL API when installed on Hostinger
+            if (window.AcctSuiteApi) {
+                try {
+                    const online = await window.AcctSuiteApi.isAvailable();
+                    if (online) {
+                        await window.AcctSuiteApi.register({
+                            name: name,
+                            email: email,
+                            phone: fullPhone,
+                            password: pass,
+                            referredBy: ref,
+                            countryCode: (window.__signupCountryCode || document.getElementById('country_flag')?.src?.match(/\/([a-z]{2})\.png/i)?.[1] || 'ng')
+                        });
+                        window.location.href = "/dashboard.html";
+                        return;
+                    }
+                } catch (err) {
+                    alert(err.message || 'Signup failed. Please try again.');
+                    return;
+                }
+            }
+
+            const users = getUsers();
+            if (users[email]) {
+                alert('An account with this email already exists. Please login.');
+                switchPage('login');
+                return;
+            }
+
+            let ownCode = '';
+            if (window.AcctSuite && typeof window.AcctSuite.randomReferralCode === 'function') {
+                ownCode = window.AcctSuite.randomReferralCode();
+            } else {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+                for (let a = 0; a < 40 && (!/[A-Za-z]/.test(ownCode) || !/[0-9]/.test(ownCode)); a++) {
+                    ownCode = '';
+                    for (let i = 0; i < 5; i++) ownCode += chars[Math.floor(Math.random() * chars.length)];
+                }
+                if (!ownCode || ownCode.length !== 5) ownCode = 'a7K2m';
+            }
+            const user = {
+                name: name,
+                email: email,
+                phone: fullPhone,
+                countryCode: window.__signupCountryCode || 'ng',
+                password: pass,
+                balance: 0,
+                escrowBalance: 0,
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                plan: 'free',
+                uploadsByDay: {},
+                orders: [],
+                ads: [],
+                notifications: [],
+                transactions: [],
+                messages: {},
+                referralCode: ownCode,
+                referredBy: ref,
+                createdAt: new Date().toISOString()
+            };
+            users[email] = user;
+            saveUsers(users);
+            setSession(user);
+            try { localStorage.removeItem('acctsuite_backend'); } catch (e) {}
+            window.location.href = "/dashboard.html";
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = (document.getElementById('li_email').value || '').trim().toLowerCase();
+            const pass = document.getElementById('li_pass').value || '';
+
+            if (window.AcctSuiteApi) {
+                try {
+                    const online = await window.AcctSuiteApi.isAvailable();
+                    if (online) {
+                        await window.AcctSuiteApi.login({ email: email, password: pass });
+                        window.location.href = "/dashboard.html";
+                        return;
+                    }
+                } catch (err) {
+                    const code = (err.data && err.data.code) || '';
+                    if (code === 'user_not_found') showAuthToast('User does not exist');
+                    else showAuthToast(err.message || 'Invalid email or password');
+                    return;
+                }
+            }
+
+            const users = getUsers();
+            const user = users[email];
+
+            if (!user) {
+                showAuthToast('User does not exist');
+                return;
+            }
+            if (user.password !== pass) {
+                showAuthToast('Invalid email or password');
+                return;
+            }
+            setSession(user);
+            try { localStorage.removeItem('acctsuite_backend'); } catch (e) {}
+            window.location.href = "/dashboard.html";
+        }
+
+        function openModal() {
+            const el = document.getElementById('appModal');
+            if (!el) return;
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+        function closeModal() {
+            const el = document.getElementById('appModal');
+            if (!el) return;
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // Open signup/login when visiting /auth/sign-up or ?page=signup
+        (function openAuthPageFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const page = (params.get('page') || '').toLowerCase();
+            const path = window.location.pathname.toLowerCase();
+            if (page === 'signup' || path.indexOf('/auth/sign-up') !== -1 || path.indexOf('/signup') !== -1 || path.indexOf('/register') !== -1 || path.indexOf('/user/sign-up') !== -1 || path.indexOf('/user/signup') !== -1 || path.indexOf('/user/register') !== -1) {
+                switchPage('signup');
+            } else if (page === 'login' || path.indexOf('/auth/login') !== -1 || path.indexOf('/auth/sign-in') !== -1 || path.indexOf('/login') !== -1 || path.indexOf('/user/login') !== -1 || path.indexOf('/user/sign-in') !== -1) {
+                switchPage('login');
+            }
+        })();
+
+        // Detect user country for signup phone prefix
+        async function detectUserCountry() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data.country_code && data.country_calling_code) {
+                    window.__signupCountryCode = String(data.country_code).toLowerCase();
+                    document.getElementById('country_flag').src = `https://flagcdn.com/24x18/${data.country_code.toLowerCase()}.png`;
+                    document.getElementById('country_code').innerText = data.country_calling_code;
+                }
+            } catch (e) {
+                console.log("Using default country settings.");
+            }
+        }
+        detectUserCountry();
+    </script>
+</body>
+</html>

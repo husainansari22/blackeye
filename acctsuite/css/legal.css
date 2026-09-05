@@ -1,0 +1,90 @@
+/* Shared public/legal pages */
+.av-pub { font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+.av-pub-wrap { max-width: 42rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.av-pub h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; margin: 0.5rem 0 0.75rem; }
+.av-pub h2 { font-size: 1.1rem; font-weight: 800; margin: 1.5rem 0 0.5rem; color: #8B5CF6; }
+.av-pub p, .av-pub li { font-size: 0.9rem; line-height: 1.65; color: #475569; }
+.dark .av-pub p, .dark .av-pub li { color: #94a3b8; }
+.av-pub ul { padding-left: 1.15rem; margin: 0.4rem 0 0.8rem; }
+.av-pub li { margin: 0.3rem 0; }
+.av-pub a { color: #8B5CF6; }
+.av-pub-nav { display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; font-size: 0.75rem; margin-top: 0.75rem; }
+.av-pub-cta { display: inline-flex; align-items: center; justify-content: center; background: #8B5CF6; color: #fff !important; font-weight: 700; padding: 0.8rem 1.1rem; border-radius: 0.85rem; text-decoration: none; margin-top: 0.5rem; }
+.av-pub-cta:hover { background: #7C3AED; }
+
+.av-cac-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.08);
+}
+.dark .av-cac-badge { background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.4); }
+.av-cac-badge__icon { flex-shrink: 0; width: 3rem; height: 3rem; }
+.av-cac-badge__title { margin: 0; font-size: 0.95rem; font-weight: 800; color: #0c0a14; }
+.dark .av-cac-badge__title { color: #f8fafc; }
+.av-cac-badge__sub { margin: 0.15rem 0 0; font-size: 0.8rem; color: #64748b; }
+.dark .av-cac-badge__sub { color: #94a3b8; }
+
+.av-cac-facts { list-style: none; padding: 0; margin: 0.5rem 0 1.25rem; border: 1px solid #e2e8f0; border-radius: 1rem; overflow: hidden; }
+.dark .av-cac-facts { border-color: #334155; }
+.av-cac-facts li { display: grid; gap: 0.2rem; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+.dark .av-cac-facts li { border-color: #334155; }
+.av-cac-facts li:last-child { border-bottom: 0; }
+.av-cac-facts span { color: #64748b; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.dark .av-cac-facts span { color: #94a3b8; }
+.av-cac-facts strong { color: #0c0a14; font-weight: 700; line-height: 1.45; }
+.dark .av-cac-facts strong { color: #f1f5f9; }
+
+.av-cac-cert {
+  margin: 0.75rem 0 1.5rem;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+.dark .av-cac-cert { border-color: #334155; background: #151b23; }
+.av-cac-cert__frame { min-height: 14rem; }
+.av-cac-cert__img { display: block; width: 100%; height: auto; border-radius: 0.65rem; }
+.av-cac-cert__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 14rem;
+  padding: 1.5rem 1rem;
+  border-radius: 0.65rem;
+  border: 1px dashed rgba(139, 92, 246, 0.35);
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.06), rgba(139, 92, 246, 0.02));
+  text-align: center;
+}
+.dark .av-cac-cert__placeholder { border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.08); }
+.av-cac-cert__placeholder-icon { opacity: 0.9; }
+.av-cac-cert__placeholder-title { margin: 0.35rem 0 0; font-size: 0.95rem; font-weight: 800; color: #0c0a14; }
+.dark .av-cac-cert__placeholder-title { color: #f8fafc; }
+.av-cac-cert__placeholder-sub { margin: 0; font-size: 0.82rem; font-weight: 700; color: #7C3AED; }
+.av-cac-cert__placeholder-note { margin: 0.5rem 0 0; max-width: 18rem; font-size: 0.72rem; line-height: 1.5; color: #64748b; }
+.dark .av-cac-cert__placeholder-note { color: #94a3b8; }
+
+.av-footer-cac {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.06);
+  text-decoration: none;
+  color: inherit;
+}
+.dark .av-footer-cac { background: rgba(139, 92, 246, 0.1); }
+.av-footer-cac img { width: 2rem; height: 2rem; flex-shrink: 0; }
+.av-footer-cac p { margin: 0; font-size: 0.72rem; line-height: 1.4; color: #64748b; }
+.dark .av-footer-cac p { color: #94a3b8; }
+.av-footer-cac strong { display: block; font-size: 0.78rem; color: #0c0a14; }
+.dark .av-footer-cac strong { color: #f8fafc; }
