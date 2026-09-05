@@ -66,9 +66,25 @@
       opts.body = JSON.stringify(body);
     }
     const res = await fetch(url.toString(), opts);
-    const data = await res.json().catch(() => ({}));
+    const raw = await res.text();
+    let data = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      data = {};
+    }
     if (!res.ok || data.ok === false) {
-      const err = new Error(data.error || data.message || 'Request failed');
+      let message = data.error || data.message || '';
+      if (!message) {
+        if (res.status === 503 || res.status === 502) {
+          message = 'Login server is temporarily busy';
+        } else if (res.status === 0 || !res.status) {
+          message = 'Network error';
+        } else {
+          message = 'Request failed';
+        }
+      }
+      const err = new Error(message);
       err.status = res.status;
       err.data = data;
       err.code = data.code || '';

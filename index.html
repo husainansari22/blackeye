@@ -783,37 +783,43 @@
             e.preventDefault();
             const email = (document.getElementById('li_email').value || '').trim().toLowerCase();
             const pass = document.getElementById('li_pass').value || '';
+            if (!email || !pass) {
+                showAuthToast('Enter your email and password');
+                return;
+            }
 
+            // Always prefer the live API. Do not fall back to localStorage when the
+            // server is briefly unavailable — that wrongly shows "User does not exist".
             if (window.AcctventaApi) {
                 try {
-                    const online = await window.AcctventaApi.isAvailable();
-                    if (online) {
-                        await window.AcctventaApi.login({ email: email, password: pass });
-                        window.location.href = "/dashboard.html";
-                        return;
+                    if (window.AcctventaApi.clearAvailabilityCache) {
+                        window.AcctventaApi.clearAvailabilityCache();
                     }
+                    await window.AcctventaApi.login({ email: email, password: pass });
+                    window.location.href = "/dashboard.html";
+                    return;
                 } catch (err) {
                     const code = (err.data && err.data.code) || '';
-                    if (code === 'user_not_found') showAuthToast('User does not exist');
-                    else showAuthToast(err.message || 'Invalid email or password');
+                    const msg = String(err.message || '');
+                    const status = Number(err.status || (err.data && err.data.status) || 0);
+                    if (code === 'user_not_found' || /user does not exist|no account|not found/i.test(msg)) {
+                        showAuthToast('No account with that email. Check for typos, or Sign up.');
+                        return;
+                    }
+                    if (code === 'invalid_credentials' || /invalid email or password|incorrect password|wrong password/i.test(msg)) {
+                        showAuthToast('Incorrect password. Use Forgot Password if you need a reset.');
+                        return;
+                    }
+                    if (status === 503 || status === 502 || status === 0 || /503|service unavailable|failed to fetch|network/i.test(msg)) {
+                        showAuthToast('Login server is temporarily busy. Please wait 30 seconds and try again.');
+                        return;
+                    }
+                    showAuthToast(msg || 'Could not log in. Please try again.');
                     return;
                 }
             }
 
-            const users = getUsers();
-            const user = users[email];
-
-            if (!user) {
-                showAuthToast('User does not exist');
-                return;
-            }
-            if (user.password !== pass) {
-                showAuthToast('Invalid email or password');
-                return;
-            }
-            setSession(user);
-            try { localStorage.removeItem('acctventa_backend'); } catch (e) {}
-            window.location.href = "/dashboard.html";
+            showAuthToast('Login is unavailable right now. Please refresh and try again.');
         }
 
         function openModal() {
