@@ -66,3 +66,11 @@ RewriteRule ^owner/?$ /owner/index.php [L,QSA]
     Header set Expires "0"
   </FilesMatch>
 </IfModule>
+
+# Keep brand icons fresh (PWA / Add to Home Screen)
+<IfModule mod_headers.c>
+  <FilesMatch "^(apple-touch-icon.*\.png|favicon.*\.(png|ico|svg)|site\.webmanifest)$">
+    Header set Cache-Control "public, max-age=300, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
