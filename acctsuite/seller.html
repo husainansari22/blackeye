@@ -7,27 +7,33 @@
   <title>Seller storefront | AcctSuite</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://www.google.com">
+  <link rel="dns-prefetch" href="https://www.google.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <meta name="description" content="Browse this merchant's listings on AcctSuite.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#6366f1">
   <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
-  <link rel="stylesheet" href="/css/profile.css?v=20260827buy1">
+  <link rel="stylesheet" href="/css/profile.css?v=20260905logo3">
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
   <style>
     .av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.15rem;height:1.15rem;min-width:1.15rem;margin-left:.25rem;line-height:0;flex-shrink:0;vertical-align:middle}
     .av-verify-badge img{width:100%;height:100%;display:block}
+    .av-brand-mark{width:2rem;height:2rem;border-radius:.5rem;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-weight:900;font-size:1.05rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+    .av-brand-word{font-weight:800;letter-spacing:-.02em;background:linear-gradient(90deg,#6366f1,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .av-storefront-ad__logo{width:2.75rem;height:2.75rem;border-radius:.65rem;object-fit:contain;background:#fff;padding:.2rem;flex-shrink:0;box-shadow:0 0 0 1px rgba(148,163,184,.25)}
+    .dark .av-storefront-ad__logo{background:#0f172a;box-shadow:0 0 0 1px rgba(51,65,85,.9)}
   </style>
   <script src="/js/api-client.js?v=20260827wallet2"></script>
-  <script src="/js/marketplace-catalog.js?v=20260823c1"></script>
-  <script src="/js/listing-modal.js?v=20260827wallet2"></script>
+  <script src="/js/marketplace-catalog.js?v=20260905logo3"></script>
+  <script src="/js/listing-modal.js?v=20260905logo3"></script>
 </head>
 <body class="bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
   <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
     <div class="max-w-lg mx-auto flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2">
-        <img src="/img/brand/icon-192.png" alt="AcctSuite" class="w-8 h-8 rounded-lg">
-        <span class="font-extrabold tracking-tight">acctsuite</span>
+      <a href="/" class="flex items-center gap-2" aria-label="AcctSuite home">
+        <span class="av-brand-mark" aria-hidden="true">A</span>
+        <span class="av-brand-word text-lg">cctsuite</span>
       </a>
       <a href="/dashboard.html#home" class="text-sm font-semibold text-brandPrimary">Marketplace</a>
     </div>
@@ -47,11 +53,16 @@
       if (p.length === 1) return p[0].slice(0,2).toUpperCase();
       return (p[0][0]+p[p.length-1][0]).toUpperCase();
     };
-    const productLogo = (cat, title) => {
+    const productLogoMark = (cat, title) => {
       const Cat = window.AcctSuiteCatalog;
       if (!Cat) return '';
-      const hit = Cat.findProduct(cat || title || '');
-      return hit ? hit.logo : Cat.logoUrl({ domain: '' });
+      const hit = Cat.findProduct(cat || '') || Cat.findProduct(title || '');
+      const product = hit || { name: cat || title || '?', domain: '' };
+      if (typeof Cat.logoMarkHtml === 'function') {
+        return Cat.logoMarkHtml(product, 'av-storefront-ad__logo');
+      }
+      const src = Cat.logoUrl(product);
+      return '<img src="' + esc(src) + '" alt="" class="av-storefront-ad__logo" loading="lazy" decoding="async">';
     };
     if (!key) {
       root.innerHTML = '<div class="av-storefront"><h1 class="text-center font-bold px-4">Store not found</h1></div>';
@@ -80,10 +91,10 @@
 
       const adsHtml = listings.length
         ? listings.map((l) => {
-            const logo = productLogo(l.category, l.title);
+            const logo = productLogoMark(l.category || l.platform, l.title);
             const desc = String(l.description || l.category || '').slice(0, 80);
             return `<div class="av-storefront-ad">
-              <img src="${esc(logo)}" alt="" class="av-storefront-ad__logo" loading="lazy" onerror="this.style.opacity=.35">
+              ${logo}
               <div class="av-storefront-ad__body">
                 <p class="av-storefront-ad__title">${esc(l.title)}</p>
                 <p class="av-storefront-ad__desc">${esc(desc)}${l.releaseType === 'auto' || l.release_type === 'auto' ? ' · ⚡ Instant' : ''}</p>
@@ -141,19 +152,15 @@
 
       document.getElementById('copyMerchantBtn').addEventListener('click', function () {
         navigator.clipboard.writeText(merchantLink).then(function () {
-          const btn = document.getElementById('copyMerchantBtn');
-          btn.innerHTML = '<i class="fa-solid fa-check"></i>';
-          setTimeout(function () { btn.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 1500);
-        });
+          if (window.showToast) window.showToast('Merchant link copied', 'success');
+        }).catch(function () {});
       });
-
-      root.addEventListener('click', function (ev) {
-        const btn = ev.target.closest('[data-buy-listing]');
-        if (!btn) return;
-        ev.preventDefault();
-        if (window.AcctSuiteListingModal) {
-          window.AcctSuiteListingModal.open(btn.getAttribute('data-buy-listing'), { onSellerStore: true });
-        }
+      root.querySelectorAll('[data-buy-listing]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const id = btn.getAttribute('data-buy-listing');
+          if (window.openListingModal) window.openListingModal(id);
+          else location.href = '/dashboard.html#home';
+        });
       });
     } catch (e) {
       root.innerHTML = '<div class="av-storefront px-4"><h1 class="text-xl font-bold mb-2">Storefront unavailable</h1><p class="text-sm text-slate-500">' + esc(e.message) + '</p><p class="mt-4"><a class="text-brandPrimary font-semibold" href="/dashboard.html#home">Browse marketplace</a></p></div>';

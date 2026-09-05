@@ -227,9 +227,9 @@
       .replace(/^https?:\/\//, '')
       .split('/')[0];
     if (!d) return [];
-    // Google first (reliable for many brands), DuckDuckGo as fallback.
+    // High-res Google favicons (Acctventa-style brand marks), DuckDuckGo fallback.
     return [
-      'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=64',
+      'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=128',
       'https://icons.duckduckgo.com/ip3/' + d + '.ico',
     ];
   }
@@ -252,16 +252,21 @@
     return cands[0] || '';
   }
 
-  /** Instant letter avatar (no network). Use for first paint. */
+  /**
+   * Brand logo URL — same approach as Acctventa (Google favicon CDN).
+   * Returns letter SVG only when no domain is available.
+   */
   function logoUrl(product) {
     if (!product) return letterLogoDataUri('?');
-    if (product.logo && String(product.logo).indexOf('data:image/svg+xml') === 0) return product.logo;
+    if (product.logo && /^https?:\/\//i.test(String(product.logo))) return product.logo;
+    var remote = remoteLogoUrl(product);
+    if (remote) return remote;
     return letterLogoDataUri(product.name || '?');
   }
 
   /**
-   * Smart logo markup: letter shows instantly, brand favicon fades in when ready.
-   * Falls back through candidate URLs; caches successes in sessionStorage.
+   * Listing/market logo markup (Acctventa look): crisp brand favicon in a rounded tile.
+   * Falls back to a letter avatar if the favicon fails.
    */
   function logoMarkHtml(product, className) {
     var name = (product && product.name) || '?';
@@ -270,39 +275,29 @@
       .toLowerCase();
     var letter = letterLogoDataUri(name);
     var cls = className || 'av-prod-logo';
+    var src = logoUrl(product);
     var cands = remoteLogoCandidates(domain);
-    if (logoOkCache[domain]) cands = [logoOkCache[domain]].concat(cands.filter(function (u) { return u !== logoOkCache[domain]; }));
-    if (!cands.length) {
-      return (
-        '<img class="' +
-        cls +
-        '" src="' +
-        letter +
-        '" alt="" width="20" height="20" decoding="async">'
-      );
+    if (logoOkCache[domain]) {
+      src = logoOkCache[domain];
+      cands = [logoOkCache[domain]].concat(cands.filter(function (u) { return u !== logoOkCache[domain]; }));
     }
-    var primary = cands[0];
-    var fallback = cands[1] || '';
+    var fallback = '';
+    if (cands.length && cands[0] === src && cands[1]) fallback = cands[1];
+    else if (cands.length && cands[0] !== src) fallback = cands[0];
     var domainAttr = domain.replace(/"/g, '');
+    // Single <img> like Acctventa — no forced 20×20 (that made large tiles blurry).
     return (
-      '<span class="av-logo-slot" title="' +
-      String(name).replace(/"/g, '&quot;') +
-      '">' +
       '<img class="' +
       cls +
-      ' av-logo-letter" src="' +
-      letter +
-      '" alt="" width="20" height="20" decoding="async">' +
-      '<img class="' +
-      cls +
-      ' av-logo-remote" src="' +
-      primary +
-      '" alt="" width="20" height="20" loading="lazy" decoding="async" data-domain="' +
+      '" src="' +
+      src +
+      '" alt="" decoding="async" loading="lazy" data-domain="' +
       domainAttr +
+      '" data-letter="' +
+      letter.replace(/"/g, '&quot;') +
       '" data-fb="' +
       String(fallback).replace(/"/g, '&quot;') +
-      '" onload="this.classList.add(\'is-ready\');try{var d=this.getAttribute(\'data-domain\');if(d&&window.AcctSuiteCatalog&&window.AcctSuiteCatalog.rememberLogo)window.AcctSuiteCatalog.rememberLogo(d,this.src);}catch(e){}" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;}else{this.remove();}">' +
-      '</span>'
+      '" onload="try{var d=this.getAttribute(\'data-domain\');if(d&&window.AcctSuiteCatalog&&window.AcctSuiteCatalog.rememberLogo&&this.src.indexOf(\'data:\')!==0)window.AcctSuiteCatalog.rememberLogo(d,this.src);}catch(e){}" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;return;}var L=this.getAttribute(\'data-letter\');if(L){this.onerror=null;this.src=L;}">'
     );
   }
 

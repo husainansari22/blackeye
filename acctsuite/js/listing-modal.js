@@ -65,8 +65,12 @@
   function productLogo(item) {
     var Cat = global.AcctSuiteCatalog;
     if (!Cat) return '';
-    var hit = Cat.findProduct(item.category || item.title || '');
-    return hit ? hit.logo : Cat.logoUrl({ domain: '' });
+    var hit = Cat.findProduct(item.category || item.platform || item.title || '');
+    if (typeof Cat.logoMarkHtml === 'function') {
+      return Cat.logoMarkHtml(hit || { name: item.category || item.title || '?', domain: '' }, 'av-listing-detail__logo av-market-logo');
+    }
+    var src = hit ? hit.logo : Cat.logoUrl({ name: item.category || '?', domain: '' });
+    return '<img src="' + escAttr(src) + '" alt="" class="av-listing-detail__logo av-market-logo" loading="lazy" onerror="this.style.opacity=.35">';
   }
   function mapListing(row) {
     var name = row.sellerName || 'Seller';
@@ -157,7 +161,7 @@
     return (
       '<div class="av-listing-detail" data-listing-id="' + escAttr(item.id) + '">' +
         '<div class="av-listing-detail__head">' +
-          '<img src="' + escAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">' +
+          logo +
           '<div class="min-w-0 flex-1">' +
             '<div class="av-listing-detail__title-row">' +
               '<h3 class="av-listing-detail__title">' + escHtml(item.title) + '</h3>' +

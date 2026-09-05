@@ -248,7 +248,7 @@
 
   function productLogoMarkHtml(item, className) {
     const Cat = window.AcctSuiteCatalog;
-    const cls = className || 'av-prod-logo';
+    const cls = className || 'av-prod-logo av-market-logo';
     if (Cat && typeof Cat.logoMarkHtml === 'function') {
       const hit = Cat.findProduct(item.platform || item.category || item.title);
       if (hit) return Cat.logoMarkHtml(hit, cls);
@@ -277,7 +277,7 @@
   }
 
   function listingCard(item, compact) {
-    const logoMark = productLogoMarkHtml(item, 'av-prod-logo');
+    const logoMark = productLogoMarkHtml(item, 'av-prod-logo av-market-logo w-5 h-5 rounded object-contain bg-white dark:bg-slate-900');
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
@@ -301,7 +301,7 @@
       </div>`;
     }
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      ${productLogoMarkHtml(item, 'w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0')}
+      ${productLogoMarkHtml(item, 'w-11 h-11 rounded-xl object-contain bg-white dark:bg-slate-900 shrink-0 av-market-logo')}
       <div class="min-w-0 flex-1">
         <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
         <p class="text-[10px] text-slate-500 truncate flex items-center gap-0.5">By <span class="inline-flex items-center min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span> · ${escapeHtml(cat)}</p>
@@ -316,7 +316,7 @@
 
   /** Full-width home row — AcctBazaar “Other product” pattern */
   function homeOtherListingCard(item) {
-    const logoMark = productLogoMarkHtml(item, 'w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center');
+    const logoMark = productLogoMarkHtml(item, 'w-12 h-12 rounded-xl object-contain bg-white dark:bg-slate-900 shrink-0 self-center av-market-logo');
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
@@ -2120,7 +2120,7 @@
   }
 
   function buildListingDetailHtml(item) {
-    const logoMark = productLogoMarkHtml(item, 'av-listing-detail__logo');
+    const logoMark = productLogoMarkHtml(item, 'av-listing-detail__logo av-market-logo');
     const stock = Math.max(1, Number(item.stock) || 1);
     const sel = listingSelectedAccount[item.id] != null ? listingSelectedAccount[item.id] : 0;
     listingSelectedAccount[item.id] = sel;

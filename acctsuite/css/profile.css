@@ -292,17 +292,19 @@
   margin-bottom: 0.75rem;
 }
 .av-listing-detail__logo {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 0.65rem;
-  object-fit: cover;
-  background: rgba(15, 23, 42, 0.08);
+  object-fit: contain;
+  background: #fff;
+  padding: 0.15rem;
   flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25);
 }
 .av-logo-slot.av-listing-detail__logo,
 .av-logo-slot:has(.av-listing-detail__logo) {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 0.65rem;
   overflow: hidden;
 }
@@ -311,7 +313,8 @@
   height: 100%;
 }
 .dark .av-listing-detail__logo {
-  background: rgba(255, 255, 255, 0.06);
+  background: #0f172a;
+  box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.9);
 }
 .av-listing-detail__title-row {
   display: flex;
@@ -1067,11 +1070,29 @@
   border-color: rgba(51, 65, 85, 0.85);
 }
 .av-storefront-ad__logo {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.55rem;
-  object-fit: cover;
-  background: rgba(15, 23, 42, 0.08);
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.65rem;
+  object-fit: contain;
+  background: #fff;
+  padding: 0.2rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25);
+}
+.dark .av-storefront-ad__logo {
+  background: #0f172a;
+  box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.9);
+}
+/* Acctventa-style market listing logos */
+.av-market-logo {
+  object-fit: contain !important;
+  background: #fff !important;
+  padding: 0.2rem;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.22);
+}
+.dark .av-market-logo {
+  background: #0f172a !important;
+  box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.85);
 }
 .av-storefront-ad__body {
   min-width: 0;
