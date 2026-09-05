@@ -41,20 +41,20 @@
 }
 
 .dark #rightMenu.profile-panel {
-  background: #0f172a;
+  background: #0c0a14;
 }
 
 .profile-hero {
   margin: 0 1rem 0.75rem;
   padding: 1.15rem 1rem 1.25rem;
   border-radius: 1.15rem;
-  background: linear-gradient(165deg, rgba(10, 39, 72, 0.16), rgba(10, 39, 72, 0.04) 55%, transparent);
-  border: 1px solid rgba(10, 39, 72, 0.28);
+  background: linear-gradient(165deg, rgba(139, 92, 246, 0.16), rgba(139, 92, 246, 0.04) 55%, transparent);
+  border: 1px solid rgba(139, 92, 246, 0.28);
 }
 
 .dark .profile-hero {
-  background: linear-gradient(165deg, rgba(10, 39, 72, 0.2), rgba(15, 23, 42, 0.4) 60%, transparent);
-  border-color: rgba(10, 39, 72, 0.28);
+  background: linear-gradient(165deg, rgba(139, 92, 246, 0.2), rgba(15, 23, 42, 0.4) 60%, transparent);
+  border-color: rgba(139, 92, 246, 0.28);
 }
 
 .profile-avatar-btn {
@@ -75,7 +75,7 @@
 }
 
 .dark .av-user-avatar--lg {
-  box-shadow: 0 0 0 3px #0f172a, 0 0 0 6px #8B5CF6;
+  box-shadow: 0 0 0 3px #0c0a14, 0 0 0 6px #8B5CF6;
 }
 
 .profile-avatar-cam {
@@ -96,7 +96,7 @@
 }
 
 .dark .profile-avatar-cam {
-  box-shadow: 0 0 0 2px #0f172a;
+  box-shadow: 0 0 0 2px #0c0a14;
 }
 
 .profile-hero-meta {
@@ -107,7 +107,7 @@
   font-size: 1.125rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: #0c0a14;
   line-height: 1.25;
 }
 
@@ -152,12 +152,12 @@
   padding: 0.35rem 0.9rem;
   border-radius: 1rem;
   background: #fff;
-  border: 1px solid rgba(10, 39, 72, 0.18);
+  border: 1px solid rgba(139, 92, 246, 0.18);
 }
 
 .dark .profile-stats {
-  background: #0f172a;
-  border-color: rgba(10, 39, 72, 0.2);
+  background: #0c0a14;
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
 .profile-stat {
@@ -188,7 +188,7 @@
 .profile-stat strong,
 .profile-stat .profile-stat-val {
   font-weight: 700;
-  color: #0f172a;
+  color: #0c0a14;
 }
 
 .dark .profile-stat strong,
@@ -210,7 +210,7 @@
   margin: 0.15rem 0;
   border-radius: 0.85rem;
   font-size: 0.875rem;
-  color: #0f172a;
+  color: #0c0a14;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -225,7 +225,7 @@
 }
 
 .profile-nav a:hover {
-  background: rgba(10, 39, 72, 0.1);
+  background: rgba(139, 92, 246, 0.1);
   color: #7C3AED;
 }
 
@@ -313,7 +313,7 @@
   height: 100%;
 }
 .dark .av-listing-detail__logo {
-  background: #0f172a;
+  background: #0c0a14;
   box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.9);
 }
 .av-listing-detail__title-row {
@@ -435,7 +435,7 @@
   display: inline-flex;
   padding: 2px;
   border-radius: 9999px;
-  background: rgba(10, 39, 72, 0.55);
+  background: rgba(139, 92, 246, 0.55);
 }
 .av-merchant-ring.has-story {
   background: linear-gradient(135deg, #7BA3C4 0%, #8B5CF6 45%, #ec4899 100%);
@@ -445,14 +445,14 @@
   height: 3.35rem;
   border-radius: 9999px;
   overflow: hidden;
-  background: #0f172a;
+  background: #0c0a14;
   color: #7BA3C4;
   font-weight: 800;
   font-size: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #0f172a;
+  border: 2px solid #0c0a14;
 }
 .av-merchant-face-img {
   width: 100%;
@@ -574,7 +574,7 @@
   flex: 1;
   width: 100%;
   object-fit: cover;
-  background: #020617;
+  background: #0c0a14;
 }
 .av-story-viewer__caption {
   position: absolute;
@@ -707,7 +707,7 @@
 }
 .av-listing-account-row.is-selected {
   border-color: var(--av-listing-accent);
-  background: rgba(10, 39, 72, 0.06);
+  background: rgba(139, 92, 246, 0.06);
 }
 .av-listing-account-row__check {
   width: 1.1rem;
@@ -756,7 +756,7 @@
   padding: 0.4rem 0.55rem;
   border-radius: 0.55rem;
   border: 0;
-  background: rgba(10, 39, 72, 0.12);
+  background: rgba(139, 92, 246, 0.12);
   color: var(--av-listing-accent);
   cursor: pointer;
   white-space: nowrap;
@@ -818,7 +818,7 @@
   color: #fff;
   background: var(--av-listing-accent);
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(10, 39, 72, 0.25);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.25);
 }
 .av-listing-pay-btn:hover {
   filter: brightness(1.05);
@@ -842,11 +842,11 @@
 .profile-merchant-link {
   padding: 0.75rem 0.85rem;
   border-radius: 0.85rem;
-  background: linear-gradient(135deg, rgba(10, 39, 72, 0.12), rgba(10, 39, 72, 0.04));
-  border: 1px solid rgba(10, 39, 72, 0.25);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(139, 92, 246, 0.04));
+  border: 1px solid rgba(139, 92, 246, 0.25);
 }
 .dark .profile-merchant-link {
-  background: linear-gradient(135deg, rgba(10, 39, 72, 0.18), rgba(15, 23, 42, 0.5));
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(15, 23, 42, 0.5));
 }
 .profile-merchant-link__label {
   font-size: 0.62rem;
@@ -928,7 +928,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 .dark .av-storefront-avatar {
-  border-color: #0f172a;
+  border-color: #0c0a14;
 }
 .av-storefront-avatar img {
   width: 100%;
@@ -952,11 +952,11 @@
   margin: 0 1rem 0.85rem;
   padding: 0.75rem 0.85rem;
   border-radius: 0.85rem;
-  background: rgba(10, 39, 72, 0.1);
-  border: 1px solid rgba(10, 39, 72, 0.22);
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.22);
 }
 .dark .av-storefront-merchant {
-  background: rgba(10, 39, 72, 0.12);
+  background: rgba(139, 92, 246, 0.12);
 }
 .av-storefront-merchant__label {
   font-size: 0.62rem;
@@ -1080,7 +1080,7 @@
   box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25);
 }
 .dark .av-storefront-ad__logo {
-  background: #0f172a;
+  background: #0c0a14;
   box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.9);
 }
 /* Acctventa-style market listing logos */
@@ -1091,7 +1091,7 @@
   box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.22);
 }
 .dark .av-market-logo {
-  background: #0f172a !important;
+  background: #0c0a14 !important;
   box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.85);
 }
 .av-storefront-ad__body {

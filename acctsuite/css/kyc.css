@@ -29,9 +29,9 @@
   justify-content: center;
   font-size: 1.75rem;
   color: #8B5CF6;
-  background: linear-gradient(160deg, rgba(10, 39, 72, 0.18), rgba(10, 39, 72, 0.04));
-  border: 1px solid rgba(10, 39, 72, 0.35);
-  box-shadow: 0 12px 40px rgba(10, 39, 72, 0.12);
+  background: linear-gradient(160deg, rgba(139, 92, 246, 0.18), rgba(139, 92, 246, 0.04));
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.12);
 }
 
 .kyc-hero-ok {
@@ -216,7 +216,7 @@
 .dark .kyc-field input,
 .dark .kyc-field textarea,
 .dark .kyc-field select {
-  background: #0f172a;
+  background: #0c0a14;
   border-color: #1e293b;
 }
 
@@ -224,7 +224,7 @@
 .kyc-field textarea:focus,
 .kyc-field select:focus {
   border-color: #8B5CF6;
-  box-shadow: 0 0 0 3px rgba(10, 39, 72, 0.15);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
 }
 
 .kyc-flow-footer {
@@ -386,7 +386,7 @@
 }
 
 .dark .kyc-doc-btn {
-  background: #0f172a;
+  background: #0c0a14;
   border-color: #1e293b;
   color: #e2e8f0;
 }

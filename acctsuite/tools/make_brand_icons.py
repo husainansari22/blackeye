@@ -6,7 +6,7 @@ import struct
 import zlib
 
 OUT = os.path.join(os.path.dirname(__file__), "..")
-BRAND = (10, 39, 72, 255)  # #8B5CF6
+BRAND = (139, 92, 246, 255)  # #8B5CF6
 WHITE = (255, 255, 255, 255)
 
 
@@ -178,7 +178,7 @@ def draw_og(w=1200, h=630):
     tw2 = (len(sub) * 6 - 1) * scale2
     tx2 = tx
     ty2 = ty + 7 * scale + 28
-    scol = (10, 39, 72, 255)
+    scol = (91, 33, 182, 255)
     for gi, ch in enumerate(sub.lower()):
         bits = glyphs.get(ch, glyphs[" "])
         for row, line in enumerate(bits):

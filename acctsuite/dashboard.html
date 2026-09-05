@@ -7,21 +7,21 @@
     <title>cctsuite — Marketplace Dashboard</title>
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905violet1">
+    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905violet2">
     <link rel="icon" href="https://acctsuite.com/favicon-96x96.png" type="image/png" sizes="96x96">
     <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
     <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
     <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png">
     <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
     <meta name="theme-color" content="#8B5CF6">
-    <link rel="preload" href="/css/tailwind.css?v=20260905violet1" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet1">
+    <link rel="preload" href="/css/tailwind.css?v=20260905violet2" as="style">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet2">
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905violet1">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905violet2">
 <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260905violet1">
+    <link rel="stylesheet" href="/css/profile.css?v=20260905violet2">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -112,7 +112,7 @@
           overflow-y: auto;
           border: 1px solid var(--tw-border, #334155);
           border-radius: 0.75rem;
-          background: #0f172a;
+          background: #0c0a14;
         }
         html:not(.dark) .av-sell-pick-list { background: #fff; border-color: #e2e8f0; }
         /* Bottom nav — full-width evenly spaced tabs (never flex on the nav root) */
@@ -178,7 +178,7 @@
     </style>
     <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
     <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
-    <script defer src="/js/marketplace-catalog.js?v=20260905violet1"></script>
+    <script defer src="/js/marketplace-catalog.js?v=20260905violet2"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
@@ -190,7 +190,7 @@
                     <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-1.5 min-w-0">
-                    <img src="/img/brand/logo-mark.svg?v=20260905violet1" alt="AcctSuite" class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-sm shrink-0" width="36" height="36" decoding="async">
+                    <img src="/img/brand/logo-mark.svg?v=20260905violet2" alt="AcctSuite" class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-sm shrink-0" width="36" height="36" decoding="async">
                     <span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
                 </a>
             </div>
@@ -254,12 +254,12 @@
             <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
 
             <!-- Platform banner -->
-            <div class="bg-gradient-to-r from-brandPrimary to-brandHover rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
+            <div class="bg-gradient-to-r from-[#7C3AED] via-brandPrimary to-[#5B21B6] rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
                 <div class="absolute -right-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
                 <div class="relative z-10 pr-2 min-w-0">
-                    <span class="text-sky-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
+                    <span class="text-violet-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
                     <p class="font-bold text-sm mt-0.5 leading-snug">Buy & sell with escrow protection</p>
-                    <p class="text-[10px] text-sky-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
+                    <p class="text-[10px] text-violet-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
                 </div>
                 <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
@@ -387,12 +387,12 @@
             <div class="bg-gradient-to-br from-[#7C3AED] via-brandPrimary to-brandHover p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
                 <div class="absolute right-3 top-3 opacity-30 text-6xl"><i class="fa-solid fa-wallet"></i></div>
                 <div class="relative z-10">
-                    <p class="text-xs text-sky-100 font-medium">Account balance</p>
+                    <p class="text-xs text-violet-100 font-medium">Account balance</p>
                     <div class="flex items-center gap-2 mt-1">
                         <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight">$0.00</h3>
-                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-sky-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
+                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-violet-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
                     </div>
-                    <p class="text-[11px] text-sky-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
+                    <p class="text-[11px] text-violet-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
                 </div>
                 <div class="flex gap-2 relative z-10">
                     <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-2.5 rounded-full text-xs shadow-md">Deposit</button>
@@ -581,8 +581,8 @@
     <!-- FILTER DRAWER — left sidebar like acctbazaar -->
     <div id="filterDrawer" class="fixed inset-0 z-[80] hidden">
         <button type="button" class="absolute inset-0 bg-black/50" onclick="toggleFilterDrawer()" aria-label="Close filters"></button>
-        <aside class="av-filter-drawer absolute left-0 top-14 bottom-0 bg-lightCard dark:bg-[#0b1120] overflow-y-auto px-3 pb-6">
-            <div class="flex items-center justify-between pt-3 pb-2 sticky top-0 bg-lightCard dark:bg-[#0b1120] z-10">
+        <aside class="av-filter-drawer absolute left-0 top-14 bottom-0 bg-lightCard dark:bg-darkBg overflow-y-auto px-3 pb-6">
+            <div class="flex items-center justify-between pt-3 pb-2 sticky top-0 bg-lightCard dark:bg-darkBg z-10">
                 <h3 class="font-bold text-base text-slate-800 dark:text-white">Filter</h3>
                 <button type="button" onclick="toggleFilterDrawer()" class="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-sm" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -975,14 +975,14 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.min.js?v=20260905violet1"></script>
-    <script src="/js/api-client.min.js?v=20260905violet1"></script>
-    <script src="/js/api-sync.min.js?v=20260905violet1"></script>
-    <script src="/js/kyc-app.min.js?v=20260905violet1"></script>
-    <script src="/js/av-confirm.js?v=20260905violet1"></script>
-    <script src="/js/commerce-ui.min.js?v=20260905violet1"></script>
-    <script src="/js/listing-modal.min.js?v=20260905violet1"></script>
-    <script src="/js/dashboard-app.min.js?v=20260905violet1"></script>
+    <script src="/js/acctsuite.min.js?v=20260905violet2"></script>
+    <script src="/js/api-client.min.js?v=20260905violet2"></script>
+    <script src="/js/api-sync.min.js?v=20260905violet2"></script>
+    <script src="/js/kyc-app.min.js?v=20260905violet2"></script>
+    <script src="/js/av-confirm.js?v=20260905violet2"></script>
+    <script src="/js/commerce-ui.min.js?v=20260905violet2"></script>
+    <script src="/js/listing-modal.min.js?v=20260905violet2"></script>
+    <script src="/js/dashboard-app.min.js?v=20260905violet2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
