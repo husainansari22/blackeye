@@ -269,11 +269,13 @@
         try {
           btn.disabled = true;
           await Api.cartAdd({ listingId: Number(id) || id });
-          if (global.showToast) global.showToast('Added to cart', 'success');
+          if (global.AcctSuiteToast && global.AcctSuiteToast.success) global.AcctSuiteToast.success('Added to cart');
+          else if (global.showToast) global.showToast('Added to cart', 'success');
           else alert('Added to cart');
         } catch (e) {
           var msg = (e && e.message) || 'Could not add to cart';
-          if (global.showToast) global.showToast(msg, 'error');
+          if (global.AcctSuiteToast && global.AcctSuiteToast.error) global.AcctSuiteToast.error(msg);
+          else if (global.showToast) global.showToast(msg, 'error');
           else alert(msg);
         } finally {
           btn.disabled = false;
