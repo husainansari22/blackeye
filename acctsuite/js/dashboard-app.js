@@ -57,6 +57,7 @@
   }
 
   function syncGuestMenu(isLoggedIn) {
+    document.body.classList.toggle('is-authed', !!isLoggedIn);
     document.querySelectorAll('[data-auth-only]').forEach((el) => {
       el.classList.toggle('hidden', !isLoggedIn);
       const needsFlex =
@@ -65,7 +66,15 @@
       if (needsFlex) el.classList.toggle('flex', !!isLoggedIn);
     });
     const authMenuBtn = document.getElementById('headerAuthMenuBtn');
-    if (authMenuBtn) authMenuBtn.classList.toggle('hidden', !isLoggedIn);
+    if (authMenuBtn) {
+      authMenuBtn.classList.toggle('hidden', !isLoggedIn);
+      if (isLoggedIn) {
+        authMenuBtn.style.display = 'inline-flex';
+        authMenuBtn.classList.remove('hidden');
+      } else {
+        authMenuBtn.style.display = 'none';
+      }
+    }
     document.querySelectorAll('[data-guest-only]').forEach((el) => {
       el.classList.toggle('hidden', !!isLoggedIn);
       if (el.id === 'headerGuestRight') el.classList.toggle('flex', !isLoggedIn);

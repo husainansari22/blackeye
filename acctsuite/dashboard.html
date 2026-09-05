@@ -17,9 +17,8 @@
     <link rel="preload" href="/css/tailwind.css?v=20260905orange2" as="style">
     <link rel="stylesheet" href="/css/tailwind.css?v=20260905orange2">
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905orange2" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905orange2"></noscript>
-    <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905iconsfull1">
+<link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
     <link rel="stylesheet" href="/css/profile.css?v=20260905orange2">
@@ -151,6 +150,27 @@
           align-items: center;
           justify-content: center;
         }
+
+        /* Force FA icons to use the icon font (never inherit UI font) */
+        .fa-solid, .fa-regular, .fa-brands, .fas, .far, .fab {
+          font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+          font-style: normal !important;
+          font-variant: normal !important;
+          text-rendering: auto !important;
+          -webkit-font-smoothing: antialiased;
+          speak: never;
+        }
+        .fa-solid, .fas { font-weight: 900 !important; }
+        .fa-regular, .far { font-weight: 400 !important; font-family: "Font Awesome 6 Free" !important; }
+        .fa-brands, .fab { font-weight: 400 !important; font-family: "Font Awesome 6 Brands" !important; }
+        .fa-solid::before, .fas::before, .fa-regular::before, .far::before, .fa-brands::before, .fab::before {
+          font-family: inherit !important;
+        }
+        /* SVG fallbacks when webfont fails */
+        .av-ico { width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -0.125em; fill: currentColor; flex-shrink: 0; }
+        #headerAuthMenuBtn { display: none; align-items: center; justify-content: center; }
+        body.is-authed #headerAuthMenuBtn { display: inline-flex !important; }
+
         #bottomNav .nav-item.is-active { color: #F85830; }
         #bottomNav .nav-item.is-idle { color: #9ca3af; }
         .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
@@ -165,8 +185,8 @@
     <header class="fixed top-0 z-[100] w-full border-b border-slate-200 dark:border-slate-800 bg-lightCard dark:bg-darkBg shadow backdrop-blur-sm">
         <div class="mx-auto flex h-14 max-w-[500px] items-center justify-between px-4">
             <div class="flex items-center gap-3 min-w-0">
-                <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0" onclick="toggleLeftMenu()" aria-label="Menu">
-                    <i class="fa-solid fa-bars text-lg"></i>
+                <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0 p-1" onclick="toggleLeftMenu()" aria-label="Menu">
+                    <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-1.5 min-w-0">
                     <div class="size-7 sm:size-8 rounded-lg bg-brandPrimary flex items-center justify-center text-white font-black text-base shadow-sm shrink-0" aria-hidden="true">A</div>
@@ -198,7 +218,7 @@
                         <i id="headerThemeIcon" class="fa-solid fa-moon text-lg"></i>
                     </button>
                     <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 flex items-center justify-center rounded-md border-2 border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-white transition" aria-label="Menu">
-                        <i class="fa-solid fa-bars text-base"></i>
+                        <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
                     </button>
                 </div>
             </div>
@@ -943,7 +963,7 @@
                 <i class="fa-solid fa-border-all"></i><span>Market</span>
             </button>
             <button type="button" onclick="switchTab('orders')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
-                <i class="fa-solid fa-bag-shopping"></i><span>Orders</span>
+                <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M160 112c0-35.3 28.7-64 64-64s64 28.7 64 64v48H160V112zm-48 48v-48C112 50.1 162.1 0 224 0s112 50.1 112 112v48h48c26.5 0 48 21.5 48 48V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V208c0-26.5 21.5-48 48-48h48zm0 64H48V464H400V224H112z"/></svg><span>Orders</span>
             </button>
             <button type="button" onclick="switchTab('ads')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
                 <i class="fa-solid fa-bullhorn"></i><span>Ads</span>
@@ -961,7 +981,7 @@
     <script src="/js/av-confirm.js?v=20260905perf1"></script>
     <script src="/js/commerce-ui.min.js?v=20260905perf1"></script>
     <script src="/js/listing-modal.min.js?v=20260905perf1"></script>
-    <script src="/js/dashboard-app.min.js?v=20260905perf1"></script>
+    <script src="/js/dashboard-app.min.js?v=20260905iconsfull1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

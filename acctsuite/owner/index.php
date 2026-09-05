@@ -514,9 +514,8 @@ $tab = $_GET['tab'] ?? 'overview';
     <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/css/fonts-local.css?v=20260905orange2">
-<link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905orange2" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="/vendor/fontawesome/css/acctsuite-icons.min.css?v=20260905orange2"></noscript>
-  <link rel="stylesheet" href="/css/admin-app.css?v=20260905orange2">
+<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905iconsfull1">
+<link rel="stylesheet" href="/css/admin-app.css?v=20260905orange2">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
   <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
