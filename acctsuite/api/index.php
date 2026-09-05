@@ -160,16 +160,14 @@ try {
         case 'auth.login': {
             $email = strtolower(trim((string)($body['email'] ?? '')));
             $password = (string)($body['password'] ?? '');
-            if ($email === '' || $password === '') {
-                json_out(['ok' => false, 'error' => 'Enter your email and password', 'code' => 'missing_fields'], 400);
-            }
             $stmt = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
             $stmt->execute([$email]);
             $u = $stmt->fetch();
-            // Same message for missing user / bad password — avoids confusing PWA users and
-            // doesn't leak which emails are registered.
-            if (!$u || !password_verify($password, $u['password_hash'])) {
-                json_out(['ok' => false, 'error' => 'Invalid email or password. Use the account you registered on acctsuite.com (Add to Home Screen uses the same login).', 'code' => 'invalid_credentials'], 401);
+            if (!$u) {
+                json_out(['ok' => false, 'error' => 'User does not exist', 'code' => 'user_not_found'], 404);
+            }
+            if (!password_verify($password, $u['password_hash'])) {
+                json_out(['ok' => false, 'error' => 'Invalid email or password', 'code' => 'invalid_credentials'], 401);
             }
             if ((int)$u['is_banned'] === 1) json_out(['ok' => false, 'error' => 'Account banned', 'code' => 'banned'], 403);
             $token = create_session((int)$u['id']);
@@ -1366,8 +1364,8 @@ try {
             $user = trim((string)($body['username'] ?? ''));
             $pass = (string)($body['password'] ?? '');
             $cfg = app_config();
-            $okOwner = ($user === owner_username() && owner_password_verify($pass));
-            $okAdmin = ($user === admin_username() && admin_password_verify($pass));
+            $okOwner = ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? ''));
+            $okAdmin = ($user === 'admin' && admin_password_verify($pass));
             if (!$okOwner && !$okAdmin) {
                 json_out(['ok' => false, 'error' => 'Invalid staff credentials'], 401);
             }
@@ -1378,12 +1376,16 @@ try {
         }
 
         case 'admin.changePassword': {
-            // Staff admin cannot self-change credentials — Owner Admin → Settings → Admin logins only.
-            json_out([
-                'ok' => false,
-                'error' => 'Change staff username/password from Owner Admin → Settings → Admin logins',
-                'code' => 'owner_only',
-            ], 403);
+            $current = (string)($body['currentPassword'] ?? '');
+            $next = (string)($body['newPassword'] ?? '');
+            if (!admin_password_verify($current)) {
+                json_out(['ok' => false, 'error' => 'Current password is wrong', 'code' => 'bad_current'], 400);
+            }
+            if (strlen($next) < 6) {
+                json_out(['ok' => false, 'error' => 'New password must be at least 6 characters'], 422);
+            }
+            admin_password_set($next);
+            json_out(['ok' => true, 'message' => 'Website admin password updated']);
         }
 
         case 'chat.file': {
@@ -1671,61 +1673,6 @@ try {
                 db()->prepare("UPDATE orders SET status = 'disputed' WHERE id = ? AND status IN ('pending','completed')")->execute([$orderId]);
             }
             json_out(['ok' => true]);
-        }
-
-        case 'staff.users.list': {
-            // Owner + staff admin can browse users and open accounts
-            require_staff();
-            $q = trim((string)($body['q'] ?? $_GET['q'] ?? ''));
-            $limit = min(100, max(1, (int)($body['limit'] ?? $_GET['limit'] ?? 50)));
-            if ($q !== '') {
-                $like = '%' . $q . '%';
-                $stmt = db()->prepare('SELECT id, name, email, balance, COALESCE(withdrawable_balance,0) AS withdrawable_balance,
-                    is_verified, is_banned, created_at
-                  FROM users
-                  WHERE email LIKE ? OR name LIKE ? OR CAST(id AS CHAR) = ?
-                  ORDER BY id DESC LIMIT ' . $limit);
-                $stmt->execute([$like, $like, $q]);
-            } else {
-                $stmt = db()->query('SELECT id, name, email, balance, COALESCE(withdrawable_balance,0) AS withdrawable_balance,
-                    is_verified, is_banned, created_at
-                  FROM users ORDER BY id DESC LIMIT ' . $limit);
-            }
-            $users = array_map(static function ($u) {
-                return [
-                    'id' => (int)$u['id'],
-                    'name' => (string)$u['name'],
-                    'email' => (string)$u['email'],
-                    'balance' => (float)$u['balance'],
-                    'withdrawableBalance' => (float)$u['withdrawable_balance'],
-                    'verified' => !empty($u['is_verified']),
-                    'banned' => !empty($u['is_banned']),
-                    'createdAt' => (string)($u['created_at'] ?? ''),
-                ];
-            }, $stmt->fetchAll());
-            json_out(['ok' => true, 'users' => $users]);
-        }
-
-        case 'staff.loginAs': {
-            // Both Owner support token and Staff Admin token can open a user session
-            require_staff();
-            $uid = (int)($body['userId'] ?? $body['user_id'] ?? 0);
-            if ($uid < 1) json_out(['ok' => false, 'error' => 'userId required'], 422);
-            $stmt = db()->prepare('SELECT id, email, name, is_banned FROM users WHERE id = ? LIMIT 1');
-            $stmt->execute([$uid]);
-            $row = $stmt->fetch();
-            if (!$row) json_out(['ok' => false, 'error' => 'User not found'], 404);
-            if ((int)$row['is_banned'] === 1) json_out(['ok' => false, 'error' => 'User is banned — unban first'], 403);
-            $token = create_session($uid);
-            json_out([
-                'ok' => true,
-                'token' => $token,
-                'email' => (string)$row['email'],
-                'name' => (string)$row['name'],
-                'loginUrl' => '/owner-login-as.html?token=' . rawurlencode($token)
-                    . '&email=' . rawurlencode((string)$row['email'])
-                    . '&name=' . rawurlencode((string)$row['name']),
-            ]);
         }
 
         case 'staff.reports': {

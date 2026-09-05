@@ -4,6 +4,4 @@ api/*.local.php
 .env.*
 node_modules/
 npm-debug.log*
-api/config.php
-uploads/**/*
-!uploads/**/.htaccess
+config.php

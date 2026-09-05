@@ -57,7 +57,6 @@
   }
 
   function syncGuestMenu(isLoggedIn) {
-    document.body.classList.toggle('is-authed', !!isLoggedIn);
     document.querySelectorAll('[data-auth-only]').forEach((el) => {
       el.classList.toggle('hidden', !isLoggedIn);
       const needsFlex =
@@ -66,15 +65,7 @@
       if (needsFlex) el.classList.toggle('flex', !!isLoggedIn);
     });
     const authMenuBtn = document.getElementById('headerAuthMenuBtn');
-    if (authMenuBtn) {
-      authMenuBtn.classList.toggle('hidden', !isLoggedIn);
-      if (isLoggedIn) {
-        authMenuBtn.style.display = 'inline-flex';
-        authMenuBtn.classList.remove('hidden');
-      } else {
-        authMenuBtn.style.display = 'none';
-      }
-    }
+    if (authMenuBtn) authMenuBtn.classList.toggle('hidden', !isLoggedIn);
     document.querySelectorAll('[data-guest-only]').forEach((el) => {
       el.classList.toggle('hidden', !!isLoggedIn);
       if (el.id === 'headerGuestRight') el.classList.toggle('flex', !isLoggedIn);
@@ -251,20 +242,7 @@
     const Cat = window.AcctSuiteCatalog;
     if (!Cat) return '';
     const hit = Cat.findProduct(item.platform || item.category || item.title);
-    if (hit) return hit.logo || Cat.logoUrl(hit);
-    return Cat.logoUrl({ name: item.platform || item.category || '?', domain: '' });
-  }
-
-  function productLogoMarkHtml(item, className) {
-    const Cat = window.AcctSuiteCatalog;
-    const cls = className || 'av-prod-logo av-market-logo';
-    if (Cat && typeof Cat.logoMarkHtml === 'function') {
-      const hit = Cat.findProduct(item.platform || item.category || item.title);
-      if (hit) return Cat.logoMarkHtml(hit, cls);
-      return Cat.logoMarkHtml({ name: item.platform || item.category || '?', domain: '' }, cls);
-    }
-    const logo = productLogoFor(item);
-    return `<img src="${escapeAttr(logo)}" alt="" class="${cls}" loading="lazy" decoding="async">`;
+    return hit ? hit.logo : Cat.logoUrl({ domain: '' });
   }
 
   function productGroupFor(item) {
@@ -286,7 +264,7 @@
   }
 
   function listingCard(item, compact) {
-    const logoMark = productLogoMarkHtml(item, 'av-prod-logo av-market-logo av-app-icon w-6 h-6');
+    const logo = productLogoFor(item);
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
@@ -296,7 +274,7 @@
     if (compact) {
       return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 w-40 shrink-0 relative" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
         <div class="flex items-center gap-1.5 mb-1.5">
-          ${logoMark}
+          <img src="${escapeAttr(logo)}" alt="" class="av-prod-logo" loading="lazy" onerror="this.style.opacity=.3">
           <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
@@ -310,7 +288,7 @@
       </div>`;
     }
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      ${productLogoMarkHtml(item, 'w-11 h-11 shrink-0 av-market-logo av-app-icon')}
+      <img src="${escapeAttr(logo)}" alt="" class="w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0" loading="lazy" onerror="this.style.opacity=.3">
       <div class="min-w-0 flex-1">
         <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
         <p class="text-[10px] text-slate-500 truncate flex items-center gap-0.5">By <span class="inline-flex items-center min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span> · ${escapeHtml(cat)}</p>
@@ -325,12 +303,12 @@
 
   /** Full-width home row — AcctBazaar “Other product” pattern */
   function homeOtherListingCard(item) {
-    const logoMark = productLogoMarkHtml(item, 'w-12 h-12 shrink-0 self-center av-market-logo av-app-icon');
+    const logo = productLogoFor(item);
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-stretch" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      ${logoMark}
+      <img src="${escapeAttr(logo)}" alt="" class="w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center" loading="lazy" onerror="this.style.opacity=.3">
       <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
         <h4 class="font-bold text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
         ${item.sellerRating ? `<div>${starsRowHtml(item.sellerRating, item.sellerReviews)}</div>` : ''}
@@ -368,10 +346,7 @@
 
     if (home) {
       if (!list.length) {
-        const apiDown = global.__acctsuiteMarketOnline === false;
-        home.innerHTML = apiDown
-          ? `<div class="text-center py-8 text-sm text-slate-500 w-full space-y-2"><p class="font-semibold text-slate-600 dark:text-slate-300">Marketplace is temporarily offline</p><p class="text-xs">Listings will reappear when the server reconnects. <button class="text-brandPrimary font-semibold" onclick="(window.AcctSuiteUI&amp;&amp;window.AcctSuiteUI.refreshMarketListings||window.refreshMarketListings||function(){location.reload()})()">Retry</button></p></div>`
-          : `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`;
+        home.innerHTML = `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`;
       } else {
         home.innerHTML = list.slice(0, HOME_TRENDING_MAX).map((i) => listingCard(i, true)).join('');
       }
@@ -388,10 +363,7 @@
     }
     if (market) {
       if (!list.length) {
-        const apiDown = global.__acctsuiteMarketOnline === false;
-        market.innerHTML = apiDown
-          ? `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-300">Marketplace temporarily unavailable</p><p class="text-xs text-slate-400">The listings API is offline (server PHP). Tap Retry after Hostinger PHP is restored.</p><button class="mt-2 text-xs border border-brandPrimary text-brandPrimary px-4 py-2 rounded-lg" onclick="(window.AcctSuiteUI&amp;&amp;window.AcctSuiteUI.refreshMarketListings||function(){location.reload()})()">Retry</button></div>`
-          : `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-400">No products yet</p><p class="text-xs text-slate-400">Approved seller listings will appear here.</p></div>`;
+        market.innerHTML = `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-400">No products yet</p><p class="text-xs text-slate-400">Approved seller listings will appear here.</p></div>`;
       } else {
         market.innerHTML = list.map((i) => listingCard(i, false)).join('');
       }
@@ -401,9 +373,7 @@
     if (merchants) {
       const map = {};
       list.forEach((i) => {
-        const emailKey = String(i.sellerEmail || '').trim().toLowerCase();
-        if (!emailKey) return;
-        if (!map[emailKey]) {
+        if (!map[i.sellerEmail]) {
           const name = i.sellerName || 'Seller';
           const parts = String(name).trim().split(/\s+/).filter(Boolean);
           const fallbackIni = !parts.length
@@ -411,9 +381,9 @@
             : parts.length === 1
               ? parts[0].slice(0, 2).toUpperCase()
               : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-          map[emailKey] = {
+          map[i.sellerEmail] = {
             name,
-            email: emailKey,
+            email: i.sellerEmail,
             merchantSlug: i.sellerMerchantSlug || '',
             initials: i.sellerInitials || fallbackIni,
             avatarUrl: i.sellerAvatar || '',
@@ -422,22 +392,22 @@
             hasStory: false,
           };
         }
-        map[emailKey].sales += 1;
-        if (!map[emailKey].merchantSlug && i.sellerMerchantSlug) map[emailKey].merchantSlug = i.sellerMerchantSlug;
-        if (!map[emailKey].avatarUrl && i.sellerAvatar) map[emailKey].avatarUrl = i.sellerAvatar;
-        if (!map[emailKey].sellerId && i.sellerId) map[emailKey].sellerId = i.sellerId;
+        map[i.sellerEmail].sales += 1;
+        if (!map[i.sellerEmail].merchantSlug && i.sellerMerchantSlug) map[i.sellerEmail].merchantSlug = i.sellerMerchantSlug;
+        if (!map[i.sellerEmail].avatarUrl && i.sellerAvatar) map[i.sellerEmail].avatarUrl = i.sellerAvatar;
+        if (!map[i.sellerEmail].sellerId && i.sellerId) map[i.sellerEmail].sellerId = i.sellerId;
       });
       const storyFeed = window.__acctsuiteStoryFeed || [];
       storyFeed.forEach((m) => {
-        const email = String(m.sellerEmail || m.email || '').trim().toLowerCase();
+        const email = String(m.sellerEmail || '').toLowerCase();
         if (email && map[email]) {
           map[email].hasStory = Array.isArray(m.stories) && m.stories.length > 0;
           if (!map[email].avatarUrl && m.sellerAvatar) map[email].avatarUrl = m.sellerAvatar;
         } else if (email && Array.isArray(m.stories) && m.stories.length) {
           // Sellers with stories but no live ads still show in Top Merchants
           map[email] = {
-            name: m.sellerName || email.split('@')[0],
-            email,
+            name: m.sellerName,
+            email: m.sellerEmail,
             merchantSlug: m.sellerMerchantSlug || '',
             initials: (m.sellerName || '?').slice(0, 2).toUpperCase(),
             avatarUrl: m.sellerAvatar || '',
@@ -586,7 +556,7 @@
     if (s === 'completed') cls = 'bg-emerald-500/15 text-emerald-500';
     else if (s === 'pending') cls = 'bg-amber-500/15 text-amber-500';
     else if (s === 'cancelled' || s === 'refunded') cls = 'bg-red-500/15 text-red-400';
-    else if (s === 'disputed') cls = 'bg-amber-500/15 text-amber-400';
+    else if (s === 'disputed') cls = 'bg-orange-500/15 text-orange-400';
     return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${cls}">${escapeHtml(status || '—')}</span>`;
   }
 
@@ -597,18 +567,16 @@
     const roleLabel = isSeller ? 'Sell' : 'Buy';
     const roleCls = isSeller ? 'text-red-400' : 'text-emerald-500';
     const cat = o.category || o.title || 'Order';
-    let logoMark = '';
+    let logo = '';
     try {
       const prod =
         window.AcctSuiteCatalog &&
         (window.AcctSuiteCatalog.findProduct(cat) || window.AcctSuiteCatalog.findProduct(o.title));
-      if (prod && window.AcctSuiteCatalog.logoMarkHtml) {
-        logoMark = window.AcctSuiteCatalog.logoMarkHtml(prod, 'w-6 h-6 av-app-icon');
-      } else if (prod && prod.logo) {
-        logoMark = `<img src="${escapeAttr(prod.logo)}" alt="" class="w-6 h-6 av-app-icon" onerror="this.style.display='none'">`;
-      }
+      if (prod && prod.logo) logo = prod.logo;
     } catch (e) {}
-    const icon = logoMark || `<i class="fa-solid fa-box text-slate-400 text-xs"></i>`;
+    const icon = logo
+      ? `<img src="${escapeAttr(logo)}" alt="" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'">`
+      : `<i class="fa-solid fa-box text-slate-400 text-xs"></i>`;
     return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-sm space-y-2.5">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0 flex items-center gap-2">
@@ -1930,30 +1898,7 @@
       el.classList.toggle('text-brandPrimary', i === step - 1);
       el.classList.toggle('font-bold', i === step - 1);
     });
-    if (step === 2) updateWizardPreviewHint();
     if (step === 3) fillSellReview();
-  }
-
-  function updateWizardPreviewHint() {
-    const needs =
-      window.AcctSuite && typeof window.AcctSuite.categoryRequiresPreviewLink === 'function'
-        ? window.AcctSuite.categoryRequiresPreviewLink(sellDraft.category)
-        : !!(
-            window.AcctSuiteCatalog &&
-            typeof window.AcctSuiteCatalog.categoryRequiresPreviewLink === 'function' &&
-            window.AcctSuiteCatalog.categoryRequiresPreviewLink(sellDraft.category)
-          );
-    const req = document.getElementById('wizardPreviewReq');
-    const hint = document.getElementById('wizardPreviewHint');
-    if (req) {
-      req.textContent = needs ? '(required)' : '(optional)';
-      req.className = needs ? 'text-rose-500 font-semibold' : 'text-slate-400 font-normal';
-    }
-    if (hint) {
-      hint.textContent = needs
-        ? 'Required for social media accounts. Buyers review this link before buying. Wrong links are denied by AI.'
-        : 'Optional for WhatsApp, VPS, email, VPN, and similar. Only social media accounts need a preview link.';
-    }
   }
 
   window.selectWizardRelease = function (type) {
@@ -2022,16 +1967,6 @@
       const extraInfo = document.getElementById('wizardExtra').value.trim();
       if (!username || !password) {
         alert('Username and account password are required.');
-        return;
-      }
-      const needsPreview =
-        (window.AcctSuite && typeof window.AcctSuite.categoryRequiresPreviewLink === 'function'
-          ? window.AcctSuite.categoryRequiresPreviewLink(sellDraft.category)
-          : window.AcctSuiteCatalog && typeof window.AcctSuiteCatalog.categoryRequiresPreviewLink === 'function'
-            ? window.AcctSuiteCatalog.categoryRequiresPreviewLink(sellDraft.category)
-            : false);
-      if (needsPreview && !previewLink) {
-        alert('A preview link is required for social media accounts so buyers can verify the profile.');
         return;
       }
       sellDraft = { ...sellDraft, username, password, previewLink, attachedEmail, attachedEmailPassword, twoFA, extraInfo };
@@ -2170,7 +2105,7 @@
   }
 
   function buildListingDetailHtml(item) {
-    const logoMark = productLogoMarkHtml(item, 'av-listing-detail__logo av-market-logo');
+    const logo = productLogoFor(item);
     const stock = Math.max(1, Number(item.stock) || 1);
     const sel = listingSelectedAccount[item.id] != null ? listingSelectedAccount[item.id] : 0;
     listingSelectedAccount[item.id] = sel;
@@ -2202,7 +2137,7 @@
     return `
       <div class="av-listing-detail" data-listing-id="${escapeAttr(item.id)}">
         <div class="av-listing-detail__head">
-          ${logoMark}
+          <img src="${escapeAttr(logo)}" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">
           <div class="min-w-0 flex-1">
             <div class="av-listing-detail__title-row">
               <h3 class="av-listing-detail__title">${escapeHtml(item.title)}</h3>

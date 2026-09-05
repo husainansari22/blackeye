@@ -90,58 +90,6 @@ function admin_password_set(string $newPass): void {
     setting_set('admin_api_password', '');
 }
 
-/** Staff admin login username (default: admin). Overridable from Owner settings. */
-function admin_username(): string {
-    $u = trim((string)setting_get('admin_username', ''));
-    return $u !== '' ? $u : 'admin';
-}
-
-function admin_username_set(string $username): void {
-    $u = trim($username);
-    if ($u === '') {
-        throw new InvalidArgumentException('Admin username cannot be empty');
-    }
-    if (!preg_match('/^[A-Za-z0-9._-]{3,40}$/', $u)) {
-        throw new InvalidArgumentException('Admin username must be 3–40 letters, numbers, . _ or -');
-    }
-    setting_set('admin_username', $u);
-}
-
-/** Owner panel login — settings override api/config.php defaults. */
-function owner_username(): string {
-    $u = trim((string)setting_get('owner_username', ''));
-    if ($u !== '') return $u;
-    return (string)(app_config()['owner_username'] ?? 'owner');
-}
-
-function owner_username_set(string $username): void {
-    $u = trim($username);
-    if ($u === '') {
-        throw new InvalidArgumentException('Owner username cannot be empty');
-    }
-    if (!preg_match('/^[A-Za-z0-9._-]{3,40}$/', $u)) {
-        throw new InvalidArgumentException('Owner username must be 3–40 letters, numbers, . _ or -');
-    }
-    setting_set('owner_username', $u);
-}
-
-function owner_password_verify(string $pass): bool {
-    if ($pass === '') return false;
-    $hash = (string)setting_get('owner_password_hash', '');
-    if ($hash !== '') {
-        return password_verify($pass, $hash);
-    }
-    $plain = (string)(app_config()['owner_password'] ?? '');
-    return $plain !== '' && hash_equals($plain, $pass);
-}
-
-function owner_password_set(string $newPass): void {
-    if (strlen($newPass) < 6) {
-        throw new InvalidArgumentException('Owner password must be at least 6 characters');
-    }
-    setting_set('owner_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
-}
-
 function money_f($n): string {
     return number_format((float)$n, 2, '.', '');
 }
@@ -263,12 +211,7 @@ function create_session(int $userId): string {
     $token = uid_token(24);
     $stmt = db()->prepare('INSERT INTO api_sessions (token, user_id, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))');
     $stmt->execute([$token, $userId]);
-    // PWA / Add-to-Home-Screen is always HTTPS on production — force Secure so
-    // standalone web-app sessions keep the auth cookie.
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
-        || (isset($_SERVER['SERVER_PORT']) && (string)$_SERVER['SERVER_PORT'] === '443');
-    $secure = $https || (isset($_SERVER['HTTP_HOST']) && str_contains((string)$_SERVER['HTTP_HOST'], 'acctsuite.com'));
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
     setcookie('acctsuite_token', $token, [
         'expires' => time() + 60 * 60 * 24 * 30,
         'path' => '/',
@@ -289,10 +232,7 @@ function destroy_session(?string $token): void {
             // ignore
         }
     }
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
-        || (isset($_SERVER['SERVER_PORT']) && (string)$_SERVER['SERVER_PORT'] === '443');
-    $secure = $https || (isset($_SERVER['HTTP_HOST']) && str_contains((string)$_SERVER['HTTP_HOST'], 'acctsuite.com'));
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
     setcookie('acctsuite_token', '', [
         'expires' => time() - 3600,
         'path' => '/',
@@ -567,41 +507,33 @@ function category_requires_preview_link(string $category): bool {
     if ($cat === '') return false;
     $lower = strtolower($cat);
 
-    // Credential-only: messaging numbers, email logins, VPN/VPS, gift cards, etc.
     $no_preview_groups = [
-        'emails & messaging', 'emails & messaging service', 'vpn & proxys', 'vpn & proxies',
-        'giftcards', 'gift cards', 'gift card', 'accounts & subscriptions', 'gaming',
-        'e-commerce platforms', 'websites', 'others',
+        'vpn & proxys', 'vpn & proxies', 'giftcards', 'gift cards', 'gift card',
+        'accounts & subscriptions', 'gaming', 'e-commerce platforms', 'websites', 'others',
     ];
     foreach ($no_preview_groups as $g) {
         if ($lower === $g || strpos($lower, $g) !== false) return false;
     }
+    if (preg_match('/\b(vpn|proxy|proxies|giftcard|gift\s+card)\b/i', $cat)) return false;
 
     $no_preview_products = [
-        'whatsapp', 'telegram', 'signal', 'wechat', 'google voice', 'textnow', 'textplus',
-        'gmail', 'ymail', 'hotmail', 'mailru', 'outlook', 'yahoo',
-        'vps', 'rdp', 'ssh', 'server', 'hosting', 'cpanel',
         'windscribe', 'nord', '911 proxy', 'pia', 'express', 'ip vanish', 'cyberghost',
-        'surfshark', 'netflix', 'spotify', 'steam', 'playstation', 'xbox', 'epic',
-        'amazon', 'ebay', 'shopify',
+        'private', 'total', 'surfshark', 'netflix', 'spotify', 'steam', 'playstation',
+        'xbox', 'epic', 'amazon', 'ebay', 'shopify',
     ];
     foreach ($no_preview_products as $p) {
         if ($lower === $p || strpos($lower, $p) !== false) return false;
     }
-    if (preg_match('/\b(vpn|vps|rdp|proxy|proxies|giftcard|gift\s+card|whatsapp|telegram)\b/i', $cat)) {
-        return false;
-    }
 
-    // Only Social Media accounts need a public profile/preview link
-    $preview_groups = ['social media'];
+    $preview_groups = ['social media', 'emails & messaging'];
     foreach ($preview_groups as $g) {
         if (strpos($lower, $g) !== false) return true;
     }
 
     $social_products = [
-        'facebook', 'instagram', 'tiktok', 'twitter', 'snapchat', 'linkedin',
-        'pinterest', 'threads', 'discord', 'reddit', 'tinder', 'bumble', 'hinge',
-        'bereal', 'lemon8', 'quora',
+        'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
+        'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
+        'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
     ];
     foreach ($social_products as $p) {
         if ($lower === $p || strpos($lower, $p) !== false) return true;

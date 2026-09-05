@@ -7,7 +7,7 @@ return [
     'db_host' => 'localhost',
     'db_name' => 'u343769360_acctsuite',
     // Copy exact username from Hostinger → MySQL Databases (may match DB name)
-    'db_user' => 'u343769360_acctsuite',
+    'db_user' => 'u343769360_acctsuite_',
     'db_pass' => 'CHANGE_ME',
     'db_charset' => 'utf8mb4',
 
@@ -34,12 +34,6 @@ return [
     'support_email' => 'support@acctsuite.com',
 
     // Create this mailbox in Hostinger → Emails first
-  'mail_from' => 'support@acctsuite.com',
-  'mail_from_name' => 'AcctSuite',
-
-  // Optional SMTP (Hostinger mailbox). If set, used instead of PHP mail().
-  // 'smtp_host' => 'smtp.hostinger.com',
-  // 'smtp_port' => 465,
-  // 'smtp_user' => 'support@acctsuite.com',
-  // 'smtp_pass' => 'YOUR_MAILBOX_PASSWORD',
+    'mail_from' => 'support@acctsuite.com',
+    'mail_from_name' => 'AcctSuite',
 ];

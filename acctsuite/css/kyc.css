@@ -41,7 +41,7 @@
 }
 
 .kyc-hero-pending {
-  color: #8B5CF6;
+  color: #f59e0b;
   border-color: rgba(245, 158, 11, 0.4);
   background: linear-gradient(160deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.04));
 }
@@ -216,7 +216,7 @@
 .dark .kyc-field input,
 .dark .kyc-field textarea,
 .dark .kyc-field select {
-  background: #0c0a14;
+  background: #0f172a;
   border-color: #1e293b;
 }
 
@@ -386,7 +386,7 @@
 }
 
 .dark .kyc-doc-btn {
-  background: #0c0a14;
+  background: #0f172a;
   border-color: #1e293b;
   color: #e2e8f0;
 }

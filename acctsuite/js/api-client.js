@@ -79,25 +79,20 @@
   }
 
   let available = null;
-  let availableCheckedAt = 0;
-  const AVAILABLE_TTL_MS = 15000;
 
   async function isAvailable() {
-    const now = Date.now();
-    if (available !== null && now - availableCheckedAt < AVAILABLE_TTL_MS) return available;
+    if (available !== null) return available;
     try {
       const r = await request('health');
       available = !!(r && r.ok && r.installed !== false);
     } catch (_) {
       available = false;
     }
-    availableCheckedAt = now;
     return available;
   }
 
   function clearAvailabilityCache() {
     available = null;
-    availableCheckedAt = 0;
   }
 
   function applySessionUser(user) {
@@ -462,12 +457,6 @@
     },
     staffRejectWithdrawal(payload) {
       return request('staff.wallet.reject_withdrawal', { method: 'POST', body: payload, asStaff: true });
-    },
-    staffUsersList(query) {
-      return request('staff.users.list', { asStaff: true, query: query || {} });
-    },
-    staffLoginAs(payload) {
-      return request('staff.loginAs', { method: 'POST', body: payload, asStaff: true });
     },
     banksList(query) {
       return request('banks.list', { query: query || {} });

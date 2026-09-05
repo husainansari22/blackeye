@@ -3,23 +3,23 @@
  * Theme tokens fix dark-mode contrast (no light text on light cards).
  */
 :root {
-  --av-bg: #faf8ff;
+  --av-bg: #eef2f7;
   --av-surface: #ffffff;
   --av-surface-2: #f8fafc;
-  --av-text: #0c0a14;
+  --av-text: #0f172a;
   --av-muted: #64748b;
   --av-border: #e2e8f0;
   --av-chat: #e8eef5;
   --av-bubble-in: #ffffff;
-  --av-bubble-in-text: #0c0a14;
+  --av-bubble-in-text: #0f172a;
   --av-bubble-out: #8B5CF6;
   --av-bubble-out-text: #ffffff;
   --av-warn-bg: #fffbeb;
   --av-warn-border: #fde68a;
   --av-warn-text: #92400e;
-  --av-info-bg: #F0F5FA;
-  --av-info-border: #E8EEF5;
-  --av-info-text: #04101C;
+  --av-info-bg: #f0f9ff;
+  --av-info-border: #bae6fd;
+  --av-info-text: #0c4a6e;
   --av-ok-bg: #ecfdf5;
   --av-ok-border: #a7f3d0;
   --av-ok-text: #065f46;
@@ -30,23 +30,23 @@
 
 html.dark {
   color-scheme: dark;
-  --av-bg: #0c0a14;
-  --av-surface: #8B5CF6;
-  --av-surface-2: #0D3558;
+  --av-bg: #020617;
+  --av-surface: #0f172a;
+  --av-surface-2: #1e293b;
   --av-text: #f8fafc;
   --av-muted: #94a3b8;
-  --av-border: #134A7C;
-  --av-chat: #0c0a14;
+  --av-border: #334155;
+  --av-chat: #020617;
   --av-bubble-in: #1e293b;
   --av-bubble-in-text: #f8fafc;
-  --av-bubble-out: #1E5A8C;
+  --av-bubble-out: #8B5CF6;
   --av-bubble-out-text: #ffffff;
   --av-warn-bg: #422006;
   --av-warn-border: #854d0e;
   --av-warn-text: #fde68a;
-  --av-info-bg: #04101C;
-  --av-info-border: #0c0a14;
-  --av-info-text: #F0F5FA;
+  --av-info-bg: #0c4a6e;
+  --av-info-border: #6D28D9;
+  --av-info-text: #e0f2fe;
   --av-ok-bg: #064e3b;
   --av-ok-border: #047857;
   --av-ok-text: #a7f3d0;
@@ -102,9 +102,14 @@ html, body.av-app {
 .av-brand-mark {
   width: 2rem;
   height: 2rem;
-  border-radius: 0.55rem;
-  object-fit: contain;
-  display: block;
+  border-radius: 0.6rem;
+  background: var(--av-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
   flex-shrink: 0;
 }
 
@@ -315,8 +320,8 @@ body.av-app,
 }
 .av-chip strong { color: var(--av-text); font-size: 0.8rem; }
 .av-chip.is-hot {
-  background: color-mix(in srgb, #8B5CF6 18%, var(--av-surface));
-  border-color: color-mix(in srgb, #8B5CF6 45%, var(--av-border));
+  background: color-mix(in srgb, #f59e0b 18%, var(--av-surface));
+  border-color: color-mix(in srgb, #f59e0b 45%, var(--av-border));
   color: #b45309;
 }
 html.dark .av-chip.is-hot { color: #fde68a; }
@@ -1574,7 +1579,7 @@ html.dark .av-app thead {
   font-variant-numeric: tabular-nums;
 }
 .av-settings-value.is-hot {
-  color: #8B5CF6;
+  color: #f59e0b;
   font-weight: 700;
 }
 .av-settings-chevron {

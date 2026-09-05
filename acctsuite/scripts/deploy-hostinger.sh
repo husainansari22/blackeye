@@ -6,8 +6,8 @@ set -euo pipefail
 TOKEN="${TOKEN:?TOKEN env required}"
 USERNAME="${HOSTINGER_USER:-u343769360}"
 DOMAIN="${HOSTINGER_DOMAIN:-acctsuite.com}"
-# SAFETY: never deploy to acctventa.com
-if [[ "${HOSTINGER_DOMAIN}" == "acctventa.com" ]]; then echo "REFUSING to deploy to acctventa.com"; exit 1; fi
+# SAFETY: never deploy to acctsuite.com
+if [[ "${HOSTINGER_DOMAIN}" == "acctsuite.com" ]]; then echo "REFUSING to deploy to acctsuite.com"; exit 1; fi
 
 API_BASE="https://developers.hostinger.com/api/hosting/v1/files/upload-urls"
 

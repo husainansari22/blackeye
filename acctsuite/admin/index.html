@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>AcctSuite Owner Admin</title>
-    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905violet2">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <title>AcctSuite Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
-  <link rel="apple-touch-icon" href="/apple-touch-icon-v5.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#8B5CF6">
   <meta name="robots" content="noindex,nofollow">
-    <link rel="preload" href="/css/tailwind.css?v=20260905violet2" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet2">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
     <script>
     (function(){try{var t=localStorage.getItem('acctsuite_admin_theme')||'light';if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');}}catch(e){}})();
   </script>
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905violet2">
-<link rel="stylesheet" href="/css/admin-app.css?v=20260905violet2">
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260822kyc3">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
-  <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
-  <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
-  <script defer src="/js/acctsuite.min.js?v=20260822adm1"></script>
-  <script defer src="/js/api-client.min.js?v=20260905bag6"></script>
-  <script defer src="/js/staff-alerts.js?v=20260821toast2"></script>
-  <script defer src="/js/staff-inbox.js?v=20260821toast2"></script>
-  <script defer src="/js/av-confirm.js?v=20260823confirm1"></script>
+  <script src="/js/mobile-fix.js?v=20260822tap1"></script>
+  <script src="/js/ui-toast.js?v=20260821toast2"></script>
+  <script src="/js/acctsuite.js?v=20260822adm1"></script>
+  <script src="/js/api-client.js?v=20260822adm1"></script>
+  <script src="/js/staff-alerts.js?v=20260821toast2"></script>
+  <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+  <script src="/js/av-confirm.js?v=20260823confirm1"></script>
   <style>
     @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
     html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -38,7 +38,7 @@
   <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 space-y-4">
       <div class="text-center">
-        <img src="/img/brand/logo-mark-violet-v6.svg?v=20260905bag6" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-brandPrimary text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
         <h1 class="text-xl font-bold">Admin Login</h1>
         <p class="text-xs text-slate-500 mt-1">Manage fees, plans, gateways & reviews</p>
       </div>
@@ -54,7 +54,7 @@
         <p id="loginError" class="text-xs text-red-500 hidden"></p>
         <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
       </form>
-      <p class="text-[11px] text-slate-400 text-center">Staff login is managed by the <strong>Owner</strong> in Owner Admin → Settings → Admin logins.</p>
+      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. After you change it in Security, the new password is stored on the server.</p>
       <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
     </div>
   </div>
@@ -63,7 +63,7 @@
   <div id="dashView" class="hidden">
     <header class="av-topbar">
       <div class="av-topbar-inner">
-        <div class="av-brand"><img src="/img/brand/logo-mark-violet-v6.svg?v=20260905bag6" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">AcctSuite Admin</span></div>
+        <div class="av-brand"><span class="av-brand-mark">A</span><span class="title truncate">AcctSuite Admin</span></div>
         <div class="av-top-actions">
           <button type="button" id="adminThemeBtn" onclick="toggleAdminTheme()" class="av-icon-btn" aria-label="Toggle theme">Dark</button>
           <a href="/dashboard.html" class="av-link-btn">App</a>
@@ -85,7 +85,8 @@
         <button class="av-tab admin-tab" data-tab="wallet" onclick="showTab('wallet')">Withdrawals</button>
         <button class="av-tab admin-tab" data-tab="ads" onclick="showTab('ads')">Ad reviews</button>
         <button class="av-tab admin-tab" data-tab="users" onclick="showTab('users')">Users</button>
-</div>
+        <button class="av-tab admin-tab" data-tab="security" onclick="showTab('security')">Security</button>
+      </div>
 
       <!-- SUPPORT CHAT INBOX -->
       <section id="tab_support" class="admin-panel">
@@ -176,7 +177,7 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button id="adminOrderRefundBtn" class="av-send" style="background:#ef4444" type="button">Refund buyer (seller debt OK)</button>
-                  <button id="adminOrderWarrantyBtn" class="px-3 py-2 rounded-lg bg-brandPrimary text-white text-[11px] font-bold" type="button">24h warranty · deduct seller + refund</button>
+                  <button id="adminOrderWarrantyBtn" class="px-3 py-2 rounded-lg bg-orange-600 text-white text-[11px] font-bold" type="button">24h warranty · deduct seller + refund</button>
                 </div>
                 <p class="text-[10px] text-slate-500">Use warranty deduct when a buyer proves the account was banned within 24h without their edits. Commission is clawed back from the seller settlement.</p>
               </div>
@@ -223,24 +224,53 @@
           <div class="av-page-head">
             <div>
               <h2 class="av-page-title">Users</h2>
-              <p class="av-page-sub">Search live accounts and login as any user (staff + owner).</p>
+              <p class="av-page-sub">Local browser users (demo mode). Live accounts are in Owner Admin.</p>
             </div>
-            <div class="av-page-meta flex items-center gap-2">
-              <input id="usersSearchQ" type="search" placeholder="Search name, email, id" class="av-input px-3 py-2 text-sm w-44" onkeydown="if(event.key==='Enter')loadUsers()">
+            <div class="av-page-meta">
               <button onclick="loadUsers()" class="av-btn" type="button">Refresh</button>
             </div>
           </div>
           <div class="av-panel"><div id="usersAdminList" class="overflow-x-auto"></div></div>
         </div>
       </section>
-</div>
+
+      <!-- SECURITY -->
+      <section id="tab_security" class="admin-panel hidden">
+        <div class="av-page">
+          <div class="av-page-head">
+            <div>
+              <h2 class="av-page-title">Security</h2>
+              <p class="av-page-sub">This password is saved on the server so you can sign in from any phone or browser.</p>
+            </div>
+          </div>
+          <div class="av-panel">
+            <div class="av-panel-body space-y-4 max-w-xl">
+              <div>
+                <label class="text-xs av-muted">Current password</label>
+                <input id="pw_current" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-xs av-muted">New password</label>
+                <input id="pw_new" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-xs av-muted">Confirm new password</label>
+                <input id="pw_confirm" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
+              </div>
+              <button onclick="changePassword()" class="av-btn av-btn-primary" type="button">Update password</button>
+              <p id="pwMsg" class="text-xs av-muted"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script>
     const A = () => window.AcctSuite;
 
     function showTab(name) {
-      if (!name || name === 'security') name = 'support';
+      if (!name) name = 'support';
       document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
       const panel = document.getElementById('tab_' + name);
       if (panel) panel.classList.remove('hidden');
@@ -552,6 +582,8 @@
             window.__acctsuiteAdminOk = true;
             document.getElementById('loginError').classList.add('hidden');
             enterDash();
+            showTab('security');
+            document.getElementById('pwMsg').textContent = 'Logged in with fallback. Re-upload js/acctsuite.js for full Admin features.';
             return false;
           }
           showLoginError('Login script missing. Upload public_html/js/acctsuite.js then hard-refresh.');
@@ -568,6 +600,13 @@
                 serverOk = true;
               } catch (apiErr) {
                 const localTry = window.AcctSuite.adminLogin(user, pass);
+                if (localTry.ok && pass !== 'admin123') {
+                  try {
+                    await Api.changeAdminPassword({ currentPassword: 'admin123', newPassword: pass });
+                    await Api.staffLogin({ username: user, password: pass });
+                    serverOk = true;
+                  } catch (_) {}
+                }
                 if (!serverOk && !localTry.ok) {
                   showLoginError((apiErr && apiErr.message) || localTry.error || 'Invalid admin username or password.');
                   return false;
@@ -575,6 +614,10 @@
                 if (!serverOk && localTry.ok) {
                   document.getElementById('loginError').classList.add('hidden');
                   enterDash();
+                  if (localTry.admin && localTry.admin.mustChangePassword) {
+                    showTab('security');
+                    document.getElementById('pwMsg').textContent = 'Please change the default password now — it must be saved on the server.';
+                  }
                   return false;
                 }
               }
@@ -602,7 +645,10 @@
         }
         document.getElementById('loginError').classList.add('hidden');
         enterDash();
-        // Password changes are owner-only (Owner Admin → Settings → Admin logins).
+        if (res.admin && res.admin.mustChangePassword) {
+          showTab('security');
+          document.getElementById('pwMsg').textContent = 'Please change the default password now.';
+        }
       } catch (err) {
         showLoginError('Sign in error: ' + (err && err.message ? err.message : 'unknown'));
       } finally {
@@ -839,40 +885,11 @@
       if (!res.ok) alert(res.error); else loadAds();
     }
 
-    async function loadUsers() {
+    function loadUsers() {
+      const users = A().listAllUsersSummary();
       const box = document.getElementById('usersAdminList');
-      const qEl = document.getElementById('usersSearchQ');
-      const q = (qEl && qEl.value || '').trim();
-      box.innerHTML = '<p class="text-sm text-slate-400 p-3">Loading users…</p>';
-      const Api = window.AcctSuiteApi;
-      if (Api && typeof Api.staffUsersList === 'function' && Api.getStaffToken && Api.getStaffToken()) {
-        try {
-          const res = await Api.staffUsersList({ q: q || undefined, limit: 80 });
-          const users = (res && res.users) || [];
-          if (!users.length) {
-            box.innerHTML = '<p class="text-sm text-slate-400 p-3">No matching users.</p>';
-            return;
-          }
-          box.innerHTML = `<table class="w-full text-left text-xs">
-            <thead><tr class="text-slate-500 border-b"><th class="py-2 pr-2">ID</th><th class="py-2 pr-2">Name</th><th class="py-2 pr-2">Email</th><th class="py-2 pr-2">Balance</th><th class="py-2 pr-2">Status</th><th class="py-2">Actions</th></tr></thead>
-            <tbody>${users.map((u) => `<tr class="border-b border-slate-100 dark:border-slate-800">
-              <td class="py-2 pr-2 font-mono">${u.id}</td>
-              <td class="py-2 pr-2 font-medium">${escapeHtml(u.name || '')}</td>
-              <td class="py-2 pr-2">${escapeHtml(u.email || '')}</td>
-              <td class="py-2 pr-2">$${Number(u.balance || 0).toFixed(2)}</td>
-              <td class="py-2 pr-2">${u.banned ? '<span class="text-red-500">Banned</span>' : (u.verified ? '<span class="text-emerald-500">Verified</span>' : 'Active')}</td>
-              <td class="py-2"><button type="button" class="av-btn text-[11px] px-2 py-1" ${u.banned ? 'disabled' : ''} onclick="loginAsUser(${Number(u.id)})">Login as user</button></td>
-            </tr>`).join('')}</tbody></table>`;
-          return;
-        } catch (e) {
-          box.innerHTML = '<p class="text-sm text-red-500 p-3">Could not load live users. Connect inbox / staff login first. ' + escapeHtml((e && e.message) || '') + '</p>';
-          return;
-        }
-      }
-      // Fallback: local demo users if staff API session is missing
-      const users = A().listAllUsersSummary ? A().listAllUsersSummary() : [];
       if (!users.length) {
-        box.innerHTML = '<p class="text-sm text-slate-400 p-3">Connect with staff credentials (Support tab) to load live users, or sign up locally first.</p>';
+        box.innerHTML = '<p class="text-sm text-slate-400">No users in this browser yet. Sign up on the main site first.</p>';
         return;
       }
       box.innerHTML = `<table class="w-full text-left text-xs">
@@ -886,32 +903,7 @@
         </tr>`).join('')}</tbody></table>`;
     }
 
-    async function loginAsUser(userId) {
-      const Api = window.AcctSuiteApi;
-      if (!Api || !Api.staffLoginAs) {
-        alert('API client missing');
-        return;
-      }
-      if (!Api.getStaffToken || !Api.getStaffToken()) {
-        alert('Connect staff login on the Support tab first.');
-        return;
-      }
-      try {
-        const res = await Api.staffLoginAs({ userId: Number(userId) });
-        if (!res || !res.ok || !res.loginUrl) {
-          alert((res && res.error) || 'Could not open user account');
-          return;
-        }
-        window.open(res.loginUrl, '_blank', 'noopener');
-      } catch (e) {
-        alert((e && e.message) || 'Login-as failed');
-      }
-    }
-
     async function changePassword() {
-      alert("Change staff credentials from Owner Admin → Settings → Admin logins.");
-      return;
-      /* disabled
       const current = document.getElementById('pw_current').value || '';
       const next = document.getElementById('pw_new').value || '';
       const confirm = (document.getElementById('pw_confirm') || {}).value || '';

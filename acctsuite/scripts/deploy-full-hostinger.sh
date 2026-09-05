@@ -4,7 +4,7 @@ set -euo pipefail
 TOKEN="${TOKEN:?TOKEN env required}"
 USERNAME="${HOSTINGER_USER:-u343769360}"
 DOMAIN="${HOSTINGER_DOMAIN:-acctsuite.com}"
-if [[ "${DOMAIN}" == "acctventa.com" ]]; then echo "REFUSING acctventa.com"; exit 1; fi
+if [[ "${DOMAIN}" == "acctsuite.com" ]]; then echo "REFUSING acctsuite.com"; exit 1; fi
 ROOT="${1:-/workspace/acctsuite}"
 API_BASE="https://developers.hostinger.com/api/hosting/v1/files/upload-urls"
 cd "$ROOT"

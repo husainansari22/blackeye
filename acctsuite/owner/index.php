@@ -18,7 +18,7 @@ if (isset($_GET['logout'])) {
 if (($_POST['form'] ?? '') === 'login') {
     $user = trim((string)($_POST['username'] ?? ''));
     $pass = (string)($_POST['password'] ?? '');
-    if ($user === owner_username() && owner_password_verify($pass)) {
+    if ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? '')) {
         $_SESSION['owner_ok'] = true;
         header('Location: /owner/');
         exit;
@@ -56,48 +56,6 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
-        }
-        if ($form === 'credentials') {
-            $notes = [];
-            $ownerUser = trim((string)($_POST['owner_username'] ?? ''));
-            if ($ownerUser !== '' && $ownerUser !== owner_username()) {
-                owner_username_set($ownerUser);
-                $notes[] = 'owner username';
-            }
-            $ownerPass = (string)($_POST['owner_password'] ?? '');
-            $ownerPass2 = (string)($_POST['owner_password_confirm'] ?? '');
-            if ($ownerPass !== '' || $ownerPass2 !== '') {
-                if ($ownerPass !== $ownerPass2) {
-                    throw new RuntimeException('Owner passwords do not match.');
-                }
-                if (strlen($ownerPass) < 6) {
-                    throw new RuntimeException('Owner password must be at least 6 characters.');
-                }
-                owner_password_set($ownerPass);
-                $notes[] = 'owner password';
-            }
-            $adminUser = trim((string)($_POST['admin_username'] ?? ''));
-            if ($adminUser !== '' && $adminUser !== admin_username()) {
-                admin_username_set($adminUser);
-                $notes[] = 'admin username';
-            }
-            $adminPass = (string)($_POST['admin_password'] ?? '');
-            $adminPass2 = (string)($_POST['admin_password_confirm'] ?? '');
-            if ($adminPass !== '' || $adminPass2 !== '') {
-                if ($adminPass !== $adminPass2) {
-                    throw new RuntimeException('Admin passwords do not match.');
-                }
-                if (strlen($adminPass) < 6) {
-                    throw new RuntimeException('Admin password must be at least 6 characters.');
-                }
-                admin_password_set($adminPass);
-                $notes[] = 'admin password';
-            }
-            if (!$notes) {
-                $flash = 'No credential changes submitted.';
-            } else {
-                $flash = 'Updated: ' . implode(', ', $notes) . '.';
-            }
         }
         if ($form === 'plan') {
             $id = preg_replace('/[^a-z0-9_]/', '', strtolower((string)$_POST['plan_id']));
@@ -506,21 +464,21 @@ $tab = $_GET['tab'] ?? 'overview';
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <meta name="robots" content="noindex,nofollow">
-  <link rel="preload" href="/css/tailwind.css?v=20260905violet2" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905violet2">
+  <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
   <script>
     (function(){try{var t=localStorage.getItem('acctsuite_owner_theme')||'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();
   </script>
-    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905violet2">
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905violet2">
-<link rel="stylesheet" href="/css/admin-app.css?v=20260905violet2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+  <link rel="stylesheet" href="/css/admin-app.css?v=20260827adsfold1">
   <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822tap1">
-  <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
-  <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
-  <script defer src="/js/av-confirm.js?v=20260823confirm1"></script>
+  <script src="/js/mobile-fix.js?v=20260822tap1"></script>
+  <script src="/js/ui-toast.js?v=20260821toast2"></script>
+  <script src="/js/av-confirm.js?v=20260823confirm1"></script>
   <style>
     body.av-app{font-family:"Plus Jakarta Sans",system-ui,sans-serif}
   </style>
@@ -531,7 +489,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <form method="post" class="w-full max-w-sm av-card p-6 space-y-4">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
-        <img src="/img/brand/logo-mark-violet.svg?v=20260905v3" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-brand text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
         <h1 class="text-xl font-bold">Owner Admin</h1>
         <p class="text-xs text-slate-500">Full website control (users, money, ads, gateways)</p>
       </div>
@@ -595,7 +553,7 @@ $tab = $_GET['tab'] ?? 'overview';
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
-      <div class="av-brand"><img src="/img/brand/logo-mark-violet.svg?v=20260905v3" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">Owner Admin</span></div>
+      <div class="av-brand"><span class="av-brand-mark">A</span><span class="title truncate">Owner Admin</span></div>
       <div class="av-top-actions">
         <button type="button" id="ownerThemeBtn" onclick="toggleOwnerTheme()" class="av-icon-btn">Dark</button>
         <a href="/dashboard.html" class="av-link-btn">App</a>
@@ -650,7 +608,7 @@ $tab = $_GET['tab'] ?? 'overview';
         <p class="av-section-label">Needs attention</p>
         <div class="av-settings-group">
           <a class="av-settings-row" href="?tab=wallet">
-            <span class="av-settings-icon" style="background:#8B5CF6"><i class="fa-solid fa-money-bill-transfer"></i></span>
+            <span class="av-settings-icon" style="background:#f59e0b"><i class="fa-solid fa-money-bill-transfer"></i></span>
             <span class="av-settings-label">Withdrawals</span>
             <span class="av-settings-value<?= $stats['withdraw_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['withdraw_pending'] ?> pending</span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
@@ -662,7 +620,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=kyc">
-            <span class="av-settings-icon" style="background:#8B5CF6"><i class="fa-solid fa-id-card"></i></span>
+            <span class="av-settings-icon" style="background:#8b5cf6"><i class="fa-solid fa-id-card"></i></span>
             <span class="av-settings-label">KYC review</span>
             <span class="av-settings-value<?= $stats['kyc_pending'] ? ' is-hot' : '' ?>"><?= (int)$stats['kyc_pending'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
@@ -684,7 +642,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=orders">
-            <span class="av-settings-icon" style="background:#8B5CF6"><i class="fa-solid fa-bag-shopping"></i></span>
+            <span class="av-settings-icon" style="background:#6366f1"><i class="fa-solid fa-bag-shopping"></i></span>
             <span class="av-settings-label">Orders</span>
             <span class="av-settings-value"><?= (int)$stats['orders'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
@@ -719,7 +677,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=plans">
-            <span class="av-settings-icon" style="background:#A78BFA"><i class="fa-solid fa-crown"></i></span>
+            <span class="av-settings-icon" style="background:#a855f7"><i class="fa-solid fa-crown"></i></span>
             <span class="av-settings-label">Plans &amp; pricing</span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
@@ -774,8 +732,8 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script defer src="/js/staff-alerts.js?v=20260821toast2"></script>
-      <script defer src="/js/staff-inbox.js?v=20260821toast2"></script>
+      <script src="/js/staff-alerts.js?v=20260821toast2"></script>
+      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctsuite_staff_token', OWNER_STAFF_TOKEN);
@@ -1094,7 +1052,7 @@ $tab = $_GET['tab'] ?? 'overview';
             <span class="av-settings-value">$<?= number_format((float)($u['withdrawable_balance'] ?? 0), 2) ?></span>
           </div>
           <div class="av-settings-row is-static">
-            <span class="av-settings-icon" style="background:#A78BFA"><i class="fa-solid fa-crown"></i></span>
+            <span class="av-settings-icon" style="background:#a855f7"><i class="fa-solid fa-crown"></i></span>
             <span class="av-settings-label">Plan</span>
             <span class="av-settings-value"><?= h($u['plan'] ?: 'free') ?></span>
           </div>
@@ -1346,7 +1304,7 @@ $tab = $_GET['tab'] ?? 'overview';
                     <?php endif; ?>
                     <?php if ($a['deny_reason']): ?><div class="av-ad-detail-span2" style="color:#e11d48"><span class="av-ad-detail-k">Denied</span><span><?= h($a['deny_reason']) ?></span></div><?php endif; ?>
                     <?php if ($soldOut && $st === 'active'): ?>
-                      <div class="av-ad-detail-span2" style="color:#8B5CF6">Sold out — not shown on Home/Market until restocked.</div>
+                      <div class="av-ad-detail-span2" style="color:#f59e0b">Sold out — not shown on Home/Market until restocked.</div>
                     <?php endif; ?>
                   </div>
                   <div class="av-admin-card-actions av-ad-line-actions">
@@ -1611,14 +1569,14 @@ $tab = $_GET['tab'] ?? 'overview';
               </div>
               <div class="flex flex-wrap gap-2">
                 <button type="button" id="orderChatRefundBtn" class="px-3 py-2 rounded-lg bg-red-500 text-white text-[11px] font-bold">Refund buyer (seller debt OK)</button>
-                <button type="button" id="orderWarrantyRefundBtn" class="px-3 py-2 rounded-lg bg-brandPrimary text-white text-[11px] font-bold">24h warranty · deduct seller + refund</button>
+                <button type="button" id="orderWarrantyRefundBtn" class="px-3 py-2 rounded-lg bg-orange-600 text-white text-[11px] font-bold">24h warranty · deduct seller + refund</button>
               </div>
               <p class="text-[10px] text-slate-500">Use warranty deduct when a buyer proves the account was banned within 24h without their edits. Commission is also clawed back from the seller settlement.</p>
             </div>
           </div>
         </div>
       </div>
-      <script defer src="/js/staff-inbox.js?v=20260821toast2"></script>
+      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
       <script>
         localStorage.setItem('acctsuite_staff_token', <?= json_encode($staffToken) ?>);
         const FOCUS_ORDER = <?= (int)$focusOrder ?>;
@@ -1901,7 +1859,7 @@ $tab = $_GET['tab'] ?? 'overview';
                 <p class="text-slate-600 dark:text-slate-300 break-all"><?= h($t['note']) ?></p>
                 <p class="font-mono text-[10px] text-slate-400">Ref <?= h($t['reference'] ?? '') ?> · <?= h($t['created_at'] ?? '') ?></p>
                 <?php if ($isFlw): ?>
-                  <p class="text-[10px] text-brandPrimary font-semibold">Flutterwave — auto-confirm preferred. Use Credit wallet if it stays pending after payment.</p>
+                  <p class="text-[10px] text-sky-500 font-semibold">Flutterwave — auto-confirm preferred. Use Credit wallet if it stays pending after payment.</p>
                 <?php endif; ?>
               </div>
               <div class="flex flex-wrap gap-2">
@@ -1910,7 +1868,7 @@ $tab = $_GET['tab'] ?? 'overview';
                 <form method="post" target="_blank" class="inline">
                   <input type="hidden" name="form" value="login_as_user">
                   <input type="hidden" name="user_id" value="<?= (int)$t['user_id'] ?>">
-                  <button class="bg-brandPrimary text-white text-xs font-bold px-3 py-2 rounded-lg">Open user account</button>
+                  <button class="bg-sky-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Open user account</button>
                 </form>
               </div>
             </div>
@@ -2012,7 +1970,7 @@ $tab = $_GET['tab'] ?? 'overview';
                     <input name="local[<?= $i ?>][rate]" type="number" step="0.01" min="0.01" value="<?= h((string)($c['rate'] ?? 1)) ?>" class="av-field" style="width:6.5rem" required>
                   </td>
                   <td class="py-3 pr-2 text-center">
-                    <input type="checkbox" name="local[<?= $i ?>][enabled]" value="1" class="accent-brandPrimary w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="local[<?= $i ?>][enabled]" value="1" class="accent-sky-500 w-4 h-4" <?= !empty($c['enabled']) ? 'checked' : '' ?>>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -2062,7 +2020,7 @@ $tab = $_GET['tab'] ?? 'overview';
                     ?>
                       <div class="av-field-block">
                         <label><?= h($nk) ?> deposit address</label>
-                        <input name="crypto[<?= $i ?>][addr][<?= h($nk) ?>]" value="<?= h($addrVal) ?>" placeholder="Paste <?= h($nk) ?> wallet address" class="font-mono text-xs" style="<?= $addrVal === '' ? 'border-color:#8B5CF6' : '' ?>">
+                        <input name="crypto[<?= $i ?>][addr][<?= h($nk) ?>]" value="<?= h($addrVal) ?>" placeholder="Paste <?= h($nk) ?> wallet address" class="font-mono text-xs" style="<?= $addrVal === '' ? 'border-color:#f59e0b' : '' ?>">
                         <?php if ($addrVal === ''): ?>
                           <p class="text-[10px] mt-0.5" style="color:#d97706">Empty — users cannot deposit this network yet.</p>
                         <?php endif; ?>
@@ -2207,49 +2165,6 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctsuite.com')) ?>"></div>
             </div>
             <button class="av-btn av-btn-primary">Save settings</button>
-          </div>
-        </form>
-
-        <form method="post" class="av-panel" style="margin-top:1rem">
-          <input type="hidden" name="form" value="credentials">
-          <div class="av-panel-head"><span>Admin logins</span></div>
-          <div class="av-panel-body space-y-4">
-            <p class="text-[12px] av-muted">Change Owner panel and Staff admin usernames/passwords here only. Leave a password blank to keep the current one.</p>
-            <div class="av-admin-card">
-              <h3 class="av-row-title" style="margin-bottom:0.45rem">Owner admin <span class="av-muted" style="font-weight:500">(/owner)</span></h3>
-              <div class="av-form-grid cols-2">
-                <div class="av-field-block">
-                  <label>Username</label>
-                  <input name="owner_username" value="<?= h(owner_username()) ?>" autocomplete="off" required>
-                </div>
-                <div class="av-field-block">
-                  <label>New password</label>
-                  <input name="owner_password" type="password" autocomplete="new-password" placeholder="Leave blank to keep">
-                </div>
-                <div class="av-field-block" style="grid-column:1/-1">
-                  <label>Confirm owner password</label>
-                  <input name="owner_password_confirm" type="password" autocomplete="new-password" placeholder="Repeat new password">
-                </div>
-              </div>
-            </div>
-            <div class="av-admin-card">
-              <h3 class="av-row-title" style="margin-bottom:0.45rem">Staff admin <span class="av-muted" style="font-weight:500">(/admin)</span></h3>
-              <div class="av-form-grid cols-2">
-                <div class="av-field-block">
-                  <label>Username</label>
-                  <input name="admin_username" value="<?= h(admin_username()) ?>" autocomplete="off" required>
-                </div>
-                <div class="av-field-block">
-                  <label>New password</label>
-                  <input name="admin_password" type="password" autocomplete="new-password" placeholder="Leave blank to keep">
-                </div>
-                <div class="av-field-block" style="grid-column:1/-1">
-                  <label>Confirm admin password</label>
-                  <input name="admin_password_confirm" type="password" autocomplete="new-password" placeholder="Repeat new password">
-                </div>
-              </div>
-            </div>
-            <button class="av-btn av-btn-primary">Save credentials</button>
           </div>
         </form>
       </div>

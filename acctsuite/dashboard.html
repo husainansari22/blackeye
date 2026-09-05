@@ -2,26 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <script src="/js/theme-init.js?v=20260827theme1"></script>
+    <script src="/js/theme-init.js?v=20260905full1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>cctsuite — Marketplace Dashboard</title>
-    <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/css/fonts-local.css?v=20260905bag6">
-    <link rel="icon" href="https://acctsuite.com/favicon-96-v5.png" type="image/png" sizes="96x96">
+    <title>AcctSuite — Marketplace Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png" type="image/png" sizes="96x96">
     <link rel="icon" href="https://acctsuite.com/favicon-48x48.png" type="image/png" sizes="48x48">
     <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico">
-    <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon-v5.png">
-    <link rel="manifest" href="https://acctsuite.com/site.webmanifest?v=20260905bag6">
+    <link rel="apple-touch-icon" href="https://acctsuite.com/apple-touch-icon.png">
+    <link rel="manifest" href="https://acctsuite.com/site.webmanifest">
     <meta name="theme-color" content="#8B5CF6">
-    <link rel="preload" href="/css/tailwind.css?v=20260905bag6" as="style">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260905bag6">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260905full1">
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=20260905bag6">
-<link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
-    <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
-    <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260905bag6">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
+    <link rel="stylesheet" href="/css/mobile-fix.css?v=20260905full1">
+    <link rel="stylesheet" href="/css/ui-toast.css?v=20260905full1">
+    <link rel="stylesheet" href="/css/kyc.css?v=20260905full1">
+    <link rel="stylesheet" href="/css/profile.css?v=20260905full1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -61,27 +61,6 @@
           background: #1e293b;
           flex-shrink: 0;
         }
-        .av-logo-slot {
-          position: relative;
-          display: inline-block;
-          flex-shrink: 0;
-          line-height: 0;
-          vertical-align: middle;
-        }
-        .av-logo-slot .av-logo-remote {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          opacity: 0;
-          transition: opacity 0.15s ease;
-          background: #fff;
-          object-fit: cover;
-        }
-        .av-logo-slot .av-logo-remote.is-ready {
-          opacity: 1;
-        }
         .av-cat-head {
           display: flex;
           align-items: center;
@@ -112,7 +91,7 @@
           overflow-y: auto;
           border: 1px solid var(--tw-border, #334155);
           border-radius: 0.75rem;
-          background: #0c0a14;
+          background: #0f172a;
         }
         html:not(.dark) .av-sell-pick-list { background: #fff; border-color: #e2e8f0; }
         /* Bottom nav — full-width evenly spaced tabs (never flex on the nav root) */
@@ -141,92 +120,14 @@
             text-overflow: ellipsis;
             max-width: 100%;
         }
-        #bottomNav .nav-item i {
-          font-size: 1.15rem;
-          line-height: 1;
-          width: 1.35rem;
-          height: 1.35rem;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* Force FA icons to use the icon font (never inherit UI font) */
-        .fa-solid, .fa-regular, .fa-brands, .fas, .far, .fab {
-          font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
-          font-style: normal !important;
-          font-variant: normal !important;
-          text-rendering: auto !important;
-          -webkit-font-smoothing: antialiased;
-          speak: never;
-        }
-        .fa-solid, .fas { font-weight: 900 !important; }
-        .fa-regular, .far { font-weight: 400 !important; font-family: "Font Awesome 6 Free" !important; }
-        .fa-brands, .fab { font-weight: 400 !important; font-family: "Font Awesome 6 Brands" !important; }
-        .fa-solid::before, .fas::before, .fa-regular::before, .far::before, .fa-brands::before, .fab::before {
-          font-family: inherit !important;
-        }
-        /* SVG fallbacks when webfont fails */
-        .av-ico { width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -0.125em; fill: currentColor; flex-shrink: 0; }
-        #headerAuthMenuBtn { display: none; align-items: center; justify-content: center; }
-        body.is-authed #headerAuthMenuBtn { display: inline-flex !important; }
-
-        /* Active tab: bright violet + glow so it reads clearly in dark mode */
-        #bottomNav .nav-item.is-active {
-          color: #7C3AED !important;
-          position: relative;
-        }
-        #bottomNav .nav-item.is-active i,
-        #bottomNav .nav-item.is-active .av-ico {
-          color: #7C3AED !important;
-          filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.45));
-        }
-        #bottomNav .nav-item.is-active span {
-          font-weight: 700;
-          color: inherit !important;
-        }
-        #bottomNav .nav-item.is-active::after {
-          content: "";
-          display: block;
-          width: 1.5rem;
-          height: 3px;
-          margin: 0.28rem auto 0;
-          border-radius: 999px;
-          background: #8B5CF6;
-          box-shadow: 0 0 10px rgba(139, 92, 246, 0.7);
-        }
-        html.dark #bottomNav .nav-item.is-active,
-        .dark #bottomNav .nav-item.is-active {
-          color: #E9D5FF !important;
-        }
-        html.dark #bottomNav .nav-item.is-active i,
-        html.dark #bottomNav .nav-item.is-active .av-ico,
-        .dark #bottomNav .nav-item.is-active i,
-        .dark #bottomNav .nav-item.is-active .av-ico {
-          color: #F5E1FF !important;
-          filter: drop-shadow(0 0 6px rgba(232, 121, 249, 1))
-                  drop-shadow(0 0 14px rgba(192, 132, 252, 0.95))
-                  drop-shadow(0 0 22px rgba(139, 92, 246, 0.8));
-        }
-        html.dark #bottomNav .nav-item.is-active span,
-        .dark #bottomNav .nav-item.is-active span {
-          color: #F5E1FF !important;
-          text-shadow: 0 0 10px rgba(232, 121, 249, 0.95), 0 0 18px rgba(139, 92, 246, 0.7);
-        }
-        html.dark #bottomNav .nav-item.is-active::after,
-        .dark #bottomNav .nav-item.is-active::after {
-          background: linear-gradient(90deg, #A78BFA, #E879F9);
-          box-shadow: 0 0 12px rgba(232, 121, 249, 1), 0 0 24px rgba(139, 92, 246, 0.65);
-        }
-        #bottomNav .nav-item.is-idle { color: #94a3b8 !important; }
-        html.dark #bottomNav .nav-item.is-idle,
-        .dark #bottomNav .nav-item.is-idle { color: #5c576e !important; }
-        html.dark #bottomNav .nav-item.is-idle:hover,
-        .dark #bottomNav .nav-item.is-idle:hover { color: #9f99b5 !important; }
+        #bottomNav .nav-item i { font-size: 1.15rem; line-height: 1; }
+        #bottomNav .nav-item.is-active { color: #8B5CF6; }
+        #bottomNav .nav-item.is-idle { color: #9ca3af; }
+        .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
     </style>
-    <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
-    <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
-    <script defer src="/js/marketplace-catalog.js?v=20260905bag6"></script>
+    <script src="/js/mobile-fix.js?v=20260905full1"></script>
+    <script src="/js/ui-toast.js?v=20260905full1"></script>
+    <script src="/js/marketplace-catalog.js?v=20260905full1"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
@@ -234,12 +135,11 @@
     <header class="fixed top-0 z-[100] w-full border-b border-slate-200 dark:border-slate-800 bg-lightCard dark:bg-darkBg shadow backdrop-blur-sm">
         <div class="mx-auto flex h-14 max-w-[500px] items-center justify-between px-4">
             <div class="flex items-center gap-3 min-w-0">
-                <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0 p-1" onclick="toggleLeftMenu()" aria-label="Menu">
-                    <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
+                <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0" onclick="toggleLeftMenu()" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-0 min-w-0">
-                    <img src="/img/brand/logo-mark-violet-v6.svg?v=20260905bag6" alt="AcctSuite" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async">
-                    <span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
+                    <img src="/img/brand/logo-mark-violet.svg?v=20260905full1" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
                 </a>
             </div>
             <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
@@ -267,7 +167,7 @@
                         <i id="headerThemeIcon" class="fa-solid fa-moon text-lg"></i>
                     </button>
                     <button type="button" onclick="toggleLeftMenu()" class="w-9 h-9 flex items-center justify-center rounded-md border-2 border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-white transition" aria-label="Menu">
-                        <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
+                        <i class="fa-solid fa-bars text-base"></i>
                     </button>
                 </div>
             </div>
@@ -302,12 +202,12 @@
             <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
 
             <!-- Platform banner -->
-            <div class="bg-gradient-to-r from-[#7C3AED] via-brandPrimary to-[#5B21B6] rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
+            <div class="bg-gradient-to-r from-sky-600 to-blue-900 rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
                 <div class="absolute -right-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
                 <div class="relative z-10 pr-2 min-w-0">
-                    <span class="text-violet-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
+                    <span class="text-sky-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
                     <p class="font-bold text-sm mt-0.5 leading-snug">Buy & sell with escrow protection</p>
-                    <p class="text-[10px] text-violet-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
+                    <p class="text-[10px] text-sky-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
                 </div>
                 <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
@@ -432,15 +332,15 @@
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-[#7C3AED] via-brandPrimary to-brandHover p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
+            <div class="bg-gradient-to-br from-sky-500 via-brandPrimary to-sky-700 p-5 rounded-2xl text-white shadow-xl space-y-4 relative overflow-hidden">
                 <div class="absolute right-3 top-3 opacity-30 text-6xl"><i class="fa-solid fa-wallet"></i></div>
                 <div class="relative z-10">
-                    <p class="text-xs text-violet-100 font-medium">Account balance</p>
+                    <p class="text-xs text-sky-100 font-medium">Account balance</p>
                     <div class="flex items-center gap-2 mt-1">
                         <h3 id="walletBalanceDisplay" class="text-4xl font-extrabold tracking-tight">$0.00</h3>
-                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-violet-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
+                        <button type="button" onclick="toggleWalletBalanceVisibility()" class="text-sky-100/90 text-sm" aria-label="Toggle balance"><i id="walletEyeIcon" class="fa-regular fa-eye"></i></button>
                     </div>
-                    <p class="text-[11px] text-violet-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
+                    <p class="text-[11px] text-sky-100/90 mt-1">Withdrawable: <span id="walletWithdrawableDisplay" class="font-semibold text-white">$0.00</span> <span class="opacity-80">(sales &amp; referrals only)</span></p>
                 </div>
                 <div class="flex gap-2 relative z-10">
                     <button onclick="openWalletModal('deposit')" class="flex-1 bg-white text-brandPrimary font-bold py-2.5 rounded-full text-xs shadow-md">Deposit</button>
@@ -502,12 +402,12 @@
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
-                    <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-brandPrimary/30 flex items-center justify-center text-brandPrimary mb-2"><i class="fa-solid fa-wallet text-sm"></i></div>
+                    <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-brandPrimary mb-2"><i class="fa-solid fa-wallet text-sm"></i></div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Balance</p>
                     <h4 id="dashBalanceDisplay" class="font-extrabold text-lg mt-1">$0.00</h4>
                 </div>
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
-                    <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-brandPrimary/30 flex items-center justify-center text-brandPrimary mb-2"><i class="fa-solid fa-bullhorn text-sm"></i></div>
+                    <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 mb-2"><i class="fa-solid fa-bullhorn text-sm"></i></div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Active Ads</p>
                     <h4 id="dashActiveAds" class="font-extrabold text-lg mt-1">0</h4>
                 </div>
@@ -543,7 +443,7 @@
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col justify-center items-start">
-                    <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-brandPrimary/30 flex items-center justify-center text-brandPrimary mb-2">
+                    <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-brandPrimary mb-2">
                         <i class="fa-solid fa-users text-sm"></i>
                     </div>
                     <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Invitees</p>
@@ -629,8 +529,8 @@
     <!-- FILTER DRAWER — left sidebar like acctbazaar -->
     <div id="filterDrawer" class="fixed inset-0 z-[80] hidden">
         <button type="button" class="absolute inset-0 bg-black/50" onclick="toggleFilterDrawer()" aria-label="Close filters"></button>
-        <aside class="av-filter-drawer absolute left-0 top-14 bottom-0 bg-lightCard dark:bg-darkBg overflow-y-auto px-3 pb-6">
-            <div class="flex items-center justify-between pt-3 pb-2 sticky top-0 bg-lightCard dark:bg-darkBg z-10">
+        <aside class="av-filter-drawer absolute left-0 top-14 bottom-0 bg-lightCard dark:bg-[#0b1120] overflow-y-auto px-3 pb-6">
+            <div class="flex items-center justify-between pt-3 pb-2 sticky top-0 bg-lightCard dark:bg-[#0b1120] z-10">
                 <h3 class="font-bold text-base text-slate-800 dark:text-white">Filter</h3>
                 <button type="button" onclick="toggleFilterDrawer()" class="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-sm" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -917,14 +817,14 @@
             <p class="text-xs font-bold pt-1 border-t border-slate-200 dark:border-slate-800">Release options</p>
             <div class="space-y-2">
                 <label onclick="selectWizardRelease('auto')" id="wizardCardAuto" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-brandPrimary bg-brandPrimary/10 cursor-pointer">
-                    <input type="radio" name="wizardRelease" value="auto" checked class="mt-0.5 accent-brandPrimary">
+                    <input type="radio" name="wizardRelease" value="auto" checked class="mt-0.5 accent-sky-500">
                     <div>
                         <span class="font-bold text-sm flex items-center gap-1">Auto Confirm Order <span class="text-[9px] bg-emerald-500/20 text-emerald-600 px-1.5 py-0.5 rounded">Recommended</span></span>
                         <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">Logins are sent and the order is confirmed automatically.</p>
                     </div>
                 </label>
                 <label onclick="selectWizardRelease('manual')" id="wizardCardManual" class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer">
-                    <input type="radio" name="wizardRelease" value="manual" class="mt-0.5 accent-brandPrimary">
+                    <input type="radio" name="wizardRelease" value="manual" class="mt-0.5 accent-sky-500">
                     <div>
                         <span class="font-bold text-sm">Manual Release</span>
                         <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">For products that need a code or extra authentication.</p>
@@ -944,9 +844,9 @@
                 <input type="text" id="wizardPass" placeholder="Type your Account Password here" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
             </div>
             <div>
-                <label id="wizardPreviewLabel" class="block mb-1.5 text-xs font-medium text-slate-500">Preview link of account <span id="wizardPreviewReq" class="text-slate-400 font-normal">(optional)</span></label>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500">Preview link of account</label>
                 <input type="url" id="wizardPreview" placeholder="https://www.facebook.com/..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
-                <p id="wizardPreviewHint" class="text-[10px] text-slate-400 mt-1">Optional for WhatsApp, VPS, email, VPN, and similar. Required only for social media accounts (Facebook, Instagram, TikTok, etc.).</p>
+                <p class="text-[10px] text-slate-400 mt-1">Required for social accounts. Buyers review this link before buying. Wrong links are denied by AI.</p>
             </div>
             <p class="text-xs font-bold pt-2 border-t border-slate-200 dark:border-slate-800">Additional information (optional)</p>
             <div>
@@ -1012,7 +912,7 @@
                 <i class="fa-solid fa-border-all"></i><span>Market</span>
             </button>
             <button type="button" onclick="switchTab('orders')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
-                <svg class="av-ico" viewBox="0 0 448 512" aria-hidden="true"><path d="M160 112c0-35.3 28.7-64 64-64s64 28.7 64 64v48H160V112zm-48 48v-48C112 50.1 162.1 0 224 0s112 50.1 112 112v48h48c26.5 0 48 21.5 48 48V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V208c0-26.5 21.5-48 48-48h48zm0 64H48V464H400V224H112z"/></svg><span>Orders</span>
+                <i class="fa-solid fa-bag-shopping"></i><span>Orders</span>
             </button>
             <button type="button" onclick="switchTab('ads')" class="nav-item is-idle flex flex-col items-center gap-1 font-medium transition">
                 <i class="fa-solid fa-bullhorn"></i><span>Ads</span>
@@ -1023,14 +923,14 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.min.js?v=20260905bag6"></script>
-    <script src="/js/api-client.min.js?v=20260905bag6"></script>
-    <script src="/js/api-sync.min.js?v=20260905bag6"></script>
-    <script src="/js/kyc-app.min.js?v=20260905bag6"></script>
-    <script src="/js/av-confirm.js?v=20260905bag6"></script>
-    <script src="/js/commerce-ui.min.js?v=20260905bag6"></script>
-    <script src="/js/listing-modal.min.js?v=20260905bag6"></script>
-    <script src="/js/dashboard-app.min.js?v=20260905bag6"></script>
+    <script src="/js/acctsuite.js?v=20260905full1"></script>
+    <script src="/js/api-client.js?v=20260905full1"></script>
+    <script src="/js/api-sync.js?v=20260905full1"></script>
+    <script src="/js/kyc-app.js?v=20260905full1"></script>
+    <script src="/js/av-confirm.js?v=20260905full1"></script>
+    <script src="/js/commerce-ui.js?v=20260905full1"></script>
+    <script src="/js/listing-modal.js?v=20260905full1"></script>
+    <script src="/js/dashboard-app.js?v=20260905full1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
@@ -1195,7 +1095,7 @@
                 const items = (g.products || []).map(function (p) {
                     const mark = window.AcctSuiteCatalog.logoMarkHtml
                         ? window.AcctSuiteCatalog.logoMarkHtml(p, 'av-prod-logo')
-                        : '<img class="av-prod-logo" src="' + window.AcctSuiteCatalog.logoUrl(p) + '" alt="" loading="lazy">';
+                        : '<img class="av-prod-logo" src="' + window.AcctSuiteCatalog.logoUrl(p) + '" alt="" loading="lazy" onerror="this.style.opacity=.3">';
                     return '<label class="av-filter-row cursor-pointer hover:text-brandPrimary">' +
                         '<input type="checkbox" class="filter-chk" value="' + String(p.name).replace(/"/g, '&quot;') + '" data-group="' + g.id + '" onchange="applyFilters()">' +
                         mark +
@@ -1293,11 +1193,8 @@
             }
             const selected = (document.getElementById('wizardCat') || {}).value || '';
             box.innerHTML = list.map(function (p) {
-                const mark = window.AcctSuiteCatalog.logoMarkHtml
-                    ? window.AcctSuiteCatalog.logoMarkHtml(p, 'av-prod-logo')
-                    : '<img class="av-prod-logo" src="' + p.logo + '" alt="" loading="lazy">';
                 return '<button type="button" class="av-sell-pick-item ' + (selected === p.name ? 'is-active' : '') + '" onclick="selectSellCategory(\'' + String(p.name).replace(/'/g, "\\'") + '\')">' +
-                    mark +
+                    '<img class="av-prod-logo" src="' + p.logo + '" alt="" loading="lazy" onerror="this.style.opacity=.3">' +
                     '<span class="min-w-0"><span class="font-semibold block truncate">' + p.name + '</span>' +
                     '<span class="text-[10px] text-slate-500">' + p.groupName + '</span></span></button>';
             }).join('');
@@ -1312,10 +1209,7 @@
             const prod = window.AcctSuiteCatalog && window.AcctSuiteCatalog.findProduct(name);
             if (selected && prod) {
                 selected.classList.remove('hidden');
-                const mark = window.AcctSuiteCatalog.logoMarkHtml
-                    ? window.AcctSuiteCatalog.logoMarkHtml(prod, 'av-prod-logo')
-                    : '<img class="av-prod-logo" src="' + prod.logo + '" alt="">';
-                selected.innerHTML = mark + '<span class="font-semibold text-slate-800 dark:text-white">' + prod.name + '</span><span class="text-slate-500">· ' + prod.groupName + '</span>';
+                selected.innerHTML = '<img class="av-prod-logo" src="' + prod.logo + '" alt=""><span class="font-semibold text-slate-800 dark:text-white">' + prod.name + '</span><span class="text-slate-500">· ' + prod.groupName + '</span>';
             }
             if (picker) picker.classList.add('hidden');
         }

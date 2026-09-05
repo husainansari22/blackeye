@@ -37,11 +37,11 @@
 }
 
 #rightMenu.profile-panel {
-  background: #F0F5FA;
+  background: #f0f9ff;
 }
 
 .dark #rightMenu.profile-panel {
-  background: #0c0a14;
+  background: #0f172a;
 }
 
 .profile-hero {
@@ -75,7 +75,7 @@
 }
 
 .dark .av-user-avatar--lg {
-  box-shadow: 0 0 0 3px #0c0a14, 0 0 0 6px #8B5CF6;
+  box-shadow: 0 0 0 3px #0f172a, 0 0 0 6px #8B5CF6;
 }
 
 .profile-avatar-cam {
@@ -96,7 +96,7 @@
 }
 
 .dark .profile-avatar-cam {
-  box-shadow: 0 0 0 2px #0c0a14;
+  box-shadow: 0 0 0 2px #0f172a;
 }
 
 .profile-hero-meta {
@@ -107,7 +107,7 @@
   font-size: 1.125rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #0c0a14;
+  color: #0f172a;
   line-height: 1.25;
 }
 
@@ -156,7 +156,7 @@
 }
 
 .dark .profile-stats {
-  background: #0c0a14;
+  background: #0f172a;
   border-color: rgba(139, 92, 246, 0.2);
 }
 
@@ -188,7 +188,7 @@
 .profile-stat strong,
 .profile-stat .profile-stat-val {
   font-weight: 700;
-  color: #0c0a14;
+  color: #0f172a;
 }
 
 .dark .profile-stat strong,
@@ -210,7 +210,7 @@
   margin: 0.15rem 0;
   border-radius: 0.85rem;
   font-size: 0.875rem;
-  color: #0c0a14;
+  color: #0f172a;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -292,29 +292,15 @@
   margin-bottom: 0.75rem;
 }
 .av-listing-detail__logo {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 0.65rem;
-  object-fit: contain;
-  background: #fff;
-  padding: 0.15rem;
+  object-fit: cover;
+  background: rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25);
-}
-.av-logo-slot.av-listing-detail__logo,
-.av-logo-slot:has(.av-listing-detail__logo) {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.65rem;
-  overflow: hidden;
-}
-.av-logo-slot .av-listing-detail__logo {
-  width: 100%;
-  height: 100%;
 }
 .dark .av-listing-detail__logo {
-  background: #0c0a14;
-  box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.9);
+  background: rgba(255, 255, 255, 0.06);
 }
 .av-listing-detail__title-row {
   display: flex;
@@ -438,21 +424,21 @@
   background: rgba(139, 92, 246, 0.55);
 }
 .av-merchant-ring.has-story {
-  background: linear-gradient(135deg, #7BA3C4 0%, #8B5CF6 45%, #ec4899 100%);
+  background: linear-gradient(135deg, #A78BFA 0%, #6366f1 45%, #ec4899 100%);
 }
 .av-merchant-face {
   width: 3.35rem;
   height: 3.35rem;
   border-radius: 9999px;
   overflow: hidden;
-  background: #0c0a14;
-  color: #7BA3C4;
+  background: #0f172a;
+  color: #A78BFA;
   font-weight: 800;
   font-size: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #0c0a14;
+  border: 2px solid #0f172a;
 }
 .av-merchant-face-img {
   width: 100%;
@@ -574,7 +560,7 @@
   flex: 1;
   width: 100%;
   object-fit: cover;
-  background: #0c0a14;
+  background: #020617;
 }
 .av-story-viewer__caption {
   position: absolute;
@@ -896,7 +882,7 @@
 .av-storefront-banner {
   height: 7rem;
   border-radius: 1rem 1rem 0 0;
-  background: linear-gradient(135deg, #0c0a14 0%, #8B5CF6 45%, #fcd34d 100%);
+  background: linear-gradient(135deg, #6D28D9 0%, #8B5CF6 45%, #fcd34d 100%);
   position: relative;
   overflow: hidden;
 }
@@ -928,7 +914,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 .dark .av-storefront-avatar {
-  border-color: #0c0a14;
+  border-color: #0f172a;
 }
 .av-storefront-avatar img {
   width: 100%;
@@ -1016,9 +1002,9 @@
   font-size: 0.85rem;
   margin-bottom: 0.25rem;
 }
-.av-storefront-stat__icon--blue { color: #7BA3C4; }
+.av-storefront-stat__icon--blue { color: #A78BFA; }
 .av-storefront-stat__icon--green { color: #34d399; }
-.av-storefront-stat__icon--violet { color: #A78BFA; }
+.av-storefront-stat__icon--orange { color: #fb923c; }
 .av-storefront-stat__icon--red { color: #f87171; }
 .av-storefront-stat__val {
   font-size: 0.95rem;
@@ -1070,29 +1056,11 @@
   border-color: rgba(51, 65, 85, 0.85);
 }
 .av-storefront-ad__logo {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.65rem;
-  object-fit: contain;
-  background: #fff;
-  padding: 0.2rem;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25);
-}
-.dark .av-storefront-ad__logo {
-  background: #0c0a14;
-  box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.9);
-}
-/* Acctventa-style market listing logos */
-.av-market-logo {
-  object-fit: contain !important;
-  background: #fff !important;
-  padding: 0.2rem;
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.22);
-}
-.dark .av-market-logo {
-  background: #0c0a14 !important;
-  box-shadow: 0 0 0 1px rgba(51, 65, 85, 0.85);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.55rem;
+  object-fit: cover;
+  background: rgba(15, 23, 42, 0.08);
 }
 .av-storefront-ad__body {
   min-width: 0;
@@ -1142,31 +1110,4 @@
 }
 .av-storefront-ad__buy:active {
   filter: brightness(1.08);
-}
-
-
-/* Modern app-icon tiles (filter + sell + listings) */
-.av-app-icon,
-.av-prod-logo.av-app-icon,
-img.av-app-icon {
-  border-radius: 22% !important;
-  object-fit: cover !important;
-  background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(245,243,255,.88)) !important;
-  box-shadow:
-    0 0 0 1px rgba(139, 92, 246, 0.14),
-    0 6px 14px rgba(76, 29, 149, 0.12),
-    inset 0 1px 0 rgba(255,255,255,.65) !important;
-  padding: 0 !important;
-}
-.dark .av-app-icon,
-.dark .av-prod-logo.av-app-icon,
-.dark img.av-app-icon {
-  background: linear-gradient(145deg, rgba(26,21,37,.95), rgba(12,10,20,.9)) !important;
-  box-shadow:
-    0 0 0 1px rgba(167, 139, 250, 0.22),
-    0 8px 18px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.08) !important;
-}
-.av-market-logo.av-app-icon {
-  padding: 0 !important;
 }

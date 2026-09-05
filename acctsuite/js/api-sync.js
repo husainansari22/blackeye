@@ -143,47 +143,13 @@
     };
   }
 
-  const MARKET_CACHE_KEY = 'acctsuite_market_cache_v1';
-
-  function readPersistedMarket() {
-    try {
-      const raw = localStorage.getItem(MARKET_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.listings)) return null;
-      return parsed.listings;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function persistMarket(listings) {
-    try {
-      localStorage.setItem(
-        MARKET_CACHE_KEY,
-        JSON.stringify({ at: Date.now(), listings: Array.isArray(listings) ? listings : [] })
-      );
-    } catch (e) {}
-  }
-
   function patchMarketListingsOnly() {
     const A = global.AcctSuite;
     if (!A || A.__apiMarketPatched) return;
     A.__apiMarketPatched = true;
     const origMarket = A.getMarketplaceListings.bind(A);
     A.getMarketplaceListings = function () {
-      // IMPORTANT: [] is truthy — only use the API cache when it is a real array
-      // that was successfully hydrated (including a legitimately empty market).
-      if (Array.isArray(global.__acctsuiteApiMarket) && global.__acctsuiteMarketOnline === true) {
-        return global.__acctsuiteApiMarket;
-      }
-      // Home Screen / PWA: if API is down, keep showing last successful market snapshot
-      // so the feed is not wiped to empty while MySQL is unavailable.
-      if (Array.isArray(global.__acctsuiteApiMarket) && global.__acctsuiteApiMarket.length) {
-        return global.__acctsuiteApiMarket;
-      }
-      const cached = readPersistedMarket();
-      if (cached && cached.length) return cached;
+      if (global.__acctsuiteApiMarket) return global.__acctsuiteApiMarket;
       return origMarket();
     };
     const origFind = A.findListingById.bind(A);
@@ -199,33 +165,16 @@
     const Api = global.AcctSuiteApi;
     const A = global.AcctSuite;
     if (!Api || !A) return false;
-    if (Api.clearAvailabilityCache) Api.clearAvailabilityCache();
     let ok = false;
     try {
       ok = await Api.isAvailable();
     } catch (e) {
-      global.__acctsuiteMarketOnline = false;
       return false;
     }
-    if (!ok) {
-      global.__acctsuiteMarketOnline = false;
-      const cachedDown = readPersistedMarket();
-      if (cachedDown && cachedDown.length) {
-        global.__acctsuiteApiMarket = cachedDown;
-        patchMarketListingsOnly();
-      }
-      return false;
-    }
+    if (!ok) return false;
     try {
-      const marketRes = await Api.market();
-      // Only replace cache on a real successful response — never wipe to [] on transport errors.
-      if (!marketRes || marketRes.ok === false) {
-        global.__acctsuiteMarketOnline = false;
-        return false;
-      }
+      const marketRes = await Api.market().catch(() => ({ listings: [] }));
       global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
-      global.__acctsuiteMarketOnline = true;
-      persistMarket(global.__acctsuiteApiMarket);
       patchMarketListingsOnly();
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
@@ -236,12 +185,6 @@
       return true;
     } catch (e) {
       console.warn('Public market hydrate failed', e);
-      global.__acctsuiteMarketOnline = false;
-      const cached = readPersistedMarket();
-      if (cached && cached.length) {
-        global.__acctsuiteApiMarket = cached;
-        patchMarketListingsOnly();
-      }
       return false;
     }
   }
@@ -269,9 +212,7 @@
         Api.myOrders()
           .then((r) => Object.assign({ __ordersOk: true }, r || {}))
           .catch((e) => ({ __ordersOk: false, orders: null, error: e && e.message })),
-        Api.market()
-          .then((r) => Object.assign({ __marketOk: true }, r || {}))
-          .catch((e) => ({ __marketOk: false, listings: null, error: e && e.message })),
+        Api.market().catch(() => ({ listings: [] })),
         Api.wallet().then((r) => Object.assign({ __walletOk: true }, r || {})).catch((e) => ({ __walletOk: false, transactions: null, error: e && e.message })),
         Api.notifications().catch(() => ({ notifications: [] })),
         Api.publicConfig().catch(() => null),
@@ -362,13 +303,7 @@
         localStorage.setItem('acctsuite_backend', 'api');
       } catch (e) {}
 
-      if (marketRes && marketRes.__marketOk) {
-        global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
-        global.__acctsuiteMarketOnline = true;
-        persistMarket(global.__acctsuiteApiMarket);
-      } else {
-        global.__acctsuiteMarketOnline = false;
-      }
+      global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
         global.__acctsuiteStoryFeed = feed.merchants || [];

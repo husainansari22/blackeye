@@ -182,155 +182,71 @@
       id: 'others',
       name: 'Others',
       icon: 'fa-regular fa-face-smile',
-      products: [
-        P('Other', ''),
-        P('VPS', ''),
-        P('RDP', ''),
-        P('SSH / Server', ''),
-        P('Hosting / cPanel', ''),
-      ],
+      products: [P('Other', '')],
     },
   ];
 
-  var LOGO_CACHE_KEY = 'av_logo_ok_v5_violet';
-  var logoOkCache = {};
-  try {
-    logoOkCache = JSON.parse(sessionStorage.getItem(LOGO_CACHE_KEY) || '{}') || {};
-  } catch (e) {
-    logoOkCache = {};
-  }
 
-  function hashColor(str) {
-    var h = 0;
-    var s = String(str || '');
-    var i;
-    for (i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-    var palette = ['#7C3AED', '#7C3AED', '#059669', '#d97706', '#db2777', '#7C3AED', '#0d9488', '#e11d48'];
-    return palette[Math.abs(h) % palette.length];
+  function productLogoSlug(name, domain) {
+    var base = String(domain || name || '').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+    if (base.indexOf('.') !== -1) base = base.split('.')[0];
+    base = base.replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    return base || 'product';
   }
-
+  function localLogoUrl(product) {
+    if (!product) return '';
+    return '/img/products/' + productLogoSlug(product.name, product.domain) + '.png?v=20260905full1';
+  }
   function letterLogoDataUri(name) {
     var letter = String(name || '?').trim().charAt(0).toUpperCase() || '?';
-    var bg = hashColor(String(name || letter));
     return (
       'data:image/svg+xml,' +
       encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">' +
-          '<rect width="64" height="64" rx="12" fill="' +
-          bg +
-          '"/>' +
-          '<text x="32" y="42" text-anchor="middle" fill="#fff" font-size="32" font-weight="700" font-family="system-ui,sans-serif">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="12" fill="#8B5CF6"/><text x="32" y="42" text-anchor="middle" fill="#fff" font-size="28" font-weight="700" font-family="system-ui,sans-serif">' +
           letter +
           '</text></svg>'
       )
     );
   }
 
-  function productLogoSlug(name, domain) {
-    var base = String(domain || name || '')
-      .trim()
-      .toLowerCase()
-      .replace(/^https?:\/\//, '')
-      .replace(/^www\./, '')
-      .split('/')[0];
-    if (base.indexOf('.') !== -1) base = base.split('.')[0];
-    base = base.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    return base || 'product';
-  }
-
-  function localLogoUrl(product) {
-    if (!product) return '';
-    var slug = productLogoSlug(product.name, product.domain);
-    if (!slug) return '';
-    // Cache-busted local high-res app icons (modern squircle / glass style where available).
-    return '/img/products/' + slug + '.png?v=20260905logos2';
-  }
-
-  function remoteLogoCandidates(domain) {
-    var d = String(domain || '')
-      .trim()
-      .toLowerCase()
-      .replace(/^https?:\/\//, '')
-      .split('/')[0];
-    if (!d) return [];
-    // Prefer full-color brand marks, then high-res favicons.
-    return [
-      'https://logo.clearbit.com/' + d,
-      'https://icon.horse/icon/' + d,
-      'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=256',
-      'https://icons.duckduckgo.com/ip3/' + d + '.ico',
-    ];
-  }
-
-  function rememberLogo(domain, url) {
-    var d = String(domain || '').trim().toLowerCase();
-    if (!d || !url) return;
-    logoOkCache[d] = url;
-    try {
-      sessionStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(logoOkCache));
-    } catch (e) {}
-  }
-
-  function remoteLogoUrl(product) {
-    if (!product) return '';
-    var local = localLogoUrl(product);
-    if (local) return local;
-    var domain = String(product.domain || '').trim().toLowerCase();
-    if (!domain) return '';
-    if (logoOkCache[domain]) return logoOkCache[domain];
-    var cands = remoteLogoCandidates(domain);
-    return cands[0] || '';
-  }
-
-  /**
-   * Brand logo URL — local modern icons first, then Clearbit / icon.horse / Google.
-   */
   function logoUrl(product) {
     if (!product) return letterLogoDataUri('?');
-    if (product.logo && (/^https?:\/\//i.test(String(product.logo)) || String(product.logo).indexOf('/img/') === 0)) {
-      return product.logo;
+    if (product.logo && String(product.logo).indexOf('/img/products/') === -1) {
+      // keep explicit remote/custom logos; local path is rebuilt below for cache-bust
+      if (/^https?:\/\//i.test(String(product.logo)) || String(product.logo).indexOf('data:') === 0) {
+        return product.logo;
+      }
     }
-    var remote = remoteLogoUrl(product);
-    if (remote) return remote;
-    return letterLogoDataUri(product.name || '?');
+    var local = localLogoUrl(product);
+    var domain = String(product.domain || '').trim();
+    var google = domain
+      ? 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128'
+      : '';
+    // Prefer local product pack; callers with onerror can fall back.
+    return local || google || letterLogoDataUri(product.name || '?');
   }
 
-  /**
-   * Listing/market logo markup: modern local app icon with CDN fallbacks.
-   */
   function logoMarkHtml(product, className) {
     var name = (product && product.name) || '?';
-    var domain = String((product && product.domain) || '')
-      .trim()
-      .toLowerCase();
-    var letter = letterLogoDataUri(name);
-    var cls = className || 'av-prod-logo av-app-icon';
-    if (cls.indexOf('av-app-icon') === -1) cls += ' av-app-icon';
+    var domain = String((product && product.domain) || '').trim();
+    var cls = className || 'av-prod-logo';
     var local = localLogoUrl(product);
-    var cands = [];
-    if (local) cands.push(local);
-    cands = cands.concat(remoteLogoCandidates(domain));
-    if (logoOkCache[domain]) {
-      cands = [logoOkCache[domain]].concat(cands.filter(function (u) { return u !== logoOkCache[domain]; }));
-    }
-    var src = cands[0] || letter;
-    var fallback = cands[1] || '';
-    var rest = cands.slice(2).join('|');
-    var domainAttr = domain.replace(/"/g, '');
+    var google = domain
+      ? 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128'
+      : '';
+    var letter = letterLogoDataUri(name);
+    var src = local || google || letter;
+    var fb = local ? google || letter : letter;
     return (
       '<img class="' +
       cls +
       '" src="' +
       src +
-      '" alt="" width="48" height="48" decoding="async" loading="lazy" data-domain="' +
-      domainAttr +
+      '" alt="" width="48" height="48" decoding="async" loading="lazy" data-fb="' +
+      String(fb).replace(/"/g, '&quot;') +
       '" data-letter="' +
       letter.replace(/"/g, '&quot;') +
-      '" data-fb="' +
-      String(fallback).replace(/"/g, '&quot;') +
-      '" data-rest="' +
-      String(rest).replace(/"/g, '&quot;') +
-      '" onload="try{var d=this.getAttribute(\'data-domain\');if(d&&window.AcctSuiteCatalog&&window.AcctSuiteCatalog.rememberLogo&&this.src.indexOf(\'data:\')!==0)window.AcctSuiteCatalog.rememberLogo(d,this.src);}catch(e){}" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;return;}var rest=this.getAttribute(\'data-rest\')||\'\';if(rest){var parts=rest.split(\'|\');this.setAttribute(\'data-rest\',parts.slice(1).join(\'|\'));this.src=parts[0];return;}var L=this.getAttribute(\'data-letter\');if(L){this.onerror=null;this.src=L;}">'
+      '" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;return;}var L=this.getAttribute(\'data-letter\');if(L){this.onerror=null;this.src=L;}">'
     );
   }
 
@@ -344,7 +260,6 @@
           groupId: g.id,
           groupName: g.name,
           logo: logoUrl(p),
-          remoteLogo: remoteLogoUrl(p),
         });
       });
     });
@@ -356,31 +271,12 @@
       .trim()
       .toLowerCase();
     if (!n) return null;
-    // Listing titles are often "TikTok - followers…"; match the brand token first.
-    var brandHint = n.split(/\s*[-–—|:]\s*/)[0].trim();
     var list = allProducts();
-    var i;
-    for (i = 0; i < list.length; i++) {
+    for (var i = 0; i < list.length; i++) {
       if (list[i].name.toLowerCase() === n) return list[i];
     }
-    if (brandHint && brandHint !== n) {
-      for (i = 0; i < list.length; i++) {
-        if (list[i].name.toLowerCase() === brandHint) return list[i];
-      }
-    }
-    // Prefer "query contains product name" (title → brand) over the reverse.
-    var best = null;
-    var bestLen = 0;
-    for (i = 0; i < list.length; i++) {
-      var pn = list[i].name.toLowerCase();
-      if (pn.length >= 2 && n.indexOf(pn) !== -1 && pn.length > bestLen) {
-        best = list[i];
-        bestLen = pn.length;
-      }
-    }
-    if (best) return best;
-    for (i = 0; i < list.length; i++) {
-      if (list[i].name.toLowerCase().indexOf(n) !== -1) return list[i];
+    for (var j = 0; j < list.length; j++) {
+      if (list[j].name.toLowerCase().indexOf(n) !== -1) return list[j];
     }
     return null;
   }
@@ -411,16 +307,8 @@
     );
   }
 
-  /**
-   * Only Social Media listings need a public profile/preview link.
-   * WhatsApp, Telegram, email, VPN/VPS, gift cards, gaming, etc. are credential-only.
-   */
-  var NO_PREVIEW_GROUP_IDS = ['email', 'vpn', 'giftcards', 'accounts', 'gaming', 'ecommerce', 'websites', 'others'];
-  var NO_PREVIEW_PRODUCTS = [
-    'whatsapp', 'telegram', 'signal', 'wechat', 'google voice', 'textnow', 'textplus',
-    'gmail', 'ymail', 'hotmail', 'mailru', 'outlook', 'yahoo',
-    'vps', 'rdp', 'ssh', 'server', 'hosting', 'cpanel',
-  ];
+  /** Credential-only groups — no public profile link to verify (VPN, gift cards, etc.) */
+  var NO_PREVIEW_GROUP_IDS = ['vpn', 'giftcards', 'accounts', 'gaming', 'ecommerce', 'websites', 'others'];
 
   function resolveCategory(name) {
     var cat = String(name || '').trim();
@@ -440,28 +328,18 @@
 
   function categoryRequiresPreviewLink(name) {
     var resolved = resolveCategory(name);
-    var lower = String(name || '').toLowerCase();
-    var productLower = resolved && resolved.productName ? String(resolved.productName).toLowerCase() : lower;
-    var i;
-    for (i = 0; i < NO_PREVIEW_PRODUCTS.length; i++) {
-      var p = NO_PREVIEW_PRODUCTS[i];
-      if (productLower === p || productLower.indexOf(p) !== -1 || lower === p || lower.indexOf(p) !== -1) {
-        return false;
-      }
-    }
     if (resolved && NO_PREVIEW_GROUP_IDS.indexOf(resolved.groupId) !== -1) return false;
-    if (/\b(vpn|vps|rdp|proxy|proxies|giftcard|gift card|whatsapp|telegram|signal|wechat)\b/.test(lower)) {
-      return false;
-    }
-    // Only Social Media group (Facebook, Instagram, TikTok, etc.)
-    if (resolved && resolved.groupId === 'social') return true;
-    var socialOnly = [
-      'facebook', 'instagram', 'tiktok', 'twitter', 'x.com', 'snapchat', 'linkedin',
-      'pinterest', 'threads', 'discord', 'reddit', 'tinder', 'bumble', 'hinge',
-      'bereal', 'lemon8', 'quora',
+    var lower = String(name || '').toLowerCase();
+    if (/\b(vpn|proxy|proxies|giftcard|gift card)\b/.test(lower)) return false;
+    if (resolved && (resolved.groupId === 'social' || resolved.groupId === 'email')) return true;
+    var socialEmail = [
+      'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
+      'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
+      'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
     ];
-    for (i = 0; i < socialOnly.length; i++) {
-      if (lower === socialOnly[i] || lower.indexOf(socialOnly[i]) !== -1) return true;
+    var i;
+    for (i = 0; i < socialEmail.length; i++) {
+      if (lower === socialEmail[i] || lower.indexOf(socialEmail[i]) !== -1) return true;
     }
     return false;
   }
@@ -470,10 +348,7 @@
     GROUPS: GROUPS,
     NO_PREVIEW_GROUP_IDS: NO_PREVIEW_GROUP_IDS,
     logoUrl: logoUrl,
-    letterLogoDataUri: letterLogoDataUri,
-    remoteLogoUrl: remoteLogoUrl,
     logoMarkHtml: logoMarkHtml,
-    rememberLogo: rememberLogo,
     allProducts: allProducts,
     findProduct: findProduct,
     searchProducts: searchProducts,

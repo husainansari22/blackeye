@@ -65,12 +65,8 @@
   function productLogo(item) {
     var Cat = global.AcctSuiteCatalog;
     if (!Cat) return '';
-    var hit = Cat.findProduct(item.category || item.platform || item.title || '');
-    if (typeof Cat.logoMarkHtml === 'function') {
-      return Cat.logoMarkHtml(hit || { name: item.category || item.title || '?', domain: '' }, 'av-listing-detail__logo av-market-logo');
-    }
-    var src = hit ? hit.logo : Cat.logoUrl({ name: item.category || '?', domain: '' });
-    return '<img src="' + escAttr(src) + '" alt="" class="av-listing-detail__logo av-market-logo" loading="lazy" onerror="this.style.opacity=.35">';
+    var hit = Cat.findProduct(item.category || item.title || '');
+    return hit ? hit.logo : Cat.logoUrl({ domain: '' });
   }
   function mapListing(row) {
     var name = row.sellerName || 'Seller';
@@ -107,7 +103,7 @@
     wrap.className = 'fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 av-listing-modal';
     wrap.innerHTML =
       '<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-2xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-scroll">' +
-        '<button type="button" id="avListingModalClose" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Close">' +
+        '<button type="button" id="avListingModalClose" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-800 dark:text-white hover:border-brandPrimary hover:text-brandPrimary transition" aria-label="Close"><i class="fa-solid fa-chevron-left text-sm"></i>' +
           '<i class="fa-solid fa-arrow-left text-sm"></i>' +
         '</button>' +
         '<div id="avListingModalBody" class="pt-8"></div>' +
@@ -161,7 +157,7 @@
     return (
       '<div class="av-listing-detail" data-listing-id="' + escAttr(item.id) + '">' +
         '<div class="av-listing-detail__head">' +
-          logo +
+          '<img src="' + escAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">' +
           '<div class="min-w-0 flex-1">' +
             '<div class="av-listing-detail__title-row">' +
               '<h3 class="av-listing-detail__title">' + escHtml(item.title) + '</h3>' +
@@ -245,41 +241,14 @@
       });
     });
     el.querySelectorAll('[data-add-cart]').forEach(function (btn) {
-      btn.addEventListener('click', async function (ev) {
+      btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         var id = btn.getAttribute('data-add-cart');
-        if (!id) return;
-        // Prefer dashboard CommerceUI when present (badge + drawer).
         if (global.CommerceUI && global.CommerceUI.addToCart) {
           global.CommerceUI.addToCart(id);
           return;
         }
-        // Seller storefront / standalone modal: add via API and stay on this page.
-        var Api = global.AcctSuiteApi;
-        if (!isProbablyLoggedIn()) {
-          if (confirm('Sign in to add items to your cart?')) {
-            global.location.href = '/login?next=' + encodeURIComponent(global.location.pathname + global.location.search);
-          }
-          return;
-        }
-        if (!Api || typeof Api.cartAdd !== 'function') {
-          alert('Cart unavailable right now. Try again from the marketplace.');
-          return;
-        }
-        try {
-          btn.disabled = true;
-          await Api.cartAdd({ listingId: Number(id) || id });
-          if (global.AcctSuiteToast && global.AcctSuiteToast.success) global.AcctSuiteToast.success('Added to cart');
-          else if (global.showToast) global.showToast('Added to cart', 'success');
-          else alert('Added to cart');
-        } catch (e) {
-          var msg = (e && e.message) || 'Could not add to cart';
-          if (global.AcctSuiteToast && global.AcctSuiteToast.error) global.AcctSuiteToast.error(msg);
-          else if (global.showToast) global.showToast(msg, 'error');
-          else alert(msg);
-        } finally {
-          btn.disabled = false;
-        }
+        global.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(id);
       });
     });
     el.querySelectorAll('[data-buy-listing]').forEach(function (btn) {
@@ -457,13 +426,7 @@
     close: close,
   };
 
-  /** Buy from a seller storefront without leaving the page. */
   global.openStoreBuy = function (listingId) {
     open(listingId, { onSellerStore: true });
-  };
-  // Back-compat aliases used by older seller.html handlers
-  global.openListingModal = global.openStoreBuy;
-  global.openListingDetail = function (listingId) {
-    open(listingId, { onSellerStore: /\/seller\//i.test(global.location.pathname) });
   };
 })(window);
