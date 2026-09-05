@@ -139,6 +139,15 @@ try {
                     json_out(['ok' => false, 'error' => $e->getMessage()], 422);
                 }
             }
+            $coverData = (string)($body['cover'] ?? '');
+            if ($coverData !== '') {
+                try {
+                    ensure_user_cover_column();
+                    save_user_cover((int)$u['id'], $coverData);
+                } catch (Throwable $e) {
+                    json_out(['ok' => false, 'error' => $e->getMessage()], 422);
+                }
+            }
             $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
             json_out(['ok' => true, 'user' => public_user($fresh)]);
         }
@@ -1365,7 +1374,7 @@ try {
             $pass = (string)($body['password'] ?? '');
             $cfg = app_config();
             $okOwner = ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? ''));
-            $okAdmin = ($user === 'admin' && admin_password_verify($pass));
+            $okAdmin = ($user === admin_username_get() && admin_password_verify($pass));
             if (!$okOwner && !$okAdmin) {
                 json_out(['ok' => false, 'error' => 'Invalid staff credentials'], 401);
             }
@@ -1690,6 +1699,7 @@ try {
         case 'sellers.profile': {
             ensure_marketplace_extras();
             ensure_user_avatar_column();
+            ensure_user_cover_column();
             $sellerId = (int)($body['sellerId'] ?? $_GET['sellerId'] ?? 0);
             $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
             if ($sellerId < 1 && $sellerEmail !== '') {
@@ -1715,6 +1725,7 @@ try {
                     'email' => $seller['email'],
                     'isVerified' => (int)$seller['is_verified'] === 1,
                     'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
+                    'coverUrl' => (string)($seller['cover_url'] ?? ''),
                     'memberSince' => $seller['created_at'],
                     'completedSales' => $sales,
                     'rating' => seller_rating_summary($sid),
@@ -1728,6 +1739,7 @@ try {
             ensure_marketplace_extras();
             ensure_commerce_features();
             ensure_user_avatar_column();
+            ensure_user_cover_column();
             ensure_merchant_slug_column();
             $sellerId = (int)($body['sellerId'] ?? $body['id'] ?? $_GET['sellerId'] ?? $_GET['id'] ?? 0);
             $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
@@ -1785,6 +1797,7 @@ try {
                     'email' => $seller['email'],
                     'isVerified' => (int)$seller['is_verified'] === 1,
                     'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
+                    'coverUrl' => (string)($seller['cover_url'] ?? ''),
                     'memberSince' => $seller['created_at'],
                     'completedSales' => $stats['totalSold'],
                     'rating' => seller_rating_summary($sid),
@@ -1810,6 +1823,7 @@ try {
         case 'stories.bySeller': {
             ensure_stories_tables();
             ensure_user_avatar_column();
+            ensure_user_cover_column();
             $sellerId = (int)($body['sellerId'] ?? $_GET['sellerId'] ?? 0);
             $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
             if ($sellerId < 1 && $sellerEmail !== '') {

@@ -60,6 +60,11 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
         if ($form === 'staff_passwords') {
             $msgs = [];
+            $adminUser = trim((string)($_POST['website_admin_username'] ?? ''));
+            if ($adminUser !== '' && $adminUser !== admin_username_get()) {
+                admin_username_set($adminUser);
+                $msgs[] = 'Website admin username updated.';
+            }
             $adminPass = (string)($_POST['website_admin_password'] ?? '');
             $adminPass2 = (string)($_POST['website_admin_password_confirm'] ?? '');
             if ($adminPass !== '' || $adminPass2 !== '') {
@@ -72,57 +77,37 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 admin_password_set($adminPass);
                 $msgs[] = 'Website admin password updated.';
             }
+            $ownerUser = trim((string)($_POST['owner_admin_username'] ?? ''));
             $ownerPass = (string)($_POST['owner_admin_password'] ?? '');
             $ownerPass2 = (string)($_POST['owner_admin_password_confirm'] ?? '');
             $ownerCurrent = (string)($_POST['owner_admin_current'] ?? '');
-            if ($ownerPass !== '' || $ownerPass2 !== '') {
+            $changingOwner = ($ownerUser !== '' && $ownerUser !== (string)(app_config()['owner_username'] ?? 'owner'))
+                || $ownerPass !== '' || $ownerPass2 !== '';
+            if ($changingOwner) {
                 $cfgNow = app_config();
                 if ($ownerCurrent === '' || !hash_equals((string)($cfgNow['owner_password'] ?? ''), $ownerCurrent)) {
                     throw new RuntimeException('Current owner password is incorrect.');
                 }
-                if (strlen($ownerPass) < 6) {
-                    throw new RuntimeException('Owner admin password must be at least 6 characters.');
+                if ($ownerUser !== '') {
+                    if (!preg_match('/^[a-zA-Z0-9._-]{3,40}$/', $ownerUser)) {
+                        throw new RuntimeException('Owner username must be 3–40 characters (letters, numbers, . _ -).');
+                    }
+                    rewrite_app_config_string('owner_username', $ownerUser);
+                    $msgs[] = 'Owner admin username updated.';
                 }
-                if ($ownerPass !== $ownerPass2) {
-                    throw new RuntimeException('Owner admin password confirmation does not match.');
+                if ($ownerPass !== '' || $ownerPass2 !== '') {
+                    if (strlen($ownerPass) < 6) {
+                        throw new RuntimeException('Owner admin password must be at least 6 characters.');
+                    }
+                    if ($ownerPass !== $ownerPass2) {
+                        throw new RuntimeException('Owner admin password confirmation does not match.');
+                    }
+                    rewrite_app_config_string('owner_password', $ownerPass);
+                    $msgs[] = 'Owner admin password updated.';
                 }
-                $cfgPath = __DIR__ . '/../api/config.php';
-                if (!is_file($cfgPath) || !is_writable($cfgPath)) {
-                    throw new RuntimeException('Cannot write api/config.php to update owner password.');
-                }
-                $raw = file_get_contents($cfgPath);
-                if ($raw === false) {
-                    throw new RuntimeException('Failed to read api/config.php.');
-                }
-                $count = 0;
-                $escaped = str_replace(['\\', "'"], ['\\\\', "\\'"], $ownerPass);
-                $updated = preg_replace(
-                    "/'owner_password'\s*=>\s*'[^']*'/",
-                    "'owner_password' => '" . $escaped . "'",
-                    $raw,
-                    1,
-                    $count
-                );
-                if (!$count) {
-                    $escapedDq = str_replace(['\\', '"'], ['\\\\', '\\"'], $ownerPass);
-                    $updated = preg_replace(
-                        '/"owner_password"\s*=>\s*"[^"]*"/',
-                        '"owner_password" => "' . $escapedDq . '"',
-                        $raw,
-                        1,
-                        $count
-                    );
-                }
-                if (!$count || $updated === null) {
-                    throw new RuntimeException('Could not find owner_password in api/config.php.');
-                }
-                if (file_put_contents($cfgPath, $updated) === false) {
-                    throw new RuntimeException('Failed to save owner password to api/config.php.');
-                }
-                $msgs[] = 'Owner admin password updated.';
             }
             if (!$msgs) {
-                throw new RuntimeException('Enter a new password for website admin and/or owner admin.');
+                throw new RuntimeException('Enter a new username and/or password for website admin and/or owner admin.');
             }
             $flash = implode(' ', $msgs);
         }
@@ -185,6 +170,27 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $flash .= ' Warning: ' . ($ping['error'] ?? 'Flutterwave key check failed') . ' Deposits will not credit until this is fixed.';
                 }
             }
+        }
+        if ($form === 'delete_user') {
+            $uid = (int)$_POST['user_id'];
+            $email = '';
+            $stmt = db()->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
+            $stmt->execute([$uid]);
+            $email = (string)($stmt->fetchColumn() ?: '');
+            owner_delete_user($uid);
+            $flash = 'User deleted' . ($email !== '' ? ' (' . $email . ')' : '') . '.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=users');
+            exit;
+        }
+        if ($form === 'purge_demo_users') {
+            $deleted = owner_purge_demo_users();
+            $flash = $deleted
+                ? ('Purged ' . count($deleted) . ' demo user(s): ' . implode(', ', array_map(static fn($r) => $r['email'], $deleted)) . '.')
+                : 'No demo users (@acctsuite.local) found.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=users');
+            exit;
         }
         if ($form === 'ban_user') {
             $uid = (int)$_POST['user_id'];
@@ -422,6 +428,13 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     db()->prepare('UPDATE users SET balance = balance + ?, total_deposits = total_deposits + ? WHERE id = ?')
                         ->execute([money_f($row['amount']), money_f($row['amount']), (int)$row['user_id']]);
                     notify_user((int)$row['user_id'], 'Deposit credited', 'Your deposit of $' . money_f($row['amount']) . ' was credited to your wallet (spendable — not withdrawable).', 'wallet');
+                try {
+                    $uMail = db()->query('SELECT name, email FROM users WHERE id=' . (int)$row['user_id'])->fetch();
+                    if ($uMail) {
+                        $mail = email_wallet_notice((string)$uMail['name'], 'Deposit credited', 'Your deposit was credited to your AcctSuite wallet (spendable — not withdrawable).', money_f($row['amount']));
+                        send_app_mail((string)$uMail['email'], $mail['subject'], $mail['html'], $mail['text']);
+                    }
+                } catch (Throwable $e) {}
                     try {
                         maybe_credit_referral_reward((int)$row['user_id']);
                     } catch (Throwable $e) {}
@@ -559,7 +572,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <form method="post" class="w-full max-w-sm av-card p-6 space-y-4">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
-        <div class="w-12 h-12 mx-auto rounded-xl bg-brand text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
+        <img src="/img/brand/logo-mark-violet.svg?v=bagA6" alt="AcctSuite" class="h-12 w-12 mx-auto mb-2" width="48" height="48">
         <h1 class="text-xl font-bold">Owner Admin</h1>
         <p class="text-xs text-slate-500">Full website control (users, money, ads, gateways)</p>
       </div>
@@ -623,7 +636,7 @@ $tab = $_GET['tab'] ?? 'overview';
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
-      <div class="av-brand"><span class="av-brand-mark">A</span><span class="title truncate">Owner Admin</span></div>
+      <div class="av-brand"><img src="/img/brand/logo-mark-violet.svg?v=bagA6" alt="" class="h-8 w-8 shrink-0" width="32" height="32"><span class="title truncate">Owner Admin</span></div>
       <div class="av-top-actions">
         <button type="button" id="ownerThemeBtn" onclick="toggleOwnerTheme()" class="av-icon-btn">Dark</button>
         <a href="/dashboard.html" class="av-link-btn">App</a>
@@ -1157,6 +1170,16 @@ $tab = $_GET['tab'] ?? 'overview';
               <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
             </button>
           </form>
+          <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" class="av-settings-row-form" onsubmit="return confirm('Permanently delete this user and their listings? This cannot be undone.');">
+            <input type="hidden" name="form" value="delete_user">
+            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+            <button type="submit" class="av-settings-row av-settings-row-btn">
+              <span class="av-settings-icon" style="background:#b91c1c"><i class="fa-solid fa-trash"></i></span>
+              <span class="av-settings-label">Delete this user</span>
+              <span class="av-settings-value">Permanent</span>
+              <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
+            </button>
+          </form>
           <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" target="_blank" class="av-settings-row-form">
             <input type="hidden" name="form" value="login_as_user">
             <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
@@ -1215,7 +1238,11 @@ $tab = $_GET['tab'] ?? 'overview';
         $users = db()->query('SELECT * FROM users ORDER BY created_at DESC LIMIT 200')->fetchAll(); ?>
       <div class="av-page av-settings-page">
         <h2 class="av-settings-title">Users</h2>
-        <p class="av-page-sub" style="margin:-0.35rem 0 0.85rem">Tap a user to ban, verify, adjust balance, or login as them.</p>
+        <p class="av-page-sub" style="margin:-0.35rem 0 0.85rem">Tap a user to ban, verify, adjust balance, delete, or login as them.</p>
+        <form method="post" class="mb-3" onsubmit="return confirm('Delete ALL @acctsuite.local demo users and their ads?');">
+          <input type="hidden" name="form" value="purge_demo_users">
+          <button type="submit" class="av-btn" style="background:#b91c1c;color:#fff">Purge demo users (@acctsuite.local)</button>
+        </form>
         <div class="av-settings-group">
           <?php if (!$users): ?>
             <div class="av-empty">No users yet.</div>
@@ -2238,29 +2265,30 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </form>
 
-        <form method="post" class="av-panel" style="margin-top:1rem">
+                <form method="post" class="av-panel" style="margin-top:1rem">
           <input type="hidden" name="form" value="staff_passwords">
-          <div class="av-panel-head"><span>Admin passwords</span></div>
+          <div class="av-panel-head"><span>Admin usernames &amp; passwords</span></div>
           <div class="av-panel-body space-y-4">
-            <p class="text-[11px] av-muted">Change the website admin (<code>/admin</code>) and owner admin (<code>/owner</code>) passwords here. Leave a section blank to keep that password unchanged.</p>
+            <p class="text-[11px] av-muted">Change website admin (<code>/admin</code>) and owner admin (<code>/owner</code>) usernames and passwords. Leave a field blank to keep it unchanged.</p>
             <div class="av-admin-card">
               <h3 class="av-row-title" style="margin-bottom:0.45rem">Website admin (staff login)</h3>
-              <p class="text-[11px] av-muted mb-2">Username is always <strong>admin</strong>. Default was admin123 until changed.</p>
               <div class="av-form-grid cols-2">
+                <div class="av-field-block" style="grid-column:1/-1"><label>Website admin username</label><input type="text" name="website_admin_username" value="<?= h(admin_username_get()) ?>" autocomplete="off"></div>
                 <div class="av-field-block"><label>New website admin password</label><input type="password" name="website_admin_password" autocomplete="new-password" placeholder="Leave blank to keep"></div>
                 <div class="av-field-block"><label>Confirm website admin password</label><input type="password" name="website_admin_password_confirm" autocomplete="new-password" placeholder="Repeat new password"></div>
               </div>
             </div>
             <div class="av-admin-card">
               <h3 class="av-row-title" style="margin-bottom:0.45rem">Owner admin</h3>
-              <p class="text-[11px] av-muted mb-2">Requires your current owner password. Updates <code>api/config.php</code>.</p>
+              <p class="text-[11px] av-muted mb-2">Requires your current owner password to change owner username or password. Updates <code>api/config.php</code>.</p>
               <div class="av-form-grid cols-2">
-                <div class="av-field-block" style="grid-column:1/-1"><label>Current owner password</label><input type="password" name="owner_admin_current" autocomplete="current-password" placeholder="Required only if changing owner password"></div>
+                <div class="av-field-block" style="grid-column:1/-1"><label>Current owner password</label><input type="password" name="owner_admin_current" autocomplete="current-password" placeholder="Required to change owner username/password"></div>
+                <div class="av-field-block" style="grid-column:1/-1"><label>Owner username</label><input type="text" name="owner_admin_username" value="<?= h((string)($cfg['owner_username'] ?? 'owner')) ?>" autocomplete="off"></div>
                 <div class="av-field-block"><label>New owner password</label><input type="password" name="owner_admin_password" autocomplete="new-password" placeholder="Leave blank to keep"></div>
                 <div class="av-field-block"><label>Confirm owner password</label><input type="password" name="owner_admin_password_confirm" autocomplete="new-password" placeholder="Repeat new password"></div>
               </div>
             </div>
-            <button class="av-btn av-btn-primary" type="submit">Update admin passwords</button>
+            <button class="av-btn av-btn-primary" type="submit">Update admin credentials</button>
           </div>
         </form>
 

@@ -93,6 +93,19 @@
     }
   }
 
+  function paintCover(coverUrl) {
+    const el = document.getElementById('rightProfileCover');
+    if (!el) return;
+    const url = String(coverUrl || '').trim();
+    if (url) {
+      el.style.backgroundImage = 'url(' + JSON.stringify(url).slice(1, -1) + ')';
+      el.classList.add('has-photo');
+    } else {
+      el.style.backgroundImage = '';
+      el.classList.remove('has-photo');
+    }
+  }
+
   function applyProfileChrome(u) {
     const set = (id, val) => {
       const el = document.getElementById(id);
@@ -102,6 +115,7 @@
       paintAvatar('headerProfileAvatar', { name: 'Guest' });
       paintAvatar('leftProfileAvatar', { name: 'Guest' });
       paintAvatar('rightProfileAvatar', { name: 'Guest' });
+      paintCover('');
       set('leftProfileName', 'GUEST');
       set('leftProfileEmail', 'Browse freely · sign in to buy');
       set('rightProfileName', 'Guest');
@@ -128,6 +142,7 @@
     paintAvatar('headerProfileAvatar', u);
     paintAvatar('leftProfileAvatar', u);
     paintAvatar('rightProfileAvatar', u);
+    paintCover(u.coverUrl || u.cover_url || '');
     set('leftProfileName', (u.name || '').toUpperCase());
     set('leftProfileEmail', u.email);
     set('rightProfileName', u.name);
@@ -3195,7 +3210,7 @@
     }
   }
 
-  function compressAvatarFile(file) {
+  function compressAvatarFile(file, maxEdge) {
     return new Promise((resolve, reject) => {
       if (!file || !String(file.type || '').startsWith('image/')) {
         reject(new Error('Please choose a photo'));
@@ -3209,7 +3224,7 @@
       const blobUrl = URL.createObjectURL(file);
       img.onload = () => {
         try {
-          const max = 512;
+          const max = maxEdge || 512;
           let w = img.width;
           let h = img.height;
           if (w < 1 || h < 1) {
@@ -3306,6 +3321,41 @@
         else alert('Profile photo updated');
       } catch (e) {
         alert((e && e.message) || 'Could not update photo');
+      }
+    }
+    ,
+    async onCoverPhoto(input) {
+      const file = input && input.files && input.files[0];
+      if (input) input.value = '';
+      if (!file) return;
+      const u = requireAuth({ message: 'You are not logged in. Sign in to update your cover photo.' });
+      if (!u) return;
+      try {
+        const dataUrl = await compressAvatarFile(file, 1600);
+        if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.usingApi() && window.AcctSuiteApi) {
+          const res = await window.AcctSuiteApi.updateProfile({
+            name: u.name,
+            phone: u.phone || '',
+            cover: dataUrl,
+          });
+          if (res && res.user && res.user.coverUrl) {
+            u.coverUrl = res.user.coverUrl;
+          } else {
+            u.coverUrl = dataUrl;
+          }
+          A().persistUser(u);
+          if (window.AcctSuiteApiSync.hydrateFromApi) {
+            await window.AcctSuiteApiSync.hydrateFromApi();
+          }
+        } else {
+          u.coverUrl = dataUrl;
+          A().persistUser(u);
+        }
+        applyProfileChrome(A().getCurrentUser() || u);
+        if (window.AcctSuiteToast) window.AcctSuiteToast.success('Cover photo updated');
+        else alert('Cover photo updated');
+      } catch (e) {
+        alert((e && e.message) || 'Could not update cover photo');
       }
     }
   };

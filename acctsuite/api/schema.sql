@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(60) DEFAULT '',
   country_code VARCHAR(8) NOT NULL DEFAULT '',
   avatar_url VARCHAR(500) NOT NULL DEFAULT '',
+  cover_url VARCHAR(500) NOT NULL DEFAULT '',
   password_hash VARCHAR(255) NOT NULL,
   balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   withdrawable_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,

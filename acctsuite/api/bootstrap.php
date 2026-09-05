@@ -90,6 +90,58 @@ function admin_password_set(string $newPass): void {
     setting_set('admin_api_password', '');
 }
 
+function admin_username_get(): string {
+    $u = trim((string)setting_get('admin_username', 'admin'));
+    return $u !== '' ? $u : 'admin';
+}
+
+function admin_username_set(string $username): void {
+    $username = trim($username);
+    if ($username === '' || !preg_match('/^[a-zA-Z0-9._-]{3,40}$/', $username)) {
+        throw new RuntimeException('Website admin username must be 3–40 characters (letters, numbers, . _ -).');
+    }
+    setting_set('admin_username', $username);
+}
+
+/**
+ * Rewrite a single quoted string value in api/config.php (owner_username / owner_password).
+ */
+function rewrite_app_config_string(string $key, string $value): void {
+    $cfgPath = dirname(__DIR__) . '/api/config.php';
+    if (!is_file($cfgPath) || !is_writable($cfgPath)) {
+        throw new RuntimeException('Cannot write api/config.php.');
+    }
+    $raw = file_get_contents($cfgPath);
+    if ($raw === false) {
+        throw new RuntimeException('Failed to read api/config.php.');
+    }
+    $count = 0;
+    $escaped = str_replace(['\\', "'"], ['\\\\', "\\'"], $value);
+    $updated = preg_replace(
+        "/'" . preg_quote($key, '/') . "'\s*=>\s*'[^']*'/",
+        "'" . $key . "' => '" . $escaped . "'",
+        $raw,
+        1,
+        $count
+    );
+    if (!$count) {
+        $escapedDq = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+        $updated = preg_replace(
+            '/"' . preg_quote($key, '/') . '"\s*=>\s*"[^"]*"/',
+            '"' . $key . '" => "' . $escapedDq . '"',
+            $raw,
+            1,
+            $count
+        );
+    }
+    if (!$count || $updated === null) {
+        throw new RuntimeException('Could not find ' . $key . ' in api/config.php.');
+    }
+    if (file_put_contents($cfgPath, $updated) === false) {
+        throw new RuntimeException('Failed to save ' . $key . ' to api/config.php.');
+    }
+}
+
 function money_f($n): string {
     return number_format((float)$n, 2, '.', '');
 }
@@ -265,6 +317,7 @@ function public_user(array $u): array {
     ensure_user_payout_columns();
     ensure_wallet_ledger_columns();
     ensure_user_avatar_column();
+    ensure_user_cover_column();
     $u = ensure_user_referral_code($u);
     $bal = (float)$u['balance'];
     $wd = array_key_exists('withdrawable_balance', $u)
@@ -283,6 +336,7 @@ function public_user(array $u): array {
         'phone' => $u['phone'],
         'countryCode' => strtolower((string)($u['country_code'] ?? '')),
         'avatarUrl' => (string)($u['avatar_url'] ?? ''),
+        'coverUrl' => (string)($u['cover_url'] ?? ''),
         'balance' => $bal,
         'withdrawableBalance' => (float)money_f($wd),
         'owing' => $bal < 0 ? abs($bal) : 0,
@@ -387,6 +441,167 @@ function save_user_avatar(int $userId, string $data): string {
     $url = '/uploads/avatars/' . $stored;
     db()->prepare('UPDATE users SET avatar_url = ? WHERE id = ?')->execute([$url, $userId]);
     return $url;
+}
+
+function ensure_user_cover_column(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->query('SELECT cover_url FROM users LIMIT 1');
+    } catch (Throwable $e) {
+        try {
+            db()->exec("ALTER TABLE users ADD COLUMN cover_url VARCHAR(500) NOT NULL DEFAULT '' AFTER avatar_url");
+        } catch (Throwable $e2) {}
+    }
+    $dir = dirname(__DIR__) . '/uploads/covers';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $ht = $dir . '/.htaccess';
+    if (!is_file($ht)) {
+        @file_put_contents($ht, "Options -Indexes\n<FilesMatch \"\\.(php|phtml|php3|php4|php5|phar)$\">\nDeny from all\n</FilesMatch>\n");
+    }
+}
+
+/**
+ * Save a JPEG/PNG/WebP data-URL as the user's public cover photo. Returns the public URL.
+ */
+function save_user_cover(int $userId, string $data): string {
+    ensure_user_cover_column();
+    $mime = '';
+    $bin = '';
+    if (preg_match('#^data:([^;]+);base64,(.+)$#s', $data, $m)) {
+        $mime = strtolower(trim($m[1]));
+        $bin = base64_decode($m[2], true);
+    } else {
+        $bin = base64_decode($data, true);
+    }
+    if ($bin === false || $bin === '') {
+        throw new RuntimeException('Could not read that cover photo');
+    }
+    if (strlen($bin) > 4 * 1024 * 1024) {
+        throw new RuntimeException('Cover photo is too large (max 4MB)');
+    }
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/jpg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+    if (!isset($allowed[$mime])) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $detected = strtolower((string)($finfo->buffer($bin) ?: ''));
+        if (isset($allowed[$detected])) {
+            $mime = $detected;
+        } else {
+            throw new RuntimeException('Use a JPEG, PNG, or WebP cover photo');
+        }
+    }
+    $ext = $allowed[$mime];
+    $stored = 'u' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+    $dir = dirname(__DIR__) . '/uploads/covers';
+    $path = $dir . '/' . $stored;
+    if (file_put_contents($path, $bin) === false) {
+        throw new RuntimeException('Could not save cover photo');
+    }
+
+    $stmt = db()->prepare('SELECT cover_url FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $prev = (string)($stmt->fetchColumn() ?: '');
+    if ($prev !== '' && preg_match('#^/uploads/covers/([a-zA-Z0-9._-]+)$#', $prev, $pm)) {
+        $old = $dir . '/' . $pm[1];
+        if (is_file($old)) {
+            @unlink($old);
+        }
+    }
+
+    $url = '/uploads/covers/' . $stored;
+    db()->prepare('UPDATE users SET cover_url = ? WHERE id = ?')->execute([$url, $userId]);
+    return $url;
+}
+
+/**
+ * Permanently delete a user and related rows (ads, orders kept as orphan-safe where FKs allow).
+ */
+function owner_delete_user(int $userId): void {
+    if ($userId < 1) {
+        throw new RuntimeException('Invalid user');
+    }
+    $pdo = db();
+    $stmt = $pdo->prepare('SELECT id, email, avatar_url, cover_url FROM users WHERE id = ? LIMIT 1');
+    try {
+        ensure_user_cover_column();
+        $stmt = $pdo->prepare('SELECT id, email, avatar_url, cover_url FROM users WHERE id = ? LIMIT 1');
+    } catch (Throwable $e) {
+        $stmt = $pdo->prepare('SELECT id, email, avatar_url FROM users WHERE id = ? LIMIT 1');
+    }
+    $stmt->execute([$userId]);
+    $u = $stmt->fetch();
+    if (!$u) {
+        throw new RuntimeException('User not found');
+    }
+
+    $pdo->beginTransaction();
+    try {
+        foreach ([
+            'DELETE FROM api_sessions WHERE user_id = ?',
+            'DELETE FROM sessions WHERE user_id = ?',
+            'DELETE FROM password_resets WHERE user_id = ?',
+            'DELETE FROM notifications WHERE user_id = ?',
+            'DELETE FROM support_messages WHERE thread_id IN (SELECT id FROM support_threads WHERE user_id = ?)',
+            'DELETE FROM support_threads WHERE user_id = ?',
+            'DELETE FROM seller_reviews WHERE seller_id = ? OR buyer_id = ?',
+            'DELETE FROM stories WHERE seller_id = ?',
+            'DELETE FROM ad_credentials WHERE ad_id IN (SELECT id FROM ads WHERE seller_id = ?)',
+            'DELETE FROM ads WHERE seller_id = ?',
+            'DELETE FROM transactions WHERE user_id = ?',
+            'DELETE FROM kyc_submissions WHERE user_id = ?',
+        ] as $sql) {
+            try {
+                if (substr_count($sql, '?') === 2) {
+                    $pdo->prepare($sql)->execute([$userId, $userId]);
+                } else {
+                    $pdo->prepare($sql)->execute([$userId]);
+                }
+            } catch (Throwable $e) {
+                // table may not exist on older installs
+            }
+        }
+        // Soft-null buyer/seller on orders rather than deleting financial history
+        try {
+            $pdo->prepare('UPDATE orders SET buyer_id = NULL WHERE buyer_id = ?')->execute([$userId]);
+        } catch (Throwable $e) {}
+        try {
+            $pdo->prepare('UPDATE orders SET seller_id = NULL WHERE seller_id = ?')->execute([$userId]);
+        } catch (Throwable $e) {}
+        $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    foreach (['avatar_url' => '/uploads/avatars/', 'cover_url' => '/uploads/covers/'] as $col => $prefix) {
+        $prev = (string)($u[$col] ?? '');
+        if ($prev !== '' && str_starts_with($prev, $prefix)) {
+            $base = dirname(__DIR__) . $prev;
+            if (is_file($base)) {
+                @unlink($base);
+            }
+        }
+    }
+}
+
+function owner_purge_demo_users(): array {
+    $stmt = db()->query("SELECT id, email, name FROM users WHERE email LIKE '%@acctsuite.local' OR email LIKE 'demo.%@%' OR name IN ('Omoba','Michael','Ugochukwu') ORDER BY id ASC");
+    $rows = $stmt->fetchAll() ?: [];
+    $deleted = [];
+    foreach ($rows as $row) {
+        owner_delete_user((int)$row['id']);
+        $deleted[] = ['id' => (int)$row['id'], 'email' => $row['email'], 'name' => $row['name']];
+    }
+    return $deleted;
 }
 
 function ensure_user_payout_columns(): void {
@@ -751,4 +966,22 @@ require_once __DIR__ . '/stories.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     json_out(['ok' => true]);
+}
+
+
+function notify_new_listing_launch(int $adId): void {
+    try {
+        $stmt = db()->prepare('SELECT a.*, u.name AS seller_name, u.email AS seller_email FROM ads a JOIN users u ON u.id = a.seller_id WHERE a.id = ? LIMIT 1');
+        $stmt->execute([$adId]);
+        $ad = $stmt->fetch();
+        if (!$ad || empty($ad['seller_email'])) return;
+        $mail = email_simple_notice(
+            (string)$ad['seller_name'],
+            'Your listing is live',
+            'Your listing "' . (string)$ad['title'] . '" is now active on AcctSuite.',
+            'View dashboard',
+            'ads'
+        );
+        send_app_mail((string)$ad['seller_email'], $mail['subject'], $mail['html'], $mail['text']);
+    } catch (Throwable $e) {}
 }

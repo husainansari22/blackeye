@@ -219,3 +219,33 @@ function email_order_status_update(string $name, string $title, string $statusLa
     $html = email_layout('Order update', $inner, 'Order status: ' . $statusLabel);
     return ['subject' => $subject, 'html' => $html, 'text' => 'Order ' . $title . ' is now ' . $statusLabel . ($txid !== '' ? ' TXID: ' . $txid : '')];
 }
+
+
+function email_wallet_notice(string $name, string $headline, string $detail, string $amount = ''): array {
+    $safeName = htmlspecialchars($name !== '' ? $name : 'there', ENT_QUOTES, 'UTF-8');
+    $safeHead = htmlspecialchars($headline, ENT_QUOTES, 'UTF-8');
+    $safeDetail = htmlspecialchars($detail, ENT_QUOTES, 'UTF-8');
+    $safeAmount = htmlspecialchars($amount, ENT_QUOTES, 'UTF-8');
+    $dash = mail_cfg()['app_url'] . '/dashboard.html#wallet';
+    $amountHtml = $safeAmount !== '' ? '<p style="margin:0 0 12px;font-size:18px;font-weight:800;color:#8B5CF6;">$' . $safeAmount . '</p>' : '';
+    $inner = '
+      <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">' . $safeHead . '</h1>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', ' . $safeDetail . '</p>
+      ' . $amountHtml . '
+      <div style="text-align:center;margin:24px 0;">' . email_button('Open wallet', $dash) . '</div>';
+    $html = email_layout($headline, $inner, $headline);
+    return ['subject' => $headline . ' · AcctSuite', 'html' => $html, 'text' => strip_tags($detail) . ($amount !== '' ? ' $' . $amount : '')];
+}
+
+function email_simple_notice(string $name, string $headline, string $detail, string $ctaLabel = 'Open AcctSuite', string $hash = ''): array {
+    $safeName = htmlspecialchars($name !== '' ? $name : 'there', ENT_QUOTES, 'UTF-8');
+    $safeHead = htmlspecialchars($headline, ENT_QUOTES, 'UTF-8');
+    $safeDetail = htmlspecialchars($detail, ENT_QUOTES, 'UTF-8');
+    $dash = mail_cfg()['app_url'] . '/dashboard.html' . ($hash !== '' ? '#' . ltrim($hash, '#') : '');
+    $inner = '
+      <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">' . $safeHead . '</h1>
+      <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', ' . $safeDetail . '</p>
+      <div style="text-align:center;margin:24px 0;">' . email_button($ctaLabel, $dash) . '</div>';
+    $html = email_layout($headline, $inner, $headline);
+    return ['subject' => $headline . ' · AcctSuite', 'html' => $html, 'text' => strip_tags($detail)];
+}

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <script src="/js/theme-init.js?v=bagA4fix"></script>
+    <script src="/js/theme-init.js?v=bagA6"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>AcctSuite — Marketplace Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,16 +12,16 @@
     <link rel="icon" href="https://acctsuite.com/favicon-96x96.png?v=bagA4" type="image/png" sizes="96x96">
     <link rel="icon" href="https://acctsuite.com/favicon-48x48.png?v=bagA4" type="image/png" sizes="48x48">
     <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico?v=bagA4">
-    <link rel="apple-touch-icon" href="https://acctsuite.com/img/brand/apple-touch-icon.png?v=bagA5">
+    <link rel="apple-touch-icon" href="https://acctsuite.com/img/brand/apple-touch-icon.png?v=bagA6">
     <link rel="manifest" href="https://acctsuite.com/site.webmanifest?v=bagA4">
     <meta name="theme-color" content="#8B5CF6">
-    <link rel="stylesheet" href="/css/tailwind.css?v=bagA4fix">
+    <link rel="stylesheet" href="/css/tailwind.css?v=bagA6">
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA4fix">
-    <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA4fix">
-    <link rel="stylesheet" href="/css/ui-toast.css?v=bagA4fix">
-    <link rel="stylesheet" href="/css/kyc.css?v=bagA4fix">
-    <link rel="stylesheet" href="/css/profile.css?v=bagA4fix">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA6">
+    <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA6">
+    <link rel="stylesheet" href="/css/ui-toast.css?v=bagA6">
+    <link rel="stylesheet" href="/css/kyc.css?v=bagA6">
+    <link rel="stylesheet" href="/css/profile.css?v=bagA6">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -125,9 +125,9 @@
         #bottomNav .nav-item.is-idle { color: #9ca3af; }
         .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
     </style>
-    <script src="/js/mobile-fix.js?v=bagA4fix"></script>
-    <script src="/js/ui-toast.js?v=bagA4fix"></script>
-    <script src="/js/marketplace-catalog.js?v=bagA4fix"></script>
+    <script src="/js/mobile-fix.js?v=bagA6"></script>
+    <script src="/js/ui-toast.js?v=bagA6"></script>
+    <script src="/js/marketplace-catalog.js?v=bagA6"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
@@ -139,7 +139,7 @@
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-0 min-w-0">
-                    <img src="/img/brand/logo-mark-violet.svg?v=bagA4fix" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
+                    <img src="/img/brand/logo-mark-violet.svg?v=bagA6" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
                 </a>
             </div>
             <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
@@ -201,13 +201,13 @@
             <!-- Filter Chips (built from catalog) -->
             <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
 
-            <!-- Platform banner -->
-            <div class="bg-gradient-to-r from-violet-600 to-blue-900 rounded-xl p-3 flex justify-between items-center text-white shadow-md relative overflow-hidden">
-                <div class="absolute -right-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+            <!-- Platform banner (inline colors — compiled CSS may omit violet utilities) -->
+            <div class="rounded-xl p-3 flex justify-between items-center shadow-md relative overflow-hidden" style="background:linear-gradient(90deg,#7C3AED 0%,#1e3a8a 100%);color:#fff">
+                <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full blur-xl" style="background:rgba(255,255,255,0.1)"></div>
                 <div class="relative z-10 pr-2 min-w-0">
-                    <span class="text-violet-100 text-[10px] font-bold tracking-wide">SECURE MARKETPLACE</span>
-                    <p class="font-bold text-sm mt-0.5 leading-snug">Buy & sell with escrow protection</p>
-                    <p class="text-[10px] text-violet-100 mt-0.5 leading-snug">Preview links · AI reviews uploads</p>
+                    <span class="text-[10px] font-bold tracking-wide" style="color:#ede9fe">SECURE MARKETPLACE</span>
+                    <p class="font-bold text-sm mt-0.5 leading-snug" style="color:#fff">Buy & sell with escrow protection</p>
+                    <p class="text-[10px] mt-0.5 leading-snug" style="color:#ede9fe">Preview links · AI reviews uploads</p>
                 </div>
                 <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
@@ -658,6 +658,11 @@
             </div>
 
             <div class="profile-hero">
+                <div class="profile-cover-wrap">
+                    <div id="rightProfileCover" class="profile-cover" role="img" aria-label="Cover photo"></div>
+                    <button type="button" class="profile-cover-btn" onclick="document.getElementById('profileCoverInput').click()" aria-label="Upload cover photo"><i class="fa-solid fa-image"></i> Cover</button>
+                    <input id="profileCoverInput" type="file" accept="image/*" hidden onchange="window.AcctSuiteUI && window.AcctSuiteUI.onCoverPhoto(this)">
+                </div>
                 <div class="flex items-center gap-4">
                     <button type="button" class="profile-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
                         <div id="rightProfileAvatar" class="av-user-avatar av-user-avatar--lg">?</div>
@@ -923,14 +928,14 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.js?v=bagA4fix"></script>
-    <script src="/js/api-client.js?v=bagA4fix"></script>
-    <script src="/js/api-sync.js?v=bagA4fix"></script>
-    <script src="/js/kyc-app.js?v=bagA4fix"></script>
-    <script src="/js/av-confirm.js?v=bagA4fix"></script>
-    <script src="/js/commerce-ui.js?v=bagA4fix"></script>
-    <script src="/js/listing-modal.js?v=bagA4fix"></script>
-    <script src="/js/dashboard-app.js?v=bagA4fix"></script>
+    <script src="/js/acctsuite.js?v=bagA6"></script>
+    <script src="/js/api-client.js?v=bagA6"></script>
+    <script src="/js/api-sync.js?v=bagA6"></script>
+    <script src="/js/kyc-app.js?v=bagA6"></script>
+    <script src="/js/av-confirm.js?v=bagA6"></script>
+    <script src="/js/commerce-ui.js?v=bagA6"></script>
+    <script src="/js/listing-modal.js?v=bagA6"></script>
+    <script src="/js/dashboard-app.js?v=bagA6"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

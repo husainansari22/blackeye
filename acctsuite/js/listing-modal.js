@@ -154,10 +154,17 @@
       ? '<button type="button" class="av-listing-seller__link" data-close-modal="1">On this store</button>'
       : '<a class="av-listing-seller__link" href="/seller/' + encodeURIComponent(storeKey) + '">View store →</a>';
 
+    var Cat = global.AcctSuiteCatalog;
+    var title = item.title || '';
+    var hit = Cat && Cat.findProduct ? Cat.findProduct(item.category || title || '') : null;
+    var logoMark = (Cat && Cat.logoMarkHtml)
+      ? Cat.logoMarkHtml(hit || { name: title, domain: '' }, 'av-listing-detail__logo')
+      : ('<img src="' + escAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">');
+
     return (
       '<div class="av-listing-detail" data-listing-id="' + escAttr(item.id) + '">' +
         '<div class="av-listing-detail__head">' +
-          (Cat.logoMarkHtml ? Cat.logoMarkHtml(hit || { name: title, domain: '' }, 'av-listing-detail__logo') : ('<img src="' + escAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">')) +
+          logoMark +
           '<div class="min-w-0 flex-1">' +
             '<div class="av-listing-detail__title-row">' +
               '<h3 class="av-listing-detail__title">' + escHtml(item.title) + '</h3>' +
