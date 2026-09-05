@@ -171,10 +171,58 @@
         #headerAuthMenuBtn { display: none; align-items: center; justify-content: center; }
         body.is-authed #headerAuthMenuBtn { display: inline-flex !important; }
 
-        #bottomNav .nav-item.is-active { color: #8B5CF6; }
-        .dark #bottomNav .nav-item.is-active { color: #C4B5FD; }
-        #bottomNav .nav-item.is-idle { color: #9ca3af; }
-        .dark #bottomNav .nav-item.is-idle { color: #a8a3b8; }
+        /* Active tab: bright violet + glow so it reads clearly in dark mode */
+        #bottomNav .nav-item.is-active {
+          color: #7C3AED !important;
+          position: relative;
+        }
+        #bottomNav .nav-item.is-active i,
+        #bottomNav .nav-item.is-active .av-ico {
+          color: #7C3AED !important;
+          filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.45));
+        }
+        #bottomNav .nav-item.is-active span {
+          font-weight: 700;
+          color: inherit !important;
+        }
+        #bottomNav .nav-item.is-active::after {
+          content: "";
+          display: block;
+          width: 1.5rem;
+          height: 3px;
+          margin: 0.28rem auto 0;
+          border-radius: 999px;
+          background: #8B5CF6;
+          box-shadow: 0 0 10px rgba(139, 92, 246, 0.7);
+        }
+        html.dark #bottomNav .nav-item.is-active,
+        .dark #bottomNav .nav-item.is-active {
+          color: #E9D5FF !important;
+        }
+        html.dark #bottomNav .nav-item.is-active i,
+        html.dark #bottomNav .nav-item.is-active .av-ico,
+        .dark #bottomNav .nav-item.is-active i,
+        .dark #bottomNav .nav-item.is-active .av-ico {
+          color: #F5E1FF !important;
+          filter: drop-shadow(0 0 6px rgba(232, 121, 249, 1))
+                  drop-shadow(0 0 14px rgba(192, 132, 252, 0.95))
+                  drop-shadow(0 0 22px rgba(139, 92, 246, 0.8));
+        }
+        html.dark #bottomNav .nav-item.is-active span,
+        .dark #bottomNav .nav-item.is-active span {
+          color: #F5E1FF !important;
+          text-shadow: 0 0 10px rgba(232, 121, 249, 0.95), 0 0 18px rgba(139, 92, 246, 0.7);
+        }
+        html.dark #bottomNav .nav-item.is-active::after,
+        .dark #bottomNav .nav-item.is-active::after {
+          background: linear-gradient(90deg, #A78BFA, #E879F9);
+          box-shadow: 0 0 12px rgba(232, 121, 249, 1), 0 0 24px rgba(139, 92, 246, 0.65);
+        }
+        #bottomNav .nav-item.is-idle { color: #94a3b8 !important; }
+        html.dark #bottomNav .nav-item.is-idle,
+        .dark #bottomNav .nav-item.is-idle { color: #5c576e !important; }
+        html.dark #bottomNav .nav-item.is-idle:hover,
+        .dark #bottomNav .nav-item.is-idle:hover { color: #9f99b5 !important; }
     </style>
     <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
     <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
