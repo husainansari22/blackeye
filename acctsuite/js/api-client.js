@@ -458,6 +458,12 @@
     staffRejectWithdrawal(payload) {
       return request('staff.wallet.reject_withdrawal', { method: 'POST', body: payload, asStaff: true });
     },
+    staffUsersList(query) {
+      return request('staff.users.list', { asStaff: true, query: query || {} });
+    },
+    staffLoginAs(payload) {
+      return request('staff.loginAs', { method: 'POST', body: payload, asStaff: true });
+    },
     banksList(query) {
       return request('banks.list', { query: query || {} });
     },

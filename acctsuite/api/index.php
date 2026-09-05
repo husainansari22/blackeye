@@ -1671,6 +1671,61 @@ try {
             json_out(['ok' => true]);
         }
 
+        case 'staff.users.list': {
+            // Owner + staff admin can browse users and open accounts
+            require_staff();
+            $q = trim((string)($body['q'] ?? $_GET['q'] ?? ''));
+            $limit = min(100, max(1, (int)($body['limit'] ?? $_GET['limit'] ?? 50)));
+            if ($q !== '') {
+                $like = '%' . $q . '%';
+                $stmt = db()->prepare('SELECT id, name, email, balance, COALESCE(withdrawable_balance,0) AS withdrawable_balance,
+                    is_verified, is_banned, created_at
+                  FROM users
+                  WHERE email LIKE ? OR name LIKE ? OR CAST(id AS CHAR) = ?
+                  ORDER BY id DESC LIMIT ' . $limit);
+                $stmt->execute([$like, $like, $q]);
+            } else {
+                $stmt = db()->query('SELECT id, name, email, balance, COALESCE(withdrawable_balance,0) AS withdrawable_balance,
+                    is_verified, is_banned, created_at
+                  FROM users ORDER BY id DESC LIMIT ' . $limit);
+            }
+            $users = array_map(static function ($u) {
+                return [
+                    'id' => (int)$u['id'],
+                    'name' => (string)$u['name'],
+                    'email' => (string)$u['email'],
+                    'balance' => (float)$u['balance'],
+                    'withdrawableBalance' => (float)$u['withdrawable_balance'],
+                    'verified' => !empty($u['is_verified']),
+                    'banned' => !empty($u['is_banned']),
+                    'createdAt' => (string)($u['created_at'] ?? ''),
+                ];
+            }, $stmt->fetchAll());
+            json_out(['ok' => true, 'users' => $users]);
+        }
+
+        case 'staff.loginAs': {
+            // Both Owner support token and Staff Admin token can open a user session
+            require_staff();
+            $uid = (int)($body['userId'] ?? $body['user_id'] ?? 0);
+            if ($uid < 1) json_out(['ok' => false, 'error' => 'userId required'], 422);
+            $stmt = db()->prepare('SELECT id, email, name, is_banned FROM users WHERE id = ? LIMIT 1');
+            $stmt->execute([$uid]);
+            $row = $stmt->fetch();
+            if (!$row) json_out(['ok' => false, 'error' => 'User not found'], 404);
+            if ((int)$row['is_banned'] === 1) json_out(['ok' => false, 'error' => 'User is banned — unban first'], 403);
+            $token = create_session($uid);
+            json_out([
+                'ok' => true,
+                'token' => $token,
+                'email' => (string)$row['email'],
+                'name' => (string)$row['name'],
+                'loginUrl' => '/owner-login-as.html?token=' . rawurlencode($token)
+                    . '&email=' . rawurlencode((string)$row['email'])
+                    . '&name=' . rawurlencode((string)$row['name']),
+            ]);
+        }
+
         case 'staff.reports': {
             require_staff();
             ensure_marketplace_extras();

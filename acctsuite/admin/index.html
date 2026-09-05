@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/fonts-local.css?v=20260905violet2">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon-v3.png">
   <meta name="theme-color" content="#8B5CF6">
   <meta name="robots" content="noindex,nofollow">
     <link rel="preload" href="/css/tailwind.css?v=20260905violet2" as="style">
@@ -24,7 +24,7 @@
   <script defer src="/js/mobile-fix.js?v=20260822tap1"></script>
   <script defer src="/js/ui-toast.js?v=20260821toast2"></script>
   <script defer src="/js/acctsuite.min.js?v=20260822adm1"></script>
-  <script defer src="/js/api-client.min.js?v=20260822adm1"></script>
+  <script defer src="/js/api-client.min.js?v=20260905violet3"></script>
   <script defer src="/js/staff-alerts.js?v=20260821toast2"></script>
   <script defer src="/js/staff-inbox.js?v=20260821toast2"></script>
   <script defer src="/js/av-confirm.js?v=20260823confirm1"></script>
@@ -38,7 +38,7 @@
   <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 space-y-4">
       <div class="text-center">
-        <img src="/img/brand/logo-mark.svg?v=20260905violet2" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
+        <img src="/img/brand/logo-mark-violet.svg?v=20260905v3" alt="" class="w-12 h-12 mx-auto rounded-xl mb-2 shadow" width="48" height="48">
         <h1 class="text-xl font-bold">Admin Login</h1>
         <p class="text-xs text-slate-500 mt-1">Manage fees, plans, gateways & reviews</p>
       </div>
@@ -63,7 +63,7 @@
   <div id="dashView" class="hidden">
     <header class="av-topbar">
       <div class="av-topbar-inner">
-        <div class="av-brand"><img src="/img/brand/logo-mark.svg?v=20260905violet2" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">AcctSuite Admin</span></div>
+        <div class="av-brand"><img src="/img/brand/logo-mark-violet.svg?v=20260905v3" alt="" class="av-brand-mark" width="36" height="36" decoding="async"><span class="title truncate">AcctSuite Admin</span></div>
         <div class="av-top-actions">
           <button type="button" id="adminThemeBtn" onclick="toggleAdminTheme()" class="av-icon-btn" aria-label="Toggle theme">Dark</button>
           <a href="/dashboard.html" class="av-link-btn">App</a>
@@ -223,9 +223,10 @@
           <div class="av-page-head">
             <div>
               <h2 class="av-page-title">Users</h2>
-              <p class="av-page-sub">Local browser users (demo mode). Live accounts are in Owner Admin.</p>
+              <p class="av-page-sub">Search live accounts and login as any user (staff + owner).</p>
             </div>
-            <div class="av-page-meta">
+            <div class="av-page-meta flex items-center gap-2">
+              <input id="usersSearchQ" type="search" placeholder="Search name, email, id" class="av-input px-3 py-2 text-sm w-44" onkeydown="if(event.key==='Enter')loadUsers()">
               <button onclick="loadUsers()" class="av-btn" type="button">Refresh</button>
             </div>
           </div>
@@ -838,11 +839,40 @@
       if (!res.ok) alert(res.error); else loadAds();
     }
 
-    function loadUsers() {
-      const users = A().listAllUsersSummary();
+    async function loadUsers() {
       const box = document.getElementById('usersAdminList');
+      const qEl = document.getElementById('usersSearchQ');
+      const q = (qEl && qEl.value || '').trim();
+      box.innerHTML = '<p class="text-sm text-slate-400 p-3">Loading users…</p>';
+      const Api = window.AcctSuiteApi;
+      if (Api && typeof Api.staffUsersList === 'function' && Api.getStaffToken && Api.getStaffToken()) {
+        try {
+          const res = await Api.staffUsersList({ q: q || undefined, limit: 80 });
+          const users = (res && res.users) || [];
+          if (!users.length) {
+            box.innerHTML = '<p class="text-sm text-slate-400 p-3">No matching users.</p>';
+            return;
+          }
+          box.innerHTML = `<table class="w-full text-left text-xs">
+            <thead><tr class="text-slate-500 border-b"><th class="py-2 pr-2">ID</th><th class="py-2 pr-2">Name</th><th class="py-2 pr-2">Email</th><th class="py-2 pr-2">Balance</th><th class="py-2 pr-2">Status</th><th class="py-2">Actions</th></tr></thead>
+            <tbody>${users.map((u) => `<tr class="border-b border-slate-100 dark:border-slate-800">
+              <td class="py-2 pr-2 font-mono">${u.id}</td>
+              <td class="py-2 pr-2 font-medium">${escapeHtml(u.name || '')}</td>
+              <td class="py-2 pr-2">${escapeHtml(u.email || '')}</td>
+              <td class="py-2 pr-2">$${Number(u.balance || 0).toFixed(2)}</td>
+              <td class="py-2 pr-2">${u.banned ? '<span class="text-red-500">Banned</span>' : (u.verified ? '<span class="text-emerald-500">Verified</span>' : 'Active')}</td>
+              <td class="py-2"><button type="button" class="av-btn text-[11px] px-2 py-1" ${u.banned ? 'disabled' : ''} onclick="loginAsUser(${Number(u.id)})">Login as user</button></td>
+            </tr>`).join('')}</tbody></table>`;
+          return;
+        } catch (e) {
+          box.innerHTML = '<p class="text-sm text-red-500 p-3">Could not load live users. Connect inbox / staff login first. ' + escapeHtml((e && e.message) || '') + '</p>';
+          return;
+        }
+      }
+      // Fallback: local demo users if staff API session is missing
+      const users = A().listAllUsersSummary ? A().listAllUsersSummary() : [];
       if (!users.length) {
-        box.innerHTML = '<p class="text-sm text-slate-400">No users in this browser yet. Sign up on the main site first.</p>';
+        box.innerHTML = '<p class="text-sm text-slate-400 p-3">Connect with staff credentials (Support tab) to load live users, or sign up locally first.</p>';
         return;
       }
       box.innerHTML = `<table class="w-full text-left text-xs">
@@ -854,6 +884,28 @@
           <td class="py-2 pr-2">${A().formatMoney(u.balance)}</td>
           <td class="py-2">${u.ads} (${u.pendingAds} pending)</td>
         </tr>`).join('')}</tbody></table>`;
+    }
+
+    async function loginAsUser(userId) {
+      const Api = window.AcctSuiteApi;
+      if (!Api || !Api.staffLoginAs) {
+        alert('API client missing');
+        return;
+      }
+      if (!Api.getStaffToken || !Api.getStaffToken()) {
+        alert('Connect staff login on the Support tab first.');
+        return;
+      }
+      try {
+        const res = await Api.staffLoginAs({ userId: Number(userId) });
+        if (!res || !res.ok || !res.loginUrl) {
+          alert((res && res.error) || 'Could not open user account');
+          return;
+        }
+        window.open(res.loginUrl, '_blank', 'noopener');
+      } catch (e) {
+        alert((e && e.message) || 'Login-as failed');
+      }
     }
 
     async function changePassword() {
