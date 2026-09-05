@@ -143,6 +143,29 @@
     };
   }
 
+  const MARKET_CACHE_KEY = 'acctsuite_market_cache_v1';
+
+  function readPersistedMarket() {
+    try {
+      const raw = localStorage.getItem(MARKET_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.listings)) return null;
+      return parsed.listings;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function persistMarket(listings) {
+    try {
+      localStorage.setItem(
+        MARKET_CACHE_KEY,
+        JSON.stringify({ at: Date.now(), listings: Array.isArray(listings) ? listings : [] })
+      );
+    } catch (e) {}
+  }
+
   function patchMarketListingsOnly() {
     const A = global.AcctSuite;
     if (!A || A.__apiMarketPatched) return;
@@ -154,6 +177,13 @@
       if (Array.isArray(global.__acctsuiteApiMarket) && global.__acctsuiteMarketOnline === true) {
         return global.__acctsuiteApiMarket;
       }
+      // Home Screen / PWA: if API is down, keep showing last successful market snapshot
+      // so the feed is not wiped to empty while MySQL is unavailable.
+      if (Array.isArray(global.__acctsuiteApiMarket) && global.__acctsuiteApiMarket.length) {
+        return global.__acctsuiteApiMarket;
+      }
+      const cached = readPersistedMarket();
+      if (cached && cached.length) return cached;
       return origMarket();
     };
     const origFind = A.findListingById.bind(A);
@@ -179,6 +209,11 @@
     }
     if (!ok) {
       global.__acctsuiteMarketOnline = false;
+      const cachedDown = readPersistedMarket();
+      if (cachedDown && cachedDown.length) {
+        global.__acctsuiteApiMarket = cachedDown;
+        patchMarketListingsOnly();
+      }
       return false;
     }
     try {
@@ -190,6 +225,7 @@
       }
       global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
       global.__acctsuiteMarketOnline = true;
+      persistMarket(global.__acctsuiteApiMarket);
       patchMarketListingsOnly();
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
@@ -201,6 +237,11 @@
     } catch (e) {
       console.warn('Public market hydrate failed', e);
       global.__acctsuiteMarketOnline = false;
+      const cached = readPersistedMarket();
+      if (cached && cached.length) {
+        global.__acctsuiteApiMarket = cached;
+        patchMarketListingsOnly();
+      }
       return false;
     }
   }
@@ -324,6 +365,7 @@
       if (marketRes && marketRes.__marketOk) {
         global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
         global.__acctsuiteMarketOnline = true;
+        persistMarket(global.__acctsuiteApiMarket);
       } else {
         global.__acctsuiteMarketOnline = false;
       }

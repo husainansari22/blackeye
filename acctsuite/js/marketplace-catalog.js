@@ -243,7 +243,7 @@
     var slug = productLogoSlug(product.name, product.domain);
     if (!slug) return '';
     // Cache-busted local high-res app icons (modern squircle / glass style where available).
-    return '/img/products/' + slug + '.png?v=20260905violet1';
+    return '/img/products/' + slug + '.png?v=20260905logos2';
   }
 
   function remoteLogoCandidates(domain) {
@@ -356,12 +356,31 @@
       .trim()
       .toLowerCase();
     if (!n) return null;
+    // Listing titles are often "TikTok - followers…"; match the brand token first.
+    var brandHint = n.split(/\s*[-–—|:]\s*/)[0].trim();
     var list = allProducts();
-    for (var i = 0; i < list.length; i++) {
+    var i;
+    for (i = 0; i < list.length; i++) {
       if (list[i].name.toLowerCase() === n) return list[i];
     }
-    for (var j = 0; j < list.length; j++) {
-      if (list[j].name.toLowerCase().indexOf(n) !== -1) return list[j];
+    if (brandHint && brandHint !== n) {
+      for (i = 0; i < list.length; i++) {
+        if (list[i].name.toLowerCase() === brandHint) return list[i];
+      }
+    }
+    // Prefer "query contains product name" (title → brand) over the reverse.
+    var best = null;
+    var bestLen = 0;
+    for (i = 0; i < list.length; i++) {
+      var pn = list[i].name.toLowerCase();
+      if (pn.length >= 2 && n.indexOf(pn) !== -1 && pn.length > bestLen) {
+        best = list[i];
+        bestLen = pn.length;
+      }
+    }
+    if (best) return best;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].name.toLowerCase().indexOf(n) !== -1) return list[i];
     }
     return null;
   }
