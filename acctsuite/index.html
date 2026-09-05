@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script src="/js/theme-init.js?v=20260827theme1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>A cctsuite — Digital Marketplace</title>
+    <title>AcctSuite — Digital Marketplace</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -40,7 +40,7 @@
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "AcctSuite",
-      "alternateName": "A cctsuite",
+      "alternateName": "cctsuite",
       "url": "https://acctsuite.com/",
       "potentialAction": {
         "@type": "SearchAction",
@@ -94,20 +94,108 @@
     <script src="/js/ui-toast.js?v=20260821toast2"></script>
     <style>
         @keyframes floatLogo {
-            0%, 100% { transform: translateY(0px) scale(1); }
-            50% { transform: translateY(-3px) scale(1.05); }
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-2px) scale(1.04); }
         }
-        @keyframes orbitBall {
-            0% { transform: rotate(0deg) translateX(14px) rotate(0deg); }
-            100% { transform: rotate(360deg) translateX(14px) rotate(-360deg); }
+        @keyframes escrowPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.92); }
         }
-        .live-logo-glow {
+        @keyframes escrowShimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .live-logo-mark {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+            color: #fff;
+            font-weight: 900;
+            font-size: 1.125rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
             animation: floatLogo 3s ease-in-out infinite;
-            box-shadow: 0 0 15px rgba(99,102,241,0.55);
+            box-shadow: 0 0 14px rgba(99, 102, 241, 0.45);
         }
-        .rolling-ball {
-            animation: orbitBall 4s linear infinite;
+        .brand-wordmark {
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
+        .header-escrow-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.28rem 0.65rem;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #4338ca;
+            background: linear-gradient(90deg, #e0e7ff, #ede9fe, #e0e7ff);
+            background-size: 200% 100%;
+            animation: escrowShimmer 4s linear infinite;
+            border: 1px solid rgba(99, 102, 241, 0.25);
+        }
+        .dark .header-escrow-badge {
+            color: #c7d2fe;
+            background: linear-gradient(90deg, rgba(49,46,129,0.55), rgba(76,29,149,0.45), rgba(49,46,129,0.55));
+            background-size: 200% 100%;
+            border-color: rgba(129, 140, 248, 0.35);
+        }
+        .header-escrow-dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 999px;
+            background: #10b981;
+            animation: escrowPulse 1.8s ease-in-out infinite;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+        }
+        /* Auth inputs: compiled CSS lacks bg-inputBg — force visible typing */
+        .auth-field {
+            width: 100%;
+            background: #0f172a !important;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            color: #f8fafc !important;
+            -webkit-text-fill-color: #f8fafc;
+            caret-color: #818cf8;
+            font-size: 0.875rem;
+            transition: border-color 0.15s ease;
+        }
+        .auth-field::placeholder {
+            color: #64748b;
+            -webkit-text-fill-color: #64748b;
+            opacity: 1;
+        }
+        .auth-field:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+        .auth-field:-webkit-autofill,
+        .auth-field:-webkit-autofill:hover,
+        .auth-field:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f8fafc !important;
+            caret-color: #818cf8;
+            box-shadow: 0 0 0 1000px #0f172a inset !important;
+            transition: background-color 99999s ease-out;
+        }
+        .auth-phone-wrap {
+            display: flex;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        .auth-phone-wrap:focus-within { border-color: #6366f1; }
         html { scroll-behavior: smooth; }
     </style>
 </head>
@@ -116,16 +204,14 @@
     <!-- HEADER / NAVBAR -->
     <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
         <div class="max-w-md mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="switchPage('home')">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-black text-lg live-logo-glow shadow-lg shadow-indigo-500/30">A</div>
-                <span class="font-extrabold text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-500">cctsuite</span><span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-500"> cctsuite</span></span>
+            <div class="flex items-center gap-2 cursor-pointer min-w-0" onclick="switchPage('home')" aria-label="AcctSuite home">
+                <div class="live-logo-mark" aria-hidden="true">A</div>
+                <span class="brand-wordmark">cctsuite</span>
             </div>
-            
-            <!-- LIVE ANIMATED ELEMENT IN TOP BAR -->
-            <div class="relative w-8 h-8 flex items-center justify-center">
-                <div class="rolling-ball text-skyBrand text-sm opacity-80">
-                    <i class="fa-solid fa-circle-nodes"></i>
-                </div>
+
+            <div class="header-escrow-badge" title="Protected by escrow">
+                <span class="header-escrow-dot" aria-hidden="true"></span>
+                Escrow
             </div>
 
             <div class="flex items-center gap-2">
@@ -202,7 +288,7 @@
             <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
                 <h3 class="text-lg font-bold mb-2">Verified Digital Products Marketplace</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Buy and sell TikTok accounts, Telegram numbers, social media accounts, VPN accounts, email accounts, and websites from verified sellers on AcctVenta.
+                    Buy and sell TikTok accounts, Telegram numbers, social media accounts, VPN accounts, email accounts, and websites from verified sellers on AcctSuite.
                 </p>
             </div>
 
@@ -242,7 +328,7 @@
                 <span class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-950/60 text-skyBrand flex items-center justify-center font-bold text-sm mb-4">01</span>
                 <h3 class="font-bold text-base mb-2">Browse Digital Accounts Marketplace</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Search and explore TikTok accounts, Telegram numbers, email accounts, VPN accounts, and other digital products listed by verified sellers on AcctVenta.
+                    Search and explore TikTok accounts, Telegram numbers, email accounts, VPN accounts, and other digital products listed by verified sellers on AcctSuite.
                 </p>
             </div>
 
@@ -266,7 +352,7 @@
         <!-- WHY US SECTION -->
         <section id="whyus" class="px-4 py-8 max-w-md mx-auto space-y-4">
             <div class="text-center">
-                <h2 class="text-2xl font-bold">Why Choose AcctVenta</h2>
+                <h2 class="text-2xl font-bold">Why Choose AcctSuite</h2>
             </div>
             <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3 text-xs text-gray-600 dark:text-gray-300">
                 <p><i class="fa-solid fa-circle-check text-skyBrand mr-2"></i><strong>Trusted Digital Accounts Marketplace:</strong> Buy and sell verified accounts safely.</p>
@@ -293,7 +379,7 @@
                 </a>
 
                 <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                    AcctVenta is a global marketplace for digital products and services. Browse virtual numbers, VPN services, subscriptions, gift cards, software tools, and other digital solutions from verified merchants.
+                    AcctSuite is a global marketplace for digital products and services. Browse virtual numbers, VPN services, subscriptions, gift cards, software tools, and other digital solutions from verified merchants.
                 </p>
 
                 <div class="flex gap-3">
@@ -337,36 +423,36 @@
     <!-- PAGE 2: SIGN UP PAGE -->
     <div id="page_signup" class="hidden min-h-screen bg-black px-6 py-10 flex flex-col max-w-md mx-auto relative">
         <div class="mb-6 mt-4">
-            <h1 class="text-2xl font-bold text-white mb-1">Welcome to AcctVenta 👋</h1>
+            <h1 class="text-2xl font-bold text-white mb-1">Welcome to AcctSuite 👋</h1>
             <p class="text-gray-400 text-sm">Already have an account? <span class="text-skyBrand cursor-pointer font-medium" onclick="switchPage('login')">Login</span></p>
         </div>
 
         <form class="space-y-4" onsubmit="handleSignup(event)">
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Full Name <span class="text-red-500">*</span></label>
-                <input type="text" id="su_name" placeholder="Type your full name" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                <input type="text" id="su_name" placeholder="Type your full name" class="auth-field px-4 py-3" required>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Email address <span class="text-red-500">*</span></label>
-                <input type="email" id="su_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                <input type="email" id="su_email" placeholder="Type your Email address" class="auth-field px-4 py-3" required>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
-                <div class="flex bg-inputBg border border-inputBorder rounded-xl overflow-hidden focus-within:border-skyBrand transition">
-                    <div class="flex items-center px-3 border-r border-inputBorder bg-inputBg text-white text-sm gap-2">
+                <div class="auth-phone-wrap">
+                    <div class="flex items-center px-3 border-r border-slate-600 text-white text-sm gap-2 shrink-0">
                         <img id="country_flag" src="https://flagcdn.com/24x18/ng.png" alt="flag" class="w-6 h-4 rounded-sm object-cover">
                         <span id="country_code" class="text-xs font-semibold">+234</span>
                     </div>
-                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-white text-sm focus:outline-none" required>
+                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-white text-sm focus:outline-none auth-field" style="border:0;border-radius:0;background:transparent!important" required>
                 </div>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="su_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <input type="password" id="su_pass" placeholder="Type your Password" class="auth-field pl-4 pr-10 py-3" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_pass', this)"></i>
                 </div>
                 <ul class="text-gray-500 text-xs mt-1.5 space-y-0.5 list-disc pl-4">
@@ -378,7 +464,7 @@
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Confirm password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="auth-field pl-4 pr-10 py-3" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_cpass', this)"></i>
                 </div>
             </div>
@@ -408,13 +494,13 @@
         <form class="space-y-5" onsubmit="handleLogin(event)">
             <div>
                 <label class="block text-xs text-gray-300 mb-1.5">Email address <span class="text-red-500">*</span></label>
-                <input type="email" id="li_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                <input type="email" id="li_email" placeholder="Type your Email address" class="auth-field px-4 py-3.5" required>
             </div>
             
             <div>
                 <label class="block text-xs text-gray-300 mb-1.5">Password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="li_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <input type="password" id="li_pass" placeholder="Type your Password" class="auth-field pl-4 pr-10 py-3.5" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('li_pass', this)"></i>
                 </div>
             </div>
@@ -423,7 +509,7 @@
                 <a href="#" onclick="openForgotPassword(event)" class="text-xs text-skyBrand hover:underline">Forgot Password?</a>
             </div>
 
-            <button type="submit" class="w-full bg-inputBg border border-inputBorder text-gray-300 hover:bg-skyBrand hover:text-white hover:border-skyBrand font-semibold py-3.5 rounded-xl transition">
+            <button type="submit" class="w-full bg-slate-900 border border-slate-600 text-gray-300 hover:bg-skyBrand hover:text-white hover:border-skyBrand font-semibold py-3.5 rounded-xl transition">
                 Login
             </button>
         </form>
@@ -497,7 +583,7 @@
                   <h3 class="font-bold text-xl mb-1.5 tracking-tight">Forgot your password?</h3>
                   <p class="text-xs text-gray-400 mb-5 leading-relaxed">Enter the email on your AcctSuite account. We’ll send a secure link so you can choose a new password.</p>
                   <label class="block text-xs text-gray-300 mb-1.5">Email address</label>
-                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="w-full bg-inputBg border border-inputBorder rounded-xl p-3.5 text-sm mb-3 text-white focus:outline-none focus:border-skyBrand" required>
+                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="auth-field p-3.5 mb-3" required>
                   <p id="forgotErr" class="hidden text-xs text-red-400 mb-3"></p>
                   <button id="forgotBtn" onclick="submitForgotPassword()" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm transition">Send reset link</button>
                   <p class="text-[11px] text-gray-500 mt-4 text-center">Remembered it? <button type="button" onclick="closeModal()" class="text-skyBrand font-medium">Back to login</button></p>

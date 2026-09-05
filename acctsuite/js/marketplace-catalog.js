@@ -186,19 +186,124 @@
     },
   ];
 
-  function logoUrl(product) {
+  var LOGO_CACHE_KEY = 'acctsuite_logo_ok_v2';
+  var logoOkCache = {};
+  try {
+    logoOkCache = JSON.parse(sessionStorage.getItem(LOGO_CACHE_KEY) || '{}') || {};
+  } catch (e) {
+    logoOkCache = {};
+  }
+
+  function hashColor(str) {
+    var h = 0;
+    var s = String(str || '');
+    var i;
+    for (i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    var palette = ['#4f46e5', '#0284c7', '#059669', '#d97706', '#db2777', '#7c3aed', '#0d9488', '#e11d48'];
+    return palette[Math.abs(h) % palette.length];
+  }
+
+  function letterLogoDataUri(name) {
+    var letter = String(name || '?').trim().charAt(0).toUpperCase() || '?';
+    var bg = hashColor(String(name || letter));
+    return (
+      'data:image/svg+xml,' +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">' +
+          '<rect width="64" height="64" rx="12" fill="' +
+          bg +
+          '"/>' +
+          '<text x="32" y="42" text-anchor="middle" fill="#fff" font-size="32" font-weight="700" font-family="system-ui,sans-serif">' +
+          letter +
+          '</text></svg>'
+      )
+    );
+  }
+
+  function remoteLogoCandidates(domain) {
+    var d = String(domain || '')
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .split('/')[0];
+    if (!d) return [];
+    // Google first (reliable for many brands), DuckDuckGo as fallback.
+    return [
+      'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=64',
+      'https://icons.duckduckgo.com/ip3/' + d + '.ico',
+    ];
+  }
+
+  function rememberLogo(domain, url) {
+    var d = String(domain || '').trim().toLowerCase();
+    if (!d || !url) return;
+    logoOkCache[d] = url;
+    try {
+      sessionStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(logoOkCache));
+    } catch (e) {}
+  }
+
+  function remoteLogoUrl(product) {
     if (!product) return '';
-    if (product.logo) return product.logo;
-    var domain = String(product.domain || '').trim();
-    if (!domain) {
+    var domain = String(product.domain || '').trim().toLowerCase();
+    if (!domain) return '';
+    if (logoOkCache[domain]) return logoOkCache[domain];
+    var cands = remoteLogoCandidates(domain);
+    return cands[0] || '';
+  }
+
+  /** Instant letter avatar (no network). Use for first paint. */
+  function logoUrl(product) {
+    if (!product) return letterLogoDataUri('?');
+    if (product.logo && String(product.logo).indexOf('data:image/svg+xml') === 0) return product.logo;
+    return letterLogoDataUri(product.name || '?');
+  }
+
+  /**
+   * Smart logo markup: letter shows instantly, brand favicon fades in when ready.
+   * Falls back through candidate URLs; caches successes in sessionStorage.
+   */
+  function logoMarkHtml(product, className) {
+    var name = (product && product.name) || '?';
+    var domain = String((product && product.domain) || '')
+      .trim()
+      .toLowerCase();
+    var letter = letterLogoDataUri(name);
+    var cls = className || 'av-prod-logo';
+    var cands = remoteLogoCandidates(domain);
+    if (logoOkCache[domain]) cands = [logoOkCache[domain]].concat(cands.filter(function (u) { return u !== logoOkCache[domain]; }));
+    if (!cands.length) {
       return (
-        'data:image/svg+xml,' +
-        encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="12" fill="#0ea5e9"/><text x="32" y="40" text-anchor="middle" fill="#fff" font-size="28" font-family="sans-serif">?</text></svg>'
-        )
+        '<img class="' +
+        cls +
+        '" src="' +
+        letter +
+        '" alt="" width="20" height="20" decoding="async">'
       );
     }
-    return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=64';
+    var primary = cands[0];
+    var fallback = cands[1] || '';
+    var domainAttr = domain.replace(/"/g, '');
+    return (
+      '<span class="av-logo-slot" title="' +
+      String(name).replace(/"/g, '&quot;') +
+      '">' +
+      '<img class="' +
+      cls +
+      ' av-logo-letter" src="' +
+      letter +
+      '" alt="" width="20" height="20" decoding="async">' +
+      '<img class="' +
+      cls +
+      ' av-logo-remote" src="' +
+      primary +
+      '" alt="" width="20" height="20" loading="lazy" decoding="async" data-domain="' +
+      domainAttr +
+      '" data-fb="' +
+      String(fallback).replace(/"/g, '&quot;') +
+      '" onload="this.classList.add(\'is-ready\');try{var d=this.getAttribute(\'data-domain\');if(d&&window.AcctSuiteCatalog&&window.AcctSuiteCatalog.rememberLogo)window.AcctSuiteCatalog.rememberLogo(d,this.src);}catch(e){}" onerror="var fb=this.getAttribute(\'data-fb\');if(fb){this.setAttribute(\'data-fb\',\'\');this.src=fb;}else{this.remove();}">' +
+      '</span>'
+    );
   }
 
   function allProducts() {
@@ -211,6 +316,7 @@
           groupId: g.id,
           groupName: g.name,
           logo: logoUrl(p),
+          remoteLogo: remoteLogoUrl(p),
         });
       });
     });
@@ -299,6 +405,10 @@
     GROUPS: GROUPS,
     NO_PREVIEW_GROUP_IDS: NO_PREVIEW_GROUP_IDS,
     logoUrl: logoUrl,
+    letterLogoDataUri: letterLogoDataUri,
+    remoteLogoUrl: remoteLogoUrl,
+    logoMarkHtml: logoMarkHtml,
+    rememberLogo: rememberLogo,
     allProducts: allProducts,
     findProduct: findProduct,
     searchProducts: searchProducts,

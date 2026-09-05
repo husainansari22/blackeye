@@ -242,7 +242,20 @@
     const Cat = window.AcctSuiteCatalog;
     if (!Cat) return '';
     const hit = Cat.findProduct(item.platform || item.category || item.title);
-    return hit ? hit.logo : Cat.logoUrl({ domain: '' });
+    if (hit) return hit.logo || Cat.logoUrl(hit);
+    return Cat.logoUrl({ name: item.platform || item.category || '?', domain: '' });
+  }
+
+  function productLogoMarkHtml(item, className) {
+    const Cat = window.AcctSuiteCatalog;
+    const cls = className || 'av-prod-logo';
+    if (Cat && typeof Cat.logoMarkHtml === 'function') {
+      const hit = Cat.findProduct(item.platform || item.category || item.title);
+      if (hit) return Cat.logoMarkHtml(hit, cls);
+      return Cat.logoMarkHtml({ name: item.platform || item.category || '?', domain: '' }, cls);
+    }
+    const logo = productLogoFor(item);
+    return `<img src="${escapeAttr(logo)}" alt="" class="${cls}" loading="lazy" decoding="async">`;
   }
 
   function productGroupFor(item) {
@@ -264,7 +277,7 @@
   }
 
   function listingCard(item, compact) {
-    const logo = productLogoFor(item);
+    const logoMark = productLogoMarkHtml(item, 'av-prod-logo');
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
@@ -274,7 +287,7 @@
     if (compact) {
       return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 w-40 shrink-0 relative" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
         <div class="flex items-center gap-1.5 mb-1.5">
-          <img src="${escapeAttr(logo)}" alt="" class="av-prod-logo" loading="lazy" onerror="this.style.opacity=.3">
+          ${logoMark}
           <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
@@ -288,7 +301,7 @@
       </div>`;
     }
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      <img src="${escapeAttr(logo)}" alt="" class="w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0" loading="lazy" onerror="this.style.opacity=.3">
+      ${productLogoMarkHtml(item, 'w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0')}
       <div class="min-w-0 flex-1">
         <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
         <p class="text-[10px] text-slate-500 truncate flex items-center gap-0.5">By <span class="inline-flex items-center min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span> · ${escapeHtml(cat)}</p>
@@ -303,12 +316,12 @@
 
   /** Full-width home row — AcctBazaar “Other product” pattern */
   function homeOtherListingCard(item) {
-    const logo = productLogoFor(item);
+    const logoMark = productLogoMarkHtml(item, 'w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center');
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
     return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-stretch" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      <img src="${escapeAttr(logo)}" alt="" class="w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center" loading="lazy" onerror="this.style.opacity=.3">
+      ${logoMark}
       <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
         <h4 class="font-bold text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
         ${item.sellerRating ? `<div>${starsRowHtml(item.sellerRating, item.sellerReviews)}</div>` : ''}
@@ -567,16 +580,18 @@
     const roleLabel = isSeller ? 'Sell' : 'Buy';
     const roleCls = isSeller ? 'text-red-400' : 'text-emerald-500';
     const cat = o.category || o.title || 'Order';
-    let logo = '';
+    let logoMark = '';
     try {
       const prod =
         window.AcctSuiteCatalog &&
         (window.AcctSuiteCatalog.findProduct(cat) || window.AcctSuiteCatalog.findProduct(o.title));
-      if (prod && prod.logo) logo = prod.logo;
+      if (prod && window.AcctSuiteCatalog.logoMarkHtml) {
+        logoMark = window.AcctSuiteCatalog.logoMarkHtml(prod, 'w-5 h-5 rounded object-cover');
+      } else if (prod && prod.logo) {
+        logoMark = `<img src="${escapeAttr(prod.logo)}" alt="" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'">`;
+      }
     } catch (e) {}
-    const icon = logo
-      ? `<img src="${escapeAttr(logo)}" alt="" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'">`
-      : `<i class="fa-solid fa-box text-slate-400 text-xs"></i>`;
+    const icon = logoMark || `<i class="fa-solid fa-box text-slate-400 text-xs"></i>`;
     return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-sm space-y-2.5">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0 flex items-center gap-2">
@@ -2105,7 +2120,7 @@
   }
 
   function buildListingDetailHtml(item) {
-    const logo = productLogoFor(item);
+    const logoMark = productLogoMarkHtml(item, 'av-listing-detail__logo');
     const stock = Math.max(1, Number(item.stock) || 1);
     const sel = listingSelectedAccount[item.id] != null ? listingSelectedAccount[item.id] : 0;
     listingSelectedAccount[item.id] = sel;
@@ -2137,7 +2152,7 @@
     return `
       <div class="av-listing-detail" data-listing-id="${escapeAttr(item.id)}">
         <div class="av-listing-detail__head">
-          <img src="${escapeAttr(logo)}" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">
+          ${logoMark}
           <div class="min-w-0 flex-1">
             <div class="av-listing-detail__title-row">
               <h3 class="av-listing-detail__title">${escapeHtml(item.title)}</h3>

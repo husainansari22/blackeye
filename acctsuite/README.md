@@ -1,6 +1,6 @@
 # AcctSuite (`acctsuite.com`)
 
-Production marketplace for buying and selling digital accounts — same product surface as Acctventa (PR #26), branded for **A cctsuite**.
+Production marketplace for buying and selling digital accounts — same product surface as Acctventa (PR #26), branded for **AcctSuite (mark A + cctsuite)**.
 
 ## Live
 
@@ -11,7 +11,7 @@ Production marketplace for buying and selling digital accounts — same product 
 
 ## Brand
 
-- Wordmark: **A cctsuite** (logo mark `A` + `cctsuite`)
+- Wordmark: **AcctSuite (mark A + cctsuite)** (logo mark `A` + `cctsuite`)
 - Accent: indigo / violet (distinct from Acctventa sky blue)
 - Domain: **acctsuite.com only** — never deploy to acctventa.com
 

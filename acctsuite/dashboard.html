@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script src="/js/theme-init.js?v=20260827theme1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>A cctsuite — Marketplace Dashboard</title>
+    <title>cctsuite — Marketplace Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -60,6 +60,27 @@
           object-fit: cover;
           background: #1e293b;
           flex-shrink: 0;
+        }
+        .av-logo-slot {
+          position: relative;
+          display: inline-block;
+          flex-shrink: 0;
+          line-height: 0;
+          vertical-align: middle;
+        }
+        .av-logo-slot .av-logo-remote {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+          background: #fff;
+          object-fit: cover;
+        }
+        .av-logo-slot .av-logo-remote.is-ready {
+          opacity: 1;
         }
         .av-cat-head {
           display: flex;
@@ -127,7 +148,7 @@
     </style>
     <script src="/js/mobile-fix.js?v=20260822tap1"></script>
     <script src="/js/ui-toast.js?v=20260821toast2"></script>
-    <script src="/js/marketplace-catalog.js?v=20260902vpn1"></script>
+    <script src="/js/marketplace-catalog.js?v=20260905logo2"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
@@ -139,8 +160,8 @@
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-1.5 min-w-0">
-                    <div class="size-7 sm:size-8 rounded-lg bg-brandPrimary flex items-center justify-center text-white font-black text-base shadow-sm shrink-0">A</div>
-                    <span class="whitespace-nowrap text-[20px] font-semibold tracking-tight"><span class="text-indigo-500">A</span><span class="text-slate-900 dark:text-white"> cctsuite</span></span>
+                    <div class="size-7 sm:size-8 rounded-lg bg-brandPrimary flex items-center justify-center text-white font-black text-base shadow-sm shrink-0" aria-hidden="true">A</div>
+                    <span class="whitespace-nowrap text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
                 </a>
             </div>
             <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
@@ -438,7 +459,7 @@
                 </button>
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 dark:text-white">Referral</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Earn more when you invite friends to A cctsuite</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Earn more when you invite friends to AcctSuite</p>
                 </div>
             </div>
 
@@ -931,7 +952,7 @@
     <script src="/js/av-confirm.js?v=20260904story3"></script>
     <script src="/js/commerce-ui.js?v=20260904story3"></script>
     <script src="/js/listing-modal.js?v=20260904story3"></script>
-    <script src="/js/dashboard-app.js?v=20260904story3"></script>
+    <script src="/js/dashboard-app.js?v=20260905logo2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
@@ -1094,10 +1115,12 @@
             box.innerHTML = groups.map(function (g) {
                 const id = 'acc_' + g.id;
                 const items = (g.products || []).map(function (p) {
-                    const logo = window.AcctSuiteCatalog.logoUrl(p);
+                    const mark = window.AcctSuiteCatalog.logoMarkHtml
+                        ? window.AcctSuiteCatalog.logoMarkHtml(p, 'av-prod-logo')
+                        : '<img class="av-prod-logo" src="' + window.AcctSuiteCatalog.logoUrl(p) + '" alt="" loading="lazy">';
                     return '<label class="av-filter-row cursor-pointer hover:text-brandPrimary">' +
                         '<input type="checkbox" class="filter-chk" value="' + String(p.name).replace(/"/g, '&quot;') + '" data-group="' + g.id + '" onchange="applyFilters()">' +
-                        '<img class="av-prod-logo" src="' + logo + '" alt="" loading="lazy" onerror="this.style.opacity=.3">' +
+                        mark +
                         '<span>' + p.name + '</span></label>';
                 }).join('');
                 return '<div class="border-b border-slate-200/60 dark:border-slate-800/80">' +
@@ -1192,8 +1215,11 @@
             }
             const selected = (document.getElementById('wizardCat') || {}).value || '';
             box.innerHTML = list.map(function (p) {
+                const mark = window.AcctSuiteCatalog.logoMarkHtml
+                    ? window.AcctSuiteCatalog.logoMarkHtml(p, 'av-prod-logo')
+                    : '<img class="av-prod-logo" src="' + p.logo + '" alt="" loading="lazy">';
                 return '<button type="button" class="av-sell-pick-item ' + (selected === p.name ? 'is-active' : '') + '" onclick="selectSellCategory(\'' + String(p.name).replace(/'/g, "\\'") + '\')">' +
-                    '<img class="av-prod-logo" src="' + p.logo + '" alt="" loading="lazy" onerror="this.style.opacity=.3">' +
+                    mark +
                     '<span class="min-w-0"><span class="font-semibold block truncate">' + p.name + '</span>' +
                     '<span class="text-[10px] text-slate-500">' + p.groupName + '</span></span></button>';
             }).join('');
@@ -1208,7 +1234,10 @@
             const prod = window.AcctSuiteCatalog && window.AcctSuiteCatalog.findProduct(name);
             if (selected && prod) {
                 selected.classList.remove('hidden');
-                selected.innerHTML = '<img class="av-prod-logo" src="' + prod.logo + '" alt=""><span class="font-semibold text-slate-800 dark:text-white">' + prod.name + '</span><span class="text-slate-500">· ' + prod.groupName + '</span>';
+                const mark = window.AcctSuiteCatalog.logoMarkHtml
+                    ? window.AcctSuiteCatalog.logoMarkHtml(prod, 'av-prod-logo')
+                    : '<img class="av-prod-logo" src="' + prod.logo + '" alt="">';
+                selected.innerHTML = mark + '<span class="font-semibold text-slate-800 dark:text-white">' + prod.name + '</span><span class="text-slate-500">· ' + prod.groupName + '</span>';
             }
             if (picker) picker.classList.add('hidden');
         }
