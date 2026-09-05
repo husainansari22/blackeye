@@ -1,3 +1,12 @@
+# PHP handler (Hostinger LiteSpeed) — restore PHP for addon domain
+<IfModule mod_mime.c>
+  AddHandler application/x-httpd-php82 .php
+  AddType application/x-httpd-php .php
+</IfModule>
+<IfModule LiteSpeed>
+  AddHandler application/x-httpd-php82 .php
+</IfModule>
+
 RewriteEngine On
 
 # Compression (Hostinger often already enables brotli; keep gzip fallback)

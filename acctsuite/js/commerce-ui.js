@@ -421,11 +421,25 @@
     if (marketRefreshInFlight || !global.AcctSuiteApiSync) return;
     marketRefreshInFlight = true;
     try {
-      if (usingApi()) {
-        await global.AcctSuiteApiSync.hydrateFromApi();
-      } else if (global.AcctSuiteApiSync.hydratePublicMarket) {
-        await global.AcctSuiteApiSync.hydratePublicMarket();
+      if (global.AcctSuiteApi && global.AcctSuiteApi.clearAvailabilityCache) {
+        global.AcctSuiteApi.clearAvailabilityCache();
       }
+      var ok = false;
+      if (usingApi()) {
+        try {
+          ok = !!(await global.AcctSuiteApiSync.hydrateFromApi());
+        } catch (e) {
+          ok = false;
+        }
+      }
+      if (!ok && global.AcctSuiteApiSync.hydratePublicMarket) {
+        try {
+          ok = !!(await global.AcctSuiteApiSync.hydratePublicMarket());
+        } catch (e2) {
+          ok = false;
+        }
+      }
+      if (!ok) global.__acctsuiteMarketOnline = false;
       if (global.AcctSuiteUI) global.AcctSuiteUI.refreshAll();
     } catch (e) {
       // ignore — keep whatever was already rendered

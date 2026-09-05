@@ -165,16 +165,27 @@
     const Api = global.AcctSuiteApi;
     const A = global.AcctSuite;
     if (!Api || !A) return false;
+    if (Api.clearAvailabilityCache) Api.clearAvailabilityCache();
     let ok = false;
     try {
       ok = await Api.isAvailable();
     } catch (e) {
+      global.__acctsuiteMarketOnline = false;
       return false;
     }
-    if (!ok) return false;
+    if (!ok) {
+      global.__acctsuiteMarketOnline = false;
+      return false;
+    }
     try {
-      const marketRes = await Api.market().catch(() => ({ listings: [] }));
+      const marketRes = await Api.market();
+      // Only replace cache on a real successful response — never wipe to [] on transport errors.
+      if (!marketRes || marketRes.ok === false) {
+        global.__acctsuiteMarketOnline = false;
+        return false;
+      }
       global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
+      global.__acctsuiteMarketOnline = true;
       patchMarketListingsOnly();
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
@@ -185,6 +196,7 @@
       return true;
     } catch (e) {
       console.warn('Public market hydrate failed', e);
+      global.__acctsuiteMarketOnline = false;
       return false;
     }
   }
@@ -212,7 +224,9 @@
         Api.myOrders()
           .then((r) => Object.assign({ __ordersOk: true }, r || {}))
           .catch((e) => ({ __ordersOk: false, orders: null, error: e && e.message })),
-        Api.market().catch(() => ({ listings: [] })),
+        Api.market()
+          .then((r) => Object.assign({ __marketOk: true }, r || {}))
+          .catch((e) => ({ __marketOk: false, listings: null, error: e && e.message })),
         Api.wallet().then((r) => Object.assign({ __walletOk: true }, r || {})).catch((e) => ({ __walletOk: false, transactions: null, error: e && e.message })),
         Api.notifications().catch(() => ({ notifications: [] })),
         Api.publicConfig().catch(() => null),
@@ -303,7 +317,12 @@
         localStorage.setItem('acctsuite_backend', 'api');
       } catch (e) {}
 
-      global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
+      if (marketRes && marketRes.__marketOk) {
+        global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
+        global.__acctsuiteMarketOnline = true;
+      } else {
+        global.__acctsuiteMarketOnline = false;
+      }
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
         global.__acctsuiteStoryFeed = feed.merchants || [];

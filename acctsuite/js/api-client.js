@@ -79,20 +79,25 @@
   }
 
   let available = null;
+  let availableCheckedAt = 0;
+  const AVAILABLE_TTL_MS = 15000;
 
   async function isAvailable() {
-    if (available !== null) return available;
+    const now = Date.now();
+    if (available !== null && now - availableCheckedAt < AVAILABLE_TTL_MS) return available;
     try {
       const r = await request('health');
       available = !!(r && r.ok && r.installed !== false);
     } catch (_) {
       available = false;
     }
+    availableCheckedAt = now;
     return available;
   }
 
   function clearAvailabilityCache() {
     available = null;
+    availableCheckedAt = 0;
   }
 
   function applySessionUser(user) {

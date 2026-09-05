@@ -368,7 +368,10 @@
 
     if (home) {
       if (!list.length) {
-        home.innerHTML = `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`;
+        const apiDown = global.__acctsuiteMarketOnline === false;
+        home.innerHTML = apiDown
+          ? `<div class="text-center py-8 text-sm text-slate-500 w-full space-y-2"><p class="font-semibold text-slate-600 dark:text-slate-300">Marketplace is temporarily offline</p><p class="text-xs">Listings will reappear when the server reconnects. <button class="text-brandPrimary font-semibold" onclick="(window.AcctSuiteUI&amp;&amp;window.AcctSuiteUI.refreshMarketListings||window.refreshMarketListings||function(){location.reload()})()">Retry</button></p></div>`
+          : `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`;
       } else {
         home.innerHTML = list.slice(0, HOME_TRENDING_MAX).map((i) => listingCard(i, true)).join('');
       }
@@ -385,7 +388,10 @@
     }
     if (market) {
       if (!list.length) {
-        market.innerHTML = `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-400">No products yet</p><p class="text-xs text-slate-400">Approved seller listings will appear here.</p></div>`;
+        const apiDown = global.__acctsuiteMarketOnline === false;
+        market.innerHTML = apiDown
+          ? `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-300">Marketplace temporarily unavailable</p><p class="text-xs text-slate-400">The listings API is offline (server PHP). Tap Retry after Hostinger PHP is restored.</p><button class="mt-2 text-xs border border-brandPrimary text-brandPrimary px-4 py-2 rounded-lg" onclick="(window.AcctSuiteUI&amp;&amp;window.AcctSuiteUI.refreshMarketListings||function(){location.reload()})()">Retry</button></div>`
+          : `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-400">No products yet</p><p class="text-xs text-slate-400">Approved seller listings will appear here.</p></div>`;
       } else {
         market.innerHTML = list.map((i) => listingCard(i, false)).join('');
       }
