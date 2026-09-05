@@ -1,0 +1,68 @@
+RewriteEngine On
+
+# Long-cache static assets (filenames are versioned with ?v= query where needed)
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "public, max-age=60, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# Never rewrite uploaded files
+RewriteRule ^uploads/ - [L]
+
+# Auth routes → landing page signup/login views
+RewriteRule ^auth/sign-up/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^auth/sign-in/?$ /index.html?page=login [L,QSA]
+RewriteRule ^auth/login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^auth/admin/?$ /admin/ [L,QSA]
+
+# Google / legacy auth URLs (must not 404)
+RewriteRule ^user/login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^user/sign-in/?$ /index.html?page=login [L,QSA]
+RewriteRule ^user/signin/?$ /index.html?page=login [L,QSA]
+RewriteRule ^user/register/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^user/sign-up/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^user/signup/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^users/login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^users/sign-up/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^account/login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^account/register/?$ /index.html?page=signup [L,QSA]
+
+# Optional: /signup and /login shortcuts (directory index pages also exist as fallback)
+RewriteRule ^signup/?$ /index.html?page=signup [L,QSA]
+RewriteRule ^login/?$ /index.html?page=login [L,QSA]
+RewriteRule ^browse/?$ /marketplace.html [L,QSA]
+RewriteRule ^register/?$ /index.html?page=signup [L,QSA]
+
+# Legacy / wrong subdomain paths → main site
+RewriteRule ^app/?$ / [L,R=301]
+RewriteCond %{HTTP_HOST} ^app\.acctventa\.com$ [NC]
+RewriteRule ^(.*)$ https://acctventa.com/$1 [L,R=301]
+
+# Public sitelink / legal pages
+RewriteRule ^marketplace/?$ /marketplace.html [L]
+RewriteRule ^sell/?$ /sell.html [L]
+RewriteRule ^privacy/?$ /privacy.html [L]
+RewriteRule ^terms/?$ /terms.html [L]
+RewriteRule ^guidelines/?$ /guidelines.html [L]
+RewriteRule ^company/?$ /company.html [L]
+RewriteRule ^listing/([^/]+)/?$ /listing.html [L,QSA]
+RewriteRule ^seller/([^/]+)/?$ /seller.html [L,QSA]
+
+# Password reset page
+RewriteRule ^reset/?$ /reset.html [L,QSA]
+
+# Owner control panel
+RewriteRule ^owner/?$ /owner/index.php [L,QSA]
+
+# App HTML must not stick in mobile Safari / home-screen PWA cache
+<IfModule mod_headers.c>
+  <FilesMatch "^(index|dashboard|marketplace|sell)\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
