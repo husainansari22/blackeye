@@ -219,3 +219,51 @@ function email_order_status_update(string $name, string $title, string $statusLa
     $html = email_layout('Order update', $inner, 'Order status: ' . $statusLabel);
     return ['subject' => $subject, 'html' => $html, 'text' => 'Order ' . $title . ' is now ' . $statusLabel . ($txid !== '' ? ' TXID: ' . $txid : '')];
 }
+
+/** Email when owner/staff replies in Support inbox. */
+function email_support_reply(string $name, string $messagePreview, string $staffName = 'Support'): array {
+    $m = mail_cfg();
+    $safeName = htmlspecialchars($name !== '' ? $name : 'there', ENT_QUOTES, 'UTF-8');
+    $safeStaff = htmlspecialchars($staffName !== '' ? $staffName : 'Support', ENT_QUOTES, 'UTF-8');
+    $preview = trim($messagePreview);
+    if (function_exists('mb_substr')) {
+        $preview = mb_substr($preview, 0, 400);
+    } else {
+        $preview = substr($preview, 0, 400);
+    }
+    $safePreview = nl2br(htmlspecialchars($preview !== '' ? $preview : 'You have a new reply from support.', ENT_QUOTES, 'UTF-8'));
+    $inboxUrl = $m['app_url'] . '/dashboard.html#support';
+    $subject = 'New support reply · ' . ($m['app_name'] ?? 'Acctventa');
+    $inner = '
+      <h1 style="margin:16px 0 8px;font-size:22px;line-height:1.3;color:#fff;font-weight:800;">Support replied</h1>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#cbd5e1;">Hi ' . $safeName . ', <strong style="color:#fff;">' . $safeStaff . '</strong> sent you a message:</p>
+      <div style="margin:0 0 20px;padding:14px 16px;background:#0b1220;border:1px solid #1f2937;border-radius:12px;font-size:14px;line-height:1.55;color:#e2e8f0;">' . $safePreview . '</div>
+      <div style="text-align:center;margin:24px 0;">' . email_button('Open Support chat', $inboxUrl) . '</div>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#94a3b8;">Reply from your Acctventa dashboard so we can help you faster.</p>';
+    $html = email_layout('Support reply', $inner, 'Support replied to your message on Acctventa');
+    $text = 'Hi ' . ($name !== '' ? $name : 'there') . ",\n\n"
+        . $staffName . " replied:\n\n"
+        . ($preview !== '' ? $preview : 'You have a new reply from support.') . "\n\n"
+        . "Open Support chat: " . $inboxUrl . "\n";
+    return ['subject' => $subject, 'html' => $html, 'text' => $text];
+}
+
+/**
+ * Send in-app + email notification when staff replies in Support.
+ * Email failures are swallowed so chat send still succeeds.
+ */
+function notify_support_reply_email(int $userId, string $messagePreview, string $staffName = 'Support'): void {
+    if ($userId < 1) return;
+    try {
+        $stmt = db()->prepare('SELECT id, name, email FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        if (!$user) return;
+        $email = trim((string)($user['email'] ?? ''));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) return;
+        $mail = email_support_reply((string)($user['name'] ?? ''), $messagePreview, $staffName);
+        send_app_mail($email, $mail['subject'], $mail['html'], $mail['text']);
+    } catch (Throwable $e) {
+        // Never break support.send if mail fails.
+    }
+}

@@ -3355,6 +3355,13 @@
       }
     } catch (e) {}
     handleBuyDeepLink();
+    // Open live support chat from email deep-link: #support
+    try {
+      const hash = String(location.hash || '').toLowerCase();
+      if ((hash === '#support' || hash.indexOf('#support?') === 0) && typeof window.openSupportChat === 'function') {
+        setTimeout(() => window.openSupportChat(), 500);
+      }
+    } catch (e) {}
     // re-run pending AI reviews that never finished (localStorage mode only)
     const u = refreshUser();
     if (u && !(window.AcctventaApiSync && window.AcctventaApiSync.usingApi())) {

@@ -1507,6 +1507,9 @@ try {
                 try {
                     notify_user((int)$thread['user_id'], 'Support reply', mb_substr($text !== '' ? $text : 'New support reply', 0, 100), 'support');
                 } catch (Throwable $e) {}
+                try {
+                    notify_support_reply_email((int)$thread['user_id'], $text !== '' ? $text : 'New support reply', $staffName);
+                } catch (Throwable $e) {}
                 $msgs = array_map('support_map_message', support_list_messages($threadId));
                 json_out(['ok' => true, 'messages' => $msgs, 'threadId' => $threadId]);
             }
