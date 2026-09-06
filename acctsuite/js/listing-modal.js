@@ -249,13 +249,10 @@
     });
     el.querySelectorAll('[data-add-cart]').forEach(function (btn) {
       btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
         ev.stopPropagation();
         var id = btn.getAttribute('data-add-cart');
-        if (global.CommerceUI && global.CommerceUI.addToCart) {
-          global.CommerceUI.addToCart(id);
-          return;
-        }
-        global.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(id);
+        addListingToCart(id, btn);
       });
     });
     el.querySelectorAll('[data-buy-listing]').forEach(function (btn) {
@@ -343,6 +340,55 @@
     if (balance != null && !isNaN(balance)) return money(balance);
     if (loggedIn) return '—';
     return 'Sign in';
+  }
+
+  async function addListingToCart(listingId, btn) {
+    if (!listingId) return;
+    if (global.CommerceUI && global.CommerceUI.addToCart) {
+      global.CommerceUI.addToCart(listingId);
+      return;
+    }
+    var Api = global.AcctSuiteApi;
+    if (!isProbablyLoggedIn()) {
+      if (confirm('Sign in to add items to your cart?')) {
+        var next = encodeURIComponent(global.location.pathname + global.location.search + global.location.hash);
+        global.location.href = '/login?next=' + next;
+      }
+      return;
+    }
+    if (!Api || !Api.cartAdd) {
+      alert('Cart is unavailable right now. Please try again.');
+      return;
+    }
+    var original = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Adding…';
+    }
+    try {
+      await Api.cartAdd({ listingId: Number(listingId) || listingId });
+      if (btn) btn.textContent = 'Added ✓';
+      setTimeout(function () {
+        if (btn) {
+          btn.textContent = original || 'Add to cart';
+          btn.disabled = false;
+        }
+      }, 1200);
+    } catch (e) {
+      var msg = (e && e.message) || 'Could not add to cart';
+      if (/login|auth|sign in/i.test(msg)) {
+        if (confirm('Sign in to add items to your cart?')) {
+          var next2 = encodeURIComponent(global.location.pathname + global.location.search + global.location.hash);
+          global.location.href = '/login?next=' + next2;
+        }
+      } else {
+        alert(msg);
+      }
+      if (btn) {
+        btn.textContent = original || 'Add to cart';
+        btn.disabled = false;
+      }
+    }
   }
 
   async function purchase(listingId) {
