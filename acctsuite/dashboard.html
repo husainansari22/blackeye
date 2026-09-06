@@ -220,6 +220,44 @@
             .as-live-ticker__rail { animation: none; }
             .as-live-ticker__dot { animation: none; }
         }
+        /* Brand lockup: wordmark vertically centered to bag middle */
+        .as-brand-lockup {
+            display: inline-flex !important;
+            flex-direction: row;
+            align-items: center !important;
+            justify-content: flex-start;
+            height: 2rem; /* match h-8 bag */
+            gap: 0;
+            line-height: 0;
+        }
+        @media (min-width: 640px) {
+            .as-brand-lockup { height: 2.25rem; }
+        }
+        .as-brand-lockup img {
+            display: block;
+            height: 100% !important;
+            width: auto !important;
+            margin: 0;
+            padding: 0;
+            align-self: center !important;
+        }
+        .as-brand-lockup .as-brand-word {
+            display: inline-flex !important;
+            align-items: center !important;
+            height: 100% !important;
+            margin: 0;
+            padding: 0;
+            line-height: 1 !important;
+            font-size: 1.5rem; /* ~24px — fills bag height better */
+            font-weight: 650;
+            letter-spacing: -0.03em;
+            white-space: nowrap;
+            /* optical center: lowercase glyphs sit high in the em-box */
+            transform: translateY(0.14em);
+        }
+        @media (min-width: 640px) {
+            .as-brand-lockup .as-brand-word { font-size: 1.65rem; }
+        }
     </style>
     <script src="/js/mobile-fix.js?v=bagA5fix"></script>
     <script src="/js/ui-toast.js?v=bagA5fix"></script>
@@ -234,9 +272,7 @@
                 <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0" onclick="toggleLeftMenu()" aria-label="Menu">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
-                <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-0 shrink-0">
-                    <img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5 self-center" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[26px] sm:text-[28px] leading-none font-semibold tracking-tight text-slate-900 dark:text-white self-center translate-y-[0.5px]">cctsuite</span>
-                </a>
+                <a href="#" onclick="switchTab('home'); return false;" class="as-brand-lockup" aria-label="AcctSuite home"><img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" width="36" height="36" decoding="async"><span class="as-brand-word text-slate-900 dark:text-white">cctsuite</span></a>
             </div>
             <div class="as-live-ticker" id="headerLiveTicker" aria-label="Live marketplace activity" role="status">
                 <span class="as-live-ticker__dot" aria-hidden="true"></span>
