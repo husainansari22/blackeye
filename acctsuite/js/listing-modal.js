@@ -44,7 +44,7 @@
     return v + ' Sales';
   }
   function verifyBadge() {
-    return '<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:1rem;height:1rem;min-width:1rem"><img src="/img/brand/verified.svg" alt="" decoding="async"></span>';
+    return '<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:1rem;height:1rem;min-width:1rem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#0095F6"/><path fill="#fff" fill-rule="evenodd" d="M28.82 14.48a1.75 1.75 0 0 1 0 2.47L18.9 26.88a1.75 1.75 0 0 1-2.47 0l-5.25-5.25a1.75 1.75 0 0 1 2.47-2.47l4.02 4.01 8.68-8.69a1.75 1.75 0 0 1 2.47 0z"/></svg></span>';
   }
   function nameWithVerify(name, verified) {
     return escHtml(name || '') + (verified ? verifyBadge() : '');

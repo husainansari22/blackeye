@@ -246,51 +246,65 @@
   async function hydratePublicMarket() {
     const Api = global.AcctSuiteApi;
     const A = global.AcctSuite;
-    if (!Api || !A) return false;
-    scrubLocalDemoMarketplace();
-    patchMarketListingsOnly();
-    let ok = false;
-    try {
-      if (Api.clearAvailabilityCache) Api.clearAvailabilityCache();
-      ok = await Api.isAvailable();
-    } catch (e) {
+    if (!Api || !A) {
+      global.__acctsuiteMarketReady = true;
       return false;
     }
-    if (!ok) {
-      // One more attempt after a short pause (first paint often races PHP warm-up).
-      await sleep(250);
+    scrubLocalDemoMarketplace();
+    patchMarketListingsOnly();
+    let result = false;
+    try {
+      let ok = false;
       try {
         if (Api.clearAvailabilityCache) Api.clearAvailabilityCache();
         ok = await Api.isAvailable();
-      } catch (e2) {
-        return false;
+      } catch (e) {
+        ok = false;
       }
-      if (!ok) return false;
+      if (!ok) {
+        // One more attempt after a short pause (first paint often races PHP warm-up).
+        await sleep(250);
+        try {
+          if (Api.clearAvailabilityCache) Api.clearAvailabilityCache();
+          ok = await Api.isAvailable();
+        } catch (e2) {
+          ok = false;
+        }
+      }
+      if (!ok) {
+        result = false;
+      } else {
+        try {
+          global.__acctsuitePreferApiMarket = true;
+          const fetched = await fetchMarketListingsMapped(Api, 3);
+          if (!fetched.ok) {
+            console.warn('Public market hydrate failed', fetched.error);
+            // Keep any previous successful catalog; do not wipe to [].
+            result = Array.isArray(global.__acctsuiteApiMarket);
+          } else {
+            global.__acctsuiteApiMarket = fetched.listings;
+            patchMarketListingsOnly();
+            try {
+              const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
+              global.__acctsuiteStoryFeed = (feed.merchants || []).filter(
+                (m) => !isDemoSellerIdentity(m.sellerEmail, m.sellerName)
+              );
+            } catch (e2) {
+              // Keep prior feed on failure
+              global.__acctsuiteStoryFeed = global.__acctsuiteStoryFeed || [];
+            }
+            result = true;
+          }
+        } catch (e) {
+          console.warn('Public market hydrate failed', e);
+          result = Array.isArray(global.__acctsuiteApiMarket);
+        }
+      }
+    } finally {
+      // Always flip ready so the UI never stays on skeleton / empty-flash forever.
+      global.__acctsuiteMarketReady = true;
     }
-    try {
-      global.__acctsuitePreferApiMarket = true;
-      const fetched = await fetchMarketListingsMapped(Api, 3);
-      if (!fetched.ok) {
-        console.warn('Public market hydrate failed', fetched.error);
-        // Keep any previous successful catalog; do not wipe to [].
-        return Array.isArray(global.__acctsuiteApiMarket);
-      }
-      global.__acctsuiteApiMarket = fetched.listings;
-      patchMarketListingsOnly();
-      try {
-        const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
-        global.__acctsuiteStoryFeed = (feed.merchants || []).filter(
-          (m) => !isDemoSellerIdentity(m.sellerEmail, m.sellerName)
-        );
-      } catch (e2) {
-        // Keep prior feed on failure
-        global.__acctsuiteStoryFeed = global.__acctsuiteStoryFeed || [];
-      }
-      return true;
-    } catch (e) {
-      console.warn('Public market hydrate failed', e);
-      return Array.isArray(global.__acctsuiteApiMarket);
-    }
+    return result;
   }
 
   async function hydrateFromApi() {

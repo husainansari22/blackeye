@@ -17,14 +17,45 @@
     return A().formatMoney(n);
   }
 
-  /** Instagram / Facebook style verified badge beside a username */
+  /** Instagram / Facebook style verified badge beside a username (inline SVG — never depends on a missing asset). */
   function verifyBadgeHtml(size) {
     const s = size === 'lg' ? '1.3rem' : size === 'sm' ? '0.9rem' : '1.1rem';
-    return `<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:${s};height:${s};min-width:${s}"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>`;
+    return `<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:${s};height:${s};min-width:${s}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#0095F6"/><path fill="#fff" fill-rule="evenodd" d="M28.82 14.48a1.75 1.75 0 0 1 0 2.47L18.9 26.88a1.75 1.75 0 0 1-2.47 0l-5.25-5.25a1.75 1.75 0 0 1 2.47-2.47l4.02 4.01 8.68-8.69a1.75 1.75 0 0 1 2.47 0z"/></svg></span>`;
   }
 
   function nameWithVerify(name, isVerified, size) {
     return `${escapeHtml(name || '')}${isVerified ? verifyBadgeHtml(size) : ''}`;
+  }
+
+  function marketLoadingSkeleton(compact) {
+    if (compact) {
+      return Array.from({ length: 3 })
+        .map(
+          () =>
+            `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 w-40 shrink-0 animate-pulse" aria-hidden="true">
+          <div class="flex items-center gap-1.5 mb-1.5"><div class="w-5 h-5 rounded bg-slate-200 dark:bg-slate-700"></div><div class="h-2 w-14 rounded bg-slate-200 dark:bg-slate-700"></div></div>
+          <div class="h-3 w-full rounded bg-slate-200 dark:bg-slate-700 mb-1"></div>
+          <div class="h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-700 mb-2"></div>
+          <div class="h-2 w-20 rounded bg-slate-200 dark:bg-slate-700 mb-2"></div>
+          <div class="flex justify-between items-center mt-2"><div class="h-4 w-10 rounded bg-slate-200 dark:bg-slate-700"></div><div class="h-5 w-12 rounded-full bg-slate-200 dark:bg-slate-700"></div></div>
+        </div>`
+        )
+        .join('');
+    }
+    return Array.from({ length: 4 })
+      .map(
+        () =>
+          `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center animate-pulse" aria-hidden="true">
+        <div class="w-9 h-9 rounded-lg bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+        <div class="min-w-0 flex-1 space-y-1.5"><div class="h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700"></div><div class="h-2 w-1/2 rounded bg-slate-200 dark:bg-slate-700"></div></div>
+        <div class="shrink-0 space-y-1.5"><div class="h-3 w-10 rounded bg-slate-200 dark:bg-slate-700 ml-auto"></div><div class="h-5 w-12 rounded-full bg-slate-200 dark:bg-slate-700"></div></div>
+      </div>`
+      )
+      .join('');
+  }
+
+  function isMarketReady() {
+    return !!window.__acctsuiteMarketReady;
   }
 
   function refreshUser() {
@@ -372,26 +403,32 @@
     const homeOtherSection = document.getElementById('homeOtherSection');
     const market = document.getElementById('marketListings');
     const merchants = document.getElementById('topMerchantsRow');
+    const ready = isMarketReady();
 
     if (home) {
-      if (!list.length) {
+      if (!ready) {
+        // Avoid flashing "No live listings yet" before the API hydrate finishes.
+        home.innerHTML = marketLoadingSkeleton(true);
+      } else if (!list.length) {
         home.innerHTML = `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`;
       } else {
         home.innerHTML = list.slice(0, HOME_TRENDING_MAX).map((i) => listingCard(i, true)).join('');
       }
     }
     if (homeOther) {
-      if (!list.length) {
+      if (!ready || !list.length) {
         homeOther.innerHTML = '';
       } else {
         homeOther.innerHTML = list.map((i) => homeOtherListingCard(i)).join('');
       }
     }
     if (homeOtherSection) {
-      homeOtherSection.classList.toggle('hidden', !list.length);
+      homeOtherSection.classList.toggle('hidden', !ready || !list.length);
     }
     if (market) {
-      if (!list.length) {
+      if (!ready) {
+        market.innerHTML = marketLoadingSkeleton(false);
+      } else if (!list.length) {
         market.innerHTML = `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-400">No products yet</p><p class="text-xs text-slate-400">Approved seller listings will appear here.</p></div>`;
       } else {
         market.innerHTML = list.map((i) => listingCard(i, false)).join('');
@@ -3400,6 +3437,8 @@
         }
       } catch (e) {}
     }
+    // Mark ready even if API sync is missing, so home never sticks on skeleton.
+    window.__acctsuiteMarketReady = true;
     window.AcctSuiteUI.refreshAll();
     try {
       if (window.AcctSuiteKyc && refreshUser()) await window.AcctSuiteKyc.refreshStatus();
