@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260906cover4">
+    <link rel="stylesheet" href="/css/profile.css?v=20260906suite1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -648,68 +648,67 @@
         </div>
     </div>
 
-    <!-- RIGHT PROFILE PANEL — signed-in user's details -->
+    <!-- RIGHT PROFILE PANEL — Acctsuite-style layout, Acctventa colors -->
     <div id="rightMenu" class="profile-panel fixed inset-x-0 bottom-0 top-14 z-[80] hidden bg-lightCard dark:bg-darkBg">
-        <div class="mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
-            <div class="flex items-center gap-3 px-4 pt-3 pb-2">
-                <button type="button" onclick="toggleRightMenu()" class="w-9 h-9 rounded-full border border-brandPrimary/40 text-brandPrimary flex items-center justify-center hover:bg-brandPrimary hover:text-white transition" aria-label="Go back">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
+        <div class="ap-sheet mx-auto w-full max-w-[500px] h-full flex flex-col overflow-y-auto">
+            <div class="ap-sheet-head">
+                <button type="button" onclick="toggleRightMenu()" class="ap-back" aria-label="Go back">
+                    <i class="fa-solid fa-arrow-left"></i>
                 </button>
-                <h3 class="font-bold text-lg text-slate-800 dark:text-white">My Profile</h3>
+                <h3>My Profile</h3>
             </div>
 
-            <div class="profile-hero">
-                <div class="profile-cover" id="profileCover">
-                    <img id="profileCoverImg" class="profile-cover__img hidden" alt="">
-                    <button type="button" class="profile-cover-btn" id="profileCoverBtn" onclick="event.stopPropagation(); document.getElementById('profileCoverInput').click();" aria-label="Upload cover photo">
+            <section class="ap-card ap-hero">
+                <div class="ap-cover" id="profileCover">
+                    <img id="profileCoverImg" class="ap-cover__img hidden" alt="">
+                    <button type="button" class="ap-cover-btn" id="profileCoverBtn" onclick="event.stopPropagation(); document.getElementById('profileCoverInput').click();" aria-label="Upload cover photo">
                         <i class="fa-regular fa-image"></i> Cover
                     </button>
                     <input id="profileCoverInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfileCover(this)">
                 </div>
-                <div class="profile-hero-body">
-                    <div class="profile-hero-row">
-                        <button type="button" class="profile-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
-                            <div id="rightProfileAvatar" class="av-user-avatar av-user-avatar--lg">?</div>
-                            <span class="profile-avatar-cam"><i class="fa-solid fa-camera"></i></span>
-                        </button>
-                        <input id="profilePhotoInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfilePhoto(this)">
-                        <div class="profile-hero-meta min-w-0">
-                            <div class="flex items-center gap-0.5 min-w-0">
-                                <h4 id="rightProfileName" class="truncate">Guest</h4>
-                                <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
-                            </div>
-                            <a id="rightProfileEmail" class="profile-email" href="#">—</a>
-                            <p id="rightProfilePhone" class="profile-phone">—</p>
+
+                <div class="ap-identity">
+                    <button type="button" class="ap-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
+                        <div id="rightProfileAvatar" class="ap-avatar av-user-avatar">?</div>
+                        <span class="ap-avatar-cam" aria-hidden="true"><i class="fa-solid fa-camera"></i></span>
+                    </button>
+                    <input id="profilePhotoInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfilePhoto(this)">
+                    <div class="ap-identity-text">
+                        <div class="ap-name-row">
+                            <h4 id="rightProfileName">Guest</h4>
+                            <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
                         </div>
+                        <a id="rightProfileEmail" class="ap-email" href="#">—</a>
+                        <p id="rightProfilePhone" class="ap-phone">—</p>
                     </div>
-                    <p class="profile-hint">Tap the camera to upload a profile picture</p>
                 </div>
-            </div>
+                <p class="ap-hint">Tap the camera to upload a profile picture</p>
+            </section>
 
-            <div class="profile-stats">
-                <div class="profile-stat">
+            <section class="ap-card ap-stats">
+                <div class="ap-stat">
                     <span>Wallet balance</span>
-                    <span id="rightProfileBalance" class="profile-stat-val">$0.00</span>
+                    <strong id="rightProfileBalance">$0.00</strong>
                 </div>
-                <div class="profile-stat">
+                <div class="ap-stat">
                     <span>Member since</span>
-                    <span id="rightProfileJoined" class="profile-stat-val">—</span>
+                    <strong id="rightProfileJoined">—</strong>
                 </div>
-                <div class="profile-stat">
+                <div class="ap-stat">
                     <span>Referral code</span>
-                    <span id="rightProfileRefCode" class="profile-stat-val profile-stat-val--brand">—</span>
+                    <strong id="rightProfileRefCode" class="ap-stat-brand">—</strong>
                 </div>
-            </div>
+            </section>
 
-            <div id="profileMerchantLink" class="hidden profile-merchant-link mx-3 mb-3">
-                <p class="profile-merchant-link__label">Merchant link</p>
-                <div class="profile-merchant-link__row">
-                    <span id="profileMerchantUrl" class="profile-merchant-link__url" data-full="">—</span>
-                    <button type="button" onclick="copyMerchantLink()" class="profile-merchant-link__copy" aria-label="Copy merchant link"><i class="fa-solid fa-copy"></i></button>
+            <section id="profileMerchantLink" class="hidden ap-card ap-merchant">
+                <p class="ap-merchant__label">Merchant link</p>
+                <div class="ap-merchant__row">
+                    <span id="profileMerchantUrl" class="ap-merchant__url" data-full="">—</span>
+                    <button type="button" onclick="copyMerchantLink()" class="ap-merchant__copy" aria-label="Copy merchant link"><i class="fa-solid fa-copy"></i></button>
                 </div>
-            </div>
+            </section>
 
-            <nav class="profile-nav px-3 pt-1 pb-8">
+            <nav class="ap-nav">
                 <a href="#" onclick="openAccountSettings(); toggleRightMenu(); return false;">
                     <i class="fa-solid fa-gear"></i> Account settings
                 </a>
@@ -725,7 +724,7 @@
                 <a href="#" onclick="openSupportCenter(); toggleRightMenu(); return false;">
                     <i class="fa-solid fa-headset"></i> Support
                 </a>
-                <a href="#" onclick="handleLogout(); return false;" class="profile-nav-out">
+                <a href="#" onclick="handleLogout(); return false;" class="ap-nav-out">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out
                 </a>
             </nav>
