@@ -2128,7 +2128,7 @@
           <span class="av-listing-account-row__label">Account ${i + 1}</span>
           <span class="av-listing-account-row__price">${money(item.price)}</span>
           <button type="button" class="av-listing-eye" title="Preview link" onclick="event.stopPropagation(); previewListingLink('${previewAttr}')" ${item.previewLink ? '' : 'disabled style="opacity:.35;cursor:not-allowed"'}><i class="fa-solid fa-eye"></i></button>
-          <button type="button" class="av-listing-cart-btn" onclick="event.stopPropagation(); window.CommerceUI && window.CommerceUI.addToCart('${escapeAttr(item.id)}')">Add to cart</button>
+          <button type="button" class="av-listing-cart-btn" onclick="event.stopPropagation(); window.addListingToCart && window.addListingToCart('${escapeAttr(item.id)}')">Add to cart</button>
         </div>`);
     }
 
@@ -2207,6 +2207,38 @@
       return;
     }
     window.open(u, '_blank', 'noopener,noreferrer');
+  };
+
+  window.addListingToCart = async function (listingId) {
+    const id = Number(listingId) || listingId;
+    if (!id) return;
+    if (window.CommerceUI && typeof window.CommerceUI.addToCart === 'function') {
+      try {
+        await window.CommerceUI.addToCart(id);
+      } catch (e) {
+        alert((e && e.message) || 'Could not add to cart');
+      }
+      return;
+    }
+    const u = refreshUser();
+    if (!u) {
+      promptSignIn('Sign in to add items to your cart.');
+      return;
+    }
+    if (!window.AcctventaApi || typeof window.AcctventaApi.cartAdd !== 'function') {
+      alert('Cart is unavailable right now.');
+      return;
+    }
+    try {
+      await window.AcctventaApi.cartAdd({ listingId: id });
+      if (window.AcctventaToast) window.AcctventaToast.show('Added to cart', { type: 'success' });
+      else alert('Added to cart');
+      if (window.CommerceUI && window.CommerceUI.refreshCartBadge) {
+        try { await window.CommerceUI.refreshCartBadge(); } catch (e) {}
+      }
+    } catch (e) {
+      alert((e && e.message) || 'Could not add to cart');
+    }
   };
 
   window.openListingDetail = async function (id) {

@@ -242,13 +242,9 @@
     });
     el.querySelectorAll('[data-add-cart]').forEach(function (btn) {
       btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
         ev.stopPropagation();
-        var id = btn.getAttribute('data-add-cart');
-        if (global.CommerceUI && global.CommerceUI.addToCart) {
-          global.CommerceUI.addToCart(id);
-          return;
-        }
-        global.location.href = '/dashboard.html#home?buy=' + encodeURIComponent(id);
+        addToCart(btn.getAttribute('data-add-cart'), btn);
       });
     });
     el.querySelectorAll('[data-buy-listing]').forEach(function (btn) {
@@ -276,9 +272,88 @@
   function isProbablyLoggedIn() {
     try {
       if (localStorage.getItem('isLoggedIn') === 'true') return true;
+      if (global.AcctventaApi && global.AcctventaApi.hasApiSession && global.AcctventaApi.hasApiSession()) return true;
       if (global.AcctventaApi && global.AcctventaApi.getToken && global.AcctventaApi.getToken()) return true;
     } catch (e) {}
     return false;
+  }
+
+  function notify(msg, type) {
+    if (global.AcctventaToast && typeof global.AcctventaToast.show === 'function') {
+      global.AcctventaToast.show(msg, { type: type || 'info' });
+      return;
+    }
+    if (global.CommerceUI && typeof global.CommerceUI.toast === 'function') {
+      global.CommerceUI.toast(msg, { type: type || 'info' });
+      return;
+    }
+    alert(msg);
+  }
+
+  function loginRedirectUrl() {
+    var next = encodeURIComponent(global.location.pathname + global.location.search + global.location.hash);
+    return '/index.html?page=login&next=' + next;
+  }
+
+  /**
+   * Add listing to cart without leaving the store page.
+   * Previously fell back to dashboard#home which looked like a broken button.
+   */
+  async function addToCart(listingId, btn) {
+    var id = Number(listingId) || listingId;
+    if (!id) return;
+
+    if (global.CommerceUI && typeof global.CommerceUI.addToCart === 'function') {
+      try {
+        await global.CommerceUI.addToCart(id);
+      } catch (e) {
+        notify((e && e.message) || 'Could not add to cart', 'error');
+      }
+      return;
+    }
+
+    if (!isProbablyLoggedIn()) {
+      if (confirm('Sign in to add items to your cart?')) {
+        global.location.href = loginRedirectUrl();
+      }
+      return;
+    }
+
+    var Api = global.AcctventaApi;
+    if (!Api || typeof Api.cartAdd !== 'function') {
+      notify('Cart is unavailable right now. Please refresh and try again.', 'error');
+      return;
+    }
+
+    var label = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Adding…';
+    }
+    try {
+      await Api.cartAdd({ listingId: id });
+      notify('Added to cart', 'success');
+      if (btn) btn.textContent = 'Added ✓';
+      setTimeout(function () {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = label || 'Add to cart';
+        }
+      }, 1200);
+    } catch (e) {
+      var msg = (e && e.message) || 'Could not add to cart';
+      if (/auth|login|sign in|unauthorized|401/i.test(msg)) {
+        if (confirm('Sign in to add items to your cart?')) {
+          global.location.href = loginRedirectUrl();
+        }
+      } else {
+        notify(msg, 'error');
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = label || 'Add to cart';
+      }
+    }
   }
 
   async function fetchWalletBalance() {
