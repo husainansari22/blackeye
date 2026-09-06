@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AcctSuite">
-  <!-- App menu style: white tile, purple bag, white A (Acctbazaar layout) -->
+  <!-- App icon style: white rounded tile, purple bag, white A -->
   <rect width="64" height="64" rx="14" fill="#FFFFFF"/>
   <path fill="none" stroke="#7C3AED" stroke-width="3.2" stroke-linecap="round" d="M22 25c0-8.5 4.8-14.5 10.5-14.5S43 16.5 43 25"/>
   <path fill="#8B5CF6" d="M13 27c0-2.6 2.1-4.7 4.7-4.7h26.6c2.6 0 4.7 2.1 4.7 4.7v3.2c1.2 1.4 2.2 3.8 2.2 6.6v17.2c0 5-4 9-9 9H19.8c-5 0-9-4-9-9V36.8c0-2.8 1-5.2 2.2-6.6V27z"/>

@@ -620,7 +620,7 @@ $tab = $_GET['tab'] ?? 'overview';
     <form method="post" class="w-full max-w-sm av-card p-6 space-y-4">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
-        <img src="/img/brand/logo-mark-violet.svg?v=bagA6" alt="AcctSuite" class="h-12 w-12 mx-auto mb-2" width="48" height="48">
+        <img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="AcctSuite" class="h-12 w-12 mx-auto mb-2" width="48" height="48">
         <h1 class="text-xl font-bold">Owner Admin</h1>
         <p class="text-xs text-slate-500">Full website control (users, money, ads, gateways)</p>
       </div>
@@ -684,7 +684,7 @@ $tab = $_GET['tab'] ?? 'overview';
 ?>
   <header class="av-topbar">
     <div class="av-topbar-inner">
-      <div class="av-brand"><img src="/img/brand/logo-mark-violet.svg?v=bagA6" alt="" class="h-8 w-8 shrink-0" width="32" height="32"><span class="title truncate">Owner Admin</span></div>
+      <div class="av-brand"><img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" class="h-8 w-8 shrink-0" width="32" height="32"><span class="title truncate">Owner Admin</span></div>
       <div class="av-top-actions">
         <button type="button" id="ownerThemeBtn" onclick="toggleOwnerTheme()" class="av-icon-btn">Dark</button>
         <a href="/dashboard.html" class="av-link-btn">App</a>
