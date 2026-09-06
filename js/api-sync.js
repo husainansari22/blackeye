@@ -160,36 +160,66 @@
     };
   }
 
+  /** Keep a good market cache — never wipe listings because one fetch failed. */
+  function setApiMarket(listings, { allowEmpty = false } = {}) {
+    const next = Array.isArray(listings) ? listings.map(mapListing) : [];
+    const prev = global.__acctventaApiMarket;
+    if (next.length > 0 || allowEmpty || !Array.isArray(prev) || prev.length === 0) {
+      global.__acctventaApiMarket = next;
+    }
+    patchMarketListingsOnly();
+  }
+
+  let hydratePublicInflight = null;
+  let hydrateFromApiInflight = null;
+
   /** Public marketplace for guests (no login required). */
   async function hydratePublicMarket() {
-    const Api = global.AcctventaApi;
-    const A = global.Acctventa;
-    if (!Api || !A) return false;
-    let ok = false;
-    try {
-      ok = await Api.isAvailable();
-    } catch (e) {
-      return false;
-    }
-    if (!ok) return false;
-    try {
-      const marketRes = await Api.market().catch(() => ({ listings: [] }));
-      global.__acctventaApiMarket = (marketRes.listings || []).map(mapListing);
-      patchMarketListingsOnly();
+    if (hydratePublicInflight) return hydratePublicInflight;
+    hydratePublicInflight = (async function () {
+      const Api = global.AcctventaApi;
+      const A = global.Acctventa;
+      if (!Api || !A) return false;
+      let ok = false;
       try {
-        const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
-        global.__acctventaStoryFeed = feed.merchants || [];
-      } catch (e2) {
-        global.__acctventaStoryFeed = [];
+        ok = await Api.isAvailable();
+      } catch (e) {
+        return false;
       }
-      return true;
-    } catch (e) {
-      console.warn('Public market hydrate failed', e);
-      return false;
+      if (!ok) return false;
+      try {
+        let marketRows = null;
+        let marketFailed = false;
+        try {
+          const marketRes = await Api.market();
+          marketRows = marketRes.listings || [];
+        } catch (e) {
+          marketFailed = true;
+          console.warn('Public market.list failed', e);
+        }
+        if (!marketFailed) setApiMarket(marketRows, { allowEmpty: true });
+        try {
+          const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
+          global.__acctventaStoryFeed = feed.merchants || [];
+        } catch (e2) {
+          /* keep previous story feed */
+        }
+        return !marketFailed;
+      } catch (e) {
+        console.warn('Public market hydrate failed', e);
+        return false;
+      }
+    })();
+    try {
+      return await hydratePublicInflight;
+    } finally {
+      hydratePublicInflight = null;
     }
   }
 
   async function hydrateFromApi() {
+    if (hydrateFromApiInflight) return hydrateFromApiInflight;
+    hydrateFromApiInflight = (async function () {
     const Api = global.AcctventaApi;
     const A = global.Acctventa;
     if (!Api || !A) return false;
@@ -212,7 +242,9 @@
         Api.myOrders()
           .then((r) => Object.assign({ __ordersOk: true }, r || {}))
           .catch((e) => ({ __ordersOk: false, orders: null, error: e && e.message })),
-        Api.market().catch(() => ({ listings: [] })),
+        Api.market()
+          .then((r) => Object.assign({ __marketOk: true }, r || {}))
+          .catch((e) => ({ __marketOk: false, listings: null, error: e && e.message })),
         Api.wallet().then((r) => Object.assign({ __walletOk: true }, r || {})).catch((e) => ({ __walletOk: false, transactions: null, error: e && e.message })),
         Api.notifications().catch(() => ({ notifications: [] })),
         Api.publicConfig().catch(() => null),
@@ -304,12 +336,19 @@
         localStorage.setItem('acctventa_backend', 'api');
       } catch (e) {}
 
-      global.__acctventaApiMarket = (marketRes.listings || []).map(mapListing);
+      if (marketRes && marketRes.__marketOk) {
+        setApiMarket(marketRes.listings || [], { allowEmpty: true });
+      } else if (marketRes && marketRes.error) {
+        console.warn('Market sync failed — keeping previous listings', marketRes.error);
+      }
+
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
-        global.__acctventaStoryFeed = feed.merchants || [];
+        if (feed && Array.isArray(feed.merchants)) {
+          global.__acctventaStoryFeed = feed.merchants;
+        }
       } catch (eFeed) {
-        global.__acctventaStoryFeed = global.__acctventaStoryFeed || [];
+        /* keep previous story feed */
       }
 
       if (cfgRes && cfgRes.config) {
@@ -353,6 +392,12 @@
         } catch (err) {}
       }
       return false;
+    }
+    })();
+    try {
+      return await hydrateFromApiInflight;
+    } finally {
+      hydrateFromApiInflight = null;
     }
   }
 

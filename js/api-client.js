@@ -96,20 +96,29 @@
   }
 
   let available = null;
+  let availableCheckedAt = 0;
+  // Never permanently cache a failed health check — cold hosts often fail once
+  // on first paint, which used to leave Home empty until a hard refresh.
+  const AVAILABLE_FALSE_TTL_MS = 2500;
+  const AVAILABLE_TRUE_TTL_MS = 60000;
 
   async function isAvailable() {
-    if (available !== null) return available;
+    const now = Date.now();
+    if (available === true && now - availableCheckedAt < AVAILABLE_TRUE_TTL_MS) return true;
+    if (available === false && now - availableCheckedAt < AVAILABLE_FALSE_TTL_MS) return false;
     try {
       const r = await request('health');
       available = !!(r && r.ok && r.installed !== false);
     } catch (_) {
       available = false;
     }
+    availableCheckedAt = Date.now();
     return available;
   }
 
   function clearAvailabilityCache() {
     available = null;
+    availableCheckedAt = 0;
   }
 
   function applySessionUser(user) {

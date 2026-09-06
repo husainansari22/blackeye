@@ -374,7 +374,9 @@
 
     if (home) {
       if (!list.length) {
-        home.innerHTML = `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`;
+        home.innerHTML = window.__acctventaBooted
+          ? `<div class="text-center py-8 text-sm text-slate-500 w-full">No live listings yet. Be the first to <button class="text-brandPrimary font-semibold" onclick="openSellProductWizard()">Sell Product</button>.</div>`
+          : `<div class="text-center py-8 text-sm text-slate-500 w-full">Loading live listings…</div>`;
       } else {
         home.innerHTML = list.slice(0, HOME_TRENDING_MAX).map((i) => listingCard(i, true)).join('');
       }
@@ -391,7 +393,9 @@
     }
     if (market) {
       if (!list.length) {
-        market.innerHTML = `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-400">No products yet</p><p class="text-xs text-slate-400">Approved seller listings will appear here.</p></div>`;
+        market.innerHTML = window.__acctventaBooted
+          ? `<div class="text-center py-12 space-y-2"><p class="font-bold text-sm text-slate-600 dark:text-slate-400">No products yet</p><p class="text-xs text-slate-400">Approved seller listings will appear here.</p></div>`
+          : `<div class="text-center py-12 text-sm text-slate-500">Loading marketplace…</div>`;
       } else {
         market.innerHTML = list.map((i) => listingCard(i, false)).join('');
       }
@@ -449,7 +453,9 @@
         .sort((a, b) => Number(b.hasStory) - Number(a.hasStory) || b.sales - a.sales)
         .slice(0, 12);
       if (!arr.length) {
-        merchants.innerHTML = `<p class="text-xs text-slate-400 py-2">Merchants will appear after approved sales listings go live.</p>`;
+        merchants.innerHTML = window.__acctventaBooted
+          ? `<p class="text-xs text-slate-400 py-2">Merchants will appear after approved sales listings go live.</p>`
+          : `<p class="text-xs text-slate-400 py-2">Loading merchants…</p>`;
       } else {
         merchants.innerHTML = arr
           .map((m) => {
@@ -3478,9 +3484,14 @@
         const Api = window.AcctventaApi;
         let online = false;
         if (Api) {
-          try {
-            online = await Api.isAvailable();
-          } catch (e) {}
+          // Retry health once — first probe often fails on cold Hostinger boots.
+          for (let attempt = 0; attempt < 2 && !online; attempt++) {
+            try {
+              if (attempt && Api.clearAvailabilityCache) Api.clearAvailabilityCache();
+              online = await Api.isAvailable();
+            } catch (e) {}
+            if (!online && attempt === 0) await new Promise((r) => setTimeout(r, 400));
+          }
         }
         if (online && Api) {
           if (window.AcctventaApiSync.ensureApiSession) {
@@ -3491,9 +3502,18 @@
           }
         }
       } catch (e) {}
-      const hydrated = await window.AcctventaApiSync.hydrateFromApi();
-      if (!hydrated && window.AcctventaApiSync.hydratePublicMarket) {
-        await window.AcctventaApiSync.hydratePublicMarket();
+      let hydrated = false;
+      try {
+        hydrated = !!(await window.AcctventaApiSync.hydrateFromApi());
+      } catch (e) {
+        hydrated = false;
+      }
+      const marketEmpty =
+        !window.__acctventaApiMarket || !window.__acctventaApiMarket.length;
+      if ((!hydrated || marketEmpty) && window.AcctventaApiSync.hydratePublicMarket) {
+        try {
+          await window.AcctventaApiSync.hydratePublicMarket();
+        } catch (e) {}
       }
       // Always re-pull orders/ads after hydrate so lists are never stuck empty
       try {
@@ -3505,6 +3525,7 @@
         }
       } catch (e) {}
     }
+    window.__acctventaBooted = true;
     window.AcctventaUI.refreshAll();
     try {
       if (window.AcctventaKyc && refreshUser()) await window.AcctventaKyc.refreshStatus();

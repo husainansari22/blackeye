@@ -421,10 +421,23 @@
     if (marketRefreshInFlight || !global.AcctventaApiSync) return;
     marketRefreshInFlight = true;
     try {
-      if (usingApi()) {
-        await global.AcctventaApiSync.hydrateFromApi();
-      } else if (global.AcctventaApiSync.hydratePublicMarket) {
-        await global.AcctventaApiSync.hydratePublicMarket();
+      // Logged-in hydrate can fail (no session / cold health). Always fall
+      // through to the public market so Home/Top Merchants fill on first visit.
+      var hydrated = false;
+      if (usingApi() && global.AcctventaApiSync.hydrateFromApi) {
+        try {
+          hydrated = !!(await global.AcctventaApiSync.hydrateFromApi());
+        } catch (e) {
+          hydrated = false;
+        }
+      }
+      var marketEmpty =
+        !global.__acctventaApiMarket ||
+        !global.__acctventaApiMarket.length;
+      if ((!hydrated || marketEmpty) && global.AcctventaApiSync.hydratePublicMarket) {
+        try {
+          await global.AcctventaApiSync.hydratePublicMarket();
+        } catch (e2) {}
       }
       if (global.AcctventaUI) global.AcctventaUI.refreshAll();
     } catch (e) {
