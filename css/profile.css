@@ -971,6 +971,9 @@
   position: relative;
   overflow: hidden;
 }
+.av-storefront-banner.has-cover::after {
+  opacity: 0.18;
+}
 .av-storefront-banner::after {
   content: '';
   position: absolute;
