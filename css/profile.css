@@ -47,8 +47,9 @@
 }
 
 .profile-hero {
+  position: relative;
   margin: 0 1rem 0.75rem;
-  padding: 0;
+  padding: 0 0 1rem;
   border-radius: 1.15rem;
   background: #fff;
   border: 1px solid rgba(14, 165, 233, 0.28);
@@ -62,7 +63,7 @@
 
 .profile-cover {
   position: relative;
-  height: 8.5rem;
+  height: 9rem;
   background:
     linear-gradient(135deg, rgba(14, 165, 233, 0.7), rgba(2, 132, 199, 0.45)),
     repeating-linear-gradient(
@@ -93,7 +94,8 @@
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 100%;
+  max-width: none;
+  height: 100% !important;
   object-fit: cover;
   display: block;
   z-index: 0;
@@ -106,7 +108,7 @@
 .profile-cover-btn {
   position: absolute;
   right: 0.7rem;
-  bottom: 0.65rem;
+  bottom: 1.15rem;
   z-index: 3;
   display: inline-flex;
   align-items: center;
@@ -140,39 +142,62 @@
 
 .profile-hero-body {
   position: relative;
-  z-index: 1;
-  padding: 0 1rem 0.95rem;
-  background: inherit;
+  z-index: 2;
+  margin: 0;
+  /* Keep name/email/phone fully below the cover; avatar hangs via absolute top */
+  padding: 1.55rem 1rem 0.25rem;
+  background: transparent;
+  /* Lower half of avatar + meta lines */
+  min-height: 4.75rem;
 }
 
 .profile-hero-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.85rem;
-  margin-top: -2.35rem;
+  margin: 0;
   position: relative;
   z-index: 2;
+  min-height: 3.5rem;
+  padding-left: 0;
 }
 
 .profile-avatar-btn {
-  position: relative;
-  display: inline-block;
+  position: absolute;
+  /* Body already has 1rem horizontal padding — pin avatar to that inset */
+  left: 0;
+  /* Cover is 9rem; ~40% overlaps cover so name sits cleanly beside lower half */
+  top: -2.55rem;
+  z-index: 5;
+  display: block;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
   flex-shrink: 0;
+  width: 5.75rem;
+  height: 5.75rem;
 }
 
 .av-user-avatar--lg {
-  width: 5.75rem;
-  height: 5.75rem;
+  width: 5.75rem !important;
+  height: 5.75rem !important;
+  min-width: 5.75rem;
+  min-height: 5.75rem;
+  max-width: none;
   font-size: 1.55rem;
   box-shadow: 0 0 0 3px #fff, 0 0 0 6px #0ea5e9;
 }
 
 .dark .av-user-avatar--lg {
   box-shadow: 0 0 0 3px #0b1220, 0 0 0 6px #0ea5e9;
+}
+
+.av-user-avatar--lg img {
+  width: 100%;
+  max-width: none;
+  height: 100% !important;
+  object-fit: cover;
 }
 
 .profile-avatar-cam {
@@ -198,7 +223,12 @@
 
 .profile-hero-meta {
   min-width: 0;
-  padding-bottom: 0.15rem;
+  flex: 1;
+  /* Leave horizontal room for the absolute avatar */
+  margin-left: 6.6rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.1rem;
+  overflow: visible;
 }
 
 .profile-hero-meta h4 {
@@ -207,6 +237,11 @@
   letter-spacing: -0.02em;
   color: #0f172a;
   line-height: 1.25;
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dark .profile-hero-meta h4 {
@@ -240,7 +275,7 @@
 }
 
 .profile-hint {
-  margin: 0.55rem 0 0;
+  margin: 0.65rem 0 0;
   font-size: 0.7rem;
   color: #0284c7;
 }
