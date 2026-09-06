@@ -242,18 +242,32 @@
   color: #e11d48;
 }
 
-/* Instagram-style scalloped verified badge (blue seal + white check) */
+/* Verified badge — Telegram/Instagram style, sized to sit with the name */
+.av-verify-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+  line-height: inherit;
+}
+.av-verify-name {
+  min-width: 0;
+  max-width: 100%;
+}
 .profile-verified-pill,
 .av-verify-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.1rem;
-  height: 1.1rem;
-  min-width: 1.1rem;
+  /* Scale with surrounding text so it sits like Telegram next to the name */
+  width: 1.05em;
+  height: 1.05em;
+  min-width: 1.05em;
   max-width: none;
   padding: 0;
-  margin: 0 0 0 0.2rem;
+  margin: 0;
   border: 0;
   border-radius: 0;
   background: transparent !important;
@@ -265,9 +279,21 @@
   overflow: visible !important;
   position: relative;
   z-index: 1;
+  /* Optical align with Latin caps / emoji flags */
+  transform: translateY(0.04em);
 }
-.av-verify-name {
-  min-width: 0;
+/* Tiny market/meta type: bump relative size so scallops stay readable */
+.av-verify-badge--sm {
+  width: 1.25em;
+  height: 1.25em;
+  min-width: 1.25em;
+}
+/* Large headings: keep badge under the cap-height like Telegram */
+.av-verify-badge--lg {
+  width: 0.92em;
+  height: 0.92em;
+  min-width: 0.92em;
+  transform: translateY(0.02em);
 }
 .av-verify-badge img,
 .av-verify-badge svg,
@@ -285,10 +311,11 @@
 }
 .profile-hero-meta .profile-verified-pill,
 .profile-hero-meta .av-verify-badge {
-  width: 1.25rem;
-  height: 1.25rem;
-  min-width: 1.25rem;
+  width: 1em;
+  height: 1em;
+  min-width: 1em;
 }
+
 
 /* AcctBazaar-style listing detail (dashboard modal + public listing page) */
 .av-listing-detail {

@@ -44,10 +44,12 @@
     return v + ' Sales';
   }
   function verifyBadge() {
-    return '<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:1rem;height:1rem;min-width:1rem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 44 44" width="40" height="40" aria-hidden="true"><path fill="#1D9BF0" d="M19.998 3.094 22.095 5.19a5.25 5.25 0 0 0 3.712 1.536h2.933a5.25 5.25 0 0 1 5.25 5.25v2.933a5.25 5.25 0 0 0 1.535 3.712l2.096 2.097a5.25 5.25 0 0 1 0 7.424l-2.096 2.097a5.25 5.25 0 0 0-1.535 3.711v2.933a5.25 5.25 0 0 1-5.25 5.25h-2.933a5.25 5.25 0 0 0-3.712 1.535l-2.097 2.097a5.25 5.25 0 0 1-7.424 0l-2.097-2.097a5.25 5.25 0 0 0-3.711-1.535H5.25a5.25 5.25 0 0 1-5.25-5.25v-2.933a5.25 5.25 0 0 0-1.535-3.711L.094 23.29a5.25 5.25 0 0 1 0-7.424l2.096-2.097A5.25 5.25 0 0 0 3.725 9.96V7.025a5.25 5.25 0 0 1 5.25-5.25h2.933a5.25 5.25 0 0 0 3.712-1.535L16.574.094a5.25 5.25 0 0 1 3.424 0z"/><path fill="#fff" d="M28.287 15.287a1.5 1.5 0 0 0-2.122 0l-8.44 8.44-3.89-3.89a1.5 1.5 0 1 0-2.121 2.122l4.95 4.95a1.5 1.5 0 0 0 2.121 0l9.502-9.5a1.5 1.5 0 0 0 0-2.122z"/></svg></span>';
+    return '<span class="av-verify-badge av-verify-badge--sm" title="Verified" aria-label="Verified"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 44 44" width="40" height="40" aria-hidden="true"><path fill="#1D9BF0" d="M19.998 3.094 22.095 5.19a5.25 5.25 0 0 0 3.712 1.536h2.933a5.25 5.25 0 0 1 5.25 5.25v2.933a5.25 5.25 0 0 0 1.535 3.712l2.096 2.097a5.25 5.25 0 0 1 0 7.424l-2.096 2.097a5.25 5.25 0 0 0-1.535 3.711v2.933a5.25 5.25 0 0 1-5.25 5.25h-2.933a5.25 5.25 0 0 0-3.712 1.535l-2.097 2.097a5.25 5.25 0 0 1-7.424 0l-2.097-2.097a5.25 5.25 0 0 0-3.711-1.535H5.25a5.25 5.25 0 0 1-5.25-5.25v-2.933a5.25 5.25 0 0 0-1.535-3.711L.094 23.29a5.25 5.25 0 0 1 0-7.424l2.096-2.097A5.25 5.25 0 0 0 3.725 9.96V7.025a5.25 5.25 0 0 1 5.25-5.25h2.933a5.25 5.25 0 0 0 3.712-1.535L16.574.094a5.25 5.25 0 0 1 3.424 0z"/><path fill="#fff" d="M28.287 15.287a1.5 1.5 0 0 0-2.122 0l-8.44 8.44-3.89-3.89a1.5 1.5 0 1 0-2.121 2.122l4.95 4.95a1.5 1.5 0 0 0 2.121 0l9.502-9.5a1.5 1.5 0 0 0 0-2.122z"/></svg></span>';
   }
   function nameWithVerify(name, verified) {
-    return escHtml(name || '') + (verified ? verifyBadge() : '');
+    var label = '<span class="av-verify-name truncate">' + escHtml(name || '') + '</span>';
+    if (!verified) return label;
+    return '<span class="av-verify-inline">' + label + verifyBadge() + '</span>';
   }
   function starsRow(rating, reviewCount) {
     var r = Math.max(0, Math.min(5, Number(rating) || 0));
@@ -187,7 +189,7 @@
               : escHtml(item.sellerInitials || 'S')) +
           '</div>' +
           '<div class="av-listing-seller__body">' +
-            '<p class="av-listing-seller__name inline-flex items-center gap-0.5 flex-wrap">' + nameWithVerify(item.sellerName || 'Seller', item.sellerVerified) + '</p>' +
+            '<p class="av-listing-seller__name">' + nameWithVerify(item.sellerName || 'Seller', item.sellerVerified) + '</p>' +
             '<p class="av-listing-seller__stats">' + escHtml(salesLabel) + '</p>' +
           '</div>' +
           sellerLinkBtn +

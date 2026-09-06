@@ -17,18 +17,21 @@
     return A().formatMoney(n);
   }
 
-  /** Instagram-style scalloped verified badge (inline SVG — never depends on a missing asset). */
+  /** Instagram/Telegram scalloped verified badge — scales with name text (em). */
   function verifyBadgeHtml(size) {
-    // Keep badge large enough that scallops stay visible; never let flex/truncate clip it.
-    const s = size === 'lg' ? '1.35rem' : size === 'sm' ? '1.05rem' : '1.15rem';
-    return `<span class="av-verify-badge" title="Verified" aria-label="Verified" style="width:${s};height:${s};min-width:${s};flex-shrink:0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 44 44" width="40" height="40" aria-hidden="true"><path fill="#1D9BF0" d="M19.998 3.094 22.095 5.19a5.25 5.25 0 0 0 3.712 1.536h2.933a5.25 5.25 0 0 1 5.25 5.25v2.933a5.25 5.25 0 0 0 1.535 3.712l2.096 2.097a5.25 5.25 0 0 1 0 7.424l-2.096 2.097a5.25 5.25 0 0 0-1.535 3.711v2.933a5.25 5.25 0 0 1-5.25 5.25h-2.933a5.25 5.25 0 0 0-3.712 1.535l-2.097 2.097a5.25 5.25 0 0 1-7.424 0l-2.097-2.097a5.25 5.25 0 0 0-3.711-1.535H5.25a5.25 5.25 0 0 1-5.25-5.25v-2.933a5.25 5.25 0 0 0-1.535-3.711L.094 23.29a5.25 5.25 0 0 1 0-7.424l2.096-2.097A5.25 5.25 0 0 0 3.725 9.96V7.025a5.25 5.25 0 0 1 5.25-5.25h2.933a5.25 5.25 0 0 0 3.712-1.535L16.574.094a5.25 5.25 0 0 1 3.424 0z"/><path fill="#fff" d="M28.287 15.287a1.5 1.5 0 0 0-2.122 0l-8.44 8.44-3.89-3.89a1.5 1.5 0 1 0-2.121 2.122l4.95 4.95a1.5 1.5 0 0 0 2.121 0l9.502-9.5a1.5 1.5 0 0 0 0-2.122z"/></svg></span>`;
+    // sm: market/meta lines (tiny type) — slightly larger than 1em so scallops stay clear
+    // lg: profile/hero headings — slightly under 1em so it sits like Telegram next to big names
+    const sizeClass = size === 'lg' ? ' av-verify-badge--lg' : size === 'sm' ? ' av-verify-badge--sm' : '';
+    return `<span class="av-verify-badge${sizeClass}" title="Verified" aria-label="Verified"><svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 44 44" width="40" height="40" aria-hidden="true"><path fill="#1D9BF0" d="M19.998 3.094 22.095 5.19a5.25 5.25 0 0 0 3.712 1.536h2.933a5.25 5.25 0 0 1 5.25 5.25v2.933a5.25 5.25 0 0 0 1.535 3.712l2.096 2.097a5.25 5.25 0 0 1 0 7.424l-2.096 2.097a5.25 5.25 0 0 0-1.535 3.711v2.933a5.25 5.25 0 0 1-5.25 5.25h-2.933a5.25 5.25 0 0 0-3.712 1.535l-2.097 2.097a5.25 5.25 0 0 1-7.424 0l-2.097-2.097a5.25 5.25 0 0 0-3.711-1.535H5.25a5.25 5.25 0 0 1-5.25-5.25v-2.933a5.25 5.25 0 0 0-1.535-3.711L.094 23.29a5.25 5.25 0 0 1 0-7.424l2.096-2.097A5.25 5.25 0 0 0 3.725 9.96V7.025a5.25 5.25 0 0 1 5.25-5.25h2.933a5.25 5.25 0 0 0 3.712-1.535L16.574.094a5.25 5.25 0 0 1 3.424 0z"/><path fill="#fff" d="M28.287 15.287a1.5 1.5 0 0 0-2.122 0l-8.44 8.44-3.89-3.89a1.5 1.5 0 1 0-2.121 2.122l4.95 4.95a1.5 1.5 0 0 0 2.121 0l9.502-9.5a1.5 1.5 0 0 0 0-2.122z"/></svg></span>`;
   }
 
   function nameWithVerify(name, isVerified, size) {
-    // Name can truncate; badge stays outside overflow so scallops never clip.
+    // Inline name + badge like Telegram: "Name ✓" with tight gap, vertically centered.
     const label = `<span class="av-verify-name truncate">${escapeHtml(name || '')}</span>`;
-    return isVerified ? `${label}${verifyBadgeHtml(size)}` : label;
+    if (!isVerified) return label;
+    return `<span class="av-verify-inline">${label}${verifyBadgeHtml(size)}</span>`;
   }
+
 
   function marketLoadingSkeleton(compact) {
     if (compact) {
@@ -342,7 +345,7 @@
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
         ${item.sellerRating ? `<div class="mb-1 scale-90 origin-left">${starsRowHtml(item.sellerRating, item.sellerReviews)}</div>` : ''}
-        <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0">By <span class="inline-flex items-center gap-0.5 min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
+        <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
         <p class="text-[10px] text-emerald-500 mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>${stock} available</p>
         <div class="flex justify-between items-center mt-2">
           <span class="text-sm font-bold text-brandPrimary">${money(item.price)}</span>
@@ -354,7 +357,7 @@
       ${productLogoMarkFor(item, 'w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0')}
       <div class="min-w-0 flex-1">
         <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
-        <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0">By <span class="inline-flex items-center gap-0.5 min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span><span class="truncate"> · ${escapeHtml(cat)}</span></p>
+        <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span><span class="truncate"> · ${escapeHtml(cat)}</span></p>
         <div class="mt-0.5">${previewBtn}</div>
       </div>
       <div class="text-right shrink-0">
@@ -375,7 +378,7 @@
       <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
         <h4 class="font-bold text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
         ${item.sellerRating ? `<div>${starsRowHtml(item.sellerRating, item.sellerReviews)}</div>` : ''}
-        <p class="text-[11px] text-slate-500 flex items-center gap-0.5 min-w-0 flex-wrap">By <span class="inline-flex items-center gap-0.5 min-w-0">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
+        <p class="text-[11px] text-slate-500 flex items-center gap-0.5 min-w-0 flex-wrap">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
         <p class="text-[11px] text-emerald-500"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 align-middle"></span>${stock} available</p>
       </div>
       <div class="shrink-0 flex flex-col items-end justify-center gap-1.5 pl-1">
@@ -2244,7 +2247,7 @@
         <div class="av-listing-seller">
           <div class="av-listing-seller__avatar">${sellerAvatarFaceHtml(item.sellerAvatar, item.sellerInitials || 'S', 'av-listing-seller__avatar-img')}</div>
           <div class="av-listing-seller__body">
-            <p class="av-listing-seller__name inline-flex items-center gap-0.5 flex-wrap">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</p>
+            <p class="av-listing-seller__name">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</p>
             <p class="av-listing-seller__stats">${escapeHtml(salesLabel)}</p>
           </div>
           <button type="button" class="av-listing-seller__link" onclick="goToSellerStore('${storeKey}')">View store →</button>

@@ -964,16 +964,25 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   line-height: 1.35;
 }
 
-/* Instagram-style scalloped verified badge */
+/* Verified badge — scales with name text */
+.av-verify-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+  line-height: inherit;
+}
 .av-verify-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.1rem;
-  height: 1.1rem;
-  min-width: 1.1rem;
+  width: 1.05em;
+  height: 1.05em;
+  min-width: 1.05em;
   max-width: none;
-  margin: 0 0 0 0.2rem;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent !important;
@@ -985,7 +994,10 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   overflow: visible !important;
   position: relative;
   z-index: 1;
+  transform: translateY(0.04em);
 }
+.av-verify-badge--sm { width: 1.25em; height: 1.25em; min-width: 1.25em; }
+.av-verify-badge--lg { width: 0.92em; height: 0.92em; min-width: 0.92em; }
 .av-verify-badge img,
 .av-verify-badge svg {
   width: 100%;
@@ -995,9 +1007,9 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   flex-shrink: 0;
 }
 .av-verify-badge-lg {
-  width: 1.3rem;
-  height: 1.3rem;
-  min-width: 1.3rem;
+  width: 1em;
+  height: 1em;
+  min-width: 1em;
 }
 .av-user-meta {
   display: flex;
