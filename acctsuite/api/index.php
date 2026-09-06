@@ -152,10 +152,22 @@ try {
         case 'auth.profile': {
             $u = require_user();
             ensure_user_avatar_column();
-            $name = trim((string)($body['name'] ?? $u['name']));
+            // Name + email are permanent after signup. Clients may still send name for avatar/cover
+            // updates — ignore name changes and reject email change attempts.
+            if (array_key_exists('email', $body)) {
+                $attempt = strtolower(trim((string)$body['email']));
+                if ($attempt !== '' && $attempt !== strtolower((string)$u['email'])) {
+                    json_out(['ok' => false, 'error' => 'Email cannot be changed after account creation. Contact support if you need help.'], 403);
+                }
+            }
+            if (array_key_exists('name', $body)) {
+                $attemptName = trim((string)$body['name']);
+                if ($attemptName !== '' && $attemptName !== (string)$u['name']) {
+                    json_out(['ok' => false, 'error' => 'Name cannot be changed after account creation. Contact support if you need help.'], 403);
+                }
+            }
             $phone = trim((string)($body['phone'] ?? $u['phone']));
-            if ($name === '') json_out(['ok' => false, 'error' => 'Name is required'], 422);
-            db()->prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?')->execute([$name, $phone, (int)$u['id']]);
+            db()->prepare('UPDATE users SET phone = ? WHERE id = ?')->execute([$phone, (int)$u['id']]);
             $avatarData = (string)($body['avatar'] ?? '');
             if ($avatarData !== '') {
                 try {

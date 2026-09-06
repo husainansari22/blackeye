@@ -1295,9 +1295,11 @@
             document.getElementById('modalBody').innerHTML = `
                 <h3 class="font-bold text-lg mb-4">Account Settings</h3>
                 <label class="block text-xs text-slate-500 mb-1">Full name</label>
-                <input id="settingsName" type="text" value="${(u.name||'').replace(/"/g,'&quot;')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 text-sm">
-                <label class="block text-xs text-slate-500 mb-1">Email</label>
-                <input type="email" value="${(u.email||'').replace(/"/g,'&quot;')}" readonly class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 text-sm text-slate-500">
+                <input id="settingsName" type="text" value="${(u.name||'').replace(/"/g,'&quot;')}" readonly class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-1 text-sm text-slate-500 cursor-not-allowed">
+                <p class="text-[10px] text-slate-400 mb-3">Name is set when you create your account and cannot be changed.</p>
+                <label class="block text-xs text-slate-500 mb-1">Email (Gmail)</label>
+                <input type="email" value="${(u.email||'').replace(/"/g,'&quot;')}" readonly class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-1 text-sm text-slate-500 cursor-not-allowed">
+                <p class="text-[10px] text-slate-400 mb-3">Email is permanent after signup and cannot be changed.</p>
                 <label class="block text-xs text-slate-500 mb-1">Phone</label>
                 <input id="settingsPhone" type="text" value="${(u.phone||'').replace(/"/g,'&quot;')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-4 text-sm">
                 <button onclick="saveAccountSettings()" class="w-full bg-brandPrimary py-3.5 rounded-xl text-white font-bold mb-3">Save Changes</button>
@@ -1311,15 +1313,13 @@
         }
         async function saveAccountSettings() {
             const u = window.AcctSuite.getCurrentUser();
-            const name = (document.getElementById('settingsName').value || '').trim();
             const phone = (document.getElementById('settingsPhone').value || '').trim();
-            if (!name) { alert('Name is required'); return; }
             try {
                 if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.usingApi()) {
-                    await window.AcctSuiteApi.updateProfile({ name, phone });
+                    // Name + email are locked after signup — only phone (and media via other flows) can update.
+                    await window.AcctSuiteApi.updateProfile({ phone });
                     await window.AcctSuiteApiSync.hydrateFromApi();
                 } else {
-                    u.name = name;
                     u.phone = phone;
                     window.AcctSuite.persistUser(u);
                 }
