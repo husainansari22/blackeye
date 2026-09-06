@@ -277,6 +277,35 @@
             .as-live-ticker__rail { animation: none; }
             .as-live-ticker__dot { animation: none; }
         }
+        /* Header HELP — green pill over headset */
+        .as-help-btn {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.12rem;
+            line-height: 1;
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .as-help-btn:hover { color: #8B5CF6; }
+        .as-help-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.12rem 0.38rem;
+            border-radius: 999px;
+            background: #22c55e;
+            color: #fff;
+            font-size: 0.5625rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            line-height: 1.15;
+            text-transform: uppercase;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+        }
+        .as-help-btn > i { font-size: 1.05rem; line-height: 1; }
         html { scroll-behavior: smooth; }
     </style>
 </head>
@@ -288,30 +317,19 @@
             <a href="/" class="as-brand-lockup" aria-label="AcctSuite home" onclick="switchPage('home'); return false;">
                 <img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" class="live-logo-glow" width="36" height="36" decoding="async"><span class="as-brand-word text-slate-900 dark:text-white">cctsuite</span>
             </a>
-            <div class="as-live-ticker" aria-label="Live marketplace activity" role="status">
-                <span class="as-live-ticker__dot" aria-hidden="true"></span>
-                <span class="as-live-ticker__live" id="headerLiveVerb" aria-hidden="true">BUY</span>
-                <div class="as-live-ticker__track">
-                    <div class="as-live-ticker__rail" id="headerLiveRail">
-                        <span>Just sold · TikTok 12k</span>
-                        <span aria-hidden="true">·</span>
-                        <span>Buyer secured · Instagram</span>
-                        <span aria-hidden="true">·</span>
-                        <span>Escrow cleared · $48</span>
-                        <span aria-hidden="true">·</span>
-                        <span>New listing · Discord Nitro</span>
-                        <span aria-hidden="true">·</span>
-                        <span>Live deals · Marketplace</span>
-                        <span aria-hidden="true">·</span>
-                    </div>
-                </div>
-            </div>
             <div class="flex items-center gap-2 shrink-0">
-                <button id="themeToggle" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                <a href="/login" class="as-help-btn" title="Help" aria-label="Help">
+                    <span class="as-help-pill">HELP</span>
+                    <i class="fa-solid fa-headset" aria-hidden="true"></i>
+                </a>
+                <a href="/dashboard.html" class="relative inline-flex items-center justify-center w-11 h-11 rounded-full bg-violet-600 text-white shadow-md hover:bg-violet-500 transition" title="Notifications" aria-label="Open notifications">
+                    <i class="fa-solid fa-bell text-lg"></i>
+                </a>
+                <button id="themeToggle" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300" type="button" aria-label="Toggle theme">
                     <i class="fa-solid fa-sun dark:hidden"></i>
                     <i class="fa-solid fa-moon hidden dark:block"></i>
                 </button>
-                <button onclick="toggleMenu()" class="w-9 h-9 rounded-full bg-brandPrimary text-white flex items-center justify-center focus:outline-none">
+                <button onclick="toggleMenu()" class="w-9 h-9 rounded-full bg-brandPrimary text-white flex items-center justify-center focus:outline-none" type="button" aria-label="Menu">
                     <i class="fa-solid fa-bars" id="menuIcon"></i>
                 </button>
             </div>
@@ -351,7 +369,7 @@
 
             <!-- Promo image: after the intro copy (the marked block), before the CTAs -->
             <img
-                src="/img/marketing/hero-digital-assets.jpg"
+                src="/img/marketing/hero-digital-assets.jpg?v=landingPromo1"
                 alt="Looking for Digital Assets? Aged accounts, verified profiles, and premium tools on AcctSuite"
                 width="944"
                 height="1131"

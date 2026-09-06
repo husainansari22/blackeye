@@ -190,25 +190,6 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.18);
         }
         .as-help-btn > i { font-size: 1.05rem; line-height: 1; }
-        .as-home-promo {
-            display: block;
-            width: 100%;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-            line-height: 0;
-        }
-        .as-home-promo img {
-            display: block;
-            width: 100%;
-            height: auto;
-            max-height: 22rem;
-            object-fit: cover;
-            object-position: center top;
-        }
-        @media (min-width: 480px) {
-            .as-home-promo img { max-height: 26rem; }
-        }
     </style>
     <script src="/js/mobile-fix.js?v=bagA5fix"></script>
     <script src="/js/ui-toast.js?v=bagA5fix"></script>
@@ -281,11 +262,15 @@
 
             <!-- Filter Chips (built from catalog) -->
             <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
-
-            <!-- Home promo (AcctSuite digital assets creative) -->
-            <button type="button" onclick="switchTab('market')" class="as-home-promo text-left" aria-label="Looking for Digital Assets? Shop on AcctSuite">
-                <img src="/img/marketing/hero-digital-assets.jpg?v=promoHelp1" alt="Looking for Digital Assets? Aged accounts, verified profiles, and premium tools on AcctSuite" width="944" height="1131" loading="lazy" decoding="async">
-            </button>
+            <!-- Platform banner -->
+            <div class="rounded-xl p-3 flex justify-between items-center shadow-md relative overflow-hidden" style="background:linear-gradient(90deg,#7C3AED 0%,#1e3a8a 100%);color:#fff">
+                <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full blur-xl" style="background:rgba(255,255,255,0.1)"></div>
+                <div class="relative z-10 pr-2 min-w-0">
+                    <span class="text-[10px] font-bold tracking-wide" style="color:#ede9fe">SECURE MARKETPLACE</span>
+                    <p class="font-bold text-sm mt-0.5 leading-snug" style="color:#fff">Buy &amp; sell with escrow protection</p>
+                </div>
+                <button type="button" onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
+            </div>
 <!-- Trending Catalog -->
             <div>
                 <div class="flex justify-between items-center mb-2">
@@ -1000,15 +985,15 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.js?v=fixFix3"></script>
+    <script src="/js/acctsuite.js?v=promoFix2"></script>
     <script src="/js/api-client.js?v=listFix2"></script>
     <script src="/js/site-controls.js?v=ownerCtrl2"></script>
-    <script src="/js/api-sync.js?v=fixFix3"></script>
+    <script src="/js/api-sync.js?v=promoFix2"></script>
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
     <script src="/js/listing-modal.js?v=badgeFull1"></script>
-    <script src="/js/dashboard-app.js?v=fixFix3"></script>
+    <script src="/js/dashboard-app.js?v=promoFix2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
