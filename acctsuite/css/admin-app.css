@@ -964,48 +964,85 @@ html.dark .av-chip.is-hot { color: #fde68a; }
   line-height: 1.35;
 }
 
-/* Verified badge — scales with name text */
+/* Verified badge — full scalloped circle, sized to the name (Telegram/IG) */
 .av-verify-inline {
   display: inline-flex;
   align-items: center;
-  gap: 0.2em;
+  gap: 0.22em;
   max-width: 100%;
   min-width: 0;
   vertical-align: middle;
   line-height: inherit;
 }
-.av-verify-badge {
+.av-verify-name {
+  min-width: 0;
+  max-width: 100%;
+}
+..av-verify-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.05em;
-  height: 1.05em;
-  min-width: 1.05em;
+  width: 1.1em;
+  height: 1.1em;
+  min-width: 1.1em;
+  min-height: 1.1em;
+  aspect-ratio: 1 / 1;
   max-width: none;
-  margin: 0;
   padding: 0;
-  border: 0;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  flex: 0 0 auto;
-  flex-shrink: 0 !important;
   vertical-align: middle;
   line-height: 0;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
   overflow: visible !important;
+  clip-path: none !important;
   position: relative;
-  z-index: 1;
-  transform: translateY(0.04em);
+  z-index: 2;
+  transform: translateY(0.03em);
+  box-sizing: content-box;
 }
-.av-verify-badge--sm { width: 1.25em; height: 1.25em; min-width: 1.25em; }
-.av-verify-badge--lg { width: 0.92em; height: 0.92em; min-width: 0.92em; }
+.av-verify-badge--sm {
+  width: 1.35em;
+  height: 1.35em;
+  min-width: 1.35em;
+  min-height: 1.35em;
+}
+.av-verify-badge--lg {
+  width: 0.95em;
+  height: 0.95em;
+  min-width: 0.95em;
+  min-height: 0.95em;
+  transform: translateY(0.02em);
+}
 .av-verify-badge img,
-.av-verify-badge svg {
-  width: 100%;
-  height: 100%;
+.av-verify-badge svg,
+.profile-verified-pill img,
+.profile-verified-pill svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
   display: block;
-  overflow: visible;
+  overflow: visible !important;
   flex-shrink: 0;
+  aspect-ratio: 1 / 1;
 }
+.profile-verified-pill.hidden,
+.av-verify-badge.hidden {
+  display: none !important;
+}
+.profile-hero-meta ..profile-hero-meta .av-verify-badge {
+  width: 1em;
+  height: 1em;
+  min-width: 1em;
+  min-height: 1em;
+}
+
+
 .av-verify-badge-lg {
   width: 1em;
   height: 1em;
