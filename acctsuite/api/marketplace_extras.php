@@ -318,6 +318,7 @@ function seller_refund_debit_amount(array $order): float {
  * When a referred buyer has deposited ≥ threshold and completed ≥1 purchase, credit referrer.
  */
 function maybe_credit_referral_reward(int $buyerId): void {
+    if (setting_get('referrals_enabled', '1') !== '1') return;
     ensure_wallet_ledger_columns();
     $reward = (float)money_f((float)setting_get('referral_reward_amount', app_config()['referral_reward_amount'] ?? 5));
     $minDeposit = (float)money_f((float)setting_get('referral_min_deposit', app_config()['referral_min_deposit'] ?? 50));

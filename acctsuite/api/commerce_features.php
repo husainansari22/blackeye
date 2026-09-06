@@ -240,13 +240,25 @@ function ai_blocks_external_contact(string $text): array {
  * were considered "released" to the seller. Call inside the same transaction that credits
  * the seller when possible.
  */
-function order_set_dispute_window(PDO $pdo, int $orderId, int $minutes = 60): void {
+function dispute_window_minutes(): int {
+    $m = (int)setting_get('dispute_window_minutes', 60);
+    return max(5, min(7 * 24 * 60, $m ?: 60));
+}
+
+function warranty_hours(): int {
+    $h = (int)setting_get('warranty_hours', 24);
+    return max(1, min(30 * 24, $h ?: 24));
+}
+
+function order_set_dispute_window(PDO $pdo, int $orderId, int $minutes = 0): void {
     ensure_commerce_features();
+    if ($minutes <= 0) $minutes = dispute_window_minutes();
+    $hours = warranty_hours();
     $pdo->prepare("UPDATE orders SET
             dispute_deadline_at = DATE_ADD(NOW(), INTERVAL ? MINUTE),
-            warranty_until = DATE_ADD(NOW(), INTERVAL 24 HOUR),
+            warranty_until = DATE_ADD(NOW(), INTERVAL ? HOUR),
             funds_released_at = NOW()
-        WHERE id = ?")->execute([$minutes, $orderId]);
+        WHERE id = ?")->execute([$minutes, $hours, $orderId]);
 }
 
 /** True while the buyer may still open a dispute on this order. */

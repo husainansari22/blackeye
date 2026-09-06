@@ -21,6 +21,8 @@ try {
 
         case 'config.public':
             migrate_legacy_support_email();
+            $disputeMins = function_exists('dispute_window_minutes') ? dispute_window_minutes() : (int)setting_get('dispute_window_minutes', 60);
+            $warrantyHrs = function_exists('warranty_hours') ? warranty_hours() : (int)setting_get('warranty_hours', 24);
             json_out([
                 'ok' => true,
                 'config' => [
@@ -30,7 +32,21 @@ try {
                     'salesCommissionRate' => (float)setting_get('sales_commission_rate', app_config()['sales_commission_rate'] ?? 0.22),
                     'depositFeeRate' => (float)setting_get('deposit_fee_rate', app_config()['deposit_fee_rate']),
                     'supportTelegram' => setting_get('support_telegram', app_config()['support_telegram']),
+                    'groupTelegram' => setting_get('group_telegram', setting_get('support_telegram', app_config()['support_telegram'])),
+                    'supportWhatsapp' => setting_get('support_whatsapp', ''),
                     'supportEmail' => setting_get('support_email', app_config()['support_email'] ?? 'support@acctsuite.com'),
+                    'siteName' => setting_get('site_name', app_config()['app_name'] ?? 'AcctSuite'),
+                    'siteTagline' => setting_get('site_tagline', 'Buy & sell digital accounts safely'),
+                    'announcementEnabled' => setting_get('announcement_enabled', '0') === '1',
+                    'announcementText' => setting_get('announcement_text', ''),
+                    'maintenanceMode' => setting_get('maintenance_mode', '0') === '1',
+                    'maintenanceMessage' => setting_get('maintenance_message', 'We are doing a short maintenance. Please try again soon.'),
+                    'listingsPaused' => setting_get('listings_paused', '0') === '1',
+                    'listingsPausedMessage' => setting_get('listings_paused_message', 'New listings are temporarily paused by the platform owner.'),
+                    'referralsEnabled' => setting_get('referrals_enabled', '1') === '1',
+                    'registrationsEnabled' => setting_get('registrations_enabled', '1') === '1',
+                    'disputeWindowMinutes' => $disputeMins,
+                    'warrantyHours' => $warrantyHrs,
                     'paymentCurrency' => setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'),
                     'usdNgnRate' => (float)setting_get('usd_ngn_rate', app_config()['usd_ngn_rate'] ?? 1600),
                     'walletCurrencies' => wallet_currencies_get(),
@@ -39,6 +55,9 @@ try {
             ]);
 
         case 'auth.register': {
+            if (setting_get('registrations_enabled', '1') !== '1' || setting_get('maintenance_mode', '0') === '1') {
+                json_out(['ok' => false, 'error' => setting_get('maintenance_message', 'Registrations are temporarily closed.'), 'code' => 'registrations_closed'], 403);
+            }
             $name = trim((string)($body['name'] ?? ''));
             $email = strtolower(trim((string)($body['email'] ?? '')));
             $phone = trim((string)($body['phone'] ?? ''));
@@ -270,6 +289,13 @@ try {
         }
 
         case 'ads.create': {
+            if (setting_get('listings_paused', '0') === '1') {
+                json_out([
+                    'ok' => false,
+                    'error' => setting_get('listings_paused_message', 'New listings are temporarily paused by the platform owner.'),
+                    'code' => 'listings_paused',
+                ], 403);
+            }
             $u = require_user();
             $plan = plan_limits($u['plan'] ?? 'free');
             $used = uploads_today((int)$u['id']);
@@ -604,7 +630,7 @@ try {
             if (!$o) json_out(['ok' => false, 'error' => 'Order not found'], 404);
             order_mark_dispute_expired_if_needed($o);
             if (!dispute_window_open($o)) {
-                json_out(['ok' => false, 'error' => 'The 60-minute dispute window for this order has closed.', 'code' => 'dispute_window_closed'], 400);
+                json_out(['ok' => false, 'error' => 'The ' . (function_exists('dispute_window_minutes') ? dispute_window_minutes() : 60) . '-minute dispute window for this order has closed.', 'code' => 'dispute_window_closed'], 400);
             }
             $existing = db()->prepare('SELECT id FROM disputes WHERE order_id = ?');
             $existing->execute([$orderId]);

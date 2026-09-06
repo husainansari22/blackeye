@@ -1038,7 +1038,8 @@
 
     <script src="/js/acctsuite.js?v=bagA5fix"></script>
     <script src="/js/api-client.js?v=bagA5fix"></script>
-    <script src="/js/api-sync.js?v=bagA5fix"></script>
+    <script src="/js/site-controls.js?v=ownerCtrl1"></script>
+    <script src="/js/api-sync.js?v=ownerCtrl1"></script>
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=bagA5fix"></script>
@@ -1422,8 +1423,13 @@
         function openSupportCenter() {
             const c = (window.AcctSuite && window.AcctSuite.CONFIG) || {};
             const em = c.supportEmail || 'support@acctsuite.com';
-            const tg = 'https://t.me/acctsuite_support';
-            const tgHandle = '@acctsuite_support';
+            const tg = c.supportTelegram || 'https://t.me/acctsuite_support';
+            let tgHandle = '@acctsuite_support';
+            try {
+              const u = new URL(tg);
+              const parts = u.pathname.replace(/^\/+/, '').split('/');
+              if (parts[0]) tgHandle = '@' + parts[0].replace(/^@/, '');
+            } catch (e) {}
             const gmailLogo = `<svg viewBox="0 0 24 24" class="w-8 h-8" aria-hidden="true"><path fill="#EA4335" d="M12 12.713L1.5 5.25V18c0 .825.675 1.5 1.5 1.5h4.5V11.1L12 15.087 16.5 11.1V19.5H21c.825 0 1.5-.675 1.5-1.5V5.25L12 12.713z"/><path fill="#34A853" d="M21 4.5h-1.5L12 10.087 4.5 4.5H3c-.45 0-.862.2-1.125.525L12 12.713l10.125-7.688A1.49 1.49 0 0 0 21 4.5z"/><path fill="#4285F4" d="M3 4.5v14.25c0 .225.05.437.15.637L7.5 11.1V4.5H3z"/><path fill="#FBBC05" d="M21 4.5h-4.5v6.6l4.35 8.287c.1-.2.15-.412.15-.637V4.5z"/></svg>`;
             const tgLogo = `<span class="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center text-white text-xl"><i class="fa-brands fa-telegram"></i></span>`;
             const chatLogo = `<span class="w-10 h-10 rounded-full bg-brandPrimary flex items-center justify-center text-white text-xl"><i class="fa-solid fa-comments"></i></span>`;

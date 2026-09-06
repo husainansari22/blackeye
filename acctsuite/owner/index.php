@@ -52,10 +52,58 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('referral_reward_amount', (string)(float)($_POST['referral_reward'] ?? 5));
             setting_set('referral_min_deposit', (string)(float)($_POST['referral_min_deposit'] ?? 50));
             setting_set('support_telegram', trim((string)$_POST['support_telegram']));
+            setting_set('group_telegram', trim((string)($_POST['group_telegram'] ?? '')));
+            setting_set('support_whatsapp', trim((string)($_POST['support_whatsapp'] ?? '')));
             setting_set('support_email', trim((string)$_POST['support_email']));
+            setting_set('site_name', trim((string)($_POST['site_name'] ?? 'AcctSuite')) ?: 'AcctSuite');
+            setting_set('site_tagline', trim((string)($_POST['site_tagline'] ?? '')));
+            setting_set('announcement_enabled', !empty($_POST['announcement_enabled']) ? '1' : '0');
+            setting_set('announcement_text', trim((string)($_POST['announcement_text'] ?? '')));
+            setting_set('maintenance_mode', !empty($_POST['maintenance_mode']) ? '1' : '0');
+            setting_set('maintenance_message', trim((string)($_POST['maintenance_message'] ?? 'We are doing a short maintenance. Please try again soon.')));
+            setting_set('listings_paused', !empty($_POST['listings_paused']) ? '1' : '0');
+            setting_set('listings_paused_message', trim((string)($_POST['listings_paused_message'] ?? 'New listings are temporarily paused by the platform owner.')));
+            setting_set('referrals_enabled', !empty($_POST['referrals_enabled']) ? '1' : '0');
+            setting_set('registrations_enabled', !empty($_POST['registrations_enabled']) ? '1' : '0');
+            setting_set('dispute_window_minutes', (string)max(5, min(10080, (int)($_POST['dispute_window_minutes'] ?? 60))));
+            setting_set('warranty_hours', (string)max(1, min(720, (int)($_POST['warranty_hours'] ?? 24))));
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
+        }
+
+        if ($form === 'resolve_report') {
+            ensure_marketplace_extras();
+            $rid = (int)($_POST['report_id'] ?? 0);
+            $status = (string)($_POST['status'] ?? 'resolved');
+            if (!in_array($status, ['open', 'resolved', 'dismissed'], true)) $status = 'resolved';
+            $note = trim((string)($_POST['note'] ?? ''));
+            // Ensure note column exists
+            try { db()->query('SELECT admin_note FROM seller_reports LIMIT 1'); }
+            catch (Throwable $e) {
+                try { db()->exec("ALTER TABLE seller_reports ADD COLUMN admin_note VARCHAR(500) NULL AFTER status"); } catch (Throwable $e2) {}
+                try { db()->exec("ALTER TABLE seller_reports ADD COLUMN resolved_at DATETIME NULL AFTER admin_note"); } catch (Throwable $e3) {}
+            }
+            $stmt = db()->prepare("UPDATE seller_reports SET status = ?, admin_note = ?, resolved_at = IF(? = 'open', NULL, NOW()) WHERE id = ?");
+            $stmt->execute([$status, $note !== '' ? $note : null, $status, $rid]);
+            $flash = 'Report updated.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: /owner/?tab=reports');
+            exit;
+        }
+
+        if ($form === 'set_user_plan') {
+            $uid = (int)($_POST['user_id'] ?? 0);
+            $plan = preg_replace('/[^a-z0-9_]/', '', strtolower((string)($_POST['plan'] ?? 'free')));
+            if ($uid < 1) throw new RuntimeException('Invalid user');
+            $exists = db()->prepare('SELECT id FROM plans WHERE id = ?');
+            $exists->execute([$plan]);
+            if (!$exists->fetch() && $plan !== 'free') throw new RuntimeException('Unknown plan');
+            db()->prepare('UPDATE users SET plan = ? WHERE id = ?')->execute([$plan ?: 'free', $uid]);
+            $flash = 'User plan updated to ' . $plan . '.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: /owner/?tab=users&id=' . $uid);
+            exit;
         }
 
         if ($form === 'staff_passwords') {
@@ -1139,6 +1187,30 @@ $tab = $_GET['tab'] ?? 'overview';
             <span class="av-settings-label">Plan</span>
             <span class="av-settings-value"><?= h($u['plan'] ?: 'free') ?></span>
           </div>
+          <form method="post" action="?tab=users&amp;id=<?= (int)$u['id'] ?>" class="av-settings-group" style="padding:0.75rem 1rem;border-top:1px solid rgba(0,0,0,.06)">
+            <input type="hidden" name="form" value="set_user_plan">
+            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+            <label class="text-[11px] av-muted" style="display:block;margin-bottom:.35rem">Assign plan</label>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+              <select name="plan" style="min-width:10rem">
+                <?php
+                  $planOpts = db()->query('SELECT id, name FROM plans ORDER BY price ASC')->fetchAll();
+                  $curPlan = (string)($u['plan'] ?: 'free');
+                  $seen = [];
+                  foreach ($planOpts as $po) {
+                    $seen[(string)$po['id']] = true;
+                    $sel = $curPlan === (string)$po['id'] ? 'selected' : '';
+                    echo '<option value="' . h($po['id']) . '" ' . $sel . '>' . h($po['name']) . '</option>';
+                  }
+                  if (empty($seen['free'])) {
+                    $sel = $curPlan === 'free' ? 'selected' : '';
+                    echo '<option value="free" ' . $sel . '>Free</option>';
+                  }
+                ?>
+              </select>
+              <button type="submit" class="av-btn av-btn-primary">Set plan</button>
+            </div>
+          </form>
           <div class="av-settings-row is-static">
             <span class="av-settings-icon" style="background:#64748b"><i class="fa-solid fa-calendar"></i></span>
             <span class="av-settings-label">Joined</span>
@@ -1836,8 +1908,21 @@ $tab = $_GET['tab'] ?? 'overview';
                   <p class="av-row-sub av-muted"><?= h($r['created_at']) ?></p>
                 </div>
               </div>
-              <div class="av-admin-card-actions">
+              <div class="av-admin-card-actions" style="flex-wrap:wrap;gap:.5rem">
                 <a class="av-btn av-btn-primary" href="?tab=chats&order_id=<?= (int)$r['order_id'] ?>">Open chat</a>
+                <form method="post" style="display:flex;gap:.35rem;flex-wrap:wrap;align-items:center">
+                  <input type="hidden" name="form" value="resolve_report">
+                  <input type="hidden" name="report_id" value="<?= (int)$r['id'] ?>">
+                  <select name="status" class="av-select" style="min-width:7rem">
+                    <?php $st = (string)($r['status'] ?? 'open'); ?>
+                    <option value="open" <?= $st==='open'?'selected':'' ?>>Open</option>
+                    <option value="resolved" <?= $st==='resolved'?'selected':'' ?>>Resolved</option>
+                    <option value="dismissed" <?= $st==='dismissed'?'selected':'' ?>>Dismissed</option>
+                  </select>
+                  <input name="note" placeholder="Note (optional)" value="<?= h($r['admin_note'] ?? '') ?>" style="min-width:10rem">
+                  <button class="av-btn" type="submit">Update</button>
+                </form>
+                <span class="av-stat-pill"><?= h($r['status'] ?? 'open') ?></span>
               </div>
             </article>
           <?php endforeach; ?>
@@ -2210,13 +2295,24 @@ $tab = $_GET['tab'] ?? 'overview';
       <div class="av-page">
         <div class="av-page-head">
           <div>
-            <h2 class="av-page-title">Settings</h2>
-            <p class="av-page-sub">Fees, referral rewards, and support contacts.</p>
+            <h2 class="av-page-title">Owner site controls</h2>
+            <p class="av-page-sub">Brand, fees, policy windows, announcements, and feature switches — so the owner can run the marketplace without a developer.</p>
           </div>
         </div>
         <form method="post" class="av-panel">
           <input type="hidden" name="form" value="settings">
-          <div class="av-panel-head"><span>Platform</span></div>
+          <div class="av-panel-head"><span>Brand &amp; contacts</span></div>
+          <div class="av-panel-body space-y-4">
+            <div class="av-form-grid cols-2">
+              <div class="av-field-block"><label>Site name</label><input name="site_name" value="<?= h(setting_get('site_name', app_config()['app_name'] ?? 'AcctSuite')) ?>" placeholder="AcctSuite"></div>
+              <div class="av-field-block"><label>Tagline</label><input name="site_tagline" value="<?= h(setting_get('site_tagline', 'Buy & sell digital accounts safely')) ?>" placeholder="Short line under the brand"></div>
+              <div class="av-field-block"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctsuite.com')) ?>"></div>
+              <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctsuite_support')) ?>" placeholder="https://t.me/..."></div>
+              <div class="av-field-block"><label>Group / community Telegram</label><input name="group_telegram" value="<?= h(setting_get('group_telegram','https://t.me/acctsuite')) ?>" placeholder="https://t.me/..."></div>
+              <div class="av-field-block"><label>WhatsApp (optional)</label><input name="support_whatsapp" value="<?= h(setting_get('support_whatsapp','')) ?>" placeholder="https://wa.me/234..."></div>
+            </div>
+          </div>
+          <div class="av-panel-head" style="border-top:1px solid var(--av-border,rgba(0,0,0,.08))"><span>Fees &amp; wallet</span></div>
           <div class="av-panel-body space-y-4">
             <div class="av-admin-card">
               <h3 class="av-row-title" style="margin-bottom:0.45rem">₦ Naira rate</h3>
@@ -2244,14 +2340,46 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block"><label>Deposit fee (%)</label><input name="deposit_fee" type="number" step="0.1" value="<?= h(((float)setting_get('deposit_fee_rate',0))*100) ?>"></div>
               <div class="av-field-block"><label>Referral reward ($)</label><input name="referral_reward" type="number" step="0.01" value="<?= h(setting_get('referral_reward_amount',5)) ?>"></div>
               <div class="av-field-block"><label>Referral min deposit ($)</label><input name="referral_min_deposit" type="number" step="0.01" value="<?= h(setting_get('referral_min_deposit',50)) ?>"></div>
-              <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctsuite_support')) ?>" placeholder="https://t.me/acctsuite_support"></div>
-              <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctsuite.com')) ?>"></div>
             </div>
-            <button class="av-btn av-btn-primary">Save settings</button>
+          </div>
+          <div class="av-panel-head" style="border-top:1px solid var(--av-border,rgba(0,0,0,.08))"><span>Buyer protection policy</span></div>
+          <div class="av-panel-body space-y-4">
+            <p class="text-[11px] av-muted">These timers apply to <strong>new</strong> completed orders. Existing open orders keep their original deadlines.</p>
+            <div class="av-form-grid cols-2">
+              <div class="av-field-block"><label>Dispute window (minutes)</label><input name="dispute_window_minutes" type="number" min="5" max="10080" step="1" value="<?= h(setting_get('dispute_window_minutes',60)) ?>"><p class="text-[10px] av-muted mt-1">How long a buyer can open a dispute after delivery.</p></div>
+              <div class="av-field-block"><label>Warranty window (hours)</label><input name="warranty_hours" type="number" min="1" max="720" step="1" value="<?= h(setting_get('warranty_hours',24)) ?>"><p class="text-[10px] av-muted mt-1">Post-dispute warranty review window (e.g. banned account).</p></div>
+            </div>
+          </div>
+          <div class="av-panel-head" style="border-top:1px solid var(--av-border,rgba(0,0,0,.08))"><span>Announcements &amp; feature switches</span></div>
+          <div class="av-panel-body space-y-4">
+            <label class="av-check-row" style="display:flex;gap:.5rem;align-items:flex-start">
+              <input type="checkbox" name="announcement_enabled" value="1" <?= setting_get('announcement_enabled','0')==='1'?'checked':'' ?>>
+              <span><strong>Show site announcement banner</strong><br><span class="text-[11px] av-muted">Visible on the homepage and dashboard header.</span></span>
+            </label>
+            <div class="av-field-block"><label>Announcement text</label><textarea name="announcement_text" rows="2" placeholder="e.g. New sellers must complete KYC before listing."><?= h(setting_get('announcement_text','')) ?></textarea></div>
+            <label class="av-check-row" style="display:flex;gap:.5rem;align-items:flex-start">
+              <input type="checkbox" name="maintenance_mode" value="1" <?= setting_get('maintenance_mode','0')==='1'?'checked':'' ?>>
+              <span><strong>Maintenance mode</strong><br><span class="text-[11px] av-muted">Blocks new registrations. Shows the maintenance message site-wide.</span></span>
+            </label>
+            <div class="av-field-block"><label>Maintenance message</label><input name="maintenance_message" value="<?= h(setting_get('maintenance_message','We are doing a short maintenance. Please try again soon.')) ?>"></div>
+            <label class="av-check-row" style="display:flex;gap:.5rem;align-items:flex-start">
+              <input type="checkbox" name="listings_paused" value="1" <?= setting_get('listings_paused','0')==='1'?'checked':'' ?>>
+              <span><strong>Pause new listings</strong><br><span class="text-[11px] av-muted">Sellers cannot create new ads until you turn this off.</span></span>
+            </label>
+            <div class="av-field-block"><label>Listings paused message</label><input name="listings_paused_message" value="<?= h(setting_get('listings_paused_message','New listings are temporarily paused by the platform owner.')) ?>"></div>
+            <label class="av-check-row" style="display:flex;gap:.5rem;align-items:flex-start">
+              <input type="checkbox" name="registrations_enabled" value="1" <?= setting_get('registrations_enabled','1')==='1'?'checked':'' ?>>
+              <span><strong>Allow new user registrations</strong></span>
+            </label>
+            <label class="av-check-row" style="display:flex;gap:.5rem;align-items:flex-start">
+              <input type="checkbox" name="referrals_enabled" value="1" <?= setting_get('referrals_enabled','1')==='1'?'checked':'' ?>>
+              <span><strong>Referral rewards enabled</strong></span>
+            </label>
+            <button class="av-btn av-btn-primary">Save all site controls</button>
           </div>
         </form>
 
-                <form method="post" class="av-panel" style="margin-top:1rem">
+        <form method="post" class="av-panel" style="margin-top:1rem">
           <input type="hidden" name="form" value="staff_passwords">
           <div class="av-panel-head"><span>Admin usernames &amp; passwords</span></div>
           <div class="av-panel-body space-y-4">

@@ -320,12 +320,31 @@
             salesCommissionRate: cfgRes.config.salesCommissionRate != null ? cfgRes.config.salesCommissionRate : 0.22,
             depositFeeRate: cfgRes.config.depositFeeRate,
             supportTelegram: cfgRes.config.supportTelegram,
+            groupTelegram: cfgRes.config.groupTelegram,
+            supportWhatsapp: cfgRes.config.supportWhatsapp,
             supportEmail: cfgRes.config.supportEmail,
+            siteName: cfgRes.config.siteName,
+            siteTagline: cfgRes.config.siteTagline,
+            announcementEnabled: !!cfgRes.config.announcementEnabled,
+            announcementText: cfgRes.config.announcementText || '',
+            maintenanceMode: !!cfgRes.config.maintenanceMode,
+            maintenanceMessage: cfgRes.config.maintenanceMessage || '',
+            listingsPaused: !!cfgRes.config.listingsPaused,
+            listingsPausedMessage: cfgRes.config.listingsPausedMessage || '',
+            referralsEnabled: cfgRes.config.referralsEnabled !== false,
+            registrationsEnabled: cfgRes.config.registrationsEnabled !== false,
+            disputeWindowMinutes: cfgRes.config.disputeWindowMinutes || 60,
+            warrantyHours: cfgRes.config.warrantyHours || 24,
             paymentCurrency: cfgRes.config.paymentCurrency || 'NGN',
             usdNgnRate: cfgRes.config.usdNgnRate || 1600,
             walletCurrencies: cfgRes.config.walletCurrencies || null,
           },
         });
+        try {
+          if (typeof window.applyAcctSuiteSiteControls === 'function') {
+            window.applyAcctSuiteSiteControls(cfgRes.config);
+          }
+        } catch (eBanner) {}
         if (Array.isArray(cfgRes.plans)) {
           const plans = {};
           cfgRes.plans.forEach((p) => {
