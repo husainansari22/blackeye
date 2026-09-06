@@ -2210,7 +2210,7 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="av-page-head">
           <div>
             <h2 class="av-page-title">Settings</h2>
-            <p class="av-page-sub">Fees, referral rewards, and support contacts.</p>
+            <p class="av-page-sub">Fees, referral rewards, support contacts, and owner/staff login credentials.</p>
           </div>
         </div>
         <form method="post" class="av-panel">
