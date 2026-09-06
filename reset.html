@@ -8,12 +8,49 @@
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="robots" content="noindex,nofollow">
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260906auth1">
     
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
   <script src="/js/api-client.js?v=20260821flw2"></script>
   <link rel="stylesheet" href="/css/mobile-fix.css?v=20260821zoom1">
   <script src="/js/mobile-fix.js?v=20260821zoom1"></script>
+  <style>
+    #resetForm input[type="password"],
+    #resetForm input[type="text"] {
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff;
+      caret-color: #0ea5e9;
+      background-color: #18181b !important;
+      border-color: #3f3f46;
+    }
+    #resetForm input::placeholder {
+      color: #71717a !important;
+      -webkit-text-fill-color: #71717a;
+      opacity: 1;
+    }
+    #resetForm input:-webkit-autofill,
+    #resetForm input:-webkit-autofill:hover,
+    #resetForm input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #ffffff !important;
+      box-shadow: 0 0 0 1000px #18181b inset !important;
+    }
+    .auth-submit-idle {
+      background: #18181b !important;
+      border: 1px solid #3f3f46 !important;
+      color: #a1a1aa !important;
+      cursor: not-allowed;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+    .auth-submit-ready {
+      background: #0ea5e9 !important;
+      border: 1px solid #0ea5e9 !important;
+      color: #ffffff !important;
+      cursor: pointer;
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
 </head>
 <body class="bg-darkBg min-h-screen text-white flex items-center justify-center p-4">
   <div class="w-full max-w-md">
@@ -33,17 +70,17 @@
           <label class="block text-xs text-slate-300 mb-1.5">New password</label>
           <div class="relative">
             <input id="np" type="password" minlength="6" required placeholder="At least 6 characters"
-              class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-sm focus:outline-none focus:border-skyBrand">
+              class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-skyBrand">
             <i class="fa-regular fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer" onclick="toggle('np', this)"></i>
           </div>
         </div>
         <div>
           <label class="block text-xs text-slate-300 mb-1.5">Confirm password</label>
           <input id="np2" type="password" minlength="6" required placeholder="Type it again"
-            class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-skyBrand">
+            class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-skyBrand">
         </div>
         <p id="err" class="hidden text-xs text-red-400"></p>
-        <button id="btn" type="submit" class="w-full bg-skyBrand hover:bg-skyHover text-white font-bold py-3.5 rounded-xl transition">
+        <button id="btn" type="submit" disabled class="auth-submit-idle w-full font-bold py-3.5 rounded-xl transition">
           Update password
         </button>
       </form>
@@ -65,6 +102,25 @@
     function tokenFromUrl() {
       return new URLSearchParams(location.search).get('token') || '';
     }
+
+    function refreshResetBtn() {
+      const btn = document.getElementById('btn');
+      if (!btn) return;
+      const ready = String(document.getElementById('np').value || '').trim().length >= 6
+        && String(document.getElementById('np2').value || '').trim().length >= 6;
+      btn.disabled = !ready;
+      btn.classList.toggle('auth-submit-ready', ready);
+      btn.classList.toggle('auth-submit-idle', !ready);
+    }
+
+    ['np', 'np2'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', refreshResetBtn);
+        el.addEventListener('change', refreshResetBtn);
+      }
+    });
+    refreshResetBtn();
 
     async function submitReset(e) {
       e.preventDefault();
@@ -100,8 +156,8 @@
       } catch (ex) {
         err.textContent = ex.message || 'Could not reset password.';
         err.classList.remove('hidden');
-        btn.disabled = false;
         btn.textContent = 'Update password';
+        refreshResetBtn();
       }
     }
 

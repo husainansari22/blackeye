@@ -23,6 +23,9 @@ module.exports = {
         darkCard: '#1e293b',
         lightBg: '#f0f4f8',
         lightCard: '#ffffff',
+        // Auth / form controls (compiled — previously missing → white box + white text)
+        inputBg: '#18181b',
+        inputBorder: '#3f3f46',
       },
     },
   },

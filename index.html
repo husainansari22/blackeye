@@ -84,7 +84,7 @@
       ]
     }
     </script>
-    <link rel="stylesheet" href="/css/tailwind.css?v=20260827perf1">
+    <link rel="stylesheet" href="/css/tailwind.css?v=20260906auth1">
     <script src="/js/api-client.js?v=20260821flw2"></script>
     
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=6.4.0">
@@ -109,6 +109,71 @@
             animation: orbitBall 4s linear infinite;
         }
         html { scroll-behavior: smooth; }
+        /* Auth inputs: readable typed text in light + dark (never rely on missing utility classes alone). */
+        #page_signup input[type="text"],
+        #page_signup input[type="email"],
+        #page_signup input[type="tel"],
+        #page_signup input[type="password"],
+        #page_login input[type="email"],
+        #page_login input[type="password"],
+        #appModal input[type="email"],
+        #appModal input[type="text"],
+        #appModal input[type="password"] {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff;
+            caret-color: #0ea5e9;
+            background-color: #18181b !important;
+            border-color: #3f3f46;
+        }
+        #page_signup #su_phone {
+            background-color: transparent !important;
+            border-color: transparent;
+        }
+        #page_signup .auth-phone-wrap {
+            background-color: #18181b !important;
+            border-color: #3f3f46 !important;
+        }
+        #page_signup input::placeholder,
+        #page_login input::placeholder,
+        #appModal input::placeholder {
+            color: #71717a !important;
+            -webkit-text-fill-color: #71717a;
+            opacity: 1;
+        }
+        #page_signup input:-webkit-autofill,
+        #page_signup input:-webkit-autofill:hover,
+        #page_signup input:-webkit-autofill:focus,
+        #page_login input:-webkit-autofill,
+        #page_login input:-webkit-autofill:hover,
+        #page_login input:-webkit-autofill:focus,
+        #appModal input:-webkit-autofill,
+        #appModal input:-webkit-autofill:hover,
+        #appModal input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #ffffff !important;
+            caret-color: #0ea5e9;
+            transition: background-color 99999s ease-out 0s;
+            box-shadow: 0 0 0 1000px #18181b inset !important;
+        }
+        .auth-submit-idle {
+            background: #18181b !important;
+            border: 1px solid #3f3f46 !important;
+            color: #a1a1aa !important;
+            cursor: not-allowed;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+        .auth-submit-ready {
+            background: #0ea5e9 !important;
+            border: 1px solid #0ea5e9 !important;
+            color: #ffffff !important;
+            cursor: pointer;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .auth-submit-ready:hover {
+            background: #0284c7 !important;
+            border-color: #0284c7 !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
@@ -341,32 +406,32 @@
             <p class="text-gray-400 text-sm">Already have an account? <span class="text-skyBrand cursor-pointer font-medium" onclick="switchPage('login')">Login</span></p>
         </div>
 
-        <form class="space-y-4" onsubmit="handleSignup(event)">
+        <form id="signupForm" class="space-y-4" onsubmit="handleSignup(event)">
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Full Name <span class="text-red-500">*</span></label>
-                <input type="text" id="su_name" placeholder="Type your full name" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                <input type="text" id="su_name" autocomplete="name" placeholder="Type your full name" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-skyBrand transition" required>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Email address <span class="text-red-500">*</span></label>
-                <input type="email" id="su_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                <input type="email" id="su_email" autocomplete="email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-skyBrand transition" required>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
-                <div class="flex bg-inputBg border border-inputBorder rounded-xl overflow-hidden focus-within:border-skyBrand transition">
+                <div class="auth-phone-wrap flex bg-inputBg border border-inputBorder rounded-xl overflow-hidden focus-within:border-skyBrand transition">
                     <div class="flex items-center px-3 border-r border-inputBorder bg-inputBg text-white text-sm gap-2">
                         <img id="country_flag" src="https://flagcdn.com/24x18/ng.png" alt="flag" class="w-6 h-4 rounded-sm object-cover">
                         <span id="country_code" class="text-xs font-semibold">+234</span>
                     </div>
-                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-white text-sm focus:outline-none" required>
+                    <input type="tel" id="su_phone" autocomplete="tel-national" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-white placeholder:text-zinc-500 text-sm focus:outline-none" required>
                 </div>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="su_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <input type="password" id="su_pass" autocomplete="new-password" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-skyBrand transition" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_pass', this)"></i>
                 </div>
                 <ul class="text-gray-500 text-xs mt-1.5 space-y-0.5 list-disc pl-4">
@@ -378,7 +443,7 @@
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Confirm password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <input type="password" id="su_cpass" autocomplete="new-password" placeholder="Type your Confirm password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-skyBrand transition" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_cpass', this)"></i>
                 </div>
             </div>
@@ -388,7 +453,7 @@
                 <p class="text-xs text-gray-400 leading-tight">By clicking on this, I give consent to Acctventa <a href="/privacy" class="text-skyBrand underline">Privacy Policy</a> and <a href="/terms" class="text-skyBrand underline">Terms of Use</a></p>
             </div>
 
-            <button type="submit" class="w-full bg-skyBrand hover:bg-skyHover text-white font-semibold py-3.5 rounded-xl transition mt-3">
+            <button type="submit" id="signupSubmit" disabled class="auth-submit-idle w-full font-semibold py-3.5 rounded-xl transition mt-3">
                 Sign up
             </button>
         </form>
@@ -405,16 +470,16 @@
             <p class="text-gray-400 text-sm">Don't have an account? <span class="text-skyBrand cursor-pointer font-medium" onclick="switchPage('signup')">Sign up</span></p>
         </div>
 
-        <form class="space-y-5" onsubmit="handleLogin(event)">
+        <form id="loginForm" class="space-y-5" onsubmit="handleLogin(event)">
             <div>
                 <label class="block text-xs text-gray-300 mb-1.5">Email address <span class="text-red-500">*</span></label>
-                <input type="email" id="li_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                <input type="email" id="li_email" autocomplete="email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-skyBrand transition" required>
             </div>
             
             <div>
                 <label class="block text-xs text-gray-300 mb-1.5">Password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="li_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-white text-sm focus:outline-none focus:border-skyBrand transition" required>
+                    <input type="password" id="li_pass" autocomplete="current-password" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-skyBrand transition" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('li_pass', this)"></i>
                 </div>
             </div>
@@ -423,7 +488,7 @@
                 <a href="#" onclick="openForgotPassword(event)" class="text-xs text-skyBrand hover:underline">Forgot Password?</a>
             </div>
 
-            <button type="submit" class="w-full bg-inputBg border border-inputBorder text-gray-300 hover:bg-skyBrand hover:text-white hover:border-skyBrand font-semibold py-3.5 rounded-xl transition">
+            <button type="submit" id="loginSubmit" disabled class="auth-submit-idle w-full font-semibold py-3.5 rounded-xl transition">
                 Login
             </button>
         </form>
@@ -459,6 +524,48 @@
                 signup: 'Sign up | Acctventa'
             };
             document.title = titles[pageId] || titles.home;
+            if (pageId === 'login' || pageId === 'signup') {
+                refreshAuthSubmitState();
+            }
+        }
+
+        function filled(id) {
+            const el = document.getElementById(id);
+            return !!(el && String(el.value || '').trim());
+        }
+
+        function setAuthSubmitReady(btn, ready) {
+            if (!btn) return;
+            btn.disabled = !ready;
+            btn.classList.toggle('auth-submit-ready', ready);
+            btn.classList.toggle('auth-submit-idle', !ready);
+        }
+
+        function refreshAuthSubmitState() {
+            const signupReady = filled('su_name') && filled('su_email') && filled('su_phone')
+                && filled('su_pass') && filled('su_cpass')
+                && !!(document.getElementById('su_terms') && document.getElementById('su_terms').checked);
+            setAuthSubmitReady(document.getElementById('signupSubmit'), signupReady);
+
+            const loginReady = filled('li_email') && filled('li_pass');
+            setAuthSubmitReady(document.getElementById('loginSubmit'), loginReady);
+
+            const forgotBtn = document.getElementById('forgotBtn');
+            if (forgotBtn && document.getElementById('forgotEmail')) {
+                setAuthSubmitReady(forgotBtn, filled('forgotEmail'));
+            }
+        }
+
+        function wireAuthFormGuards() {
+            ['su_name', 'su_email', 'su_phone', 'su_pass', 'su_cpass', 'li_email', 'li_pass'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', refreshAuthSubmitState);
+                el.addEventListener('change', refreshAuthSubmitState);
+            });
+            const terms = document.getElementById('su_terms');
+            if (terms) terms.addEventListener('change', refreshAuthSubmitState);
+            refreshAuthSubmitState();
         }
 
         function togglePass(fieldId, icon) {
@@ -497,15 +604,21 @@
                   <h3 class="font-bold text-xl mb-1.5 tracking-tight">Forgot your password?</h3>
                   <p class="text-xs text-gray-400 mb-5 leading-relaxed">Enter the email on your Acctventa account. We’ll send a secure link so you can choose a new password.</p>
                   <label class="block text-xs text-gray-300 mb-1.5">Email address</label>
-                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="w-full bg-inputBg border border-inputBorder rounded-xl p-3.5 text-sm mb-3 text-white focus:outline-none focus:border-skyBrand" required>
+                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="w-full bg-inputBg border border-inputBorder rounded-xl p-3.5 text-sm mb-3 text-white placeholder:text-zinc-500 focus:outline-none focus:border-skyBrand" required>
                   <p id="forgotErr" class="hidden text-xs text-red-400 mb-3"></p>
-                  <button id="forgotBtn" onclick="submitForgotPassword()" class="w-full bg-skyBrand hover:bg-skyHover py-3.5 rounded-xl font-bold text-sm transition">Send reset link</button>
+                  <button id="forgotBtn" type="button" onclick="submitForgotPassword()" disabled class="auth-submit-idle w-full py-3.5 rounded-xl font-bold text-sm transition">Send reset link</button>
                   <p class="text-[11px] text-gray-500 mt-4 text-center">Remembered it? <button type="button" onclick="closeModal()" class="text-skyBrand font-medium">Back to login</button></p>
                 </div>
             `;
             modal.classList.remove('hidden'); modal.classList.add('flex');
             const known = document.getElementById('li_email');
-            if (known && known.value) document.getElementById('forgotEmail').value = known.value;
+            const forgotEmail = document.getElementById('forgotEmail');
+            if (known && known.value && forgotEmail) forgotEmail.value = known.value;
+            if (forgotEmail) {
+                forgotEmail.addEventListener('input', refreshAuthSubmitState);
+                forgotEmail.addEventListener('change', refreshAuthSubmitState);
+            }
+            refreshAuthSubmitState();
         }
 
         async function submitForgotPassword() {
@@ -534,8 +647,8 @@
                 }
                 err.textContent = ex.message || 'Could not send reset email.';
                 err.classList.remove('hidden');
-                btn.disabled = false;
                 btn.textContent = 'Send reset link';
+                refreshAuthSubmitState();
             }
         }
 
@@ -866,6 +979,7 @@
             }
         }
         detectUserCountry();
+        wireAuthFormGuards();
     </script>
 </body>
 </html>
