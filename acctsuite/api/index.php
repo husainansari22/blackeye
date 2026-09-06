@@ -20,6 +20,9 @@ try {
             if (function_exists('ensure_demo_users_purged')) {
                 ensure_demo_users_purged();
             }
+            if (function_exists('ensure_pass_messaging_preview_rereview')) {
+                ensure_pass_messaging_preview_rereview();
+            }
             json_out(['ok' => true, 'installed' => setting_get('installed') === '1', 'app' => app_config()['app_name'] ?? 'AcctSuite']);
 
         case 'config.public':
@@ -228,6 +231,9 @@ try {
             ensure_user_avatar_column();
             if (function_exists('ensure_demo_users_purged')) {
                 ensure_demo_users_purged();
+            }
+            if (function_exists('ensure_pass_messaging_preview_rereview')) {
+                ensure_pass_messaging_preview_rereview();
             }
             $rows = db()->query("SELECT a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
                 a.public_slug AS publicSlug, a.created_at,

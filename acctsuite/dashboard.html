@@ -165,7 +165,7 @@
     </style>
     <script src="/js/mobile-fix.js?v=bagA5fix"></script>
     <script src="/js/ui-toast.js?v=bagA5fix"></script>
-    <script src="/js/marketplace-catalog.js?v=bagA5fix"></script>
+    <script src="/js/marketplace-catalog.js?v=waPass1"></script>
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
@@ -885,9 +885,10 @@
                 <input type="text" id="wizardPass" placeholder="Type your Account Password here" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
             </div>
             <div>
-                <label class="block mb-1.5 text-xs font-medium text-slate-500">Preview link of account</label>
+                <label class="block mb-1.5 text-xs font-medium text-slate-500" id="wizardPreviewLabel">Preview link of account <span class="font-normal text-slate-400">(optional for WhatsApp / phone numbers)</span></label>
                 <input type="url" id="wizardPreview" placeholder="https://www.facebook.com/..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm">
-                <p class="text-[10px] text-slate-400 mt-1">Required for social accounts. Buyers review this link before buying. Wrong links are denied by AI.</p>
+                <p id="wizardPreviewHint" class="text-[10px] text-slate-400 mt-1 hidden">WhatsApp and similar phone/messaging passes do not need a preview link.</p>
+                <p id="wizardPreviewHelp" class="text-[10px] text-slate-400 mt-1">Required for social profiles (Facebook, Instagram, etc.). Optional for WhatsApp and phone/messaging passes.</p>
             </div>
             <p class="text-xs font-bold pt-2 border-t border-slate-200 dark:border-slate-800">Additional information (optional)</p>
             <div>
@@ -964,15 +965,15 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.js?v=bagA5fix"></script>
+    <script src="/js/acctsuite.js?v=waPass1"></script>
     <script src="/js/api-client.js?v=listFix2"></script>
     <script src="/js/site-controls.js?v=ownerCtrl2"></script>
-    <script src="/js/api-sync.js?v=listFix2"></script>
+    <script src="/js/api-sync.js?v=waPass1"></script>
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=listFix2"></script>
     <script src="/js/listing-modal.js?v=listFix2"></script>
-    <script src="/js/dashboard-app.js?v=listFix2"></script>
+    <script src="/js/dashboard-app.js?v=waPass1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

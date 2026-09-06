@@ -332,6 +332,23 @@
   /** Credential-only groups — no public profile link to verify (VPN, gift cards, etc.) */
   var NO_PREVIEW_GROUP_IDS = ['vpn', 'giftcards', 'accounts', 'gaming', 'ecommerce', 'websites', 'others'];
 
+  /** WhatsApp-style phone/messaging passes — no reliable public profile URL to preview. */
+  var NO_PREVIEW_PASS_PRODUCTS = [
+    'whatsapp', 'signal', 'textnow', 'textplus', 'text plus', 'google voice',
+    'wechat', 'we chat', 'line', 'viber', 'imo', 'kik', 'skype',
+  ];
+
+  function isPassMessagingProduct(name) {
+    var lower = String(name || '').toLowerCase();
+    if (!lower) return false;
+    var i;
+    for (i = 0; i < NO_PREVIEW_PASS_PRODUCTS.length; i++) {
+      var p = NO_PREVIEW_PASS_PRODUCTS[i];
+      if (lower === p || lower.indexOf(p) !== -1) return true;
+    }
+    return false;
+  }
+
   function resolveCategory(name) {
     var cat = String(name || '').trim();
     if (!cat) return null;
@@ -349,15 +366,17 @@
   }
 
   function categoryRequiresPreviewLink(name) {
+    if (isPassMessagingProduct(name)) return false;
     var resolved = resolveCategory(name);
+    if (resolved && isPassMessagingProduct(resolved.productName)) return false;
     if (resolved && NO_PREVIEW_GROUP_IDS.indexOf(resolved.groupId) !== -1) return false;
     var lower = String(name || '').toLowerCase();
     if (/\b(vpn|proxy|proxies|giftcard|gift card)\b/.test(lower)) return false;
     if (resolved && (resolved.groupId === 'social' || resolved.groupId === 'email')) return true;
     var socialEmail = [
-      'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
+      'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram',
       'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
-      'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
+      'outlook', 'yahoo', 'tinder', 'bumble',
     ];
     var i;
     for (i = 0; i < socialEmail.length; i++) {
@@ -369,6 +388,7 @@
   global.AcctSuiteCatalog = {
     GROUPS: GROUPS,
     NO_PREVIEW_GROUP_IDS: NO_PREVIEW_GROUP_IDS,
+    NO_PREVIEW_PASS_PRODUCTS: NO_PREVIEW_PASS_PRODUCTS,
     logoUrl: logoUrl,
     logoMarkHtml: logoMarkHtml,
     localLogoUrl: localLogoUrl,
@@ -377,6 +397,7 @@
     searchProducts: searchProducts,
     chipGroups: chipGroups,
     resolveCategory: resolveCategory,
+    isPassMessagingProduct: isPassMessagingProduct,
     categoryRequiresPreviewLink: categoryRequiresPreviewLink,
   };
 })(window);

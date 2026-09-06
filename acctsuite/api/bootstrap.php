@@ -618,6 +618,36 @@ function ensure_demo_users_purged(): void {
     }
 }
 
+/**
+ * Re-run AI review on WhatsApp-style listings that were denied only because a preview link
+ * used to be required — so existing denied ads go live without a manual re-upload.
+ */
+function ensure_pass_messaging_preview_rereview(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        if (setting_get('pass_messaging_preview_rereview_v1', '0') === '1') return;
+        $stmt = db()->query("SELECT * FROM ads WHERE status = 'denied' AND (
+            deny_reason LIKE '%Preview link is required%'
+            OR deny_reason LIKE '%preview link%required%'
+        ) ORDER BY id ASC LIMIT 200");
+        $rows = $stmt ? ($stmt->fetchAll() ?: []) : [];
+        foreach ($rows as $ad) {
+            $cat = (string)($ad['category'] ?? '');
+            if (!category_is_pass_messaging($cat)) continue;
+            $review = ai_review_listing($ad);
+            $status = (string)($review['status'] ?? 'denied');
+            $reason = (string)($review['reason'] ?? '');
+            $upd = db()->prepare("UPDATE ads SET status = ?, deny_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?");
+            $upd->execute([$status, $reason, (string)($review['reviewed_by'] ?? 'AI Review'), (int)$ad['id']]);
+        }
+        setting_set('pass_messaging_preview_rereview_v1', '1');
+    } catch (Throwable $e) {
+        // Never break public API if re-review fails
+    }
+}
+
 function ensure_user_payout_columns(): void {
     static $done = false;
     if ($done) return;
@@ -731,10 +761,30 @@ function bump_upload(int $userId): void {
     $stmt->execute([$userId, $day]);
 }
 
+/**
+ * Phone / messaging "pass" products (WhatsApp-style) have no reliable public profile URL —
+ * credentials alone are enough; preview link stays optional.
+ */
+function category_is_pass_messaging(string $category): bool {
+    $lower = strtolower(trim($category));
+    if ($lower === '') return false;
+    $pass_products = [
+        'whatsapp', 'signal', 'textnow', 'textplus', 'text plus', 'google voice',
+        'wechat', 'we chat', 'line', 'viber', 'imo', 'kik', 'skype',
+    ];
+    foreach ($pass_products as $p) {
+        if ($lower === $p || strpos($lower, $p) !== false) return true;
+    }
+    return false;
+}
+
 function category_requires_preview_link(string $category): bool {
     $cat = trim($category);
     if ($cat === '') return false;
     $lower = strtolower($cat);
+
+    // WhatsApp / Signal / TextNow-style passes — never require a preview link.
+    if (category_is_pass_messaging($cat)) return false;
 
     $no_preview_groups = [
         'vpn & proxys', 'vpn & proxies', 'giftcards', 'gift cards', 'gift card',
@@ -760,9 +810,9 @@ function category_requires_preview_link(string $category): bool {
     }
 
     $social_products = [
-        'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp',
+        'facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram',
         'snapchat', 'linkedin', 'pinterest', 'threads', 'discord', 'reddit', 'hotmail',
-        'outlook', 'yahoo', 'signal', 'wechat', 'tinder', 'bumble',
+        'outlook', 'yahoo', 'tinder', 'bumble',
     ];
     foreach ($social_products as $p) {
         if ($lower === $p || strpos($lower, $p) !== false) return true;

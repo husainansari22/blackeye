@@ -1949,6 +1949,37 @@
     document.getElementById('sellWizardOverlay').classList.add('hidden');
   };
 
+  function previewLinkOptionalForDraft() {
+    const cat = (sellDraft && (sellDraft.category || sellDraft.platform)) || '';
+    try {
+      if (window.AcctSuiteCatalog && typeof window.AcctSuiteCatalog.categoryRequiresPreviewLink === 'function') {
+        return !window.AcctSuiteCatalog.categoryRequiresPreviewLink(cat);
+      }
+      if (window.AcctSuite && typeof window.AcctSuite.categoryRequiresPreviewLink === 'function') {
+        return !window.AcctSuite.categoryRequiresPreviewLink(cat);
+      }
+    } catch (e) {}
+    return /whatsapp|signal|textnow|textplus|google voice|wechat|line|viber|imo|kik|skype/i.test(String(cat));
+  }
+
+  function syncWizardPreviewHints() {
+    const optional = previewLinkOptionalForDraft();
+    const hint = document.getElementById('wizardPreviewHint');
+    const help = document.getElementById('wizardPreviewHelp');
+    const label = document.getElementById('wizardPreviewLabel');
+    if (hint) hint.classList.toggle('hidden', !optional);
+    if (help) {
+      help.textContent = optional
+        ? 'Optional for this account type — WhatsApp / phone messaging passes do not need a preview link.'
+        : 'Required for social profiles (Facebook, Instagram, etc.). Optional for WhatsApp and phone/messaging passes.';
+    }
+    if (label) {
+      label.innerHTML = optional
+        ? 'Preview link of account <span class="font-normal text-slate-400">(optional)</span>'
+        : 'Preview link of account <span class="font-normal text-slate-400">(required for social profiles)</span>';
+    }
+  }
+
   function showSellStep(step) {
     sellStep = step;
     ['sellStep1', 'sellStep2', 'sellStep3'].forEach((id, i) => {
@@ -1964,6 +1995,7 @@
       el.classList.toggle('text-brandPrimary', i === step - 1);
       el.classList.toggle('font-bold', i === step - 1);
     });
+    if (step === 2) syncWizardPreviewHints();
     if (step === 3) fillSellReview();
   }
 

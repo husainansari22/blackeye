@@ -434,8 +434,17 @@
       return window.AcctSuiteCatalog.categoryRequiresPreviewLink(category);
     }
     const lower = String(category || '').toLowerCase();
+    // WhatsApp-style phone/messaging passes — preview link is optional.
+    if (
+      [
+        'whatsapp', 'signal', 'textnow', 'textplus', 'google voice', 'wechat',
+        'line', 'viber', 'imo', 'kik', 'skype',
+      ].some((p) => lower === p || lower.includes(p))
+    ) {
+      return false;
+    }
     if (/\b(vpn|proxy|proxies|giftcard|gift card)\b/.test(lower)) return false;
-    return ['facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram', 'whatsapp'].some((p) => lower.includes(p));
+    return ['facebook', 'instagram', 'tiktok', 'twitter', 'gmail', 'telegram'].some((p) => lower.includes(p));
   }
 
   function allowedHostsForCategory(category) {
