@@ -125,17 +125,17 @@
         #bottomNav .nav-item.is-idle { color: #9ca3af; }
         .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
 
-        /* Header live activity ticker (match marketing homepage) */
+        /* Header live activity ticker — compact so it never covers the wordmark */
         .as-live-ticker {
-            flex: 1 1 auto;
+            flex: 0 1 auto;
             min-width: 0;
-            max-width: 13.5rem;
-            height: 1.85rem;
+            max-width: 7.25rem;
+            height: 1.45rem;
             display: flex;
             align-items: center;
-            gap: 0.35rem;
-            margin: 0 0.35rem;
-            padding: 0 0.5rem 0 0.4rem;
+            gap: 0.25rem;
+            margin: 0 0.25rem;
+            padding: 0 0.4rem 0 0.3rem;
             border-radius: 999px;
             border: 1px solid rgba(139, 92, 246, 0.35);
             background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(109, 40, 217, 0.08));
@@ -143,9 +143,9 @@
         }
         .as-live-ticker__live {
             flex-shrink: 0;
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             font-weight: 800;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.05em;
             color: #34d399;
             line-height: 1;
         }
@@ -159,8 +159,8 @@
             background: linear-gradient(90deg, rgba(139, 92, 246, 0.22), rgba(76, 29, 149, 0.18));
         }
         .as-live-ticker__dot {
-            width: 0.45rem;
-            height: 0.45rem;
+            width: 0.35rem;
+            height: 0.35rem;
             border-radius: 999px;
             background: #34d399;
             box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
@@ -169,25 +169,25 @@
         }
         @keyframes asLivePulse {
             0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
-            70% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+            70% { box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
             100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
         }
         .as-live-ticker__track {
             flex: 1;
             min-width: 0;
             overflow: hidden;
-            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-            -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
         }
         .as-live-ticker__rail {
             display: inline-flex;
-            gap: 1.25rem;
+            gap: 1rem;
             white-space: nowrap;
             will-change: transform;
             animation: asLiveMarquee 22s linear infinite;
         }
         .as-live-ticker__rail span {
-            font-size: 0.65rem;
+            font-size: 0.58rem;
             font-weight: 600;
             letter-spacing: 0.01em;
             color: #7c3aed;
@@ -200,15 +200,21 @@
             from { transform: translateX(0); }
             to { transform: translateX(-50%); }
         }
-        /* Signed-in header is denser — keep a compact ticker */
+        /* Signed-in header is denser — keep ticker tiny so "cctsuite" stays fully visible */
         header.is-auth .as-live-ticker {
-            max-width: 8.5rem;
+            max-width: 5.25rem;
+            height: 1.35rem;
+            margin: 0 0.2rem;
+            padding: 0 0.35rem 0 0.28rem;
         }
         header.is-auth .as-live-ticker__live {
             display: none;
         }
-        @media (max-width: 380px) {
-            header.is-auth .as-live-ticker { max-width: 6.5rem; }
+        header.is-auth .as-live-ticker__rail span {
+            font-size: 0.52rem;
+        }
+        @media (max-width: 400px) {
+            header.is-auth .as-live-ticker { max-width: 4.5rem; }
         }
         @media (prefers-reduced-motion: reduce) {
             .as-live-ticker__rail { animation: none; }
@@ -224,12 +230,12 @@
     <!-- TOP HEADER: guest = logo + theme/menu right · signed-in = hamburger+logo left, shortcuts right -->
     <header class="fixed top-0 z-[100] w-full border-b border-slate-200 dark:border-slate-800 bg-lightCard dark:bg-darkBg shadow backdrop-blur-sm">
         <div class="mx-auto flex h-14 max-w-[500px] items-center justify-between px-4">
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex items-center gap-2.5 shrink-0">
                 <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0" onclick="toggleLeftMenu()" aria-label="Menu">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
-                <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-0 min-w-0">
-                    <img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[17px] sm:text-[20px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
+                <a href="#" onclick="switchTab('home'); return false;" class="flex items-center gap-0 shrink-0">
+                    <img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 -mr-1.5" width="36" height="36" decoding="async"><span class="whitespace-nowrap text-[15px] sm:text-[18px] font-semibold tracking-tight text-slate-900 dark:text-white">cctsuite</span>
                 </a>
             </div>
             <div class="as-live-ticker" id="headerLiveTicker" aria-label="Live marketplace activity" role="status">
@@ -251,7 +257,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
-                <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-3">
+                <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-2 sm:gap-3">
                     <button type="button" onclick="openSupportCenter()" class="border-r border-slate-200 dark:border-slate-700 pr-2 hover:text-brandPrimary transition" title="Support">
                         <i class="fa-solid fa-headset text-lg"></i>
                     </button>
