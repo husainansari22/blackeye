@@ -179,16 +179,13 @@
                     <button type="button" onclick="openSupportCenter()" class="border-r border-slate-200 dark:border-slate-700 pr-2 hover:text-brandPrimary transition" title="Support">
                         <i class="fa-solid fa-headset text-lg"></i>
                     </button>
-                    <button type="button" onclick="switchTab('ads')" class="hover:text-brandPrimary transition" title="Seller">
-                        <i class="fa-solid fa-desktop text-lg"></i>
+                    <button type="button" onclick="toggleNotificationDrawer()" class="relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-brandPrimary/15 text-brandPrimary hover:bg-brandPrimary hover:text-white transition" title="Notifications" aria-label="Open notifications">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span id="notifBadge" class="absolute -right-1 -top-1 hidden h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                     </button>
                     <button type="button" id="headerCartBtn" onclick="window.CommerceUI ? window.CommerceUI.openCartDrawer() : (typeof openCartDrawer==='function'&&openCartDrawer())" class="relative hover:text-brandPrimary transition" title="Cart">
                         <i class="fa-solid fa-cart-shopping text-lg"></i>
                         <span id="cartBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
-                    </button>
-                    <button type="button" onclick="toggleNotificationDrawer()" class="relative hover:text-brandPrimary transition" title="Notifications">
-                        <i class="fa-regular fa-bell text-lg"></i>
-                        <span id="notifBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                     </button>
                     <button type="button" onclick="openProfileOrSignIn()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
                         <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-brandPrimary text-white text-xs font-bold uppercase overflow-hidden">?</span>
@@ -233,24 +230,15 @@
             <!-- Filter Chips (built from catalog) -->
             <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
 
-            <!-- Home notifications CTA (replaces former ads / promo bar) -->
-            <button type="button" id="homeNotifBtn" onclick="toggleNotificationDrawer()" class="w-full rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-md relative overflow-hidden text-left transition hover:opacity-95 active:scale-[0.99]" style="background:linear-gradient(90deg,#7C3AED 0%,#1e3a8a 100%);color:#fff" aria-label="Open notifications">
-                <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full blur-xl pointer-events-none" style="background:rgba(255,255,255,0.1)"></div>
-                <div class="relative z-10 flex items-center gap-3 min-w-0">
-                    <span class="relative shrink-0 w-12 h-12 rounded-full bg-white/15 flex items-center justify-center">
-                        <i class="fa-solid fa-bell text-2xl" style="color:#fff"></i>
-                        <span id="homeNotifBadge" class="absolute -right-1 -top-1 hidden h-5 min-w-[1.25rem] px-1 items-center justify-center rounded-full bg-white text-[10px] font-bold text-brandPrimary shadow">0</span>
-                    </span>
-                    <span class="min-w-0">
-                        <span class="block text-[10px] font-bold tracking-wide uppercase" style="color:#ede9fe">Alerts</span>
-                        <span class="block font-bold text-sm mt-0.5 leading-snug" style="color:#fff">Notifications</span>
-                        <span class="block text-[10px] mt-0.5 leading-snug" style="color:#ede9fe">Tap to view orders, ads &amp; messages</span>
-                    </span>
+            <!-- Platform banner -->
+            <div class="rounded-xl p-3 flex justify-between items-center shadow-md relative overflow-hidden" style="background:linear-gradient(90deg,#7C3AED 0%,#1e3a8a 100%);color:#fff">
+                <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full blur-xl" style="background:rgba(255,255,255,0.1)"></div>
+                <div class="relative z-10 pr-2 min-w-0">
+                    <span class="text-[10px] font-bold tracking-wide" style="color:#ede9fe">SECURE MARKETPLACE</span>
+                    <p class="font-bold text-sm mt-0.5 leading-snug" style="color:#fff">Buy &amp; sell with escrow protection</p>
                 </div>
-                <span class="relative z-10 shrink-0 w-9 h-9 rounded-full bg-white/20 flex items-center justify-center" aria-hidden="true">
-                    <i class="fa-solid fa-chevron-right text-sm" style="color:#fff"></i>
-                </span>
-            </button>
+                <button type="button" onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
+            </div>
 <!-- Trending Catalog -->
             <div>
                 <div class="flex justify-between items-center mb-2">
@@ -965,15 +953,15 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.js?v=notifView2"></script>
+    <script src="/js/acctsuite.js?v=fixFix3"></script>
     <script src="/js/api-client.js?v=listFix2"></script>
     <script src="/js/site-controls.js?v=ownerCtrl2"></script>
-    <script src="/js/api-sync.js?v=notifView2"></script>
+    <script src="/js/api-sync.js?v=fixFix3"></script>
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
     <script src="/js/listing-modal.js?v=badgeFull1"></script>
-    <script src="/js/dashboard-app.js?v=notifView2"></script>
+    <script src="/js/dashboard-app.js?v=fixFix3"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
