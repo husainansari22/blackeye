@@ -3385,10 +3385,11 @@
           }
         }
       } catch (e) {}
-      const hydrated = await window.AcctSuiteApiSync.hydrateFromApi();
-      if (!hydrated && window.AcctSuiteApiSync.hydratePublicMarket) {
+      // Public market first so home cards appear on the first paint (session hydrate must never block them).
+      if (window.AcctSuiteApiSync.hydratePublicMarket) {
         await window.AcctSuiteApiSync.hydratePublicMarket();
       }
+      const hydrated = await window.AcctSuiteApiSync.hydrateFromApi();
       // Always re-pull orders/ads after hydrate so lists are never stuck empty
       try {
         if (hydrated && window.AcctSuiteApiSync.refreshOrdersFromApi) {

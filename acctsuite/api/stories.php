@@ -93,6 +93,9 @@ function stories_feed(int $limit = 40): array {
       FROM merchant_stories s
       JOIN users u ON u.id = s.user_id
       WHERE s.expires_at > NOW() AND u.is_banned = 0
+        AND u.email NOT LIKE '%@acctsuite.local'
+        AND u.email NOT LIKE 'demo.%@%'
+        AND u.name NOT IN ('Omoba','Michael','Ugochukwu')
       ORDER BY s.created_at DESC
       LIMIT {$limit}";
     $rows = db()->query($sql)->fetchAll();

@@ -143,20 +143,102 @@
     };
   }
 
+  const DEMO_SELLER_NAMES = { omoba: 1, michael: 1, ugochukwu: 1 };
+
+  function isDemoSellerIdentity(email, name) {
+    const e = String(email || '').toLowerCase();
+    const n = String(name || '').trim().toLowerCase();
+    if (e.endsWith('@acctsuite.local') || e.indexOf('demo.') === 0) return true;
+    if (n && DEMO_SELLER_NAMES[n]) return true;
+    return false;
+  }
+
+  function isDemoListing(row) {
+    if (!row) return false;
+    return isDemoSellerIdentity(row.sellerEmail || row.email, row.sellerName || row.name);
+  }
+
+  /** Strip legacy browser-seeded demo sellers so they never resurface as "live" ads. */
+  function scrubLocalDemoMarketplace() {
+    try {
+      const raw = localStorage.getItem('acctsuite_users');
+      if (!raw) return;
+      const users = JSON.parse(raw);
+      if (!users || typeof users !== 'object') return;
+      let changed = false;
+      Object.keys(users).forEach((email) => {
+        const u = users[email];
+        if (!u || typeof u !== 'object') return;
+        if (isDemoSellerIdentity(email, u.name)) {
+          delete users[email];
+          changed = true;
+          return;
+        }
+        if (Array.isArray(u.ads) && u.ads.length) {
+          const next = u.ads.filter((ad) => {
+            if (!ad) return false;
+            const title = String(ad.title || '').toLowerCase();
+            // Known seed titles from old demo packs
+            if (title.indexOf('facebook account') !== -1 && title.indexOf('nigeria') !== -1) return false;
+            if (title.indexOf('express vpn') !== -1 || title.indexOf('expressvpn') !== -1) return false;
+            if (title.indexOf('premium express') !== -1) return false;
+            return true;
+          });
+          if (next.length !== u.ads.length) {
+            u.ads = next;
+            changed = true;
+          }
+        }
+      });
+      if (changed) localStorage.setItem('acctsuite_users', JSON.stringify(users));
+    } catch (e) {}
+  }
+
+  async function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /** Fetch live market with short retries — never invent an empty catalog on transient failure. */
+  async function fetchMarketListingsMapped(Api, attempts) {
+    const tries = Math.max(1, attempts || 3);
+    let lastErr = null;
+    for (let i = 0; i < tries; i++) {
+      try {
+        if (i > 0 && Api.clearAvailabilityCache) Api.clearAvailabilityCache();
+        const marketRes = await Api.market();
+        const listings = (marketRes.listings || [])
+          .map(mapListing)
+          .filter((row) => !isDemoListing(row));
+        return { ok: true, listings: listings };
+      } catch (e) {
+        lastErr = e;
+        await sleep(180 * (i + 1));
+      }
+    }
+    return { ok: false, error: lastErr, listings: null };
+  }
+
   function patchMarketListingsOnly() {
     const A = global.AcctSuite;
     if (!A || A.__apiMarketPatched) return;
     A.__apiMarketPatched = true;
     const origMarket = A.getMarketplaceListings.bind(A);
     A.getMarketplaceListings = function () {
-      if (global.__acctsuiteApiMarket) return global.__acctsuiteApiMarket;
-      return origMarket();
+      // Once the live API catalog has been loaded (even if empty), never fall back to
+      // localStorage seed ads — that is what made old demo listings "come back".
+      if (Array.isArray(global.__acctsuiteApiMarket)) return global.__acctsuiteApiMarket;
+      if (global.__acctsuitePreferApiMarket) return [];
+      return (origMarket() || []).filter((row) => !isDemoListing(row));
     };
     const origFind = A.findListingById.bind(A);
     A.findListingById = function (id) {
-      const list = global.__acctsuiteApiMarket || [];
-      const hit = list.find((x) => String(x.id) === String(id));
-      return hit || origFind(id);
+      if (Array.isArray(global.__acctsuiteApiMarket)) {
+        const hit = global.__acctsuiteApiMarket.find((x) => String(x.id) === String(id));
+        if (hit) return hit;
+        if (global.__acctsuitePreferApiMarket) return null;
+      }
+      const local = origFind(id);
+      return local && isDemoListing(local) ? null : local;
     };
   }
 
@@ -165,27 +247,49 @@
     const Api = global.AcctSuiteApi;
     const A = global.AcctSuite;
     if (!Api || !A) return false;
+    scrubLocalDemoMarketplace();
+    patchMarketListingsOnly();
     let ok = false;
     try {
+      if (Api.clearAvailabilityCache) Api.clearAvailabilityCache();
       ok = await Api.isAvailable();
     } catch (e) {
       return false;
     }
-    if (!ok) return false;
+    if (!ok) {
+      // One more attempt after a short pause (first paint often races PHP warm-up).
+      await sleep(250);
+      try {
+        if (Api.clearAvailabilityCache) Api.clearAvailabilityCache();
+        ok = await Api.isAvailable();
+      } catch (e2) {
+        return false;
+      }
+      if (!ok) return false;
+    }
     try {
-      const marketRes = await Api.market().catch(() => ({ listings: [] }));
-      global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
+      global.__acctsuitePreferApiMarket = true;
+      const fetched = await fetchMarketListingsMapped(Api, 3);
+      if (!fetched.ok) {
+        console.warn('Public market hydrate failed', fetched.error);
+        // Keep any previous successful catalog; do not wipe to [].
+        return Array.isArray(global.__acctsuiteApiMarket);
+      }
+      global.__acctsuiteApiMarket = fetched.listings;
       patchMarketListingsOnly();
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
-        global.__acctsuiteStoryFeed = feed.merchants || [];
+        global.__acctsuiteStoryFeed = (feed.merchants || []).filter(
+          (m) => !isDemoSellerIdentity(m.sellerEmail, m.sellerName)
+        );
       } catch (e2) {
-        global.__acctsuiteStoryFeed = [];
+        // Keep prior feed on failure
+        global.__acctsuiteStoryFeed = global.__acctsuiteStoryFeed || [];
       }
       return true;
     } catch (e) {
       console.warn('Public market hydrate failed', e);
-      return false;
+      return Array.isArray(global.__acctsuiteApiMarket);
     }
   }
 
@@ -212,7 +316,8 @@
         Api.myOrders()
           .then((r) => Object.assign({ __ordersOk: true }, r || {}))
           .catch((e) => ({ __ordersOk: false, orders: null, error: e && e.message })),
-        Api.market().catch(() => ({ listings: [] })),
+        // Never invent an empty catalog here — failures must not wipe a good public hydrate.
+        fetchMarketListingsMapped(Api, 3).then((r) => Object.assign({ __marketOk: !!r.ok }, r)),
         Api.wallet().then((r) => Object.assign({ __walletOk: true }, r || {})).catch((e) => ({ __walletOk: false, transactions: null, error: e && e.message })),
         Api.notifications().catch(() => ({ notifications: [] })),
         Api.publicConfig().catch(() => null),
@@ -303,10 +408,20 @@
         localStorage.setItem('acctsuite_backend', 'api');
       } catch (e) {}
 
-      global.__acctsuiteApiMarket = (marketRes.listings || []).map(mapListing);
+      global.__acctsuitePreferApiMarket = true;
+      if (marketRes && marketRes.__marketOk && Array.isArray(marketRes.listings)) {
+        global.__acctsuiteApiMarket = marketRes.listings;
+      } else if (!Array.isArray(global.__acctsuiteApiMarket)) {
+        // Session hydrate ran before public market — try once more without wiping.
+        const pub = await fetchMarketListingsMapped(Api, 2);
+        if (pub.ok) global.__acctsuiteApiMarket = pub.listings;
+      }
+      patchMarketListingsOnly();
       try {
         const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
-        global.__acctsuiteStoryFeed = feed.merchants || [];
+        global.__acctsuiteStoryFeed = (feed.merchants || []).filter(
+          (m) => !isDemoSellerIdentity(m.sellerEmail, m.sellerName)
+        );
       } catch (eFeed) {
         global.__acctsuiteStoryFeed = global.__acctsuiteStoryFeed || [];
       }

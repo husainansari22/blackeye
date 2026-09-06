@@ -79,20 +79,28 @@
   }
 
   let available = null;
+  let availableCheckedAt = 0;
+  // Cache successes longer; never stick on a failed first-paint health check.
+  const AVAILABLE_TTL_OK_MS = 60000;
+  const AVAILABLE_TTL_FAIL_MS = 1200;
 
   async function isAvailable() {
-    if (available !== null) return available;
+    const now = Date.now();
+    if (available === true && now - availableCheckedAt < AVAILABLE_TTL_OK_MS) return true;
+    if (available === false && now - availableCheckedAt < AVAILABLE_TTL_FAIL_MS) return false;
     try {
       const r = await request('health');
       available = !!(r && r.ok && r.installed !== false);
     } catch (_) {
       available = false;
     }
+    availableCheckedAt = Date.now();
     return available;
   }
 
   function clearAvailabilityCache() {
     available = null;
+    availableCheckedAt = 0;
   }
 
   function applySessionUser(user) {

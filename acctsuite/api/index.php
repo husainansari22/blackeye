@@ -17,6 +17,9 @@ if (!$action && isset($body['action'])) $action = (string)$body['action'];
 try {
     switch ($action) {
         case 'health':
+            if (function_exists('ensure_demo_users_purged')) {
+                ensure_demo_users_purged();
+            }
             json_out(['ok' => true, 'installed' => setting_get('installed') === '1', 'app' => app_config()['app_name'] ?? 'AcctSuite']);
 
         case 'config.public':
@@ -223,6 +226,9 @@ try {
             ensure_commerce_features();
             ensure_merchant_slug_column();
             ensure_user_avatar_column();
+            if (function_exists('ensure_demo_users_purged')) {
+                ensure_demo_users_purged();
+            }
             $rows = db()->query("SELECT a.id, a.title, a.description, a.category, a.price, a.preview_link AS previewLink, a.release_type AS releaseType, a.stock,
                 a.public_slug AS publicSlug, a.created_at,
                 a.seller_id AS sellerId, u.name AS sellerName, u.email AS sellerEmail, u.is_verified AS sellerVerified,
@@ -230,6 +236,9 @@ try {
                 (SELECT COUNT(*) FROM orders o WHERE o.seller_id = a.seller_id AND o.status = 'completed') AS sellerCompletedSales
                 FROM ads a JOIN users u ON u.id = a.seller_id
                 WHERE a.status = 'active' AND a.stock > 0 AND u.is_banned = 0
+                  AND u.email NOT LIKE '%@acctsuite.local'
+                  AND u.email NOT LIKE 'demo.%@%'
+                  AND u.name NOT IN ('Omoba','Michael','Ugochukwu')
                 " . market_list_sql_order() . " LIMIT 200")->fetchAll();
             foreach ($rows as &$r) {
                 if (empty($r['publicSlug'])) {

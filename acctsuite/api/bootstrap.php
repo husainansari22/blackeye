@@ -604,6 +604,20 @@ function owner_purge_demo_users(): array {
     return $deleted;
 }
 
+/** One-shot (idempotent) purge so demo sellers cannot reappear after deploy. */
+function ensure_demo_users_purged(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        if (setting_get('demo_users_purged_v2', '0') === '1') return;
+        owner_purge_demo_users();
+        setting_set('demo_users_purged_v2', '1');
+    } catch (Throwable $e) {
+        // Never break public API if purge fails
+    }
+}
+
 function ensure_user_payout_columns(): void {
     static $done = false;
     if ($done) return;

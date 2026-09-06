@@ -421,9 +421,8 @@
     if (marketRefreshInFlight || !global.AcctSuiteApiSync) return;
     marketRefreshInFlight = true;
     try {
-      if (usingApi()) {
-        await global.AcctSuiteApiSync.hydrateFromApi();
-      } else if (global.AcctSuiteApiSync.hydratePublicMarket) {
+      // Always refresh the public catalog for home/market cards — do not depend on session hydrate.
+      if (global.AcctSuiteApiSync.hydratePublicMarket) {
         await global.AcctSuiteApiSync.hydratePublicMarket();
       }
       if (global.AcctSuiteUI) global.AcctSuiteUI.refreshAll();
