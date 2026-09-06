@@ -1,5 +1,6 @@
 /**
  * Owner-controlled site banners + contact hydration (homepage + app).
+ * Banner sits in normal document flow under the fixed header — never overlays nav controls.
  */
 (function (global) {
   function cfgFromLocal() {
@@ -21,16 +22,32 @@
     el = document.createElement('div');
     el.id = 'asOwnerBanner';
     el.setAttribute('role', 'status');
-    el.style.cssText = 'display:none;position:sticky;top:0;z-index:120;padding:0.55rem 0.85rem;font-size:12px;font-weight:600;line-height:1.35;text-align:center;';
+    el.style.cssText =
+      'display:none;position:relative;z-index:1;margin:0;padding:0.55rem 0.85rem;font-size:12px;font-weight:600;line-height:1.35;text-align:center;pointer-events:none;';
+
+    // Place BELOW the fixed app header spacer so logo / menu stay clickable.
+    const spacer =
+      document.querySelector('header.fixed + div.h-14') ||
+      document.querySelector('header.fixed + .h-14') ||
+      document.querySelector('body > header + div');
     const header = document.querySelector('header');
-    if (header && header.parentNode) header.parentNode.insertBefore(el, header);
-    else document.body.insertBefore(el, document.body.firstChild);
+    if (spacer && spacer.parentNode) {
+      spacer.parentNode.insertBefore(el, spacer.nextSibling);
+    } else if (header && header.parentNode) {
+      header.parentNode.insertBefore(el, header.nextSibling);
+    } else {
+      document.body.insertBefore(el, document.body.firstChild);
+    }
     return el;
+  }
+
+  function removeBannerHost() {
+    const el = document.getElementById('asOwnerBanner');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
   }
 
   function applyAcctSuiteSiteControls(config) {
     const c = config || cfgFromLocal() || {};
-    const banner = ensureBannerHost();
     let text = '';
     let bg = '#7c3aed';
     let color = '#fff';
@@ -38,17 +55,18 @@
       text = c.maintenanceMessage || 'We are doing a short maintenance. Please try again soon.';
       bg = '#b45309';
     } else if (c.announcementEnabled && c.announcementText) {
-      text = c.announcementText;
+      text = String(c.announcementText || '').trim();
       bg = '#7c3aed';
     }
-    if (text) {
+
+    if (!text) {
+      removeBannerHost();
+    } else {
+      const banner = ensureBannerHost();
       banner.textContent = text;
       banner.style.display = 'block';
       banner.style.background = bg;
       banner.style.color = color;
-    } else {
-      banner.style.display = 'none';
-      banner.textContent = '';
     }
 
     document.querySelectorAll('[data-as-support-telegram]').forEach((a) => {
@@ -70,7 +88,9 @@
       }
     });
     if (c.siteName) {
-      document.querySelectorAll('[data-as-site-name]').forEach((n) => { n.textContent = c.siteName; });
+      document.querySelectorAll('[data-as-site-name]').forEach((n) => {
+        n.textContent = c.siteName;
+      });
     }
   }
 
