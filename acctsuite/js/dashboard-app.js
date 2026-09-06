@@ -384,20 +384,9 @@
 
   const HOME_TRENDING_MAX = 8;
 
-  function shuffleListings(arr) {
-    const a = (arr || []).slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const t = a[i];
-      a[i] = a[j];
-      a[j] = t;
-    }
-    return a;
-  }
-
   function renderMarketplace() {
-    // Fresh shuffle on every render/refresh so filtered categories still feel fair.
-    const list = shuffleListings(A().getMarketplaceListings());
+    // Keep server order (newest first) — do not reshuffle on refresh.
+    const list = (A().getMarketplaceListings() || []).slice();
     const home = document.getElementById('homeListings');
     const homeOther = document.getElementById('homeOtherListings');
     const homeOtherSection = document.getElementById('homeOtherSection');

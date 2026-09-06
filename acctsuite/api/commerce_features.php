@@ -113,9 +113,13 @@ function ensure_commerce_features(): void {
     } catch (Throwable $e) {}
 }
 
-/** ORDER BY clause used to randomize the public marketplace feed on every request. */
-function market_list_sql_order(): string {
-    return 'ORDER BY RAND()';
+/**
+ * Stable marketplace sort — newest first.
+ * Pass table alias when the query joins other tables (e.g. "a" for ads a JOIN users u).
+ */
+function market_list_sql_order(string $alias = ''): string {
+    $p = $alias !== '' ? (rtrim($alias, '.') . '.') : '';
+    return "ORDER BY {$p}created_at DESC, {$p}id DESC";
 }
 
 function ad_slug_generate(string $title): string {

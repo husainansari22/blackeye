@@ -245,7 +245,7 @@ try {
                   AND u.email NOT LIKE '%@acctsuite.local'
                   AND u.email NOT LIKE 'demo.%@%'
                   AND u.name NOT IN ('Omoba','Michael','Ugochukwu')
-                " . market_list_sql_order() . " LIMIT 200")->fetchAll();
+                " . market_list_sql_order('a') . " LIMIT 200")->fetchAll();
             foreach ($rows as &$r) {
                 if (empty($r['publicSlug'])) {
                     $r['publicSlug'] = ensure_ad_public_slug(['id' => $r['id'], 'title' => $r['title'], 'public_slug' => $r['publicSlug']]);

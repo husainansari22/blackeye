@@ -413,8 +413,7 @@
   }
 
   // ---------------------------------------------------------------------
-  // Shuffle-safe market refresh — re-fetch (market.list is ORDER BY RAND()
-  // server-side) instead of re-sorting anything client-side.
+  // Market refresh — re-fetch public catalog (stable newest-first order).
   // ---------------------------------------------------------------------
   var marketRefreshInFlight = false;
   async function refreshMarketListings() {
