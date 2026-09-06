@@ -124,102 +124,6 @@
         #bottomNav .nav-item.is-active { color: #8B5CF6; }
         #bottomNav .nav-item.is-idle { color: #9ca3af; }
         .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
-
-        /* Header live activity ticker — compact so it never covers the wordmark */
-        .as-live-ticker {
-            flex: 0 1 auto;
-            min-width: 0;
-            max-width: 7.25rem;
-            height: 1.45rem;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            margin: 0 0.25rem;
-            padding: 0 0.4rem 0 0.3rem;
-            border-radius: 999px;
-            border: 1px solid rgba(139, 92, 246, 0.35);
-            background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(109, 40, 217, 0.08));
-            overflow: hidden;
-        }
-        .as-live-ticker__live {
-            flex-shrink: 0;
-            font-size: 0.5rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            color: #34d399;
-            line-height: 1;
-        }
-        html.dark .as-live-ticker__live,
-        .dark .as-live-ticker__live {
-            color: #6ee7b7;
-        }
-        html.dark .as-live-ticker,
-        .dark .as-live-ticker {
-            border-color: rgba(167, 139, 250, 0.4);
-            background: linear-gradient(90deg, rgba(139, 92, 246, 0.22), rgba(76, 29, 149, 0.18));
-        }
-        .as-live-ticker__dot {
-            width: 0.35rem;
-            height: 0.35rem;
-            border-radius: 999px;
-            background: #34d399;
-            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
-            animation: asLivePulse 1.6s ease-out infinite;
-            flex-shrink: 0;
-        }
-        @keyframes asLivePulse {
-            0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
-            70% { box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
-        }
-        .as-live-ticker__track {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-            mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-            -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-        }
-        .as-live-ticker__rail {
-            display: inline-flex;
-            gap: 1rem;
-            white-space: nowrap;
-            will-change: transform;
-            animation: asLiveMarquee 22s linear infinite;
-        }
-        .as-live-ticker__rail span {
-            font-size: 0.58rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-            color: #7c3aed;
-        }
-        html.dark .as-live-ticker__rail span,
-        .dark .as-live-ticker__rail span {
-            color: #ddd6fe;
-        }
-        @keyframes asLiveMarquee {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); }
-        }
-        /* Signed-in header is denser — keep ticker tiny so "cctsuite" stays fully visible */
-        header.is-auth .as-live-ticker {
-            max-width: 5.25rem;
-            height: 1.35rem;
-            margin: 0 0.2rem;
-            padding: 0 0.35rem 0 0.28rem;
-        }
-        header.is-auth .as-live-ticker__live {
-            display: none;
-        }
-        header.is-auth .as-live-ticker__rail span {
-            font-size: 0.52rem;
-        }
-        @media (max-width: 400px) {
-            header.is-auth .as-live-ticker { max-width: 4.5rem; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .as-live-ticker__rail { animation: none; }
-            .as-live-ticker__dot { animation: none; }
-        }
         /* Brand lockup: wordmark vertically centered to bag middle */
         .as-brand-lockup {
             display: inline-flex !important;
@@ -273,24 +177,6 @@
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <a href="#" onclick="switchTab('home'); return false;" class="as-brand-lockup" aria-label="AcctSuite home"><img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" width="36" height="36" decoding="async"><span class="as-brand-word text-slate-900 dark:text-white">cctsuite</span></a>
-            </div>
-            <div class="as-live-ticker" id="headerLiveTicker" aria-label="Live marketplace activity" role="status">
-                <span class="as-live-ticker__dot" aria-hidden="true"></span>
-                <span class="as-live-ticker__live" aria-hidden="true">LIVE</span>
-                <div class="as-live-ticker__track">
-                    <div class="as-live-ticker__rail" id="headerLiveRail">
-                        <span>Just sold · TikTok 12k</span>
-                        <span aria-hidden="true">·</span>
-                        <span>Buyer secured · Instagram</span>
-                        <span aria-hidden="true">·</span>
-                        <span>Escrow cleared · $48</span>
-                        <span aria-hidden="true">·</span>
-                        <span>New listing · Discord Nitro</span>
-                        <span aria-hidden="true">·</span>
-                        <span>Live deals · Marketplace</span>
-                        <span aria-hidden="true">·</span>
-                    </div>
-                </div>
             </div>
             <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
                 <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-2 sm:gap-3">
@@ -1367,30 +1253,6 @@
             }
             if (picker) picker.classList.add('hidden');
         }
-
-
-        (function initHeaderLiveTicker() {
-            var rail = document.getElementById('headerLiveRail');
-            if (rail && rail.dataset.cloned !== '1') {
-                Array.prototype.slice.call(rail.children).forEach(function (node) {
-                    rail.appendChild(node.cloneNode(true));
-                });
-                rail.dataset.cloned = '1';
-            }
-            function syncAuthTicker() {
-                var hdr = document.querySelector('header.fixed');
-                var auth = document.getElementById('headerAuthIcons');
-                if (!hdr) return;
-                var signedIn = auth && !auth.classList.contains('hidden');
-                hdr.classList.toggle('is-auth', !!signedIn);
-            }
-            syncAuthTicker();
-            var authEl = document.getElementById('headerAuthIcons');
-            if (authEl && window.MutationObserver) {
-                new MutationObserver(syncAuthTicker).observe(authEl, { attributes: true, attributeFilter: ['class'] });
-            }
-            document.addEventListener('DOMContentLoaded', syncAuthTicker);
-        })();
 
         document.addEventListener('DOMContentLoaded', function () {
             buildHomeChips();
