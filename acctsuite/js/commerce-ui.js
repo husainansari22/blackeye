@@ -394,22 +394,9 @@
   // Social proof (#11)
   // ---------------------------------------------------------------------
   async function loadSocialProof() {
+    // Social-proof strip removed from home UI (kept as no-op for callers).
     var el = document.getElementById('socialProofLine');
-    if (!el || !Api()) return;
-    try {
-      var res = await Api().socialProof();
-      var sales = Number(res.completedOrders24h) || 0;
-      var live = Number(res.activeListings) || 0;
-      if (!sales && !live) {
-        el.classList.add('hidden');
-        return;
-      }
-      el.classList.remove('hidden');
-      el.innerHTML =
-        '🔥 <strong>' + sales + '</strong> sale' + (sales === 1 ? '' : 's') + ' in the last 24 hours · <strong>' + live + '</strong> live listing' + (live === 1 ? '' : 's');
-    } catch (e) {
-      el.classList.add('hidden');
-    }
+    if (el) el.classList.add('hidden');
   }
 
   // ---------------------------------------------------------------------

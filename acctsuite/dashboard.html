@@ -5,11 +5,7 @@
     <script src="/js/theme-init.js?v=bagA5fix"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>AcctSuite — Marketplace Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png?v=bagA7app" type="image/png" sizes="96x96">
+<link rel="icon" href="https://acctsuite.com/favicon-96x96.png?v=bagA7app" type="image/png" sizes="96x96">
     <link rel="icon" href="https://acctsuite.com/favicon-48x48.png?v=bagA7app" type="image/png" sizes="48x48">
     <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico?v=bagA7app">
     <link rel="apple-touch-icon" href="https://acctsuite.com/img/brand/apple-touch-icon.png?v=bagA7app">
@@ -21,7 +17,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/kyc.css?v=bagA5fix">
-    <link rel="stylesheet" href="/css/profile.css?v=listFix2">
+    <link rel="stylesheet" href="/css/profile.css?v=ngFix1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -247,11 +243,7 @@
                 </div>
                 <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
-
-            <!-- Social proof (#11) -->
-            <p id="socialProofLine" class="hidden text-[11px] text-slate-500 dark:text-slate-400 px-1"></p>
-
-            <!-- Trending Catalog -->
+<!-- Trending Catalog -->
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-sm flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
@@ -606,7 +598,7 @@
                     <div class="min-w-0 pt-0.5">
                         <div class="flex items-center gap-0.5 min-w-0">
                             <h3 id="leftProfileName" class="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-white leading-snug truncate">Guest</h3>
-                            <span id="leftProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
+                            <span id="leftProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="#1D9BF0" d="M12 1.25c.72 0 1.26.42 1.8.96.58.58 1.16.88 1.98.88.82 0 1.4-.3 1.98-.88.54-.54 1.08-.96 1.8-.96 1.12 0 2.04.92 2.04 2.04 0 .72-.42 1.26-.96 1.8-.58.58-.88 1.16-.88 1.98 0 .82.3 1.4.88 1.98.54.54.96 1.08.96 1.8 0 1.12-.92 2.04-2.04 2.04-.72 0-1.26.42-1.8.96-.58.58-1.16.88-1.98.88-.82 0-1.4-.3-1.98-.88-.54-.54-1.08-.96-1.8-.96-.72 0-1.26.42-1.8.96-.58.58-1.16.88-1.98.88-.82 0-1.4-.3-1.98-.88-.54-.54-1.08-.96-1.8-.96-1.12 0-2.04-.92-2.04-2.04 0-.72.42-1.26.96-1.8.58-.58.88-1.16.88-1.98 0-.82-.3-1.4-.88-1.98C2.67 8.55 2.25 8.01 2.25 7.29c0-1.12.92-2.04 2.04-2.04.72 0 1.26-.42 1.8-.96.58-.58 1.16-.88 1.98-.88.82 0 1.4.3 1.98.88.54.54 1.08.96 1.8.96h.15z"/><path fill="#fff" d="M16.72 8.42a.95.95 0 0 1 0 1.34l-5.35 5.35a.95.95 0 0 1-1.34 0L7.28 12.36a.95.95 0 1 1 1.34-1.34l2.08 2.08 4.68-4.68a.95.95 0 0 1 1.34 0z"/></svg></span>
                         </div>
                         <p id="leftProfileEmail" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">—</p>
                     </div>
@@ -708,7 +700,7 @@
                     <div class="profile-hero-meta min-w-0">
                         <div class="flex items-center gap-0.5 min-w-0">
                             <h4 id="rightProfileName" class="truncate">Guest</h4>
-                            <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
+                            <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="#1D9BF0" d="M12 1.25c.72 0 1.26.42 1.8.96.58.58 1.16.88 1.98.88.82 0 1.4-.3 1.98-.88.54-.54 1.08-.96 1.8-.96 1.12 0 2.04.92 2.04 2.04 0 .72-.42 1.26-.96 1.8-.58.58-.88 1.16-.88 1.98 0 .82.3 1.4.88 1.98.54.54.96 1.08.96 1.8 0 1.12-.92 2.04-2.04 2.04-.72 0-1.26.42-1.8.96-.58.58-1.16.88-1.98.88-.82 0-1.4-.3-1.98-.88-.54-.54-1.08-.96-1.8-.96-.72 0-1.26.42-1.8.96-.58.58-1.16.88-1.98.88-.82 0-1.4-.3-1.98-.88-.54-.54-1.08-.96-1.8-.96-1.12 0-2.04-.92-2.04-2.04 0-.72.42-1.26.96-1.8.58-.58.88-1.16.88-1.98 0-.82-.3-1.4-.88-1.98C2.67 8.55 2.25 8.01 2.25 7.29c0-1.12.92-2.04 2.04-2.04.72 0 1.26-.42 1.8-.96.58-.58 1.16-.88 1.98-.88.82 0 1.4.3 1.98.88.54.54 1.08.96 1.8.96h.15z"/><path fill="#fff" d="M16.72 8.42a.95.95 0 0 1 0 1.34l-5.35 5.35a.95.95 0 0 1-1.34 0L7.28 12.36a.95.95 0 1 1 1.34-1.34l2.08 2.08 4.68-4.68a.95.95 0 0 1 1.34 0z"/></svg></span>
                         </div>
                         <a id="rightProfileEmail" class="profile-email" href="#">—</a>
                         <p id="rightProfilePhone" class="profile-phone">—</p>
@@ -971,9 +963,9 @@
     <script src="/js/api-sync.js?v=stableOrder1"></script>
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
-    <script src="/js/commerce-ui.js?v=stableOrder1"></script>
-    <script src="/js/listing-modal.js?v=listFix2"></script>
-    <script src="/js/dashboard-app.js?v=stableOrder1"></script>
+    <script src="/js/commerce-ui.js?v=ngFix1"></script>
+    <script src="/js/listing-modal.js?v=ngFix1"></script>
+    <script src="/js/dashboard-app.js?v=ngFix1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
