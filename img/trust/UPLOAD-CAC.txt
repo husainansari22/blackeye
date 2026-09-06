@@ -1,0 +1,17 @@
+Upload your CAC certificate scan to Hostinger:
+
+  public_html/img/trust/cac-certificate.jpg
+
+Supported filenames (any one works):
+  cac-certificate.jpg
+  cac-certificate.jpeg
+  cac-certificate.png
+  cac-certificate.webp
+
+Steps (Hostinger hPanel):
+1. File Manager → public_html → img → trust
+2. Create folder "trust" if it does not exist
+3. Upload your CAC scan and name it cac-certificate.jpg
+4. Refresh https://acctventa.com/company
+
+Recommended: clear JPG/PNG photo or scan, readable text, under ~2MB.
