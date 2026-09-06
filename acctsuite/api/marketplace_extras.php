@@ -498,8 +498,8 @@ function release_pending_order_to_seller(array $order, string $noteSuffix = ''):
     }
     $net = money_f($split['net'] ?? 0);
     $fee = money_f($split['commission'] ?? 0);
-    notify_user($sellerId, 'Funds released', 'Escrow for #' . $publicId . ' was settled: $' . $net . ' credited to withdrawable balance after $' . $fee . ' platform fee.', 'order');
-    notify_user((int)$order['buyer_id'], 'Order completed', 'Seller delivered login details for #' . $publicId . '.', 'order');
+    notify_user($sellerId, 'Funds released', 'Escrow for #' . $publicId . ' was settled: $' . $net . ' credited to withdrawable balance after $' . $fee . ' platform fee.', 'order', $publicId);
+    notify_user((int)$order['buyer_id'], 'Order completed', 'Seller delivered login details for #' . $publicId . '.', 'order', $publicId);
 }
 
 function map_order_message(array $m): array {

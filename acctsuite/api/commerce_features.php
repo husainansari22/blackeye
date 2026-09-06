@@ -419,13 +419,13 @@ function purchase_listing(int $buyerId, int $listingId): array {
         throw $e;
     }
 
-    notify_user($buyerId, 'Order placed', 'You purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order');
+    notify_user($buyerId, 'Order placed', 'You purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order', $publicId);
     $sellerNetNote = '';
     if ($saleSplit) {
         $sellerNetNote = ' AI deducted ' . round(($saleSplit['rate'] ?? 0) * 100, 2) . '% ($' . money_f($saleSplit['commission']) . '); $' . money_f($saleSplit['net']) . ' added to withdrawable balance.';
-        notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $buyer['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId . '.' . $sellerNetNote, 'order');
+        notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $buyer['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId . '.' . $sellerNetNote, 'order', $publicId);
     } else {
-        notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $buyer['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order');
+        notify_user((int)$ad['seller_id'], 'New sale — congratulations!', $buyer['name'] . ' purchased ' . $ad['title'] . ' · TXID ' . $publicId, 'order', $publicId);
     }
     $sellerReleaseNote = $status === 'pending'
         ? 'Funds are on hold in escrow until you send the buyer the login details in order chat. AI will release funds when credentials are detected (platform sales commission applies on release).'

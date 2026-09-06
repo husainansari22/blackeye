@@ -168,10 +168,12 @@
         if (badge) badge.classList.add('hidden');
       });
       const notifBadge = document.getElementById('notifBadge');
-      if (notifBadge) {
-        notifBadge.classList.add('hidden');
-        notifBadge.classList.remove('flex');
-      }
+      const homeNotifBadge = document.getElementById('homeNotifBadge');
+      [notifBadge, homeNotifBadge].forEach((badge) => {
+        if (!badge) return;
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      });
       syncGuestMenu(false);
       return;
     }
@@ -255,17 +257,19 @@
     }
 
     const notifBadge = document.getElementById('notifBadge');
+    const homeNotifBadge = document.getElementById('homeNotifBadge');
     const unread = (u.notifications || []).filter((n) => !n.read).length;
-    if (notifBadge) {
+    [notifBadge, homeNotifBadge].forEach((badge) => {
+      if (!badge) return;
       if (unread > 0) {
-        notifBadge.textContent = String(unread);
-        notifBadge.classList.remove('hidden');
-        notifBadge.classList.add('flex');
+        badge.textContent = String(unread > 99 ? '99+' : unread);
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
       } else {
-        notifBadge.classList.add('hidden');
-        notifBadge.classList.remove('flex');
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
       }
-    }
+    });
 
     // account dashboard stats
     const ads = u.ads || [];
@@ -720,6 +724,20 @@
     box.innerHTML = orders.map((o) => orderCardHtml(o, 'seller')).join('');
   }
 
+  function extractNotifRef(n) {
+    if (!n) return '';
+    if (n.ref != null && String(n.ref).trim()) return String(n.ref).trim();
+    if (n.refId != null && String(n.refId).trim()) return String(n.refId).trim();
+    if (n.orderId != null && String(n.orderId).trim()) return String(n.orderId).trim();
+    if (n.adId != null && String(n.adId).trim()) return String(n.adId).trim();
+    const body = String(n.body || '');
+    const tx = body.match(/TXID\s+([A-Za-z0-9_-]+)/i);
+    if (tx) return tx[1];
+    const hash = body.match(/#([A-Za-z0-9-]{8,})/);
+    if (hash) return hash[1];
+    return '';
+  }
+
   function renderNotifications() {
     const u = refreshUser();
     const box = document.getElementById('notificationsList');
@@ -730,18 +748,116 @@
       return;
     }
     box.innerHTML = notes
-      .map(
-        (n) => `<div class="relative border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-0.5 py-2">
-      <div class="size-2 rounded-full bg-brandPrimary absolute top-3 -left-1"></div>
-      <div class="flex justify-between"><p class="font-medium text-sm">${escapeHtml(n.title)}</p><span class="text-[10px] text-slate-400">${relativeTime(n.createdAt)}</span></div>
-      <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(n.body)}</p>
-    </div>`
-      )
+      .map((n) => {
+        const unread = !n.read;
+        const id = escapeAttr(String(n.id));
+        return `<div role="button" tabindex="0" onclick="viewNotification('${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewNotification('${id}');}" class="relative border-l ${unread ? 'border-brandPrimary' : 'border-slate-200 dark:border-slate-700'} pl-2.5 ml-0.5 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 rounded-r-lg transition">
+      <div class="size-2 rounded-full ${unread ? 'bg-brandPrimary' : 'bg-slate-300 dark:bg-slate-600'} absolute top-3.5 -left-1"></div>
+      <div class="flex justify-between gap-2"><p class="font-medium text-sm ${unread ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200'}">${escapeHtml(n.title)}</p><span class="text-[10px] text-slate-400 shrink-0">${relativeTime(n.createdAt)}</span></div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">${escapeHtml(n.body)}</p>
+      <span class="inline-block mt-1.5 text-xs font-bold text-orange-600 dark:text-orange-400">View</span>
+    </div>`;
+      })
       .join('');
-    notes.forEach((n) => (n.read = true));
+  }
+
+  window.viewNotification = function (notifId) {
+    const u = refreshUser();
+    if (!u) {
+      if (typeof promptDashSignIn === 'function') promptDashSignIn('You are not logged in. Sign in first.');
+      else alert('Sign in to view notifications.');
+      return;
+    }
+    const notes = u.notifications || [];
+    const n = notes.find((x) => String(x.id) === String(notifId));
+    if (!n) return;
+
+    n.read = true;
     A().persistUser(u);
     applyProfileChrome(u);
-  }
+
+    const drawer = document.getElementById('notificationDrawer');
+    if (drawer) drawer.classList.add('hidden');
+
+    const type = String(n.type || 'info').toLowerCase();
+    const ref = extractNotifRef(n);
+    const blob = (n.title || '') + ' ' + (n.body || '');
+
+    const goTab = (tab) => {
+      if (typeof switchTab === 'function') switchTab(tab);
+    };
+
+    if (type === 'order' || type === 'sale' || type === 'refund' || type === 'dispute' || type === 'review') {
+      if (ref && typeof window.openOrderDetail === 'function') {
+        window.openOrderDetail(ref);
+        return;
+      }
+      const buyerish = /order placed|purchased|refund received|order completed|dispute resolved/i.test(blob);
+      goTab(buyerish ? 'purchase' : 'orders');
+      return;
+    }
+
+    if (type === 'message') {
+      if (ref && typeof window.openOrderChat === 'function') {
+        window.openOrderChat(ref);
+        return;
+      }
+      if (ref && typeof window.openOrderDetail === 'function') {
+        window.openOrderDetail(ref);
+        return;
+      }
+      goTab('purchase');
+      return;
+    }
+
+    if (type === 'ad_review') {
+      try {
+        if (/denied/i.test(blob)) adsFilter = 'denied';
+        else if (/under review|pending/i.test(blob)) adsFilter = 'pending';
+        else if (/active|approved|restocked|live/i.test(blob)) adsFilter = 'active';
+        else adsFilter = 'all';
+      } catch (e) {}
+      goTab('ads');
+      return;
+    }
+
+    if (type === 'wallet' || type === 'deposit' || type === 'withdrawal') {
+      goTab('wallet');
+      return;
+    }
+
+    if (type === 'plan') {
+      goTab('plans');
+      return;
+    }
+
+    if (type === 'support') {
+      if (typeof openSupportCenter === 'function') openSupportCenter();
+      return;
+    }
+
+    if (type === 'kyc') {
+      if (typeof toggleRightMenu === 'function') toggleRightMenu();
+      return;
+    }
+
+    const modalBody = document.getElementById('modalBody');
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <h3 class="font-bold text-lg mb-1">${escapeHtml(n.title || 'Notification')}</h3>
+        <p class="text-[10px] text-slate-400 mb-3">${escapeHtml(relativeTime(n.createdAt))}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">${escapeHtml(n.body || '')}</p>
+        <button type="button" onclick="closeModal()" class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold bg-brandPrimary text-white">Close</button>`;
+      if (typeof openModal === 'function') openModal();
+      else {
+        const m = document.getElementById('appModal');
+        if (m) {
+          m.classList.remove('hidden');
+          m.classList.add('flex');
+        }
+      }
+    }
+  };
 
   function renderPlans() {
     const u = refreshUser();

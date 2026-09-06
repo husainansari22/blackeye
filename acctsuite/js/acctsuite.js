@@ -539,7 +539,8 @@
         result.status === 'active'
           ? `Your listing "${ad.title}" was approved and is now live.`
           : `Your listing "${ad.title}" was not approved. ${result.reason}`,
-      type: 'ad_review'
+      type: 'ad_review',
+      ref: ad.id
     });
     return ad;
   }
@@ -551,6 +552,7 @@
       title: note.title,
       body: note.body,
       type: note.type || 'info',
+      ref: note.ref != null ? String(note.ref) : note.orderId != null ? String(note.orderId) : note.adId != null ? String(note.adId) : '',
       createdAt: new Date().toISOString(),
       read: false
     });
@@ -771,12 +773,14 @@
     pushNotification(buyer, {
       title: 'Order placed',
       body: `You purchased "${listing.title}" for ${formatMoney(price)}.`,
-      type: 'order'
+      type: 'order',
+      ref: order.id
     });
     pushNotification(seller, {
       title: 'New sale',
       body: `${buyer.name} purchased "${listing.title}".`,
-      type: 'order'
+      type: 'order',
+      ref: order.id
     });
 
     persistUser(buyer);
@@ -815,7 +819,8 @@
     pushNotification(buyer, {
       title: 'Refund received',
       body: `Order "${sOrder.title}" was refunded (${formatMoney(price)}).`,
-      type: 'refund'
+      type: 'refund',
+      ref: orderId
     });
     persistUser(seller);
     persistUser(buyer);
@@ -904,7 +909,8 @@
         pushNotification(other, {
           title: 'New message',
           body: `${fromUser.name}: ${msg.text.slice(0, 80)}`,
-          type: 'message'
+          type: 'message',
+          ref: orderId
         });
         persistUser(other);
       }
@@ -1086,7 +1092,8 @@
     pushNotification(user, {
       title: status === 'active' ? 'Ad Approved by Admin' : status === 'denied' ? 'Ad Denied by Admin' : 'Ad updated',
       body: status === 'denied' ? reason || 'Your listing was denied.' : `Your listing "${ad.title}" is now ${status}.`,
-      type: 'ad_review'
+      type: 'ad_review',
+      ref: adId
     });
     persistUser(user);
     return { ok: true, ad };

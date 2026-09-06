@@ -733,9 +733,32 @@ function currency_symbol(string $code): string {
     return $map[strtoupper($code)] ?? (strtoupper($code) . ' ');
 }
 
-function notify_user(int $userId, string $title, string $body, string $type = 'info'): void {
-    $stmt = db()->prepare('INSERT INTO notifications (user_id, title, body, type) VALUES (?, ?, ?, ?)');
-    $stmt->execute([$userId, $title, $body, $type]);
+
+function ensure_notifications_ref_column(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        $cols = db()->query("SHOW COLUMNS FROM notifications LIKE 'ref_id'")->fetchAll();
+        if (!$cols) {
+            db()->exec("ALTER TABLE notifications ADD COLUMN ref_id VARCHAR(80) NOT NULL DEFAULT '' AFTER type");
+        }
+    } catch (Throwable $e) {
+        // ignore — older DBs still work without ref deep-links
+    }
+}
+
+function notify_user(int $userId, string $title, string $body, string $type = 'info', ?string $ref = null): void {
+    ensure_notifications_ref_column();
+    $refId = $ref !== null ? trim($ref) : '';
+    try {
+        $stmt = db()->prepare('INSERT INTO notifications (user_id, title, body, type, ref_id) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$userId, $title, $body, $type, $refId]);
+    } catch (Throwable $e) {
+        // Fallback if ref_id column is missing
+        $stmt = db()->prepare('INSERT INTO notifications (user_id, title, body, type) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$userId, $title, $body, $type]);
+    }
 }
 
 function plan_limits(string $planId): array {

@@ -233,16 +233,24 @@
             <!-- Filter Chips (built from catalog) -->
             <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
 
-            <!-- Platform banner (inline colors — compiled CSS may omit violet utilities) -->
-            <div class="rounded-xl p-3 flex justify-between items-center shadow-md relative overflow-hidden" style="background:linear-gradient(90deg,#7C3AED 0%,#1e3a8a 100%);color:#fff">
-                <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full blur-xl" style="background:rgba(255,255,255,0.1)"></div>
-                <div class="relative z-10 pr-2 min-w-0">
-                    <span class="text-[10px] font-bold tracking-wide" style="color:#ede9fe">SECURE MARKETPLACE</span>
-                    <p class="font-bold text-sm mt-0.5 leading-snug" style="color:#fff">Buy & sell with escrow protection</p>
-                    <p class="text-[10px] mt-0.5 leading-snug" style="color:#ede9fe">Preview links · AI reviews uploads</p>
+            <!-- Home notifications CTA (replaces former ads / promo bar) -->
+            <button type="button" id="homeNotifBtn" onclick="toggleNotificationDrawer()" class="w-full rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-md relative overflow-hidden text-left transition hover:opacity-95 active:scale-[0.99]" style="background:linear-gradient(90deg,#7C3AED 0%,#1e3a8a 100%);color:#fff" aria-label="Open notifications">
+                <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full blur-xl pointer-events-none" style="background:rgba(255,255,255,0.1)"></div>
+                <div class="relative z-10 flex items-center gap-3 min-w-0">
+                    <span class="relative shrink-0 w-12 h-12 rounded-full bg-white/15 flex items-center justify-center">
+                        <i class="fa-solid fa-bell text-2xl" style="color:#fff"></i>
+                        <span id="homeNotifBadge" class="absolute -right-1 -top-1 hidden h-5 min-w-[1.25rem] px-1 items-center justify-center rounded-full bg-white text-[10px] font-bold text-brandPrimary shadow">0</span>
+                    </span>
+                    <span class="min-w-0">
+                        <span class="block text-[10px] font-bold tracking-wide uppercase" style="color:#ede9fe">Alerts</span>
+                        <span class="block font-bold text-sm mt-0.5 leading-snug" style="color:#fff">Notifications</span>
+                        <span class="block text-[10px] mt-0.5 leading-snug" style="color:#ede9fe">Tap to view orders, ads &amp; messages</span>
+                    </span>
                 </div>
-                <button onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
-            </div>
+                <span class="relative z-10 shrink-0 w-9 h-9 rounded-full bg-white/20 flex items-center justify-center" aria-hidden="true">
+                    <i class="fa-solid fa-chevron-right text-sm" style="color:#fff"></i>
+                </span>
+            </button>
 <!-- Trending Catalog -->
             <div>
                 <div class="flex justify-between items-center mb-2">
@@ -957,15 +965,15 @@
         </div>
     </nav>
 
-    <script src="/js/acctsuite.js?v=waPass1"></script>
+    <script src="/js/acctsuite.js?v=notifView2"></script>
     <script src="/js/api-client.js?v=listFix2"></script>
     <script src="/js/site-controls.js?v=ownerCtrl2"></script>
-    <script src="/js/api-sync.js?v=stableOrder1"></script>
+    <script src="/js/api-sync.js?v=notifView2"></script>
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
     <script src="/js/listing-modal.js?v=badgeFull1"></script>
-    <script src="/js/dashboard-app.js?v=badgeFull1"></script>
+    <script src="/js/dashboard-app.js?v=notifView2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

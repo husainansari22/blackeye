@@ -389,9 +389,9 @@ try {
             } catch (Throwable $e) {}
 
             if ($finalStatus === 'denied') {
-                notify_user((int)$u['id'], 'Ad Denied', $denyReason !== '' ? $denyReason : 'Your listing did not pass review.', 'ad_review');
+                notify_user((int)$u['id'], 'Ad Denied', $denyReason !== '' ? $denyReason : 'Your listing did not pass review.', 'ad_review', (string)$ad['id']);
             } else {
-                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $ad['title'] . '" is pending Owner approval. You will be notified when it goes live.', 'ad_review');
+                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $ad['title'] . '" is pending Owner approval. You will be notified when it goes live.', 'ad_review', (string)$ad['id']);
             }
             $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
             json_out([
@@ -940,7 +940,7 @@ try {
                     $att['mime'] ?? null,
                 ]);
             $other = ((int)$o['buyer_id'] === (int)$u['id']) ? (int)$o['seller_id'] : (int)$o['buyer_id'];
-            notify_user($other, 'New message', $u['name'] . ': ' . mb_substr($text, 0, 80), 'message');
+            notify_user($other, 'New message', $u['name'] . ': ' . mb_substr($text, 0, 80), 'message', (string)($o['public_id'] ?? $orderId));
 
             $ai = null;
             $released = false;

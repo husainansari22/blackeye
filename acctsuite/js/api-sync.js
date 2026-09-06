@@ -133,11 +133,22 @@
   }
 
   function mapNotif(row) {
+    const body = row.body || '';
+    let ref = row.ref_id != null && String(row.ref_id).trim() ? String(row.ref_id).trim() : (row.ref != null ? String(row.ref).trim() : '');
+    if (!ref) {
+      const tx = String(body).match(/TXID\s+([A-Za-z0-9_-]+)/i);
+      if (tx) ref = tx[1];
+    }
+    if (!ref) {
+      const hash = String(body).match(/#([A-Za-z0-9-]{8,})/);
+      if (hash) ref = hash[1];
+    }
     return {
       id: String(row.id),
       title: row.title,
-      body: row.body || '',
+      body: body,
       type: row.type || 'info',
+      ref: ref,
       read: !!(row.is_read || row.read),
       createdAt: row.created_at || row.createdAt,
     };
