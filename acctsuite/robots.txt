@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /favicon.ico
+Allow: /favicon.svg
+Allow: /favicon-32x32.png
+Allow: /favicon-48x48.png
+Allow: /favicon-96x96.png
+Allow: /apple-touch-icon.png
+Allow: /img/brand/
+Allow: /site.webmanifest
+Allow: /sitemap.xml
+Disallow: /owner/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /uploads/kyc/
+Disallow: /uploads/chat/
+
+Sitemap: https://acctsuite.com/sitemap.xml

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/js/theme-init.js?v=bagA4fix"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Listing | AcctSuite</title>
+<meta name="description" content="View this digital product listing on AcctSuite.">
+  <link rel="canonical" id="canonicalLink" href="https://acctsuite.com/">
+  <link rel="icon" href="/favicon.svg?v=bagA7app" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico?v=bagA7app" sizes="48x48">
+  <meta name="theme-color" content="#8B5CF6">
+  <meta property="og:site_name" content="AcctSuite">
+  <meta property="og:title" id="ogTitle" content="AcctSuite Listing">
+  <meta property="og:description" id="ogDesc" content="Buy digital accounts securely with escrow on AcctSuite.">
+  <meta property="og:url" id="ogUrl" content="https://acctsuite.com/">
+  <meta property="og:image" content="https://acctsuite.com/img/brand/og-cover.png">
+    <link rel="stylesheet" href="/css/tailwind.css?v=bagA4fix">
+  <link rel="stylesheet" href="/css/legal.css?v=bagA4fix">
+  <link rel="stylesheet" href="/css/profile.css?v=badgeFull1">
+  <style>
+    .av-verify-inline{display:inline-flex;align-items:center;gap:.22em;max-width:100%;min-width:0;line-height:inherit}.av-verify-badge{display:inline-flex;align-items:center;justify-content:center;width:1.1em;height:1.1em;min-width:1.1em;min-height:1.1em;aspect-ratio:1/1;margin:0;line-height:0;flex:0 0 auto;overflow:visible;position:relative;z-index:2;transform:translateY(.03em)}.av-verify-badge--sm{width:1.35em;height:1.35em;min-width:1.35em;min-height:1.35em}.av-verify-badge--lg{width:.95em;height:.95em;min-width:.95em;min-height:.95em}
+    .av-verify-badge img,.av-verify-badge svg{width:100%;height:100%;display:block;overflow:visible}
+  </style>
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA4fix">
+</head>
+<body class="av-pub bg-gray-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen" style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <header class="sticky top-0 z-20 bg-white/90 dark:bg-darkBg/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" class="h-8 w-8 shrink-0 " width="32" height="32" decoding="async"><span class="font-extrabold tracking-tight whitespace-nowrap">cctsuite</span>
+      </a>
+      <div class="flex gap-3 text-sm font-semibold">
+        <a href="/dashboard.html#home" class="text-brandPrimary">Marketplace</a>
+        <a href="/login" class="text-slate-600 dark:text-slate-300">Login</a>
+      </div>
+    </div>
+  </header>
+  <main class="av-pub-wrap max-w-2xl mx-auto px-4 py-6" id="listingRoot">
+    <p class="text-sm text-slate-500">Loading listing…</p>
+  </main>
+  <script src="/js/api-client.js?v=listFix2"></script>
+  <script src="/js/marketplace-catalog.js?v=waPass1"></script>
+  <script src="/js/listing-modal.js?v=badgeFull1"></script>
+  <script>
+  window.openListingBuy = function (listingId) {
+    if (window.AcctSuiteListingModal) {
+      window.AcctSuiteListingModal.open(listingId, { onSellerStore: false });
+    }
+  };
+
+  (async function () {
+    const root = document.getElementById('listingRoot');
+    const parts = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    const key = parts[parts.length - 1] || new URLSearchParams(location.search).get('id') || '';
+    if (!key) {
+      root.innerHTML = '<h1>Listing not found</h1><p><a href="/dashboard.html#home">Browse marketplace</a></p>';
+      return;
+    }
+
+    function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));}
+    function escapeAttr(s){return escapeHtml(s).replace(/`/g,'');}
+    function money(n){var v=Number(n)||0;return (v<0?'-$'+Math.abs(v).toFixed(2):'$'+v.toFixed(2));}
+    function formatTimeAgo(iso){
+      if(!iso)return 'recently';
+      var t=new Date(iso).getTime(); if(!t||isNaN(t))return 'recently';
+      var sec=Math.max(0,Math.floor((Date.now()-t)/1000));
+      if(sec<60)return 'just now';
+      var min=Math.floor(sec/60); if(min<60)return min+'m ago';
+      var hr=Math.floor(min/60); if(hr<48)return hr+'h ago';
+      var day=Math.floor(hr/24); if(day<14)return day+'d ago';
+      return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    }
+    function formatSalesLabel(n){
+      var v=Number(n)||0;
+      if(v>=1000){var k=v/1000,s=k>=10?Math.round(k)+'k':k.toFixed(1).replace(/\.0$/,'')+'k';return s+'+ Sales';}
+      return v+' Sales';
+    }
+    function starsRow(rating,count){
+      var r=Math.max(0,Math.min(5,Number(rating)||0)),full=Math.floor(r),half=r-full>=0.35?1:0,out='';
+      for(var i=0;i<5;i++){
+        if(i<full) out+='<i class="fa-solid fa-star"></i>';
+        else if(i===full&&half) out+='<i class="fa-solid fa-star-half-stroke"></i>';
+        else out+='<i class="fa-regular fa-star text-slate-300 dark:text-slate-600"></i>';
+      }
+      return '<span class="av-listing-stars">'+out+(count?'<em>('+count+')</em>':'')+'</span>';
+    }
+    function verifyBadge(){
+      return '<span class="av-verify-badge av-verify-badge--sm" title="Verified" aria-label="Verified"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="#1D9BF0" d="M12.0000 1.0000 L12.2695 1.0233 L12.5358 1.0926 L12.7962 1.2060 L13.0479 1.3600 L13.2888 1.5504 L13.5172 1.7717 L13.7321 2.0176 L13.9332 2.2812 L14.1210 2.5550 L14.2967 2.8312 L14.4624 3.1022 L14.6209 3.3601 L14.7758 3.5974 L14.9317 3.8064 L15.0941 3.9788 L15.2719 4.1008 L15.4840 4.1403 L15.7207 4.1333 L15.9787 4.0957 L16.2561 4.0375 L16.5505 3.9672 L16.8593 3.8927 L17.1789 3.8216 L17.5053 3.7608 L17.8338 3.7166 L18.1597 3.6947 L18.4776 3.6997 L18.7826 3.7354 L19.0695 3.8044 L19.3338 3.9084 L19.5711 4.0478 L19.7782 4.2218 L19.9522 4.4289 L20.0916 4.6662 L20.1956 4.9305 L20.2646 5.2174 L20.3003 5.5224 L20.3053 5.8403 L20.2834 6.1662 L20.2392 6.4947 L20.1784 6.8211 L20.1073 7.1407 L20.0328 7.4495 L19.9625 7.7439 L19.9043 8.0213 L19.8667 8.2793 L19.8597 8.5160 L19.8992 8.7281 L20.0212 8.9059 L20.1936 9.0683 L20.4026 9.2242 L20.6399 9.3791 L20.8978 9.5376 L21.1688 9.7033 L21.4450 9.8790 L21.7188 10.0668 L21.9824 10.2679 L22.2283 10.4828 L22.4496 10.7112 L22.6400 10.9521 L22.7940 11.2038 L22.9074 11.4642 L22.9767 11.7305 L23.0000 12.0000 L22.9767 12.2695 L22.9074 12.5358 L22.7940 12.7962 L22.6400 13.0479 L22.4496 13.2888 L22.2283 13.5172 L21.9824 13.7321 L21.7188 13.9332 L21.4450 14.1210 L21.1688 14.2967 L20.8978 14.4624 L20.6399 14.6209 L20.4026 14.7758 L20.1936 14.9317 L20.0212 15.0941 L19.8992 15.2719 L19.8597 15.4840 L19.8667 15.7207 L19.9043 15.9787 L19.9625 16.2561 L20.0328 16.5505 L20.1073 16.8593 L20.1784 17.1789 L20.2392 17.5053 L20.2834 17.8338 L20.3053 18.1597 L20.3003 18.4776 L20.2646 18.7826 L20.1956 19.0695 L20.0916 19.3338 L19.9522 19.5711 L19.7782 19.7782 L19.5711 19.9522 L19.3338 20.0916 L19.0695 20.1956 L18.7826 20.2646 L18.4776 20.3003 L18.1597 20.3053 L17.8338 20.2834 L17.5053 20.2392 L17.1789 20.1784 L16.8593 20.1073 L16.5505 20.0328 L16.2561 19.9625 L15.9787 19.9043 L15.7207 19.8667 L15.4840 19.8597 L15.2719 19.8992 L15.0941 20.0212 L14.9317 20.1936 L14.7758 20.4026 L14.6209 20.6399 L14.4624 20.8978 L14.2967 21.1688 L14.1210 21.4450 L13.9332 21.7188 L13.7321 21.9824 L13.5172 22.2283 L13.2888 22.4496 L13.0479 22.6400 L12.7962 22.7940 L12.5358 22.9074 L12.2695 22.9767 L12.0000 23.0000 L11.7305 22.9767 L11.4642 22.9074 L11.2038 22.7940 L10.9521 22.6400 L10.7112 22.4496 L10.4828 22.2283 L10.2679 21.9824 L10.0668 21.7188 L9.8790 21.4450 L9.7033 21.1688 L9.5376 20.8978 L9.3791 20.6399 L9.2242 20.4026 L9.0683 20.1936 L8.9059 20.0212 L8.7281 19.8992 L8.5160 19.8597 L8.2793 19.8667 L8.0213 19.9043 L7.7439 19.9625 L7.4495 20.0328 L7.1407 20.1073 L6.8211 20.1784 L6.4947 20.2392 L6.1662 20.2834 L5.8403 20.3053 L5.5224 20.3003 L5.2174 20.2646 L4.9305 20.1956 L4.6662 20.0916 L4.4289 19.9522 L4.2218 19.7782 L4.0478 19.5711 L3.9084 19.3338 L3.8044 19.0695 L3.7354 18.7826 L3.6997 18.4776 L3.6947 18.1597 L3.7166 17.8338 L3.7608 17.5053 L3.8216 17.1789 L3.8927 16.8593 L3.9672 16.5505 L4.0375 16.2561 L4.0957 15.9787 L4.1333 15.7207 L4.1403 15.4840 L4.1008 15.2719 L3.9788 15.0941 L3.8064 14.9317 L3.5974 14.7758 L3.3601 14.6209 L3.1022 14.4624 L2.8312 14.2967 L2.5550 14.1210 L2.2812 13.9332 L2.0176 13.7321 L1.7717 13.5172 L1.5504 13.2888 L1.3600 13.0479 L1.2060 12.7962 L1.0926 12.5358 L1.0233 12.2695 L1.0000 12.0000 L1.0233 11.7305 L1.0926 11.4642 L1.2060 11.2038 L1.3600 10.9521 L1.5504 10.7112 L1.7717 10.4828 L2.0176 10.2679 L2.2812 10.0668 L2.5550 9.8790 L2.8312 9.7033 L3.1022 9.5376 L3.3601 9.3791 L3.5974 9.2242 L3.8064 9.0683 L3.9788 8.9059 L4.1008 8.7281 L4.1403 8.5160 L4.1333 8.2793 L4.0957 8.0213 L4.0375 7.7439 L3.9672 7.4495 L3.8927 7.1407 L3.8216 6.8211 L3.7608 6.4947 L3.7166 6.1662 L3.6947 5.8403 L3.6997 5.5224 L3.7354 5.2174 L3.8044 4.9305 L3.9084 4.6662 L4.0478 4.4289 L4.2218 4.2218 L4.4289 4.0478 L4.6662 3.9084 L4.9305 3.8044 L5.2174 3.7354 L5.5224 3.6997 L5.8403 3.6947 L6.1662 3.7166 L6.4947 3.7608 L6.8211 3.8216 L7.1407 3.8927 L7.4495 3.9672 L7.7439 4.0375 L8.0213 4.0957 L8.2793 4.1333 L8.5160 4.1403 L8.7281 4.1008 L8.9059 3.9788 L9.0683 3.8064 L9.2242 3.5974 L9.3791 3.3601 L9.5376 3.1022 L9.7033 2.8312 L9.8790 2.5550 L10.0668 2.2812 L10.2679 2.0176 L10.4828 1.7717 L10.7112 1.5504 L10.9521 1.3600 L11.2038 1.2060 L11.4642 1.0926 L11.7305 1.0233 L12.0000 1.0000 Z"/><path d="M7.15 12.05 L10.55 15.45 L16.85 8.55" stroke="#fff" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>';
+    }
+    function nameWithVerify(name, verified){
+      var label = '<span class="av-verify-name">' + escapeHtml(name || '') + '</span>';
+      if (!verified) return label;
+      return '<span class="av-verify-inline">' + label + verifyBadge() + '</span>';
+    }
+    function productLogo(listing){
+      var Cat=window.AcctSuiteCatalog;
+      if(!Cat)return '';
+      var hit=Cat.findProduct(listing.category||listing.title||'');
+      return hit?hit.logo:Cat.logoUrl({domain:''});
+    }
+    function initials(name){
+      var p=String(name||'').trim().split(/\s+/).filter(Boolean);
+      if(!p.length)return '?';
+      if(p.length===1)return p[0].slice(0,2).toUpperCase();
+      return (p[0][0]+p[p.length-1][0]).toUpperCase();
+    }
+
+    try {
+      let res;
+      if (window.AcctSuiteApi && typeof window.AcctSuiteApi.marketGet === 'function') {
+        res = await window.AcctSuiteApi.marketGet({ id: key, slug: key });
+      } else {
+        res = await fetch('/api/index.php?action=market.get&id=' + encodeURIComponent(key) + '&slug=' + encodeURIComponent(key)).then(r => r.json());
+      }
+      if (!res.ok) throw new Error(res.error || 'Not found');
+      const listing = res.listing || res.ad || res;
+      const title = listing.title || 'Listing';
+      const price = Number(listing.price || 0);
+      const desc = listing.description || 'Digital product on AcctSuite.';
+      const seller = listing.sellerName || listing.seller_name || 'Seller';
+      const sellerId = listing.sellerId || listing.seller_id || '';
+      const sellerSlug = listing.sellerMerchantSlug || listing.seller_merchant_slug || sellerId || seller;
+      const slug = listing.publicSlug || listing.public_slug || listing.id;
+      const url = 'https://acctsuite.com/listing/' + encodeURIComponent(slug);
+      const stock = Math.max(1, Number(listing.stock) || 1);
+      const isAuto = (listing.releaseType || listing.release_type || 'auto') !== 'manual';
+      const logo = productLogo(listing);
+      const sales = formatSalesLabel(listing.sellerCompletedSales || 0);
+      const added = formatTimeAgo(listing.created_at || listing.createdAt);
+      const verified = !!(listing.sellerVerified || listing.seller_verified);
+      const rating = Number(listing.sellerRating) || 0;
+      const reviews = Number(listing.sellerReviews) || 0;
+      const preview = listing.previewLink || listing.preview_link || '';
+      const sellerAvatar = listing.sellerAvatar || listing.seller_avatar || listing.avatarUrl || '';
+      const buyUrl = '/dashboard.html#home?buy=' + encodeURIComponent(listing.id);
+      const descLong = desc.length > 160;
+
+      document.title = title + ' | AcctSuite';
+      document.getElementById('canonicalLink').href = url;
+      document.getElementById('ogTitle').content = title;
+      document.getElementById('ogDesc').content = desc.slice(0, 140);
+      document.getElementById('ogUrl').content = url;
+
+      var accountRows = '';
+      for (var i = 0; i < stock; i++) {
+        accountRows += '<div class="av-listing-account-row is-selected">' +
+          '<div class="av-listing-account-row__check"><i class="fa-solid fa-check"></i></div>' +
+          '<span class="av-listing-account-row__label">Account ' + (i + 1) + '</span>' +
+          '<span class="av-listing-account-row__price">' + money(price) + '</span>' +
+          (preview ? '<a class="av-listing-eye" href="' + escapeAttr(preview) + '" target="_blank" rel="noopener" title="Preview link"><i class="fa-solid fa-eye"></i></a>' :
+            '<span class="av-listing-eye" style="opacity:.35"><i class="fa-solid fa-eye"></i></span>') +
+          '<a class="av-listing-cart-btn" href="' + buyUrl + '">Buy</a></div>';
+      }
+
+      root.innerHTML = '<div class="av-listing-detail bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">' +
+        '<div class="av-listing-detail__head">' +
+          '<img src="' + escapeAttr(logo) + '" alt="" class="av-listing-detail__logo" loading="lazy" onerror="this.style.opacity=.35">' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="av-listing-detail__title-row">' +
+              '<h1 class="av-listing-detail__title">' + escapeHtml(title) + '</h1>' +
+              '<span class="av-listing-detail__price">' + money(price) + '</span>' +
+            '</div>' +
+            '<div class="av-listing-detail__meta">' +
+              (rating ? starsRow(rating, reviews) : '') +
+              (verified ? verifyBadge() : '') +
+              '<span>● ' + stock + ' available, added ' + escapeHtml(added) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="av-listing-badge' + (isAuto ? '' : ' av-listing-badge--manual') + '">' +
+          (isAuto ? '<i class="fa-solid fa-bolt"></i> Instant Delivery' : '<i class="fa-solid fa-clock"></i> Manual delivery') +
+        '</div>' +
+        '<div class="av-listing-seller">' +
+          '<div class="av-listing-seller__avatar">' +
+            (sellerAvatar
+              ? '<img src="' + escapeAttr(sellerAvatar) + '" alt="" class="av-listing-seller__avatar-img" loading="lazy" onerror="this.remove()">'
+              : escapeHtml(initials(seller))) +
+          '</div>' +
+          '<div class="av-listing-seller__body">' +
+            '<p class="av-listing-seller__name">' + nameWithVerify(seller, verified) + '</p>' +
+            '<p class="av-listing-seller__stats">' + escapeHtml(sales) + '</p>' +
+          '</div>' +
+          '<a class="av-listing-seller__link" href="/seller/' + encodeURIComponent(sellerSlug) + '">View store →</a>' +
+        '</div>' +
+        '<div class="av-listing-desc">' +
+          '<p id="listingDescText" class="av-listing-desc__text' + (descLong ? ' is-clamped' : '') + '">' + escapeHtml(desc) + '</p>' +
+          (descLong ? '<button type="button" id="listingDescToggle" class="av-listing-desc__more">Show more &gt;</button>' : '') +
+        '</div>' +
+        '<div class="av-listing-accounts">' +
+          '<div class="av-listing-accounts__head"><h4>Select account</h4><span class="av-listing-accounts__count">(1 of ' + stock + ' selected)</span></div>' +
+          accountRows +
+        '</div>' +
+        '<div class="av-listing-checkout">' +
+          '<div class="av-listing-checkout__row">' +
+            '<div><p class="av-listing-checkout__total-label">Total (1 item)</p><p class="av-listing-checkout__total">' + money(price) + '</p></div>' +
+          '</div>' +
+          '<button type="button" class="av-listing-pay-btn" data-buy-listing="' + escapeAttr(String(listing.id)) + '">Pay ' + money(price) + ' Securely</button>' +
+          '<p class="av-listing-protect"><i class="fa-solid fa-shield-halved"></i> Your payment is protected by AcctSuite Buyer Protection.</p>' +
+        '</div></div>';
+
+      var toggle = document.getElementById('listingDescToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          var el = document.getElementById('listingDescText');
+          if (!el) return;
+          var clamped = el.classList.toggle('is-clamped');
+          toggle.textContent = clamped ? 'Show more >' : 'Show less';
+        });
+      }
+      root.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-buy-listing]');
+        if (!btn) return;
+        ev.preventDefault();
+        if (window.AcctSuiteListingModal) {
+          window.AcctSuiteListingModal.open(btn.getAttribute('data-buy-listing'));
+        }
+      });
+    } catch (e) {
+      root.innerHTML = '<h1>This listing is unavailable</h1><p class="text-sm text-slate-500">' + escapeHtml(e.message || 'Not found') + '</p><p class="mt-4"><a class="text-brandPrimary" href="/dashboard.html#home">Browse marketplace</a></p>';
+    }
+  })();
+  </script>
+  
+</body>
+</html>
