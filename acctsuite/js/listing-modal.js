@@ -288,11 +288,37 @@
     return false;
   }
 
+  function withTimeout(promise, ms, label) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var timer = setTimeout(function () {
+        if (done) return;
+        done = true;
+        reject(new Error((label || 'request') + ' timeout'));
+      }, ms);
+      Promise.resolve(promise).then(
+        function (v) {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          resolve(v);
+        },
+        function (err) {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          reject(err);
+        }
+      );
+    });
+  }
+
   async function fetchWalletBalance() {
     var Api = global.AcctSuiteApi;
     if (Api && Api.me) {
       try {
-        var me = await Api.me();
+        // Never block the listing modal on a slow/hung auth.me
+        var me = await withTimeout(Api.me(), 4000, 'auth.me');
         if (me && me.user && me.user.balance != null) {
           try {
             localStorage.setItem('walletBalance', String(me.user.balance));
@@ -424,8 +450,23 @@
 
     currentItem = item;
     var loggedIn = isProbablyLoggedIn();
-    var walletBal = await fetchWalletBalance();
-    render({ onSellerStore: onSellerStore, walletBalance: walletBal, loggedIn: loggedIn || walletBal != null });
+    var listingIdOpen = String(item.id);
+    // Show listing immediately — do not wait on wallet/auth (that was sticking on "Loading listing…")
+    render({
+      onSellerStore: onSellerStore,
+      walletBalance: readCachedWalletBalance(),
+      loggedIn: loggedIn,
+    });
+    fetchWalletBalance()
+      .then(function (walletBal) {
+        if (!currentItem || String(currentItem.id) !== listingIdOpen) return;
+        render({
+          onSellerStore: onSellerStore,
+          walletBalance: walletBal,
+          loggedIn: loggedIn || walletBal != null,
+        });
+      })
+      .catch(function () {});
   }
 
   global.AcctSuiteListingModal = {
