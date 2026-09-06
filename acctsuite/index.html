@@ -142,6 +142,93 @@
             animation: floatLogo 3s ease-in-out infinite;
             box-shadow: 0 0 15px rgba(139,92,246,0.6);
         }
+        /* Header live activity ticker */
+        .as-live-ticker {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 13.5rem;
+            height: 1.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0 0.5rem 0 0.4rem;
+            border-radius: 999px;
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(109, 40, 217, 0.08));
+            overflow: hidden;
+        }
+        .as-live-ticker__live {
+            flex-shrink: 0;
+            font-size: 0.55rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            color: #34d399;
+            line-height: 1;
+        }
+        html.dark .as-live-ticker__live,
+        .dark .as-live-ticker__live {
+            color: #6ee7b7;
+        }
+        html.dark .as-live-ticker,
+        .dark .as-live-ticker {
+            border-color: rgba(167, 139, 250, 0.4);
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.22), rgba(76, 29, 149, 0.18));
+        }
+        .as-live-ticker__dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 999px;
+            background: #34d399;
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
+            animation: asLivePulse 1.6s ease-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes asLivePulse {
+            0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
+            70% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+        }
+        .as-live-ticker__track {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+        }
+        .as-live-ticker__rail {
+            display: inline-flex;
+            gap: 1.25rem;
+            white-space: nowrap;
+            will-change: transform;
+            animation: asLiveMarquee 22s linear infinite;
+        }
+        .as-live-ticker__rail span {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            color: #7c3aed;
+        }
+        html.dark .as-live-ticker__rail span,
+        .dark .as-live-ticker__rail span {
+            color: #ddd6fe;
+        }
+        .as-live-ticker__rail em {
+            font-style: normal;
+            color: #8b5cf6;
+            font-weight: 700;
+        }
+        html.dark .as-live-ticker__rail em,
+        .dark .as-live-ticker__rail em {
+            color: #c4b5fd;
+        }
+        @keyframes asLiveMarquee {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .as-live-ticker__rail { animation: none; }
+            .as-live-ticker__dot { animation: none; }
+        }
         html { scroll-behavior: smooth; }
     </style>
 </head>
@@ -153,7 +240,24 @@
             <a href="/" class="flex items-center gap-0 min-w-0" onclick="switchPage('home'); return false;">
                 <img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" class="h-8 w-8 shrink-0 -mr-1.5 live-logo-glow" width="32" height="32" decoding="async"><span class="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white whitespace-nowrap">cctsuite</span>
             </a>
-
+            <div class="as-live-ticker" aria-label="Live marketplace activity" role="status">
+                <span class="as-live-ticker__dot" aria-hidden="true"></span>
+                <span class="as-live-ticker__live" aria-hidden="true">LIVE</span>
+                <div class="as-live-ticker__track">
+                    <div class="as-live-ticker__rail" id="headerLiveRail">
+                        <span>Just sold · TikTok 12k</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Buyer secured · Instagram</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Escrow cleared · $48</span>
+                        <span aria-hidden="true">·</span>
+                        <span>New listing · Discord Nitro</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Live deals · Marketplace</span>
+                        <span aria-hidden="true">·</span>
+                    </div>
+                </div>
+            </div>
             <div class="flex items-center gap-2 shrink-0">
                 <button id="themeToggle" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300">
                     <i class="fa-solid fa-sun dark:hidden"></i>
@@ -893,6 +997,14 @@
             el.classList.add('hidden');
             el.classList.remove('flex');
         }
+
+        (function initHeaderLiveTicker() {
+            var rail = document.getElementById('headerLiveRail');
+            if (!rail || rail.dataset.cloned === '1') return;
+            var kids = Array.prototype.slice.call(rail.children);
+            kids.forEach(function (node) { rail.appendChild(node.cloneNode(true)); });
+            rail.dataset.cloned = '1';
+        })();
 
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
