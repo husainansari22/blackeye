@@ -26,7 +26,7 @@
   <script src="/js/acctventa.js?v=20260822adm1"></script>
   <script src="/js/api-client.js?v=20260822adm1"></script>
   <script src="/js/staff-alerts.js?v=20260821toast2"></script>
-  <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+  <script src="/js/staff-inbox.js?v=20260906inbox1"></script>
   <script src="/js/av-confirm.js?v=20260823confirm1"></script>
   <style>
     @media screen and (max-width:768px){input,select,textarea,button{font-size:16px!important}}
@@ -54,7 +54,7 @@
         <p id="loginError" class="text-xs text-red-500 hidden"></p>
         <button type="submit" id="adminSignInBtn" class="w-full bg-brandPrimary hover:bg-brandHover active:bg-brandHover text-white font-bold py-3 rounded-xl text-sm cursor-pointer">Sign in</button>
       </form>
-      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. After you change it in Security, the new password is stored on the server.</p>
+      <p class="text-[11px] text-slate-400 text-center">Default: <code>admin</code> / <code>admin123</code>. Username &amp; password are changed only in Owner → Settings.</p>
       <a href="/index.html" class="block text-center text-xs text-brandPrimary">← Back to website</a>
     </div>
   </div>
@@ -240,25 +240,14 @@
           <div class="av-page-head">
             <div>
               <h2 class="av-page-title">Security</h2>
-              <p class="av-page-sub">This password is saved on the server so you can sign in from any phone or browser.</p>
+              <p class="av-page-sub">Staff cannot change username or password from this panel.</p>
             </div>
           </div>
           <div class="av-panel">
-            <div class="av-panel-body space-y-4 max-w-xl">
-              <div>
-                <label class="text-xs av-muted">Current password</label>
-                <input id="pw_current" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
-              </div>
-              <div>
-                <label class="text-xs av-muted">New password</label>
-                <input id="pw_new" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
-              </div>
-              <div>
-                <label class="text-xs av-muted">Confirm new password</label>
-                <input id="pw_confirm" type="password" class="mt-1 w-full av-input px-3 py-2.5 text-sm">
-              </div>
-              <button onclick="changePassword()" class="av-btn av-btn-primary" type="button">Update password</button>
-              <p id="pwMsg" class="text-xs av-muted"></p>
+            <div class="av-panel-body space-y-3 max-w-xl">
+              <p class="text-sm av-text m-0">Only the <strong>Owner Admin</strong> can change staff admin username and password.</p>
+              <p class="text-xs av-muted m-0">Open <a href="/owner/?tab=settings" class="underline" style="color:var(--av-brand)">Owner → Settings</a> and use <em>Staff admin login (/admin)</em>.</p>
+              <p id="pwMsg" class="text-xs av-muted hidden"></p>
             </div>
           </div>
         </div>
@@ -833,20 +822,28 @@
       const input = document.getElementById('supportReplyInput');
       const text = (input.value || '').trim();
       if ((!text && !adminSupportAttach) || !activeSupportThread) return;
+      const sendBtn = document.querySelector('#tab_support .av-send');
+      if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
       try {
         const payload = { threadId: activeSupportThread, text: text || '' };
         if (adminSupportAttach) {
           payload.attachment = adminSupportAttach.dataUrl;
           payload.fileName = adminSupportAttach.name;
         }
-        await window.AcctventaApi.staffSupportSend(payload);
+        const res = await window.AcctventaApi.staffSupportSend(payload);
         input.value = '';
         adminSupportAttach = null;
         const hint = document.getElementById('adminSupportAttachHint');
         if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
-        openSupportThread(activeSupportThread);
+        const msgBox = document.getElementById('supportChatMsgs');
+        if (res && res.messages && window.AcctventaStaffInbox && msgBox) {
+          window.AcctventaStaffInbox.renderMessages(msgBox, res.messages, activeSupportMeta || {}, { preserveScroll: false });
+        }
+        await openSupportThread(activeSupportThread);
       } catch (e) {
         alert(e.message || 'Send failed');
+      } finally {
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
       }
     }
 
@@ -904,62 +901,13 @@
     }
 
     async function changePassword() {
-      const current = document.getElementById('pw_current').value || '';
-      const next = document.getElementById('pw_new').value || '';
-      const confirm = (document.getElementById('pw_confirm') || {}).value || '';
       const msg = document.getElementById('pwMsg');
-      msg.className = 'text-xs av-muted';
-      if (next.length < 6) {
-        msg.textContent = 'New password must be at least 6 characters.';
-        msg.className = 'text-xs text-red-500';
-        return;
-      }
-      if (confirm !== next) {
-        msg.textContent = 'New password and confirmation do not match.';
-        msg.className = 'text-xs text-red-500';
-        return;
-      }
-      msg.textContent = 'Saving on the server…';
-      const Api = window.AcctventaApi;
-      let serverOk = false;
-      let lastErr = '';
-      if (Api && typeof Api.isAvailable === 'function') {
-        try {
-          if (await Api.isAvailable()) {
-            const tries = [current];
-            if (current !== 'admin123') tries.push('admin123');
-            for (let i = 0; i < tries.length; i++) {
-              try {
-                await Api.changeAdminPassword({ currentPassword: tries[i], newPassword: next });
-                serverOk = true;
-                break;
-              } catch (e) {
-                lastErr = (e && e.message) || 'Could not save';
-              }
-            }
-          }
-        } catch (e) {
-          lastErr = (e && e.message) || 'Could not reach the server';
-        }
-      }
-      if (A() && A().setAdminPasswordLocal) A().setAdminPasswordLocal(next);
-      else if (A() && A().changeAdminPassword) A().changeAdminPassword(current, next);
-      if (serverOk) {
-        msg.textContent = 'Password updated on the server. Sign in with the new password from any device.';
-        msg.className = 'text-xs text-emerald-600';
-        document.getElementById('pw_current').value = '';
-        document.getElementById('pw_new').value = '';
-        const c = document.getElementById('pw_confirm');
-        if (c) c.value = '';
-        try {
-          if (Api && Api.staffLogin) await Api.staffLogin({ username: 'admin', password: next });
-        } catch (_) {}
-      } else {
-        msg.textContent = lastErr
-          ? ('Could not save on the server: ' + lastErr + ' (saved on this phone only)')
-          : 'Password updated on this device only. Check your connection and try again.';
+      if (msg) {
+        msg.classList.remove('hidden');
         msg.className = 'text-xs text-amber-600';
+        msg.textContent = 'Staff cannot change passwords. Ask the owner to update credentials in Owner → Settings.';
       }
+      try { window.location.href = '/owner/?tab=settings'; } catch (e) {}
     }
 
     function escapeHtml(s) {

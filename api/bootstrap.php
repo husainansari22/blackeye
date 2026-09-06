@@ -90,6 +90,44 @@ function admin_password_set(string $newPass): void {
     setting_set('admin_api_password', '');
 }
 
+/** Staff-admin username (defaults to "admin"; overridable from Owner Settings). */
+function staff_admin_username(): string {
+    $s = trim((string)setting_get('staff_admin_username', ''));
+    return $s !== '' ? $s : 'admin';
+}
+
+function staff_admin_username_set(string $username): void {
+    $username = strtolower(trim($username));
+    $username = preg_replace('/[^a-z0-9._@-]/', '', $username) ?: 'admin';
+    setting_set('staff_admin_username', $username);
+}
+
+/** Owner panel username — settings override config.php. */
+function owner_panel_username(): string {
+    $s = trim((string)setting_get('owner_username', ''));
+    if ($s !== '') return $s;
+    return (string)(app_config()['owner_username'] ?? 'owner');
+}
+
+function owner_panel_password_verify(string $pass): bool {
+    if ($pass === '') return false;
+    $hash = (string)setting_get('owner_password_hash', '');
+    if ($hash !== '') {
+        return password_verify($pass, $hash);
+    }
+    $cfg = app_config();
+    return hash_equals((string)($cfg['owner_password'] ?? ''), $pass);
+}
+
+function owner_panel_credentials_set(string $username, string $newPass): void {
+    $username = strtolower(trim($username));
+    $username = preg_replace('/[^a-z0-9._@-]/', '', $username) ?: 'owner';
+    setting_set('owner_username', $username);
+    if ($newPass !== '') {
+        setting_set('owner_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
+    }
+}
+
 function money_f($n): string {
     return number_format((float)$n, 2, '.', '');
 }

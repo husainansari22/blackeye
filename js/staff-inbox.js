@@ -250,7 +250,7 @@
     }
     box.innerHTML = msgs
       .map(function (m) {
-        const mine = m.role === 'staff';
+        const mine = m.role === 'staff' || m.role === 'owner' || m.role === 'admin';
         const body = messageBodyHtml(m);
         return (
           '<div class="av-bubble ' +

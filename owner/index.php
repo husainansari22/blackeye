@@ -18,7 +18,7 @@ if (isset($_GET['logout'])) {
 if (($_POST['form'] ?? '') === 'login') {
     $user = trim((string)($_POST['username'] ?? ''));
     $pass = (string)($_POST['password'] ?? '');
-    if ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? '')) {
+    if (strcasecmp($user, owner_panel_username()) === 0 && owner_panel_password_verify($pass)) {
         $_SESSION['owner_ok'] = true;
         header('Location: /owner/');
         exit;
@@ -56,6 +56,47 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
+        }
+        if ($form === 'owner_credentials') {
+            $ou = trim((string)($_POST['owner_username'] ?? ''));
+            $op = (string)($_POST['owner_password'] ?? '');
+            $opc = (string)($_POST['owner_password_confirm'] ?? '');
+            if ($ou === '' || strlen($ou) < 3) {
+                throw new RuntimeException('Owner username must be at least 3 characters.');
+            }
+            if ($op !== '' && strlen($op) < 6) {
+                throw new RuntimeException('Owner password must be at least 6 characters.');
+            }
+            if ($op !== '' && $op !== $opc) {
+                throw new RuntimeException('Owner password confirmation does not match.');
+            }
+            owner_panel_credentials_set($ou, $op);
+            $flash = $op !== ''
+                ? 'Owner username & password updated. Use them next time you sign in to /owner/.'
+                : 'Owner username updated.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=settings');
+            exit;
+        }
+        if ($form === 'staff_admin_credentials') {
+            $su = trim((string)($_POST['staff_username'] ?? ''));
+            $sp = (string)($_POST['staff_password'] ?? '');
+            $spc = (string)($_POST['staff_password_confirm'] ?? '');
+            if ($su === '' || strlen($su) < 3) {
+                throw new RuntimeException('Staff admin username must be at least 3 characters.');
+            }
+            if ($sp === '' || strlen($sp) < 6) {
+                throw new RuntimeException('Staff admin password must be at least 6 characters.');
+            }
+            if ($sp !== $spc) {
+                throw new RuntimeException('Staff admin password confirmation does not match.');
+            }
+            staff_admin_username_set($su);
+            admin_password_set($sp);
+            $flash = 'Staff admin username & password updated. Staff must sign in at /admin/ with the new credentials.';
+            $_SESSION['owner_flash'] = $flash;
+            header('Location: ?tab=settings');
+            exit;
         }
         if ($form === 'plan') {
             $id = preg_replace('/[^a-z0-9_]/', '', strtolower((string)$_POST['plan_id']));
@@ -543,6 +584,30 @@ $tab = $_GET['tab'] ?? 'overview';
   try {
     $stats['uploads_total'] = (int)db()->query('SELECT COUNT(*) c FROM ads')->fetch()['c'];
   } catch (Throwable $e) {}
+  $stats['support_unread'] = 0;
+  $stats['support_threads'] = 0;
+  $stats['order_chats'] = 0;
+  $stats['reports_open'] = 0;
+  try {
+    ensure_support_tables();
+    $stats['support_threads'] = (int)db()->query("SELECT COUNT(*) c FROM support_threads")->fetch()['c'];
+    $stats['support_unread'] = (int)db()->query("SELECT COUNT(*) c FROM support_messages sm
+      JOIN support_threads t ON t.id = sm.thread_id
+      WHERE sm.sender_role = 'user'
+        AND (t.staff_last_seen_at IS NULL OR sm.created_at > t.staff_last_seen_at)")->fetch()['c'];
+  } catch (Throwable $e) {}
+  try {
+    ensure_marketplace_extras();
+    $stats['order_chats'] = (int)db()->query("SELECT COUNT(DISTINCT order_id) c FROM messages")->fetch()['c'];
+  } catch (Throwable $e) {}
+  try {
+    ensure_marketplace_extras();
+    $stats['reports_open'] = (int)db()->query("SELECT COUNT(*) c FROM seller_reports WHERE status = 'open' OR status IS NULL OR status = ''")->fetch()['c'];
+  } catch (Throwable $e) {
+    try {
+      $stats['reports_open'] = (int)db()->query("SELECT COUNT(*) c FROM seller_reports")->fetch()['c'];
+    } catch (Throwable $e2) {}
+  }
   $gw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
   $tabLabels = [
     'overview'=>'Overview','users'=>'Users','kyc'=>'KYC','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats',
@@ -650,16 +715,25 @@ $tab = $_GET['tab'] ?? 'overview';
           <a class="av-settings-row" href="?tab=chats">
             <span class="av-settings-icon" style="background:#14b8a6"><i class="fa-solid fa-comments"></i></span>
             <span class="av-settings-label">Order chats</span>
+            <span class="av-settings-value<?= $stats['order_chats'] ? ' is-hot' : '' ?>"><?= (int)$stats['order_chats'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=support">
             <span class="av-settings-icon" style="background:#ec4899"><i class="fa-solid fa-headset"></i></span>
             <span class="av-settings-label">Support inbox</span>
+            <span class="av-settings-value<?= $stats['support_unread'] ? ' is-hot' : '' ?>"><?php
+              if ($stats['support_unread'] > 0) {
+                echo (int)$stats['support_unread'] . ' unread';
+              } else {
+                echo (int)$stats['support_threads'] . ' chat' . ($stats['support_threads'] === 1 ? '' : 's');
+              }
+            ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
           <a class="av-settings-row" href="?tab=reports">
             <span class="av-settings-icon" style="background:#f97316"><i class="fa-solid fa-flag"></i></span>
             <span class="av-settings-label">Reports</span>
+            <span class="av-settings-value<?= $stats['reports_open'] ? ' is-hot' : '' ?>"><?= (int)$stats['reports_open'] ?></span>
             <i class="fa-solid fa-chevron-right av-settings-chevron"></i>
           </a>
         </div>
@@ -733,7 +807,7 @@ $tab = $_GET['tab'] ?? 'overview';
         </div>
       </div>
       <script src="/js/staff-alerts.js?v=20260821toast2"></script>
-      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+      <script src="/js/staff-inbox.js?v=20260906inbox1"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);
@@ -846,14 +920,22 @@ $tab = $_GET['tab'] ?? 'overview';
           const input=document.getElementById('ownerReply');
           const text=(input.value||'').trim();
           if((!text&&!ownerAttach)||!ownerActive)return;
+          const sendBtn=document.querySelector('.av-composer .av-send');
+          if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='Sending…';}
           try{
             const body={threadId:ownerActive,text:text||''};
             if(ownerAttach){body.attachment=ownerAttach.dataUrl;body.fileName=ownerAttach.name;}
-            await apiStaff('support.send',{method:'POST',body});
+            const res=await apiStaff('support.send',{method:'POST',body});
             input.value=''; ownerAttach=null;
             const h=document.getElementById('ownerSupportAttachHint'); if(h){h.classList.add('hidden');h.textContent='';}
-            ownerOpen(ownerActive);
-          }catch(e){alert(e.message);}
+            const msgBox=document.getElementById('ownerChatMsgs');
+            if(res.messages&&Inbox()){
+              Inbox().renderMessages(msgBox,res.messages,ownerActiveThread||{},{preserveScroll:false});
+            }
+            await ownerOpen(ownerActive);
+            await ownerLoadThreads(true);
+          }catch(e){alert(e.message||'Send failed');}
+          finally{if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}}
         }
         ownerRenderHeader();
         ownerLoadThreads();
@@ -1576,7 +1658,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-inbox.js?v=20260821toast2"></script>
+      <script src="/js/staff-inbox.js?v=20260906inbox1"></script>
       <script>
         localStorage.setItem('acctventa_staff_token', <?= json_encode($staffToken) ?>);
         const FOCUS_ORDER = <?= (int)$focusOrder ?>;
@@ -2165,6 +2247,34 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block" style="grid-column:1/-1"><label>Support email</label><input name="support_email" value="<?= h(setting_get('support_email','support@acctventa.com')) ?>"></div>
             </div>
             <button class="av-btn av-btn-primary">Save settings</button>
+          </div>
+        </form>
+
+        <form method="post" class="av-panel" style="margin-top:1rem">
+          <input type="hidden" name="form" value="owner_credentials">
+          <div class="av-panel-head"><span>Owner login (this panel)</span></div>
+          <div class="av-panel-body space-y-4">
+            <p class="text-[11px] av-muted m-0">Only you can change this. Used at <code>/owner/</code>. Leave password blank to keep the current one.</p>
+            <div class="av-form-grid cols-2">
+              <div class="av-field-block"><label>Owner username</label><input name="owner_username" value="<?= h(owner_panel_username()) ?>" required minlength="3" autocomplete="username"></div>
+              <div class="av-field-block"><label>New owner password</label><input name="owner_password" type="password" minlength="6" autocomplete="new-password" placeholder="Leave blank to keep"></div>
+              <div class="av-field-block"><label>Confirm password</label><input name="owner_password_confirm" type="password" minlength="6" autocomplete="new-password" placeholder="Confirm if changing"></div>
+            </div>
+            <button class="av-btn av-btn-primary">Save owner credentials</button>
+          </div>
+        </form>
+
+        <form method="post" class="av-panel" style="margin-top:1rem">
+          <input type="hidden" name="form" value="staff_admin_credentials">
+          <div class="av-panel-head"><span>Staff admin login (/admin)</span></div>
+          <div class="av-panel-body space-y-4">
+            <p class="text-[11px] av-muted m-0">Staff at <code>/admin/</code> cannot change username or password — only the owner can update these here.</p>
+            <div class="av-form-grid cols-2">
+              <div class="av-field-block"><label>Staff username</label><input name="staff_username" value="<?= h(staff_admin_username()) ?>" required minlength="3" autocomplete="off"></div>
+              <div class="av-field-block"><label>New staff password</label><input name="staff_password" type="password" minlength="6" autocomplete="new-password" required></div>
+              <div class="av-field-block"><label>Confirm password</label><input name="staff_password_confirm" type="password" minlength="6" autocomplete="new-password" required></div>
+            </div>
+            <button class="av-btn av-btn-primary">Save staff admin credentials</button>
           </div>
         </form>
       </div>

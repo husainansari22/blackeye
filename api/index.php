@@ -1363,9 +1363,8 @@ try {
             ensure_support_tables();
             $user = trim((string)($body['username'] ?? ''));
             $pass = (string)($body['password'] ?? '');
-            $cfg = app_config();
-            $okOwner = ($user === ($cfg['owner_username'] ?? 'owner') && $pass === ($cfg['owner_password'] ?? ''));
-            $okAdmin = ($user === 'admin' && admin_password_verify($pass));
+            $okOwner = (strcasecmp($user, owner_panel_username()) === 0 && owner_panel_password_verify($pass));
+            $okAdmin = (strcasecmp($user, staff_admin_username()) === 0 && admin_password_verify($pass));
             if (!$okOwner && !$okAdmin) {
                 json_out(['ok' => false, 'error' => 'Invalid staff credentials'], 401);
             }
@@ -1376,6 +1375,11 @@ try {
         }
 
         case 'admin.changePassword': {
+            // Owner-only. Staff admin must not change credentials from /admin.
+            $staff = staff_from_token();
+            if (!$staff || (($staff['role'] ?? '') !== 'owner')) {
+                json_out(['ok' => false, 'error' => 'Only the owner can change admin credentials. Use Owner → Settings.', 'code' => 'owner_only'], 403);
+            }
             $current = (string)($body['currentPassword'] ?? '');
             $next = (string)($body['newPassword'] ?? '');
             if (!admin_password_verify($current)) {
@@ -1385,7 +1389,11 @@ try {
                 json_out(['ok' => false, 'error' => 'New password must be at least 6 characters'], 422);
             }
             admin_password_set($next);
-            json_out(['ok' => true, 'message' => 'Website admin password updated']);
+            $newUser = trim((string)($body['newUsername'] ?? ''));
+            if ($newUser !== '') {
+                staff_admin_username_set($newUser);
+            }
+            json_out(['ok' => true, 'message' => 'Website admin password updated', 'username' => staff_admin_username()]);
         }
 
         case 'chat.file': {
@@ -1411,7 +1419,11 @@ try {
         case 'support.messages': {
             ensure_marketplace_extras();
             // user or staff
+            $staffHeader = staff_bearer_token();
             $staff = staff_from_token();
+            if ($staffHeader && !$staff) {
+                json_out(['ok' => false, 'error' => 'Staff session expired. Refresh and try again.', 'code' => 'staff_expired'], 401);
+            }
             $threadId = (int)($body['threadId'] ?? $_GET['threadId'] ?? 0);
             if ($staff) {
                 if ($threadId < 1) json_out(['ok' => false, 'error' => 'threadId required'], 422);
@@ -1440,7 +1452,14 @@ try {
 
         case 'support.send': {
             ensure_marketplace_extras();
+            ensure_support_tables();
+            $staffHeader = staff_bearer_token();
             $staff = staff_from_token();
+            // If a staff token was sent but is invalid/expired, do NOT fall through to the
+            // user path — that made owner replies vanish from the customer thread.
+            if ($staffHeader && !$staff) {
+                json_out(['ok' => false, 'error' => 'Staff session expired. Refresh Owner Support and try again.', 'code' => 'staff_expired'], 401);
+            }
             $text = trim((string)($body['text'] ?? $body['body'] ?? ''));
             $attachData = (string)($body['attachment'] ?? $body['file'] ?? '');
             $attachName = trim((string)($body['fileName'] ?? $body['filename'] ?? 'attachment'));
@@ -1455,7 +1474,7 @@ try {
             if ($text === '' && !$att) json_out(['ok' => false, 'error' => 'Empty message'], 422);
             if ($text === '' && $att) {
                 $text = (strpos((string)($att['mime'] ?? ''), 'image/') === 0)
-                    ? ''
+                    ? ('📷 ' . ($att['name'] ?: 'Photo'))
                     : ('📎 ' . ($att['name'] ?: 'Attachment'));
             }
             if ($staff) {
@@ -1465,20 +1484,39 @@ try {
                 $t->execute([$threadId]);
                 $thread = $t->fetch();
                 if (!$thread) json_out(['ok' => false, 'error' => 'Thread not found'], 404);
-                db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body, attachment_url, attachment_name, attachment_mime) VALUES (?, \'staff\', NULL, ?, ?, ?, ?, ?)')
-                    ->execute([$threadId, $staff['staff_name'], $text, $att['url'] ?? null, $att['name'] ?? null, $att['mime'] ?? null]);
+                $staffName = trim((string)($staff['staff_name'] ?? $staff['name'] ?? 'Support'));
+                if ($staffName === '') $staffName = 'Support';
+                try {
+                    db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body, attachment_url, attachment_name, attachment_mime) VALUES (?, \'staff\', NULL, ?, ?, ?, ?, ?)')
+                        ->execute([$threadId, $staffName, $text, $att['url'] ?? null, $att['name'] ?? null, $att['mime'] ?? null]);
+                } catch (Throwable $e) {
+                    // Retry without attachment columns if an old schema is still live.
+                    try {
+                        db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body) VALUES (?, \'staff\', NULL, ?, ?)')
+                            ->execute([$threadId, $staffName, $text]);
+                    } catch (Throwable $e2) {
+                        json_out(['ok' => false, 'error' => 'Could not save reply: ' . $e2->getMessage()], 500);
+                    }
+                }
                 db()->prepare("UPDATE support_threads SET status = 'open', staff_typing_at = NULL, staff_last_seen_at = NOW(), last_message_at = NOW() WHERE id = ?")
                     ->execute([$threadId]);
-                notify_user((int)$thread['user_id'], 'Support reply', mb_substr($text, 0, 100), 'support');
+                try {
+                    notify_user((int)$thread['user_id'], 'Support reply', mb_substr($text !== '' ? $text : 'New support reply', 0, 100), 'support');
+                } catch (Throwable $e) {}
                 $msgs = array_map('support_map_message', support_list_messages($threadId));
-                json_out(['ok' => true, 'messages' => $msgs]);
+                json_out(['ok' => true, 'messages' => $msgs, 'threadId' => $threadId]);
             }
             $u = require_user();
             touch_user_presence((int)$u['id']);
             $thread = support_get_or_create_thread((int)$u['id']);
             $threadId = (int)$thread['id'];
-            db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body, attachment_url, attachment_name, attachment_mime) VALUES (?, \'user\', ?, NULL, ?, ?, ?, ?)')
-                ->execute([$threadId, (int)$u['id'], $text, $att['url'] ?? null, $att['name'] ?? null, $att['mime'] ?? null]);
+            try {
+                db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body, attachment_url, attachment_name, attachment_mime) VALUES (?, \'user\', ?, NULL, ?, ?, ?, ?)')
+                    ->execute([$threadId, (int)$u['id'], $text, $att['url'] ?? null, $att['name'] ?? null, $att['mime'] ?? null]);
+            } catch (Throwable $e) {
+                db()->prepare('INSERT INTO support_messages (thread_id, sender_role, sender_id, staff_name, body) VALUES (?, \'user\', ?, NULL, ?)')
+                    ->execute([$threadId, (int)$u['id'], $text]);
+            }
             db()->prepare("UPDATE support_threads SET status = 'open', user_typing_at = NULL, user_last_seen_at = NOW(), last_message_at = NOW() WHERE id = ?")
                 ->execute([$threadId]);
             $msgs = array_map('support_map_message', support_list_messages($threadId));
@@ -1486,7 +1524,11 @@ try {
         }
 
         case 'support.typing': {
+            $staffHeader = staff_bearer_token();
             $staff = staff_from_token();
+            if ($staffHeader && !$staff) {
+                json_out(['ok' => false, 'error' => 'Staff session expired. Refresh and try again.', 'code' => 'staff_expired'], 401);
+            }
             $typing = !empty($body['typing']);
             if ($staff) {
                 $threadId = (int)($body['threadId'] ?? 0);

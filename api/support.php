@@ -35,11 +35,25 @@ function ensure_support_tables(): void {
           sender_id INT UNSIGNED NULL,
           staff_name VARCHAR(80) NULL,
           body TEXT NOT NULL,
+          attachment_url VARCHAR(500) NULL,
+          attachment_name VARCHAR(200) NULL,
+          attachment_mime VARCHAR(120) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           INDEX (thread_id),
           CONSTRAINT fk_sm_thread FOREIGN KEY (thread_id) REFERENCES support_threads(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     } catch (Throwable $e) {}
+    foreach ([
+        'attachment_url' => "ALTER TABLE support_messages ADD COLUMN attachment_url VARCHAR(500) NULL AFTER body",
+        'attachment_name' => "ALTER TABLE support_messages ADD COLUMN attachment_name VARCHAR(200) NULL AFTER attachment_url",
+        'attachment_mime' => "ALTER TABLE support_messages ADD COLUMN attachment_mime VARCHAR(120) NULL AFTER attachment_name",
+    ] as $col => $sql) {
+        try {
+            db()->query("SELECT {$col} FROM support_messages LIMIT 1");
+        } catch (Throwable $e) {
+            try { db()->exec($sql); } catch (Throwable $e2) {}
+        }
+    }
     try {
         db()->exec("CREATE TABLE IF NOT EXISTS staff_sessions (
           id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
