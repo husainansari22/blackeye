@@ -1,5 +1,9 @@
 <?php
 declare(strict_types=1);
+// Prevent LiteSpeed / browser from caching API JSON (stale support.messages hid owner replies).
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 require __DIR__ . '/bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

@@ -9,3 +9,15 @@
   </IfModule>
 </Files>
 Options -Indexes
+
+# Support inbox replies were vanishing because LiteSpeed cached GET /api JSON
+# for 3 days (public max-age=259200). Never cache API responses.
+<IfModule mod_headers.c>
+  Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+  Header always set Pragma "no-cache"
+  Header always set Expires "0"
+</IfModule>
+<IfModule LiteSpeed>
+  CacheDisable public /
+  RewriteRule .* - [E=Cache-Control:no-cache]
+</IfModule>

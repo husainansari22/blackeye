@@ -123,8 +123,10 @@
     box.innerHTML = threads
       .map(function (t) {
         const unread = Number(t.unreadCount) || 0;
-        const preview =
-          (t.lastRole === 'staff' ? 'You: ' : '') + (t.lastBody || 'No messages yet');
+        const lastBody = String(t.lastBody || '').trim();
+        const preview = lastBody
+          ? ((t.lastRole === 'staff' || t.lastRole === 'owner' || t.lastRole === 'admin') ? 'You: ' : '') + lastBody
+          : (Number(t.messageCount) > 0 || Number(t.unreadCount) > 0 ? 'Attachment / empty message' : 'No messages yet');
         return (
           '<button type="button" class="av-thread ' +
           (String(activeId) === String(t.id) ? 'is-active ' : '') +
@@ -250,18 +252,25 @@
     }
     box.innerHTML = msgs
       .map(function (m) {
-        const mine = m.role === 'staff' || m.role === 'owner' || m.role === 'admin';
+        const role = String(m.role || m.senderRole || m.sender_role || '').toLowerCase();
+        const mine = role === 'staff' || role === 'owner' || role === 'admin' || role === 'support';
         const body = messageBodyHtml(m);
+        const attach = attachHtml(m);
         return (
           '<div class="av-bubble ' +
           (mine ? 'av-bubble-out' : 'av-bubble-in') +
+          '" data-role="' +
+          esc(role || 'user') +
+          '" data-id="' +
+          esc(m.id || '') +
           '"><p class="who">' +
-          esc(mine ? m.staffName || 'Support' : userName) +
+          esc(mine ? m.staffName || m.staff_name || 'Support' : userName) +
           '</p>' +
           (body ? '<p class="body">' + body + '</p>' : '') +
-          attachHtml(m) +
+          attach +
+          (!body && !attach ? '<p class="body">(message)</p>' : '') +
           '<p class="when">' +
-          esc(clockTime(m.createdAt)) +
+          esc(clockTime(m.createdAt || m.created_at)) +
           '</p></div>'
         );
       })

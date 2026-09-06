@@ -807,7 +807,7 @@ $tab = $_GET['tab'] ?? 'overview';
         </div>
       </div>
       <script src="/js/staff-alerts.js?v=20260821toast2"></script>
-      <script src="/js/staff-inbox.js?v=20260906inbox1"></script>
+      <script src="/js/staff-inbox.js?v=20260906inbox2"></script>
       <script>
         const OWNER_STAFF_TOKEN = <?= json_encode($staffToken) ?>;
         localStorage.setItem('acctventa_staff_token', OWNER_STAFF_TOKEN);
@@ -829,10 +829,19 @@ $tab = $_GET['tab'] ?? 'overview';
         async function apiStaff(action, opts={}){
           const url = new URL('/api/index.php', location.origin);
           url.searchParams.set('action', action);
+          // Bust any intermediary caches (LiteSpeed was caching support.messages for days).
+          url.searchParams.set('_ts', String(Date.now()));
           if(opts.query) Object.entries(opts.query).forEach(([k,v])=>url.searchParams.set(k,v));
           const res = await fetch(url, {
             method: opts.method||'GET',
-            headers: { 'Authorization':'Bearer '+OWNER_STAFF_TOKEN, 'X-Staff-Token': OWNER_STAFF_TOKEN, ...(opts.body?{'Content-Type':'application/json'}:{}) },
+            cache: 'no-store',
+            headers: {
+              'Authorization':'Bearer '+OWNER_STAFF_TOKEN,
+              'X-Staff-Token': OWNER_STAFF_TOKEN,
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+              ...(opts.body?{'Content-Type':'application/json'}:{})
+            },
             body: opts.body?JSON.stringify(opts.body):undefined
           });
           const data = await res.json();
@@ -896,7 +905,7 @@ $tab = $_GET['tab'] ?? 'overview';
           ownerActive=id;
           Inbox().setChatOpen(ownerShell(), true);
           try{
-            const res = await apiStaff('support.messages',{query:{threadId:id}});
+            const res = await apiStaff('support.messages',{method:'POST',body:{threadId:id}});
             const t=res.thread||{};
             const cached = ownerThreadsCache.find(x => Number(x.id) === Number(id)) || {};
             ownerActiveThread = Object.assign({}, cached, t, {
@@ -1658,7 +1667,7 @@ $tab = $_GET['tab'] ?? 'overview';
           </div>
         </div>
       </div>
-      <script src="/js/staff-inbox.js?v=20260906inbox1"></script>
+      <script src="/js/staff-inbox.js?v=20260906inbox2"></script>
       <script>
         localStorage.setItem('acctventa_staff_token', <?= json_encode($staffToken) ?>);
         const FOCUS_ORDER = <?= (int)$focusOrder ?>;
@@ -1670,9 +1679,21 @@ $tab = $_GET['tab'] ?? 'overview';
         async function apiStaff(action, opts={}){
           const url=new URL('/api/index.php',location.origin);
           url.searchParams.set('action',action);
+          url.searchParams.set('_ts', String(Date.now()));
           if(opts.query) Object.entries(opts.query).forEach(([k,v])=>url.searchParams.set(k,v));
           const tok=localStorage.getItem('acctventa_staff_token')||'';
-          const res=await fetch(url,{method:opts.method||'GET',headers:{'Authorization':'Bearer '+tok,'X-Staff-Token':tok,...(opts.body?{'Content-Type':'application/json'}:{})},body:opts.body?JSON.stringify(opts.body):undefined});
+          const res=await fetch(url,{
+            method:opts.method||'GET',
+            cache:'no-store',
+            headers:{
+              'Authorization':'Bearer '+tok,
+              'X-Staff-Token':tok,
+              'Cache-Control':'no-cache',
+              'Pragma':'no-cache',
+              ...(opts.body?{'Content-Type':'application/json'}:{})
+            },
+            body:opts.body?JSON.stringify(opts.body):undefined
+          });
           const data=await res.json();
           if(!res.ok||data.ok===false) throw new Error(data.error||'Failed');
           return data;

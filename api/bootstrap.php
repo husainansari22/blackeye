@@ -38,8 +38,11 @@ function db(): PDO {
 function json_out(array $payload, int $code = 200): void {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
     header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Staff-Token');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     echo json_encode($payload);
     exit;

@@ -53,6 +53,7 @@
     const opts = {
       method,
       credentials: 'include',
+      cache: 'no-store',
       headers: {},
     };
     const token = asStaff ? getStaffToken() : getToken();
@@ -376,7 +377,9 @@
       return request('support.threads', { asStaff: true });
     },
     staffSupportMessages(threadId) {
-      return request('support.messages', { asStaff: true, query: { threadId } });
+      // POST avoids intermediary/browser caches that were serving stale message lists
+      // (owner replies existed in DB but the chat UI kept showing an old GET response).
+      return request('support.messages', { method: 'POST', asStaff: true, body: { threadId } });
     },
     staffSupportSend(payload) {
       return request('support.send', { method: 'POST', body: payload, asStaff: true });

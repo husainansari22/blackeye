@@ -164,17 +164,26 @@ function support_map_message(array $m): array {
             $url = chat_attachment_public_url($base);
         }
     }
+    // Normalize MySQL datetime to ISO-8601 so iOS Safari can parse it.
+    $created = (string)($m['created_at'] ?? '');
+    if ($created !== '' && strpos($created, 'T') === false) {
+        $created = str_replace(' ', 'T', $created);
+    }
+    $role = strtolower(trim((string)($m['sender_role'] ?? 'user')));
+    if ($role === 'admin' || $role === 'owner' || $role === 'support') {
+        $role = 'staff';
+    }
     return [
         'id' => (int)$m['id'],
         'threadId' => (int)$m['thread_id'],
-        'role' => $m['sender_role'],
+        'role' => $role === 'staff' ? 'staff' : 'user',
         'senderId' => $m['sender_id'] !== null ? (int)$m['sender_id'] : null,
         'staffName' => $m['staff_name'] ?: 'Support',
         'body' => $m['body'],
         'attachmentUrl' => $url,
         'attachmentName' => $m['attachment_name'] ?? null,
         'attachmentMime' => $m['attachment_mime'] ?? null,
-        'createdAt' => $m['created_at'],
+        'createdAt' => $created,
     ];
 }
 
