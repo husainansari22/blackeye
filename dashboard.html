@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260906cover1">
+    <link rel="stylesheet" href="/css/profile.css?v=20260906cover2">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -661,27 +661,29 @@
             <div class="profile-hero">
                 <div class="profile-cover" id="profileCover">
                     <img id="profileCoverImg" class="profile-cover__img hidden" alt="">
-                    <button type="button" class="profile-cover-btn" onclick="document.getElementById('profileCoverInput').click()" aria-label="Upload cover photo">
+                    <button type="button" class="profile-cover-btn" id="profileCoverBtn" onclick="event.stopPropagation(); document.getElementById('profileCoverInput').click();" aria-label="Upload cover photo">
                         <i class="fa-regular fa-image"></i> Cover
                     </button>
                     <input id="profileCoverInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfileCover(this)">
                 </div>
-                <div class="profile-hero-row">
-                    <button type="button" class="profile-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
-                        <div id="rightProfileAvatar" class="av-user-avatar av-user-avatar--lg">?</div>
-                        <span class="profile-avatar-cam"><i class="fa-solid fa-camera"></i></span>
-                    </button>
-                    <input id="profilePhotoInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfilePhoto(this)">
-                    <div class="profile-hero-meta min-w-0">
-                        <div class="flex items-center gap-0.5 min-w-0">
-                            <h4 id="rightProfileName" class="truncate">Guest</h4>
-                            <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
+                <div class="profile-hero-body">
+                    <div class="profile-hero-row">
+                        <button type="button" class="profile-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
+                            <div id="rightProfileAvatar" class="av-user-avatar av-user-avatar--lg">?</div>
+                            <span class="profile-avatar-cam"><i class="fa-solid fa-camera"></i></span>
+                        </button>
+                        <input id="profilePhotoInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfilePhoto(this)">
+                        <div class="profile-hero-meta min-w-0">
+                            <div class="flex items-center gap-0.5 min-w-0">
+                                <h4 id="rightProfileName" class="truncate">Guest</h4>
+                                <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><img src="/img/brand/verified.svg" alt="" width="40" height="40" decoding="async"></span>
+                            </div>
+                            <a id="rightProfileEmail" class="profile-email" href="#">—</a>
+                            <p id="rightProfilePhone" class="profile-phone">—</p>
                         </div>
-                        <a id="rightProfileEmail" class="profile-email" href="#">—</a>
-                        <p id="rightProfilePhone" class="profile-phone">—</p>
                     </div>
+                    <p class="profile-hint">Tap the camera to upload a profile picture</p>
                 </div>
-                <p class="profile-hint">Tap the camera to upload a profile picture</p>
             </div>
 
             <div class="profile-stats">
@@ -931,14 +933,14 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260906cover1"></script>
-    <script src="/js/api-client.js?v=20260906cover1"></script>
-    <script src="/js/api-sync.js?v=20260906cover1"></script>
+    <script src="/js/acctventa.js?v=20260906cover2"></script>
+    <script src="/js/api-client.js?v=20260906cover2"></script>
+    <script src="/js/api-sync.js?v=20260906cover2"></script>
     <script src="/js/kyc-app.js?v=20260904story3"></script>
     <script src="/js/av-confirm.js?v=20260904story3"></script>
     <script src="/js/commerce-ui.js?v=20260904story3"></script>
     <script src="/js/listing-modal.js?v=20260904story3"></script>
-    <script src="/js/dashboard-app.js?v=20260906cover1"></script>
+    <script src="/js/dashboard-app.js?v=20260906cover2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

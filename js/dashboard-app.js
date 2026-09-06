@@ -97,11 +97,21 @@
     const wrap = document.getElementById('profileCover');
     const img = document.getElementById('profileCoverImg');
     if (!wrap || !img) return;
-    const url = (u && (u.coverUrl || u.cover)) || '';
+    const url = String((u && (u.coverUrl || u.cover)) || '').trim();
     if (url) {
-      img.src = String(url);
-      img.classList.remove('hidden');
-      wrap.classList.add('has-photo');
+      img.onload = function () {
+        img.classList.remove('hidden');
+        wrap.classList.add('has-photo');
+      };
+      img.onerror = function () {
+        img.classList.add('hidden');
+        wrap.classList.remove('has-photo');
+      };
+      if (img.getAttribute('src') !== url) img.setAttribute('src', url);
+      else {
+        img.classList.remove('hidden');
+        wrap.classList.add('has-photo');
+      }
     } else {
       img.removeAttribute('src');
       img.classList.add('hidden');
@@ -3290,16 +3300,16 @@
         reject(new Error('Please choose a cover photo'));
         return;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        reject(new Error('Cover photo is too large (max 10MB)'));
+      if (file.size > 12 * 1024 * 1024) {
+        reject(new Error('Cover photo is too large (max 12MB)'));
         return;
       }
       const img = new Image();
       const blobUrl = URL.createObjectURL(file);
       img.onload = () => {
         try {
-          const maxW = 1280;
-          const maxH = 480;
+          const maxW = 1200;
+          const maxH = 420;
           let w = img.width;
           let h = img.height;
           if (w < 1 || h < 1) {
@@ -3319,7 +3329,14 @@
           }
           ctx.drawImage(img, 0, 0, w, h);
           URL.revokeObjectURL(blobUrl);
-          resolve(canvas.toDataURL('image/jpeg', 0.84));
+          let quality = 0.82;
+          let dataUrl = canvas.toDataURL('image/jpeg', quality);
+          // Keep payload small for shared hosting body limits
+          while (dataUrl.length > 900000 && quality > 0.55) {
+            quality -= 0.08;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          resolve(dataUrl);
         } catch (err) {
           URL.revokeObjectURL(blobUrl);
           reject(err);
@@ -3332,6 +3349,7 @@
       img.src = blobUrl;
     });
   }
+
 
 
   window.AcctventaUI = {
@@ -3365,8 +3383,18 @@
       if (!file) return;
       const u = requireAuth({ message: 'You are not logged in. Sign in to update your cover photo.' });
       if (!u) return;
+      const btn = document.getElementById('profileCoverBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving';
+      }
       try {
         const dataUrl = await compressCoverFile(file);
+        // Show immediately so the Cover action feels instant
+        u.coverUrl = dataUrl;
+        A().persistUser(u);
+        paintCover(u);
+
         if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi() && window.AcctventaApi) {
           const res = await window.AcctventaApi.updateProfile({
             name: u.name,
@@ -3375,22 +3403,31 @@
           });
           if (res && res.user && res.user.coverUrl) {
             u.coverUrl = res.user.coverUrl;
-          } else {
-            u.coverUrl = dataUrl;
+            A().persistUser(u);
+            paintCover(u);
           }
-          A().persistUser(u);
           if (window.AcctventaApiSync.hydrateFromApi) {
-            await window.AcctventaApiSync.hydrateFromApi();
+            try { await window.AcctventaApiSync.hydrateFromApi(); } catch (e) {}
+            const fresh = A().getCurrentUser();
+            if (fresh && !fresh.coverUrl && u.coverUrl) {
+              fresh.coverUrl = u.coverUrl;
+              A().persistUser(fresh);
+            }
+            applyProfileChrome(A().getCurrentUser() || u);
           }
         } else {
-          u.coverUrl = dataUrl;
-          A().persistUser(u);
+          applyProfileChrome(u);
         }
-        applyProfileChrome(A().getCurrentUser() || u);
         if (window.AcctventaToast) window.AcctventaToast.success('Cover photo updated');
         else alert('Cover photo updated');
       } catch (e) {
+        console.error('cover upload failed', e);
         alert((e && e.message) || 'Could not update cover photo');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-regular fa-image"></i> Cover';
+        }
       }
     },
     async onProfilePhoto(input) {
