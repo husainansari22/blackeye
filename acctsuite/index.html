@@ -200,15 +200,25 @@
         }
         .as-live-ticker__live {
             flex-shrink: 0;
+            min-width: 2.1rem;
+            text-align: center;
             font-size: 0.55rem;
             font-weight: 800;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
             color: #34d399;
             line-height: 1;
+            transition: opacity 0.28s ease;
+        }
+        .as-live-ticker__live.is-swap {
+            opacity: 0;
         }
         html.dark .as-live-ticker__live,
         .dark .as-live-ticker__live {
             color: #6ee7b7;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .as-live-ticker__live { transition: none; }
         }
         html.dark .as-live-ticker,
         .dark .as-live-ticker {
@@ -283,7 +293,7 @@
             </a>
             <div class="as-live-ticker" aria-label="Live marketplace activity" role="status">
                 <span class="as-live-ticker__dot" aria-hidden="true"></span>
-                <span class="as-live-ticker__live" aria-hidden="true">LIVE</span>
+                <span class="as-live-ticker__live" id="headerLiveVerb" aria-hidden="true">BUY</span>
                 <div class="as-live-ticker__track">
                     <div class="as-live-ticker__rail" id="headerLiveRail">
                         <span>Just sold · TikTok 12k</span>
@@ -1041,10 +1051,28 @@
 
         (function initHeaderLiveTicker() {
             var rail = document.getElementById('headerLiveRail');
-            if (!rail || rail.dataset.cloned === '1') return;
-            var kids = Array.prototype.slice.call(rail.children);
-            kids.forEach(function (node) { rail.appendChild(node.cloneNode(true)); });
-            rail.dataset.cloned = '1';
+            if (rail && rail.dataset.cloned !== '1') {
+                var kids = Array.prototype.slice.call(rail.children);
+                kids.forEach(function (node) { rail.appendChild(node.cloneNode(true)); });
+                rail.dataset.cloned = '1';
+            }
+            var verb = document.getElementById('headerLiveVerb');
+            if (!verb) return;
+            var words = ['buy', 'sell', 'buy', 'sell', 'deal', 'trade'];
+            var i = 0;
+            var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            setInterval(function () {
+                i = (i + 1) % words.length;
+                if (reduce) {
+                    verb.textContent = words[i].toUpperCase();
+                    return;
+                }
+                verb.classList.add('is-swap');
+                setTimeout(function () {
+                    verb.textContent = words[i].toUpperCase();
+                    verb.classList.remove('is-swap');
+                }, 280);
+            }, 2500);
         })();
 
         document.getElementById('themeToggle').addEventListener('click', () => {
