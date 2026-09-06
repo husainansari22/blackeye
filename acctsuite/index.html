@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <script src="/js/theme-init.js?v=bagA4fix"></script>
+    <script src="/js/theme-init.js?v=bagA5fix"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>AcctSuite</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,17 +12,17 @@
     <meta name="description" content="The marketplace for digital products and services. Buy and sell social media accounts, VPNs, emails, and more from trusted sellers with escrow protection.">
     <link rel="canonical" href="https://acctsuite.com/">
     <!-- Google SERP favicon: PNG 48/96 first (absolute URLs). SVG is optional for modern browsers. -->
-    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png?v=bagA4" type="image/png" sizes="96x96">
-    <link rel="icon" href="https://acctsuite.com/favicon-48x48.png?v=bagA4" type="image/png" sizes="48x48">
-    <link rel="icon" href="https://acctsuite.com/favicon-32x32.png?v=bagA4" type="image/png" sizes="32x32">
-    <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico?v=bagA4">
-    <link rel="icon" href="https://acctsuite.com/favicon.ico?v=bagA4" sizes="any">
-    <link rel="icon" href="https://acctsuite.com/favicon.svg?v=bagA4" type="image/svg+xml">
+    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png?v=bagA5" type="image/png" sizes="96x96">
+    <link rel="icon" href="https://acctsuite.com/favicon-48x48.png?v=bagA5" type="image/png" sizes="48x48">
+    <link rel="icon" href="https://acctsuite.com/favicon-32x32.png?v=bagA5" type="image/png" sizes="32x32">
+    <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico?v=bagA5">
+    <link rel="icon" href="https://acctsuite.com/favicon.ico?v=bagA5" sizes="any">
+    <link rel="icon" href="https://acctsuite.com/favicon.svg?v=bagA5" type="image/svg+xml">
     <link rel="apple-touch-icon" href="https://acctsuite.com/img/brand/apple-touch-icon.png?v=bagA5" sizes="180x180">
-    <link rel="manifest" href="https://acctsuite.com/site.webmanifest?v=bagA4">
+    <link rel="manifest" href="https://acctsuite.com/site.webmanifest?v=bagA5">
     <meta name="theme-color" content="#8B5CF6">
     <meta name="msapplication-TileColor" content="#8B5CF6">
-    <meta name="msapplication-TileImage" content="https://acctsuite.com/img/brand/icon-192.png?v=bagA4">
+    <meta name="msapplication-TileImage" content="https://acctsuite.com/img/brand/icon-192.png?v=bagA5">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AcctSuite">
     <meta property="og:title" content="AcctSuite">
@@ -34,7 +34,7 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="AcctSuite">
     <meta name="twitter:description" content="Buy and sell digital accounts securely.">
-    <meta name="twitter:image" content="https://acctsuite.com/img/brand/icon-512.png?v=bagA4">
+    <meta name="twitter:image" content="https://acctsuite.com/img/brand/icon-512.png?v=bagA5">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -58,7 +58,7 @@
       "url": "https://acctsuite.com/",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://acctsuite.com/img/brand/icon-512.png?v=bagA4",
+        "url": "https://acctsuite.com/img/brand/icon-512.png?v=bagA5",
         "width": 512,
         "height": 512
       },
@@ -84,15 +84,53 @@
       ]
     }
     </script>
-    <link rel="stylesheet" href="/css/tailwind.css?v=bagA4fix">
-    <script src="/js/api-client.js?v=bagA4fix"></script>
+    <link rel="stylesheet" href="/css/tailwind.css?v=bagA5fix">
+    <script src="/js/api-client.js?v=bagA5fix"></script>
     
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA4fix">
-    <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA4fix">
-    <link rel="stylesheet" href="/css/ui-toast.css?v=bagA4fix">
-    <script src="/js/mobile-fix.js?v=bagA4fix"></script>
-    <script src="/js/ui-toast.js?v=bagA4fix"></script>
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA5fix">
+    <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
+    <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
+    <script src="/js/mobile-fix.js?v=bagA5fix"></script>
+    <script src="/js/ui-toast.js?v=bagA5fix"></script>
     <style>
+        /* Auth fields: bg-inputBg is not in compiled Tailwind — force readable text */
+        #page_login input:not([type="checkbox"]),
+        #page_signup input:not([type="checkbox"]),
+        #appModal input:not([type="checkbox"]) {
+            color: #0f172a !important;
+            background-color: #ffffff !important;
+            caret-color: #8B5CF6;
+            -webkit-text-fill-color: #0f172a;
+        }
+        #page_login input::placeholder,
+        #page_signup input::placeholder,
+        #appModal input::placeholder {
+            color: #94a3b8 !important;
+            -webkit-text-fill-color: #94a3b8;
+            opacity: 1;
+        }
+        #page_login .auth-phone-wrap,
+        #page_signup .auth-phone-wrap {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+        #page_login .auth-phone-wrap .auth-phone-prefix,
+        #page_signup .auth-phone-wrap .auth-phone-prefix {
+            color: #0f172a !important;
+            background-color: #f8fafc !important;
+        }
+        .auth-submit-ready {
+            background-color: #8B5CF6 !important;
+            border-color: #8B5CF6 !important;
+            color: #ffffff !important;
+        }
+        .auth-submit-idle {
+            background-color: transparent !important;
+            border: 1px solid #64748b !important;
+            color: #cbd5e1 !important;
+            opacity: 0.55;
+            pointer-events: none;
+        }
         @keyframes floatLogo {
             0%, 100% { transform: translateY(0px) scale(1); }
             50% { transform: translateY(-3px) scale(1.05); }
@@ -113,7 +151,7 @@
     <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
         <div class="max-w-md mx-auto flex items-center justify-between gap-2">
             <a href="/" class="flex items-center gap-0 min-w-0" onclick="switchPage('home'); return false;">
-                <img src="/img/brand/logo-mark-violet.svg?v=bagA4fix" alt="" class="h-8 w-8 shrink-0 -mr-1.5 live-logo-glow" width="32" height="32" decoding="async"><span class="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white whitespace-nowrap">cctsuite</span>
+                <img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" class="h-8 w-8 shrink-0 -mr-1.5 live-logo-glow" width="32" height="32" decoding="async"><span class="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white whitespace-nowrap">cctsuite</span>
             </a>
 
             <div class="flex items-center gap-2 shrink-0">
@@ -268,7 +306,7 @@
         <footer class="bg-white dark:bg-darkCard border-t border-gray-200 dark:border-gray-800 px-4 py-8 mt-6">
             <div class="max-w-md mx-auto space-y-6 text-sm">
                 <div class="flex items-center gap-2">
-                    <img src="/img/brand/logo-mark-violet.svg?v=bagA4fix" alt="" class="h-8 w-8 shrink-0 -mr-1.5" width="32" height="32" decoding="async"><span class="font-bold text-lg tracking-tight">cctsuite</span>
+                    <img src="/img/brand/logo-mark-violet.svg?v=bagA5fix" alt="" class="h-8 w-8 shrink-0 -mr-1.5" width="32" height="32" decoding="async"><span class="font-bold text-lg tracking-tight">cctsuite</span>
                 </div>
 
                 <a href="/company" class="flex items-center gap-3 p-3.5 rounded-xl border border-violet-500/30 bg-violet-500/10 no-underline text-inherit">
@@ -325,35 +363,35 @@
     <div id="page_signup" class="hidden min-h-screen bg-black px-6 py-10 flex flex-col max-w-md mx-auto relative">
         <div class="mb-6 mt-4">
             <h1 class="text-2xl font-bold text-white mb-1">Welcome to AcctSuite 👋</h1>
-            <p class="text-gray-400 text-sm">Already have an account? <span class="text-brandPrimary cursor-pointer font-medium" onclick="switchPage('login')">Login</span></p>
+            <p class="text-gray-300 text-sm">Already have an account? <span class="text-brandPrimary cursor-pointer font-medium" onclick="switchPage('login')">Login</span></p>
         </div>
 
         <form class="space-y-4" onsubmit="handleSignup(event)">
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Full Name <span class="text-red-500">*</span></label>
-                <input type="text" id="su_name" placeholder="Type your full name" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brandPrimary transition" required>
+                <input type="text" id="su_name" placeholder="Type your full name" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Email address <span class="text-red-500">*</span></label>
-                <input type="email" id="su_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brandPrimary transition" required>
+                <input type="email" id="su_email" placeholder="Type your Email address" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
-                <div class="flex bg-inputBg border border-inputBorder rounded-xl overflow-hidden focus-within:border-brandPrimary transition">
-                    <div class="flex items-center px-3 border-r border-inputBorder bg-inputBg text-white text-sm gap-2">
+                <div class="auth-phone-wrap flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-brandPrimary transition">
+                    <div class="auth-phone-prefix flex items-center px-3 border-r border-slate-200 bg-slate-50 text-slate-900 text-sm gap-2">
                         <img id="country_flag" src="https://flagcdn.com/24x18/ng.png" alt="flag" class="w-6 h-4 rounded-sm object-cover">
                         <span id="country_code" class="text-xs font-semibold">+234</span>
                     </div>
-                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-white text-sm focus:outline-none" required>
+                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-slate-900 text-sm focus:outline-none placeholder-slate-400" required>
                 </div>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="su_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-brandPrimary transition" required>
+                    <input type="password" id="su_pass" placeholder="Type your Password" class="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_pass', this)"></i>
                 </div>
                 <ul class="text-gray-500 text-xs mt-1.5 space-y-0.5 list-disc pl-4">
@@ -365,7 +403,7 @@
             <div>
                 <label class="block text-xs text-gray-300 mb-1">Confirm password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3 text-white text-sm focus:outline-none focus:border-brandPrimary transition" required>
+                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_cpass', this)"></i>
                 </div>
             </div>
@@ -375,7 +413,7 @@
                 <p class="text-xs text-gray-400 leading-tight">By clicking on this, I give consent to AcctSuite <a href="/privacy" class="text-brandPrimary underline">Privacy Policy</a> and <a href="/terms" class="text-brandPrimary underline">Terms of Use</a></p>
             </div>
 
-            <button type="submit" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3.5 rounded-xl transition mt-3">
+            <button type="submit" id="su_submit" disabled class="auth-submit-idle w-full font-semibold py-3.5 rounded-xl transition mt-3">
                 Sign up
             </button>
         </form>
@@ -389,19 +427,19 @@
     <div id="page_login" class="hidden min-h-screen bg-black px-6 py-12 flex flex-col max-w-md mx-auto relative justify-center">
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-white mb-2">Login to your account</h1>
-            <p class="text-gray-400 text-sm">Don't have an account? <span class="text-brandPrimary cursor-pointer font-medium" onclick="switchPage('signup')">Sign up</span></p>
+            <p class="text-gray-300 text-sm">Don't have an account? <span class="text-brandPrimary cursor-pointer font-medium" onclick="switchPage('signup')">Sign up</span></p>
         </div>
 
         <form class="space-y-5" onsubmit="handleLogin(event)">
             <div>
                 <label class="block text-xs text-gray-300 mb-1.5">Email address <span class="text-red-500">*</span></label>
-                <input type="email" id="li_email" placeholder="Type your Email address" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-brandPrimary transition" required>
+                <input type="email" id="li_email" placeholder="Type your Email address" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
             </div>
             
             <div>
                 <label class="block text-xs text-gray-300 mb-1.5">Password <span class="text-red-500">*</span></label>
                 <div class="relative">
-                    <input type="password" id="li_pass" placeholder="Type your Password" class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-white text-sm focus:outline-none focus:border-brandPrimary transition" required>
+                    <input type="password" id="li_pass" placeholder="Type your Password" class="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3.5 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
                     <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('li_pass', this)"></i>
                 </div>
             </div>
@@ -410,7 +448,7 @@
                 <a href="#" onclick="openForgotPassword(event)" class="text-xs text-brandPrimary hover:underline">Forgot Password?</a>
             </div>
 
-            <button type="submit" class="w-full bg-inputBg border border-inputBorder text-gray-300 hover:bg-brandPrimary hover:text-white hover:border-brandPrimary font-semibold py-3.5 rounded-xl transition">
+            <button type="submit" id="li_submit" disabled class="auth-submit-idle w-full font-semibold py-3.5 rounded-xl transition">
                 Login
             </button>
         </form>
@@ -439,6 +477,8 @@
             document.getElementById('page_signup').classList.add('hidden');
             document.getElementById('page_login').classList.add('hidden');
             document.getElementById('page_' + pageId).classList.remove('hidden');
+            if (pageId === 'login') refreshLoginSubmit();
+            if (pageId === 'signup') refreshSignupSubmit();
             window.scrollTo(0, 0);
             const titles = {
                 home: 'AcctSuite',
@@ -447,6 +487,44 @@
             };
             document.title = titles[pageId] || titles.home;
         }
+
+
+        function setAuthSubmitReady(btn, ready) {
+            if (!btn) return;
+            btn.disabled = !ready;
+            btn.classList.toggle('auth-submit-ready', ready);
+            btn.classList.toggle('auth-submit-idle', !ready);
+        }
+        function refreshLoginSubmit() {
+            const email = (document.getElementById('li_email')?.value || '').trim();
+            const pass = document.getElementById('li_pass')?.value || '';
+            setAuthSubmitReady(document.getElementById('li_submit'), email.length > 0 && pass.length > 0);
+        }
+        function refreshSignupSubmit() {
+            const name = (document.getElementById('su_name')?.value || '').trim();
+            const email = (document.getElementById('su_email')?.value || '').trim();
+            const phone = (document.getElementById('su_phone')?.value || '').trim();
+            const pass = document.getElementById('su_pass')?.value || '';
+            const cpass = document.getElementById('su_cpass')?.value || '';
+            const terms = !!document.getElementById('su_terms')?.checked;
+            const ready = name && email && phone && pass && cpass && terms;
+            setAuthSubmitReady(document.getElementById('su_submit'), !!ready);
+        }
+        function bindAuthSubmitGuards() {
+            ['li_email','li_pass'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', refreshLoginSubmit);
+            });
+            ['su_name','su_email','su_phone','su_pass','su_cpass'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', refreshSignupSubmit);
+            });
+            const terms = document.getElementById('su_terms');
+            if (terms) terms.addEventListener('change', refreshSignupSubmit);
+            refreshLoginSubmit();
+            refreshSignupSubmit();
+        }
+        document.addEventListener('DOMContentLoaded', bindAuthSubmitGuards);
 
         function togglePass(fieldId, icon) {
             const input = document.getElementById(fieldId);
@@ -484,7 +562,7 @@
                   <h3 class="font-bold text-xl mb-1.5 tracking-tight">Forgot your password?</h3>
                   <p class="text-xs text-gray-400 mb-5 leading-relaxed">Enter the email on your AcctSuite account. We’ll send a secure link so you can choose a new password.</p>
                   <label class="block text-xs text-gray-300 mb-1.5">Email address</label>
-                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="w-full bg-inputBg border border-inputBorder rounded-xl p-3.5 text-sm mb-3 text-white focus:outline-none focus:border-brandPrimary" required>
+                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm mb-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brandPrimary" required>
                   <p id="forgotErr" class="hidden text-xs text-red-400 mb-3"></p>
                   <button id="forgotBtn" onclick="submitForgotPassword()" class="w-full bg-brandPrimary hover:bg-brandHover py-3.5 rounded-xl font-bold text-sm transition">Send reset link</button>
                   <p class="text-[11px] text-gray-500 mt-4 text-center">Remembered it? <button type="button" onclick="closeModal()" class="text-brandPrimary font-medium">Back to login</button></p>

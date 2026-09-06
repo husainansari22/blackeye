@@ -8,12 +8,21 @@
   <link rel="icon" href="/favicon.ico?v=bagA3" sizes="48x48">
   <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png?v=bagA3">
   <meta name="robots" content="noindex,nofollow">
-    <link rel="stylesheet" href="/css/tailwind.css?v=bagA4fix">
+    <link rel="stylesheet" href="/css/tailwind.css?v=bagA5fix">
     
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA4fix">
-  <script src="/js/api-client.js?v=bagA4fix"></script>
-  <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA4fix">
-  <script src="/js/mobile-fix.js?v=bagA4fix"></script>
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA5fix">
+  <script src="/js/api-client.js?v=bagA5fix"></script>
+  <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
+  <script src="/js/mobile-fix.js?v=bagA5fix"></script>
+<style>
+  #resetForm input {
+    color: #0f172a !important;
+    background: #fff !important;
+    -webkit-text-fill-color: #0f172a;
+    caret-color: #8B5CF6;
+  }
+  #resetForm input::placeholder { color:#94a3b8 !important; -webkit-text-fill-color:#94a3b8; }
+</style>
 </head>
 <body class="bg-darkBg min-h-screen text-white flex items-center justify-center p-4">
   <div class="w-full max-w-md">
@@ -33,14 +42,14 @@
           <label class="block text-xs text-slate-300 mb-1.5">New password</label>
           <div class="relative">
             <input id="np" type="password" minlength="6" required placeholder="At least 6 characters"
-              class="w-full bg-inputBg border border-inputBorder rounded-xl pl-4 pr-10 py-3.5 text-sm focus:outline-none focus:border-brandPrimary">
+              class="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brandPrimary">
             <i class="fa-regular fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer" onclick="toggle('np', this)"></i>
           </div>
         </div>
         <div>
           <label class="block text-xs text-slate-300 mb-1.5">Confirm password</label>
           <input id="np2" type="password" minlength="6" required placeholder="Type it again"
-            class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-brandPrimary">
+            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brandPrimary">
         </div>
         <p id="err" class="hidden text-xs text-red-400"></p>
         <button id="btn" type="submit" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3.5 rounded-xl transition">
