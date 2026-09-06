@@ -254,6 +254,7 @@
               isVerified: !!data.user.isVerified,
               kycStatus: data.user.kycStatus,
               avatarUrl: data.user.avatarUrl || '',
+              coverUrl: data.user.coverUrl || '',
             });
           }
         } catch (e) {}

@@ -93,6 +93,22 @@
     }
   }
 
+  function paintCover(u) {
+    const wrap = document.getElementById('profileCover');
+    const img = document.getElementById('profileCoverImg');
+    if (!wrap || !img) return;
+    const url = (u && (u.coverUrl || u.cover)) || '';
+    if (url) {
+      img.src = String(url);
+      img.classList.remove('hidden');
+      wrap.classList.add('has-photo');
+    } else {
+      img.removeAttribute('src');
+      img.classList.add('hidden');
+      wrap.classList.remove('has-photo');
+    }
+  }
+
   function applyProfileChrome(u) {
     const set = (id, val) => {
       const el = document.getElementById(id);
@@ -102,6 +118,7 @@
       paintAvatar('headerProfileAvatar', { name: 'Guest' });
       paintAvatar('leftProfileAvatar', { name: 'Guest' });
       paintAvatar('rightProfileAvatar', { name: 'Guest' });
+      paintCover(null);
       set('leftProfileName', 'GUEST');
       set('leftProfileEmail', 'Browse freely · sign in to buy');
       set('rightProfileName', 'Guest');
@@ -128,6 +145,7 @@
     paintAvatar('headerProfileAvatar', u);
     paintAvatar('leftProfileAvatar', u);
     paintAvatar('rightProfileAvatar', u);
+    paintCover(u);
     set('leftProfileName', (u.name || '').toUpperCase());
     set('leftProfileEmail', u.email);
     set('rightProfileName', u.name);
@@ -3266,6 +3284,56 @@
     });
   }
 
+  function compressCoverFile(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !String(file.type || '').startsWith('image/')) {
+        reject(new Error('Please choose a cover photo'));
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        reject(new Error('Cover photo is too large (max 10MB)'));
+        return;
+      }
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        try {
+          const maxW = 1280;
+          const maxH = 480;
+          let w = img.width;
+          let h = img.height;
+          if (w < 1 || h < 1) {
+            reject(new Error('Could not read that photo'));
+            return;
+          }
+          const scale = Math.min(1, maxW / w, maxH / h);
+          w = Math.max(1, Math.round(w * scale));
+          h = Math.max(1, Math.round(h * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not process cover photo'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(blobUrl);
+          resolve(canvas.toDataURL('image/jpeg', 0.84));
+        } catch (err) {
+          URL.revokeObjectURL(blobUrl);
+          reject(err);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error('Could not read that photo'));
+      };
+      img.src = blobUrl;
+    });
+  }
+
+
   window.AcctventaUI = {
     promptSignIn,
     isLoggedIn() {
@@ -3290,6 +3358,40 @@
       renderAds();
       renderMarketplace();
       renderNotifications();
+    },
+    async onProfileCover(input) {
+      const file = input && input.files && input.files[0];
+      if (input) input.value = '';
+      if (!file) return;
+      const u = requireAuth({ message: 'You are not logged in. Sign in to update your cover photo.' });
+      if (!u) return;
+      try {
+        const dataUrl = await compressCoverFile(file);
+        if (window.AcctventaApiSync && window.AcctventaApiSync.usingApi() && window.AcctventaApi) {
+          const res = await window.AcctventaApi.updateProfile({
+            name: u.name,
+            phone: u.phone || '',
+            cover: dataUrl,
+          });
+          if (res && res.user && res.user.coverUrl) {
+            u.coverUrl = res.user.coverUrl;
+          } else {
+            u.coverUrl = dataUrl;
+          }
+          A().persistUser(u);
+          if (window.AcctventaApiSync.hydrateFromApi) {
+            await window.AcctventaApiSync.hydrateFromApi();
+          }
+        } else {
+          u.coverUrl = dataUrl;
+          A().persistUser(u);
+        }
+        applyProfileChrome(A().getCurrentUser() || u);
+        if (window.AcctventaToast) window.AcctventaToast.success('Cover photo updated');
+        else alert('Cover photo updated');
+      } catch (e) {
+        alert((e && e.message) || 'Could not update cover photo');
+      }
     },
     async onProfilePhoto(input) {
       const file = input && input.files && input.files[0];

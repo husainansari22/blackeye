@@ -131,6 +131,7 @@ try {
         case 'auth.profile': {
             $u = require_user();
             ensure_user_avatar_column();
+            ensure_user_cover_column();
             $name = trim((string)($body['name'] ?? $u['name']));
             $phone = trim((string)($body['phone'] ?? $u['phone']));
             if ($name === '') json_out(['ok' => false, 'error' => 'Name is required'], 422);
@@ -139,6 +140,14 @@ try {
             if ($avatarData !== '') {
                 try {
                     save_user_avatar((int)$u['id'], $avatarData);
+                } catch (Throwable $e) {
+                    json_out(['ok' => false, 'error' => $e->getMessage()], 422);
+                }
+            }
+            $coverData = (string)($body['cover'] ?? '');
+            if ($coverData !== '') {
+                try {
+                    save_user_cover((int)$u['id'], $coverData);
                 } catch (Throwable $e) {
                     json_out(['ok' => false, 'error' => $e->getMessage()], 422);
                 }
@@ -1764,6 +1773,7 @@ try {
                     'email' => $seller['email'],
                     'isVerified' => (int)$seller['is_verified'] === 1,
                     'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
+                    'coverUrl' => (string)($seller['cover_url'] ?? ''),
                     'memberSince' => $seller['created_at'],
                     'completedSales' => $sales,
                     'rating' => seller_rating_summary($sid),
@@ -1777,6 +1787,7 @@ try {
             ensure_marketplace_extras();
             ensure_commerce_features();
             ensure_user_avatar_column();
+            ensure_user_cover_column();
             ensure_merchant_slug_column();
             $sellerId = (int)($body['sellerId'] ?? $body['id'] ?? $_GET['sellerId'] ?? $_GET['id'] ?? 0);
             $sellerEmail = strtolower(trim((string)($body['sellerEmail'] ?? $_GET['sellerEmail'] ?? '')));
@@ -1829,6 +1840,7 @@ try {
                     'email' => $seller['email'],
                     'isVerified' => (int)$seller['is_verified'] === 1,
                     'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
+                    'coverUrl' => (string)($seller['cover_url'] ?? ''),
                     'memberSince' => $seller['created_at'],
                     'completedSales' => $stats['totalSold'],
                     'rating' => seller_rating_summary($sid),

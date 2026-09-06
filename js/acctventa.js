@@ -314,6 +314,7 @@
     user.payoutCurrency = user.payoutCurrency || '';
     user.payoutBankLocked = !!user.payoutBankLocked;
     user.avatarUrl = user.avatarUrl || user.avatar || '';
+    user.coverUrl = user.coverUrl || user.cover || '';
     if (!isValidReferralCode(user.referralCode)) {
       user.referralCode = randomReferralCode();
     }

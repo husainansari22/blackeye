@@ -286,6 +286,7 @@
         payoutBankLocked: !!user.payoutBankLocked,
         payoutBankCode: user.payoutBankCode || '',
         avatarUrl: user.avatarUrl || '',
+        coverUrl: user.coverUrl || '',
         merchantSlug: user.merchantSlug || null,
         merchantLink: user.merchantLink || null,
         ads: ads,

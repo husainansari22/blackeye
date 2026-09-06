@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=20260822nav1">
     <link rel="stylesheet" href="/css/ui-toast.css?v=20260821toast2">
     <link rel="stylesheet" href="/css/kyc.css?v=20260822kyc9">
-    <link rel="stylesheet" href="/css/profile.css?v=20260904story3">
+    <link rel="stylesheet" href="/css/profile.css?v=20260906cover1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -659,7 +659,14 @@
             </div>
 
             <div class="profile-hero">
-                <div class="flex items-center gap-4">
+                <div class="profile-cover" id="profileCover">
+                    <img id="profileCoverImg" class="profile-cover__img hidden" alt="">
+                    <button type="button" class="profile-cover-btn" onclick="document.getElementById('profileCoverInput').click()" aria-label="Upload cover photo">
+                        <i class="fa-regular fa-image"></i> Cover
+                    </button>
+                    <input id="profileCoverInput" type="file" accept="image/*" hidden onchange="window.AcctventaUI && window.AcctventaUI.onProfileCover(this)">
+                </div>
+                <div class="profile-hero-row">
                     <button type="button" class="profile-avatar-btn" onclick="document.getElementById('profilePhotoInput').click()" aria-label="Upload profile picture">
                         <div id="rightProfileAvatar" class="av-user-avatar av-user-avatar--lg">?</div>
                         <span class="profile-avatar-cam"><i class="fa-solid fa-camera"></i></span>
@@ -924,14 +931,14 @@
         </div>
     </nav>
 
-    <script src="/js/acctventa.js?v=20260904story3"></script>
-    <script src="/js/api-client.js?v=20260904story3"></script>
-    <script src="/js/api-sync.js?v=20260904story3"></script>
+    <script src="/js/acctventa.js?v=20260906cover1"></script>
+    <script src="/js/api-client.js?v=20260906cover1"></script>
+    <script src="/js/api-sync.js?v=20260906cover1"></script>
     <script src="/js/kyc-app.js?v=20260904story3"></script>
     <script src="/js/av-confirm.js?v=20260904story3"></script>
     <script src="/js/commerce-ui.js?v=20260904story3"></script>
     <script src="/js/listing-modal.js?v=20260904story3"></script>
-    <script src="/js/dashboard-app.js?v=20260906cart1"></script>
+    <script src="/js/dashboard-app.js?v=20260906cover1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

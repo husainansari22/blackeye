@@ -306,6 +306,7 @@ function public_user(array $u): array {
     ensure_user_payout_columns();
     ensure_wallet_ledger_columns();
     ensure_user_avatar_column();
+    ensure_user_cover_column();
     $u = ensure_user_referral_code($u);
     $bal = (float)$u['balance'];
     $wd = array_key_exists('withdrawable_balance', $u)
@@ -324,6 +325,7 @@ function public_user(array $u): array {
         'phone' => $u['phone'],
         'countryCode' => strtolower((string)($u['country_code'] ?? '')),
         'avatarUrl' => (string)($u['avatar_url'] ?? ''),
+        'coverUrl' => (string)($u['cover_url'] ?? ''),
         'balance' => $bal,
         'withdrawableBalance' => (float)money_f($wd),
         'owing' => $bal < 0 ? abs($bal) : 0,
@@ -373,11 +375,32 @@ function ensure_user_avatar_column(): void {
     }
 }
 
+function ensure_user_cover_column(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->query('SELECT cover_url FROM users LIMIT 1');
+    } catch (Throwable $e) {
+        try {
+            db()->exec("ALTER TABLE users ADD COLUMN cover_url VARCHAR(500) NOT NULL DEFAULT '' AFTER avatar_url");
+        } catch (Throwable $e2) {}
+    }
+    $dir = dirname(__DIR__) . '/uploads/covers';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $ht = $dir . '/.htaccess';
+    if (!is_file($ht)) {
+        @file_put_contents($ht, "Options -Indexes\n<FilesMatch \"\\.(php|phtml|php3|php4|php5|phar)$\">\nDeny from all\n</FilesMatch>\n");
+    }
+}
+
 /**
- * Save a JPEG/PNG/WebP data-URL as the user's public avatar. Returns the public URL.
+ * Decode a JPEG/PNG/WebP data-URL (or raw base64) into binary + extension.
+ * @return array{0:string,1:string} [binary, extension]
  */
-function save_user_avatar(int $userId, string $data): string {
-    ensure_user_avatar_column();
+function decode_user_image_payload(string $data, float $maxMb = 2.5): array {
     $mime = '';
     $bin = '';
     if (preg_match('#^data:([^;]+);base64,(.+)$#s', $data, $m)) {
@@ -389,8 +412,8 @@ function save_user_avatar(int $userId, string $data): string {
     if ($bin === false || $bin === '') {
         throw new RuntimeException('Could not read that photo');
     }
-    if (strlen($bin) > 2.5 * 1024 * 1024) {
-        throw new RuntimeException('Photo is too large (max 2.5MB)');
+    if (strlen($bin) > $maxMb * 1024 * 1024) {
+        throw new RuntimeException('Photo is too large (max ' . $maxMb . 'MB)');
     }
     $allowed = [
         'image/jpeg' => 'jpg',
@@ -407,7 +430,15 @@ function save_user_avatar(int $userId, string $data): string {
             throw new RuntimeException('Use a JPEG, PNG, or WebP photo');
         }
     }
-    $ext = $allowed[$mime];
+    return [$bin, $allowed[$mime]];
+}
+
+/**
+ * Save a JPEG/PNG/WebP data-URL as the user's public avatar. Returns the public URL.
+ */
+function save_user_avatar(int $userId, string $data): string {
+    ensure_user_avatar_column();
+    [$bin, $ext] = decode_user_image_payload($data, 2.5);
     $stored = 'u' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
     $dir = dirname(__DIR__) . '/uploads/avatars';
     $path = $dir . '/' . $stored;
@@ -427,6 +458,34 @@ function save_user_avatar(int $userId, string $data): string {
 
     $url = '/uploads/avatars/' . $stored;
     db()->prepare('UPDATE users SET avatar_url = ? WHERE id = ?')->execute([$url, $userId]);
+    return $url;
+}
+
+/**
+ * Save a JPEG/PNG/WebP data-URL as the user's public cover photo. Returns the public URL.
+ */
+function save_user_cover(int $userId, string $data): string {
+    ensure_user_cover_column();
+    [$bin, $ext] = decode_user_image_payload($data, 3.5);
+    $stored = 'u' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+    $dir = dirname(__DIR__) . '/uploads/covers';
+    $path = $dir . '/' . $stored;
+    if (file_put_contents($path, $bin) === false) {
+        throw new RuntimeException('Could not save cover photo');
+    }
+
+    $stmt = db()->prepare('SELECT cover_url FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $prev = (string)($stmt->fetchColumn() ?: '');
+    if ($prev !== '' && preg_match('#^/uploads/covers/([a-zA-Z0-9._-]+)$#', $prev, $pm)) {
+        $old = $dir . '/' . $pm[1];
+        if (is_file($old)) {
+            @unlink($old);
+        }
+    }
+
+    $url = '/uploads/covers/' . $stored;
+    db()->prepare('UPDATE users SET cover_url = ? WHERE id = ?')->execute([$url, $userId]);
     return $url;
 }
 
