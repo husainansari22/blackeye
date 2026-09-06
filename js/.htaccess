@@ -1,0 +1,6 @@
+# Static JS/CSS are cache-busted with ?v= query params on deploy
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
