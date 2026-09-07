@@ -334,7 +334,17 @@ try {
             $u = require_user();
             $stmt = db()->prepare('SELECT * FROM ads WHERE seller_id = ? ORDER BY created_at DESC');
             $stmt->execute([(int)$u['id']]);
-            json_out(['ok' => true, 'ads' => $stmt->fetchAll()]);
+            $ads = $stmt->fetchAll();
+            try {
+                ensure_ad_credentials_table();
+                foreach ($ads as &$adRow) {
+                    $cstmt = db()->prepare('SELECT id, username, password_plain, preview_link, attached_email, attached_email_password, two_fa, extra_info, status, created_at FROM ad_credentials WHERE ad_id = ? ORDER BY id ASC');
+                    $cstmt->execute([(int)$adRow['id']]);
+                    $adRow['credentials'] = $cstmt->fetchAll() ?: [];
+                }
+                unset($adRow);
+            } catch (Throwable $e) {}
+            json_out(['ok' => true, 'ads' => $ads]);
         }
 
         case 'ads.create': {
@@ -501,6 +511,7 @@ try {
             // Editing content sends the listing back for review when it was live
             $newStatus = $status === 'active' ? 'pending' : $status;
             if ($status === 'denied') $newStatus = 'pending';
+            $credId = (int)($body['credentialId'] ?? $body['credential_id'] ?? 0);
             db()->prepare('UPDATE ads SET title = ?, description = ?, price = ?, username = ?, password_plain = ?, preview_link = ?, attached_email = ?, attached_email_password = ?, two_fa = ?, extra_info = ?, status = ?, deny_reason = ?, reviewed_at = NULL WHERE id = ?')
                 ->execute([
                     $title, $description, money_f($price), $username, $password, $preview,
@@ -509,9 +520,15 @@ try {
                 ]);
             try {
                 ensure_ad_credentials_table();
-                $cred = db()->prepare("SELECT id FROM ad_credentials WHERE ad_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1");
-                $cred->execute([$adId]);
-                $rowCred = $cred->fetch();
+                if ($credId > 0) {
+                    $cred = db()->prepare("SELECT id FROM ad_credentials WHERE id = ? AND ad_id = ? AND status = 'available' LIMIT 1");
+                    $cred->execute([$credId, $adId]);
+                    $rowCred = $cred->fetch();
+                } else {
+                    $cred = db()->prepare("SELECT id FROM ad_credentials WHERE ad_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1");
+                    $cred->execute([$adId]);
+                    $rowCred = $cred->fetch();
+                }
                 if ($rowCred) {
                     db()->prepare('UPDATE ad_credentials SET username = ?, password_plain = ?, preview_link = ?, attached_email = ?, attached_email_password = ?, two_fa = ?, extra_info = ? WHERE id = ?')
                         ->execute([
@@ -538,6 +555,42 @@ try {
             $status = (string)($ad['status'] ?? '');
             if (!in_array($status, ['pending', 'active', 'denied'], true)) {
                 json_out(['ok' => false, 'error' => 'This ad cannot be deleted.'], 403);
+            }
+            $credId = (int)($body['credentialId'] ?? $body['credential_id'] ?? 0);
+            if ($credId > 0) {
+                try {
+                    ensure_ad_credentials_table();
+                    $cred = db()->prepare("SELECT id FROM ad_credentials WHERE id = ? AND ad_id = ? AND status = 'available' LIMIT 1");
+                    $cred->execute([$credId, $adId]);
+                    $rowCred = $cred->fetch();
+                    if (!$rowCred) json_out(['ok' => false, 'error' => 'Account unit not found'], 404);
+                    db()->prepare("UPDATE ad_credentials SET status = 'sold' WHERE id = ?")->execute([$credId]);
+                    $leftStmt = db()->prepare("SELECT COUNT(*) c FROM ad_credentials WHERE ad_id = ? AND status = 'available'");
+                    $leftStmt->execute([$adId]);
+                    $left = (int)($leftStmt->fetch()['c'] ?? 0);
+                    if ($left < 1) {
+                        db()->prepare("UPDATE ads SET status = 'removed', stock = 0, reviewed_by = 'Seller', reviewed_at = NOW() WHERE id = ?")
+                            ->execute([$adId]);
+                    } else {
+                        $next = db()->prepare("SELECT * FROM ad_credentials WHERE ad_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1");
+                        $next->execute([$adId]);
+                        $n = $next->fetch();
+                        if ($n) {
+                            db()->prepare('UPDATE ads SET stock = ?, username = ?, password_plain = ?, preview_link = ?, attached_email = ?, attached_email_password = ?, two_fa = ?, extra_info = ? WHERE id = ?')
+                                ->execute([
+                                    $left,
+                                    $n['username'], $n['password_plain'], $n['preview_link'],
+                                    $n['attached_email'], $n['attached_email_password'], $n['two_fa'], $n['extra_info'],
+                                    $adId,
+                                ]);
+                        } else {
+                            db()->prepare('UPDATE ads SET stock = ? WHERE id = ?')->execute([$left, $adId]);
+                        }
+                    }
+                    json_out(['ok' => true, 'remaining' => $left]);
+                } catch (Throwable $e) {
+                    json_out(['ok' => false, 'error' => 'Could not delete account unit'], 500);
+                }
             }
             db()->prepare("UPDATE ads SET status = 'removed', stock = 0, reviewed_by = 'Seller', reviewed_at = NOW() WHERE id = ?")
                 ->execute([$adId]);

@@ -36,6 +36,19 @@
   }
 
   function mapAd(row) {
+    const creds = Array.isArray(row.credentials)
+      ? row.credentials.map((c) => ({
+          id: String(c.id),
+          username: c.username || '',
+          password: c.password_plain || c.password || '',
+          previewLink: c.preview_link || c.previewLink || '',
+          attachedEmail: c.attached_email || c.attachedEmail || '',
+          attachedEmailPassword: c.attached_email_password || c.attachedEmailPassword || '',
+          twoFA: c.two_fa || c.twoFA || '',
+          extraInfo: c.extra_info || c.extraInfo || '',
+          status: c.status || 'available',
+        }))
+      : [];
     return {
       id: String(row.id),
       title: row.title,
@@ -54,6 +67,7 @@
       extraInfo: row.extra_info || '',
       createdAt: row.created_at || row.createdAt,
       stock: row.stock != null ? Number(row.stock) : 1,
+      credentials: creds,
     };
   }
 

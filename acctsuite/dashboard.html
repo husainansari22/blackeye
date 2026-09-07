@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/kyc.css?v=bagA5fix">
-    <link rel="stylesheet" href="/css/profile.css?v=storeProfile2">
+    <link rel="stylesheet" href="/css/profile.css?v=myAdsCompact1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -357,24 +357,28 @@
         </div>
 
         <!-- TAB: ADS -->
-        <div id="tab_ads" class="app-tab hidden space-y-4">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
-                    <div>
-                        <h2 class="text-xl font-bold">My Ads</h2>
+        <div id="tab_ads" class="app-tab hidden space-y-3">
+            <div class="flex justify-between items-start gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button onclick="switchTab('home')" class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center shrink-0" aria-label="Go back"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                    <div class="min-w-0">
+                        <h2 class="text-xl font-bold leading-tight">My Ads</h2>
                         <p class="text-xs text-slate-500">All of your product ads show here</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2.5">
-                    <label class="flex items-center gap-2 cursor-pointer select-none" title="ON = ads live · OFF = hold all ads">
-                        <span id="adsHoldLabel" class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Live</span>
-                        <button type="button" id="adsHoldToggle" role="switch" aria-checked="true" aria-label="Hold ads toggle" onclick="toggleHoldAds(this.getAttribute('aria-checked')!=='true')" class="ads-hold-switch is-on">
-                            <span id="adsHoldKnob" class="ads-hold-switch__knob"></span>
-                        </button>
-                    </label>
-                    <button onclick="openSellProductWizard()" class="w-10 h-10 rounded-xl bg-brandPrimary hover:bg-brandHover text-white flex items-center justify-center shadow-md" aria-label="Sell product"><i class="fa-solid fa-plus"></i></button>
+                <label class="flex items-center gap-2 cursor-pointer select-none shrink-0 pt-1" title="ON = ads live · OFF = hold all ads">
+                    <span id="adsHoldLabel" class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Live</span>
+                    <button type="button" id="adsHoldToggle" role="switch" aria-checked="true" aria-label="Hold ads toggle" onclick="toggleHoldAds(this.getAttribute('aria-checked')!=='true')" class="ads-hold-switch is-on">
+                        <span id="adsHoldKnob" class="ads-hold-switch__knob"></span>
+                    </button>
+                </label>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="my-ads-search flex-1">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input id="adsSearchInput" type="search" placeholder="Search" autocomplete="off" oninput="onAdsSearchInput(this.value)" aria-label="Search ads">
                 </div>
+                <button onclick="openSellProductWizard()" class="w-11 h-11 rounded-full bg-brandPrimary hover:bg-brandHover text-white flex items-center justify-center shadow-md shrink-0" aria-label="Sell product"><i class="fa-solid fa-plus"></i></button>
             </div>
             <div class="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800 text-xs scrollbar-none">
                 <button data-filter="all" onclick="setAdsFilter('all')" class="ads-filter-btn px-3 py-2 font-medium text-brandPrimary border-b-2 border-brandPrimary shrink-0">All</button>
@@ -383,7 +387,7 @@
                 <button data-filter="denied" onclick="setAdsFilter('denied')" class="ads-filter-btn px-3 py-2 font-medium text-slate-400 shrink-0">Denied</button>
                 <button data-filter="removed" onclick="setAdsFilter('removed')" class="ads-filter-btn px-3 py-2 font-medium text-slate-400 shrink-0">Removed</button>
             </div>
-            <div id="adsListContainer" class="space-y-3"></div>
+            <div id="adsListContainer" class="my-ads-list"></div>
         </div>
 
         <!-- TAB: WALLET -->
@@ -1025,12 +1029,12 @@
     <script src="/js/acctsuite.js?v=promoFix2"></script>
     <script src="/js/api-client.js?v=featurePack1"></script>
     <script src="/js/site-controls.js?v=ownerCtrl2"></script>
-    <script src="/js/api-sync.js?v=featurePack1"></script>
+    <script src="/js/api-sync.js?v=myAdsCompact1"></script>
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
     <script src="/js/listing-modal.js?v=badgeFull1"></script>
-    <script src="/js/dashboard-app.js?v=storeProfile2"></script>
+    <script src="/js/dashboard-app.js?v=myAdsCompact1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

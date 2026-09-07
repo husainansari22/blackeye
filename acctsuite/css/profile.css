@@ -1330,19 +1330,22 @@
   overflow: hidden;
 }
 
-/* My Ads hold switch — knob centered vertically in the track */
+/* My Ads hold switch — knob centered with flex (no absolute top clipping) */
 .ads-hold-switch {
-  position: relative;
+  box-sizing: border-box;
   width: 2.5rem;
   height: 1.25rem;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.4);
   flex-shrink: 0;
-  padding: 0;
+  padding: 0.125rem;
   border: none;
   cursor: pointer;
   transition: background 0.15s ease;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  line-height: 0;
   vertical-align: middle;
 }
 .dark .ads-hold-switch {
@@ -1350,21 +1353,199 @@
 }
 .ads-hold-switch.is-on {
   background: #8b5cf6;
+  justify-content: flex-end;
 }
 .ads-hold-switch__knob {
-  position: absolute;
-  top: 50%;
-  left: 0.125rem;
+  position: static;
+  top: auto;
+  left: auto;
   width: 1rem;
   height: 1rem;
   margin: 0;
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
-  transform: translateY(-50%);
-  transition: left 0.15s ease;
+  transform: none;
+  flex-shrink: 0;
   pointer-events: none;
+  transition: none;
 }
 .ads-hold-switch.is-on .ads-hold-switch__knob {
-  left: calc(100% - 1.125rem);
+  left: auto;
+}
+
+/* Compact My Ads list (AcctBazaar density, AcctSuite colors) */
+.my-ads-search {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  min-width: 0;
+}
+.dark .my-ads-search {
+  background: rgba(15, 23, 42, 0.55);
+  border-color: rgba(51, 65, 85, 0.9);
+}
+.my-ads-search i { color: #94a3b8; font-size: 0.8rem; }
+.my-ads-search input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  color: inherit;
+}
+.my-ads-list {
+  display: flex;
+  flex-direction: column;
+}
+.my-ads-row {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr auto;
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.7rem 0.1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+}
+.dark .my-ads-row {
+  border-bottom-color: rgba(51, 65, 85, 0.85);
+}
+.my-ads-row__logo {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  object-fit: cover;
+  background: rgba(148, 163, 184, 0.2);
+  margin-top: 0.1rem;
+}
+.my-ads-row__title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.my-ads-row__desc {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 0.15rem 0 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dark .my-ads-row__desc { color: #94a3b8; }
+.my-ads-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+.my-ads-row__instant {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+}
+.dark .my-ads-row__instant { color: #34d399; }
+.my-ads-row__price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+.my-ads-row__price {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #8b5cf6;
+}
+.my-ads-row__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.my-ads-row__actions button {
+  background: none;
+  border: none;
+  padding: 0.15rem;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.my-ads-row__actions button:hover { color: #8b5cf6; }
+.my-ads-row__actions button.is-danger:hover { color: #ef4444; }
+.my-ads-row__status {
+  font-size: 0.65rem;
+  font-weight: 800;
+  white-space: nowrap;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+.my-ads-row__status.is-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+.dark .my-ads-row__status.is-pending { color: #fbbf24; }
+.my-ads-row__status.is-active {
+  background: #059669;
+  color: #fff;
+}
+.dark .my-ads-row__status.is-active {
+  background: #10b981;
+  color: #022c22;
+}
+.my-ads-row__status.is-denied {
+  background: rgba(239, 68, 68, 0.16);
+  color: #dc2626;
+}
+.dark .my-ads-row__status.is-denied {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
+}
+.my-ads-row__status.is-removed,
+.my-ads-row__status.is-soldout {
+  background: transparent;
+  color: #94a3b8;
+  padding: 0;
+}
+.my-ads-row__deny {
+  grid-column: 1 / -1;
+  margin-top: 0.35rem;
+  background: rgba(251, 191, 36, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #b45309;
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.7rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+.dark .my-ads-row__deny {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+.my-ads-row__note {
+  grid-column: 2 / -1;
+  font-size: 0.68rem;
+  color: #d97706;
+  margin-top: 0.2rem;
 }
