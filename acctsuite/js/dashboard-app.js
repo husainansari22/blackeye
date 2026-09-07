@@ -558,7 +558,7 @@
           <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
-        <div class="mb-1 scale-90 origin-left">${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
+        <div class="mb-0.5">${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
         <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0 overflow-visible">By <span class="inline-flex items-center min-w-0 max-w-full overflow-visible">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
         <p class="text-[10px] text-emerald-500 mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>${stock} available</p>
         <div class="flex justify-between items-center mt-2">
@@ -3038,12 +3038,12 @@
     const half = r - full >= 0.35 ? 1 : 0;
     let icons = '';
     for (let i = 0; i < 5; i++) {
-      if (i < full) icons += '<i class="fa-solid fa-star"></i>';
-      else if (i === full && half) icons += '<i class="fa-solid fa-star-half-stroke"></i>';
-      else icons += '<i class="fa-regular fa-star text-slate-300 dark:text-slate-600"></i>';
+      if (i < full) icons += '<i class="fa-solid fa-star" aria-hidden="true"></i>';
+      else if (i === full && half) icons += '<i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i>';
+      else icons += '<i class="fa-solid fa-star av-star-empty" aria-hidden="true"></i>';
     }
     const count = Number(reviewCount) || 0;
-    return `<span class="av-listing-stars">${icons}${count ? `<em>(${count})</em>` : ''}</span>`;
+    return `<span class="av-listing-stars" title="${r.toFixed(1)} stars">${icons}${count ? `<em>(${count})</em>` : ''}</span>`;
   }
 
   function buildListingDetailHtml(item) {

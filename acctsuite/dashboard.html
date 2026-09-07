@@ -242,15 +242,6 @@
 
         <!-- TAB: HOME -->
         <div id="tab_home" class="app-tab space-y-3">
-            <!-- Top Merchants -->
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
-                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
-                </div>
-                <div id="topMerchantsRow" class="flex gap-3 overflow-x-auto pb-1 scrollbar-none"></div>
-            </div>
-
             <!-- Search Bar & Filter Button -->
             <div class="relative flex items-center gap-2">
                 <div class="relative flex-1">
@@ -271,7 +262,7 @@
                 </div>
                 <button type="button" onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
             </div>
-<!-- Trending Catalog -->
+            <!-- Trending Catalog -->
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-sm flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
@@ -287,6 +278,15 @@
                     <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
                 <div id="homeOtherListings" class="space-y-2.5"></div>
+            </div>
+
+            <!-- Top Merchants at bottom of browse market (AcctBazaar frontage order) -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
+                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                </div>
+                <div id="topMerchantsRow" class="flex gap-3 overflow-x-auto pb-1 scrollbar-none"></div>
             </div>
         </div>
 

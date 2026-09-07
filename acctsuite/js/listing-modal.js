@@ -57,12 +57,12 @@
     var half = r - full >= 0.35 ? 1 : 0;
     var icons = '';
     for (var i = 0; i < 5; i++) {
-      if (i < full) icons += '<i class="fa-solid fa-star"></i>';
-      else if (i === full && half) icons += '<i class="fa-solid fa-star-half-stroke"></i>';
-      else icons += '<i class="fa-regular fa-star text-slate-300 dark:text-slate-600"></i>';
+      if (i < full) icons += '<i class="fa-solid fa-star" aria-hidden="true"></i>';
+      else if (i === full && half) icons += '<i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i>';
+      else icons += '<i class="fa-solid fa-star av-star-empty" aria-hidden="true"></i>';
     }
     var count = Number(reviewCount) || 0;
-    return '<span class="av-listing-stars">' + icons + (count ? '<em>(' + count + ')</em>' : '') + '</span>';
+    return '<span class="av-listing-stars" title="' + r.toFixed(1) + ' stars">' + icons + (count ? '<em>(' + count + ')</em>' : '') + '</span>';
   }
   function productLogo(item) {
     var Cat = global.AcctSuiteCatalog;
