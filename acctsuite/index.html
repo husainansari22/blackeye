@@ -81,7 +81,10 @@
     }
     </script>
     <link rel="stylesheet" href="/css/tailwind.css?v=bagA5fix">
-    <script src="/js/api-client.js?v=listFix2"></script>
+    <script src="/js/api-client.js?v=featurePack1"></script>
+    <style>
+      .grecaptcha-badge { z-index: 9999 !important; }
+    </style>
     
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
@@ -918,6 +921,50 @@
             localStorage.setItem('walletBalance', String(user.balance ?? 0));
         }
 
+        async function getRecaptchaToken(action) {
+            const siteKey = (window.__recaptchaSiteKey) || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+            try {
+                if (!window.grecaptcha || !window.grecaptcha.execute) {
+                    await new Promise((resolve, reject) => {
+                        let n = 0;
+                        const t = setInterval(() => {
+                            n++;
+                            if (window.grecaptcha && window.grecaptcha.execute) { clearInterval(t); resolve(); }
+                            else if (n > 40) { clearInterval(t); reject(new Error('reCAPTCHA load timeout')); }
+                        }, 100);
+                    });
+                }
+                await new Promise((r) => window.grecaptcha.ready(r));
+                return await window.grecaptcha.execute(siteKey, { action: action || 'submit' });
+            } catch (e) {
+                console.warn('reCAPTCHA', e);
+                return '';
+            }
+        }
+
+        (async function loadRecaptchaSiteKey() {
+            try {
+                if (window.AcctSuiteApi && window.AcctSuiteApi.publicConfig) {
+                    const res = await window.AcctSuiteApi.publicConfig();
+                    const key = res && res.config && res.config.recaptchaSiteKey;
+                    if (key) window.__recaptchaSiteKey = key;
+                } else {
+                    const res = await fetch('/api/index.php?action=config.public').then((r) => r.json());
+                    if (res && res.config && res.config.recaptchaSiteKey) window.__recaptchaSiteKey = res.config.recaptchaSiteKey;
+                }
+            } catch (e) {}
+            const key = window.__recaptchaSiteKey || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+            window.__recaptchaSiteKey = key;
+            // Load v3 with site key so the bottom-right badge appears (AcctBazaar style)
+            if (!document.getElementById('grecaptchaV3')) {
+                const s = document.createElement('script');
+                s.id = 'grecaptchaV3';
+                s.src = 'https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(key);
+                s.async = true;
+                document.head.appendChild(s);
+            }
+        })();
+
         async function handleSignup(e) {
             e.preventDefault();
             const name = (document.getElementById('su_name').value || '').trim();
@@ -938,6 +985,7 @@
 
             const fullPhone = (code ? code + ' ' : '') + phone;
             const ref = new URLSearchParams(window.location.search).get('ref') || '';
+            const recaptchaToken = await getRecaptchaToken('signup');
 
             // Prefer MySQL API when installed on Hostinger
             if (window.AcctSuiteApi) {
@@ -950,7 +998,8 @@
                             phone: fullPhone,
                             password: pass,
                             referredBy: ref,
-                            countryCode: (window.__signupCountryCode || document.getElementById('country_flag')?.src?.match(/\/([a-z]{2})\.png/i)?.[1] || 'ng')
+                            countryCode: (window.__signupCountryCode || document.getElementById('country_flag')?.src?.match(/\/([a-z]{2})\.png/i)?.[1] || 'ng'),
+                            recaptchaToken: recaptchaToken
                         });
                         window.location.href = "/dashboard.html";
                         return;
@@ -1011,12 +1060,13 @@
             e.preventDefault();
             const email = (document.getElementById('li_email').value || '').trim().toLowerCase();
             const pass = document.getElementById('li_pass').value || '';
+            const recaptchaToken = await getRecaptchaToken('login');
 
             if (window.AcctSuiteApi) {
                 try {
                     const online = await window.AcctSuiteApi.isAvailable();
                     if (online) {
-                        await window.AcctSuiteApi.login({ email: email, password: pass });
+                        await window.AcctSuiteApi.login({ email: email, password: pass, recaptchaToken: recaptchaToken });
                         window.location.href = "/dashboard.html";
                         return;
                     }

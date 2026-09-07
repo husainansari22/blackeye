@@ -173,7 +173,7 @@
               '<span class="av-listing-detail__price">' + money(item.price) + '</span>' +
             '</div>' +
             '<div class="av-listing-detail__meta">' +
-              (item.sellerRating ? starsRow(item.sellerRating, item.sellerReviews) : '') +
+              starsRow(item.sellerRating || 0, item.sellerReviews || 0) +
               (item.sellerVerified ? verifyBadge() : '') +
               '<span>● ' + stock + ' available, added ' + escHtml(added) + '</span>' +
             '</div>' +

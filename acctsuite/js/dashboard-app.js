@@ -2763,7 +2763,7 @@
               <span class="av-listing-detail__price">${money(item.price)}</span>
             </div>
             <div class="av-listing-detail__meta">
-              ${item.sellerRating ? starsRowHtml(item.sellerRating, item.sellerReviews) : ''}
+              ${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}
               ${item.sellerVerified ? verifyBadgeHtml('sm') : ''}
               <span>● ${stock} available, added ${escapeHtml(added)}</span>
             </div>
