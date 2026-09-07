@@ -51,6 +51,8 @@ try {
                     'listingsPausedMessage' => setting_get('listings_paused_message', 'New listings are temporarily paused by the platform owner.'),
                     'referralsEnabled' => setting_get('referrals_enabled', '1') === '1',
                     'registrationsEnabled' => setting_get('registrations_enabled', '1') === '1',
+                    'recaptchaSiteKey' => function_exists('recaptcha_site_key') ? recaptcha_site_key() : '',
+                    'recaptchaEnabled' => function_exists('recaptcha_site_key') && recaptcha_site_key() !== '' && recaptcha_secret_key() !== '',
                     'disputeWindowMinutes' => $disputeMins,
                     'warrantyHours' => $warrantyHrs,
                     'paymentCurrency' => setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'),
@@ -63,6 +65,9 @@ try {
         case 'auth.register': {
             if (setting_get('registrations_enabled', '1') !== '1' || setting_get('maintenance_mode', '0') === '1') {
                 json_out(['ok' => false, 'error' => setting_get('maintenance_message', 'Registrations are temporarily closed.'), 'code' => 'registrations_closed'], 403);
+            }
+            if (function_exists('verify_recaptcha_token') && !verify_recaptcha_token($body['recaptchaToken'] ?? $body['g-recaptcha-response'] ?? null, 'signup')) {
+                json_out(['ok' => false, 'error' => 'reCAPTCHA verification failed. Please try again.', 'code' => 'recaptcha'], 403);
             }
             $name = trim((string)($body['name'] ?? ''));
             $email = strtolower(trim((string)($body['email'] ?? '')));
@@ -167,7 +172,19 @@ try {
                 }
             }
             $phone = trim((string)($body['phone'] ?? $u['phone']));
-            db()->prepare('UPDATE users SET phone = ? WHERE id = ?')->execute([$phone, (int)$u['id']]);
+            ensure_user_bio_column();
+            ensure_user_ads_held_column();
+            $bio = array_key_exists('bio', $body) ? trim((string)$body['bio']) : (string)($u['bio'] ?? '');
+            if (strlen($bio) > 800) $bio = substr($bio, 0, 800);
+            $sets = ['phone = ?', 'bio = ?'];
+            $params = [$phone, $bio];
+            if (array_key_exists('adsHeld', $body) || array_key_exists('ads_held', $body)) {
+                $held = !empty($body['adsHeld']) || !empty($body['ads_held']) ? 1 : 0;
+                $sets[] = 'ads_held = ?';
+                $params[] = $held;
+            }
+            $params[] = (int)$u['id'];
+            db()->prepare('UPDATE users SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
             $avatarData = (string)($body['avatar'] ?? '');
             if ($avatarData !== '') {
                 try {
@@ -204,6 +221,9 @@ try {
         }
 
         case 'auth.login': {
+            if (function_exists('verify_recaptcha_token') && !verify_recaptcha_token($body['recaptchaToken'] ?? $body['g-recaptcha-response'] ?? null, 'login')) {
+                json_out(['ok' => false, 'error' => 'reCAPTCHA verification failed. Please try again.', 'code' => 'recaptcha'], 403);
+            }
             $email = strtolower(trim((string)($body['email'] ?? '')));
             $password = (string)($body['password'] ?? '');
             $stmt = db()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
@@ -241,6 +261,7 @@ try {
             ensure_commerce_features();
             ensure_merchant_slug_column();
             ensure_user_avatar_column();
+            if (function_exists('ensure_user_ads_held_column')) ensure_user_ads_held_column();
             if (function_exists('ensure_demo_users_purged')) {
                 ensure_demo_users_purged();
             }
@@ -254,6 +275,7 @@ try {
                 (SELECT COUNT(*) FROM orders o WHERE o.seller_id = a.seller_id AND o.status = 'completed') AS sellerCompletedSales
                 FROM ads a JOIN users u ON u.id = a.seller_id
                 WHERE a.status = 'active' AND a.stock > 0 AND u.is_banned = 0
+                  AND COALESCE(u.ads_held, 0) = 0
                   AND u.email NOT LIKE '%@acctsuite.local'
                   AND u.email NOT LIKE 'demo.%@%'
                   AND u.name NOT IN ('Omoba','Michael','Ugochukwu')
@@ -350,8 +372,25 @@ try {
                 'two_fa' => trim((string)($body['twoFA'] ?? '')),
                 'extra_info' => trim((string)($body['extraInfo'] ?? '')),
             ];
+            $accounts = function_exists('normalize_ad_accounts') ? normalize_ad_accounts($body, $ad) : [];
+            if ($accounts) {
+                $ad['username'] = $accounts[0]['username'];
+                $ad['password'] = $accounts[0]['password'];
+                $ad['preview_link'] = $accounts[0]['preview_link'] !== '' ? $accounts[0]['preview_link'] : $ad['preview_link'];
+                $ad['attached_email'] = $accounts[0]['attached_email'] !== '' ? $accounts[0]['attached_email'] : $ad['attached_email'];
+                $ad['attached_email_password'] = $accounts[0]['attached_email_password'] !== '' ? $accounts[0]['attached_email_password'] : $ad['attached_email_password'];
+                $ad['two_fa'] = $accounts[0]['two_fa'] !== '' ? $accounts[0]['two_fa'] : $ad['two_fa'];
+                $ad['extra_info'] = $accounts[0]['extra_info'] !== '' ? $accounts[0]['extra_info'] : $ad['extra_info'];
+            }
             if ($ad['category'] === '' || $ad['title'] === '' || $ad['username'] === '' || $ad['password'] === '' || $ad['price'] <= 0) {
                 json_out(['ok' => false, 'error' => 'Missing required listing fields (category, title, username, password, price).', 'code' => 'validation'], 422);
+            }
+            if (!$accounts) {
+                json_out(['ok' => false, 'error' => 'Add at least one account with username and password.', 'code' => 'validation'], 422);
+            }
+            $stockQty = count($accounts);
+            if ($stockQty > 50) {
+                json_out(['ok' => false, 'error' => 'You can upload at most 50 accounts in one listing.', 'code' => 'validation'], 422);
             }
             if ($ad['price'] > 99999) {
                 json_out(['ok' => false, 'error' => 'Listing price is too high.', 'code' => 'validation'], 422);
@@ -380,7 +419,7 @@ try {
                 $stmt->execute([
                     (int)$u['id'], $ad['category'], $ad['title'], $ad['description'], money_f($ad['price']), $ad['release_type'],
                     $ad['username'], $ad['password'], $ad['preview_link'], $ad['attached_email'], $ad['attached_email_password'],
-                    $ad['two_fa'], $ad['extra_info'], $finalStatus, $denyReason, 1,
+                    $ad['two_fa'], $ad['extra_info'], $finalStatus, $denyReason, $stockQty,
                     $reviewedBy, $reviewedAt,
                 ]);
             } catch (Throwable $e) {
@@ -390,6 +429,9 @@ try {
             if ($adId < 1) {
                 json_out(['ok' => false, 'error' => 'Listing was not saved. Please try again.', 'code' => 'insert_failed'], 500);
             }
+            try {
+                insert_ad_credentials($adId, $accounts);
+            } catch (Throwable $e) {}
             bump_upload((int)$u['id']);
             // Ensure slug exists for public links
             try {
@@ -401,9 +443,10 @@ try {
             } catch (Throwable $e) {}
 
             if ($finalStatus === 'denied') {
-                notify_user((int)$u['id'], 'Ad Denied', $denyReason !== '' ? $denyReason : 'Your listing did not pass review.', 'ad_review', (string)$ad['id']);
+                notify_user((int)$u['id'], 'Ad Denied', $denyReason !== '' ? $denyReason : 'Your listing did not pass review.', 'ad_review', (string)$adId);
             } else {
-                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $ad['title'] . '" is pending Owner approval. You will be notified when it goes live.', 'ad_review', (string)$ad['id']);
+                $stockNote = $stockQty > 1 ? (' (' . $stockQty . ' accounts)') : '';
+                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $ad['title'] . '"' . $stockNote . ' is pending Owner approval. You will be notified when it goes live.', 'ad_review', (string)$adId);
             }
             $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
             json_out([
@@ -415,6 +458,64 @@ try {
                     ? 'Listing submitted for Owner approval.'
                     : 'Listing denied by AI checks.',
             ]);
+        }
+
+        case 'ads.update': {
+            $u = require_user();
+            $adId = (int)($body['id'] ?? $body['adId'] ?? 0);
+            if ($adId < 1) json_out(['ok' => false, 'error' => 'Ad id required'], 422);
+            $stmt = db()->prepare('SELECT * FROM ads WHERE id = ? AND seller_id = ? LIMIT 1');
+            $stmt->execute([$adId, (int)$u['id']]);
+            $ad = $stmt->fetch();
+            if (!$ad) json_out(['ok' => false, 'error' => 'Ad not found'], 404);
+            $status = (string)($ad['status'] ?? '');
+            if (!in_array($status, ['pending', 'active', 'denied'], true)) {
+                json_out(['ok' => false, 'error' => 'This ad can no longer be edited.'], 403);
+            }
+            $title = trim((string)($body['title'] ?? $ad['title']));
+            $description = trim((string)($body['description'] ?? $ad['description']));
+            $price = round((float)($body['price'] ?? $ad['price']), 2);
+            if ($title === '' || $price <= 0) json_out(['ok' => false, 'error' => 'Title and price are required'], 422);
+            // Editing content sends the listing back for review when it was live
+            $newStatus = $status === 'active' ? 'pending' : $status;
+            if ($status === 'denied') $newStatus = 'pending';
+            db()->prepare('UPDATE ads SET title = ?, description = ?, price = ?, status = ?, deny_reason = ?, reviewed_at = NULL WHERE id = ?')
+                ->execute([$title, $description, money_f($price), $newStatus, '', $adId]);
+            if ($newStatus === 'pending') {
+                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $title . '" was updated and is pending Owner approval.', 'ad_review', (string)$adId);
+            }
+            $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
+            json_out(['ok' => true, 'ad' => $row, 'status' => $newStatus]);
+        }
+
+        case 'ads.delete': {
+            $u = require_user();
+            $adId = (int)($body['id'] ?? $body['adId'] ?? 0);
+            if ($adId < 1) json_out(['ok' => false, 'error' => 'Ad id required'], 422);
+            $stmt = db()->prepare('SELECT * FROM ads WHERE id = ? AND seller_id = ? LIMIT 1');
+            $stmt->execute([$adId, (int)$u['id']]);
+            $ad = $stmt->fetch();
+            if (!$ad) json_out(['ok' => false, 'error' => 'Ad not found'], 404);
+            $status = (string)($ad['status'] ?? '');
+            if (!in_array($status, ['pending', 'active', 'denied'], true)) {
+                json_out(['ok' => false, 'error' => 'This ad cannot be deleted.'], 403);
+            }
+            db()->prepare("UPDATE ads SET status = 'removed', stock = 0, reviewed_by = 'Seller', reviewed_at = NOW() WHERE id = ?")
+                ->execute([$adId]);
+            try {
+                ensure_ad_credentials_table();
+                db()->prepare("UPDATE ad_credentials SET status = 'sold' WHERE ad_id = ? AND status = 'available'")->execute([$adId]);
+            } catch (Throwable $e) {}
+            json_out(['ok' => true]);
+        }
+
+        case 'ads.hold': {
+            $u = require_user();
+            ensure_user_ads_held_column();
+            $held = !empty($body['held']) || !empty($body['adsHeld']) ? 1 : 0;
+            db()->prepare('UPDATE users SET ads_held = ? WHERE id = ?')->execute([$held, (int)$u['id']]);
+            $fresh = db()->query('SELECT * FROM users WHERE id=' . (int)$u['id'])->fetch();
+            json_out(['ok' => true, 'user' => public_user($fresh), 'adsHeld' => $held === 1]);
         }
 
         case 'orders.mine': {
@@ -1702,6 +1803,23 @@ try {
             json_out(['ok' => true, 'summary' => seller_rating_summary((int)$o['seller_id'])]);
         }
 
+        case 'reviews.reply': {
+            ensure_marketplace_extras();
+            if (function_exists('ensure_seller_review_reply_column')) ensure_seller_review_reply_column();
+            $u = require_user();
+            $reviewId = (int)($body['reviewId'] ?? $body['id'] ?? 0);
+            $reply = trim((string)($body['reply'] ?? $body['sellerReply'] ?? ''));
+            if ($reviewId < 1) json_out(['ok' => false, 'error' => 'reviewId required'], 422);
+            if ($reply === '') json_out(['ok' => false, 'error' => 'Reply text required'], 422);
+            if (strlen($reply) > 1000) $reply = substr($reply, 0, 1000);
+            $stmt = db()->prepare('SELECT * FROM seller_reviews WHERE id = ? AND seller_id = ? LIMIT 1');
+            $stmt->execute([$reviewId, (int)$u['id']]);
+            $rev = $stmt->fetch();
+            if (!$rev) json_out(['ok' => false, 'error' => 'Review not found'], 404);
+            db()->prepare('UPDATE seller_reviews SET seller_reply = ? WHERE id = ?')->execute([$reply, $reviewId]);
+            json_out(['ok' => true]);
+        }
+
         case 'reviews.seller': {
             ensure_marketplace_extras();
             $sellerId = (int)($body['sellerId'] ?? $_GET['sellerId'] ?? 0);
@@ -1828,9 +1946,24 @@ try {
             if (!user_has_uploaded_ads($sid)) {
                 json_out(['ok' => false, 'error' => 'Storefront not available'], 404);
             }
+            if (function_exists('ensure_user_bio_column')) ensure_user_bio_column();
+            if (function_exists('ensure_user_ads_held_column')) ensure_user_ads_held_column();
+            if (function_exists('ensure_seller_review_reply_column')) ensure_seller_review_reply_column();
+            // Refresh seller row for bio / ads_held
+            $s2 = db()->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+            $s2->execute([$sid]);
+            $seller = $s2->fetch() ?: $seller;
+            if ((int)($seller['ads_held'] ?? 0) === 1) {
+                // Seller paused all ads — storefront shows empty listings
+            }
             $merchantSlug = ensure_merchant_slug($sid);
-            $ads = db()->prepare("SELECT id, title, category, description, price, preview_link AS previewLink, public_slug AS publicSlug, stock, release_type AS releaseType, status
-                FROM ads WHERE seller_id = ? AND status = 'active' AND stock > 0 " . market_list_sql_order() . " LIMIT 60");
+            $adsSql = "SELECT id, title, category, description, price, preview_link AS previewLink, public_slug AS publicSlug, stock, release_type AS releaseType, status
+                FROM ads WHERE seller_id = ? AND status = 'active' AND stock > 0 ";
+            if ((int)($seller['ads_held'] ?? 0) === 1) {
+                $adsSql .= ' AND 1=0 ';
+            }
+            $adsSql .= market_list_sql_order() . ' LIMIT 60';
+            $ads = db()->prepare($adsSql);
             $ads->execute([$sid]);
             $adsRows = $ads->fetchAll();
             foreach ($adsRows as &$ar) {
@@ -1839,8 +1972,16 @@ try {
                 }
             }
             unset($ar);
-            $rev = db()->prepare('SELECT r.rating, r.comment, r.created_at, u.name AS buyer_name FROM seller_reviews r JOIN users u ON u.id = r.buyer_id WHERE r.seller_id = ? ORDER BY r.created_at DESC LIMIT 30');
-            $rev->execute([$sid]);
+            $rev = db()->prepare('SELECT r.id, r.rating, r.comment, r.seller_reply AS sellerReply, r.created_at, u.name AS buyer_name, u.avatar_url AS buyer_avatar
+                FROM seller_reviews r JOIN users u ON u.id = r.buyer_id WHERE r.seller_id = ? ORDER BY r.created_at DESC LIMIT 50');
+            try {
+                $rev->execute([$sid]);
+                $reviews = $rev->fetchAll();
+            } catch (Throwable $e) {
+                $rev = db()->prepare('SELECT r.id, r.rating, r.comment, r.created_at, u.name AS buyer_name FROM seller_reviews r JOIN users u ON u.id = r.buyer_id WHERE r.seller_id = ? ORDER BY r.created_at DESC LIMIT 50');
+                $rev->execute([$sid]);
+                $reviews = $rev->fetchAll();
+            }
             $stats = seller_storefront_stats($sid);
             json_out([
                 'ok' => true,
@@ -1848,6 +1989,8 @@ try {
                     'id' => $sid,
                     'name' => $seller['name'],
                     'email' => $seller['email'],
+                    'bio' => (string)($seller['bio'] ?? ''),
+                    'adsHeld' => (int)($seller['ads_held'] ?? 0) === 1,
                     'isVerified' => (int)$seller['is_verified'] === 1,
                     'avatarUrl' => (string)($seller['avatar_url'] ?? ''),
                     'coverUrl' => (string)($seller['cover_url'] ?? ''),
@@ -1857,9 +2000,10 @@ try {
                     'merchantSlug' => $merchantSlug,
                     'merchantLink' => $merchantSlug ? ('https://acctsuite.com/seller/' . $merchantSlug) : null,
                     'stats' => $stats,
+                    'countryCode' => strtolower((string)($seller['country_code'] ?? '')),
                 ],
                 'listings' => $adsRows,
-                'reviews' => $rev->fetchAll(),
+                'reviews' => $reviews,
             ]);
         }
 

@@ -318,6 +318,8 @@ function public_user(array $u): array {
     ensure_wallet_ledger_columns();
     ensure_user_avatar_column();
     ensure_user_cover_column();
+    if (function_exists('ensure_user_bio_column')) ensure_user_bio_column();
+    if (function_exists('ensure_user_ads_held_column')) ensure_user_ads_held_column();
     $u = ensure_user_referral_code($u);
     $bal = (float)$u['balance'];
     $wd = array_key_exists('withdrawable_balance', $u)
@@ -334,6 +336,8 @@ function public_user(array $u): array {
         'name' => $u['name'],
         'email' => $u['email'],
         'phone' => $u['phone'],
+        'bio' => (string)($u['bio'] ?? ''),
+        'adsHeld' => (int)($u['ads_held'] ?? 0) === 1,
         'countryCode' => strtolower((string)($u['country_code'] ?? '')),
         'avatarUrl' => (string)($u['avatar_url'] ?? ''),
         'coverUrl' => (string)($u['cover_url'] ?? ''),
@@ -1050,6 +1054,7 @@ require_once __DIR__ . '/marketplace_extras.php';
 require_once __DIR__ . '/commerce_features.php';
 require_once __DIR__ . '/kyc.php';
 require_once __DIR__ . '/stories.php';
+require_once __DIR__ . '/seller_features.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     json_out(['ok' => true]);

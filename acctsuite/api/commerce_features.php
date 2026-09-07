@@ -382,14 +382,26 @@ function purchase_listing(int $buyerId, int $listingId): array {
     $step = 'paid';
     try {
         debit_user_for_purchase($pdo, $buyerId, $price);
+        $claimed = function_exists('claim_ad_credential')
+            ? claim_ad_credential($pdo, $ad, null)
+            : [
+                'username' => $ad['username'],
+                'password' => $ad['password_plain'],
+                'previewLink' => $ad['preview_link'],
+                'attachedEmail' => $ad['attached_email'],
+                'attachedEmailPassword' => $ad['attached_email_password'],
+                'twoFA' => $ad['two_fa'],
+                'extraInfo' => $ad['extra_info'],
+                'credentialId' => null,
+            ];
         $creds = json_encode([
-            'username' => $ad['username'],
-            'password' => $ad['password_plain'],
-            'previewLink' => $ad['preview_link'],
-            'attachedEmail' => $ad['attached_email'],
-            'attachedEmailPassword' => $ad['attached_email_password'],
-            'twoFA' => $ad['two_fa'],
-            'extraInfo' => $ad['extra_info'],
+            'username' => $claimed['username'],
+            'password' => $claimed['password'],
+            'previewLink' => $claimed['previewLink'],
+            'attachedEmail' => $claimed['attachedEmail'],
+            'attachedEmailPassword' => $claimed['attachedEmailPassword'],
+            'twoFA' => $claimed['twoFA'],
+            'extraInfo' => $claimed['extraInfo'],
         ]);
         $status = $ad['release_type'] === 'manual' ? 'pending' : 'completed';
         $publicId = uuid_txid();
@@ -401,6 +413,9 @@ function purchase_listing(int $buyerId, int $listingId): array {
             $step,
         ]);
         $orderId = (int)$pdo->lastInsertId();
+        if (function_exists('mark_credential_sold_order')) {
+            mark_credential_sold_order($pdo, $claimed['credentialId'] ?? null, $orderId);
+        }
         if ($status === 'completed') {
             $saleSplit = credit_seller_balance($pdo, (int)$ad['seller_id'], $price, 'Sold #' . $publicId);
             record_order_sale_split($pdo, $orderId, $saleSplit);

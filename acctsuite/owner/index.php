@@ -69,6 +69,8 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('warranty_hours', (string)max(1, min(720, (int)($_POST['warranty_hours'] ?? 24))));
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
+            setting_set('recaptcha_site_key', trim((string)($_POST['recaptcha_site_key'] ?? '')));
+            setting_set('recaptcha_secret_key', trim((string)($_POST['recaptcha_secret_key'] ?? '')));
             $flash = 'Platform settings saved.';
         }
 
@@ -364,9 +366,18 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             }
             $ad = db()->query('SELECT seller_id, title FROM ads WHERE id=' . $adId)->fetch();
             if ($ad) {
-                $msg = $reason !== '' ? $reason : ('Your listing "' . $ad['title'] . '" is now ' . $status);
-                if ($status === 'active') $msg = 'Your listing "' . $ad['title'] . '" is live on the marketplace.';
-                notify_user((int)$ad['seller_id'], 'Ad ' . $status, $msg, 'ad_review');
+                if ($status === 'active') {
+                    notify_user(
+                        (int)$ad['seller_id'],
+                        'Product Approved',
+                        'Your product "' . $ad['title'] . '" has been approved and is live on the marketplace.',
+                        'ad_review',
+                        (string)$adId
+                    );
+                } else {
+                    $msg = $reason !== '' ? $reason : ('Your listing "' . $ad['title'] . '" is now ' . $status);
+                    notify_user((int)$ad['seller_id'], 'Ad ' . $status, $msg, 'ad_review', (string)$adId);
+                }
             }
             $_SESSION['owner_flash'] = $flash;
             $retFilter = preg_replace('/[^a-z]/', '', strtolower((string)($_POST['return_filter'] ?? 'pending')));
@@ -408,7 +419,13 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                             notify_new_listing_launch($adId);
                         }
                     } catch (Throwable $e) {}
-                    notify_user((int)$adRow['seller_id'], 'Ad active', 'Your listing "' . $adRow['title'] . '" is live on the marketplace.', 'ad_review');
+                    notify_user(
+                        (int)$adRow['seller_id'],
+                        'Product Approved',
+                        'Your product "' . $adRow['title'] . '" has been approved and is live on the marketplace.',
+                        'ad_review',
+                        (string)$adId
+                    );
                     $approved++;
                 }
             }
@@ -2310,6 +2327,8 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctsuite_support')) ?>" placeholder="https://t.me/..."></div>
               <div class="av-field-block"><label>Group / community Telegram</label><input name="group_telegram" value="<?= h(setting_get('group_telegram','https://t.me/acctsuite')) ?>" placeholder="https://t.me/..."></div>
               <div class="av-field-block"><label>WhatsApp (optional)</label><input name="support_whatsapp" value="<?= h(setting_get('support_whatsapp','')) ?>" placeholder="https://wa.me/234..."></div>
+              <div class="av-field-block"><label>reCAPTCHA v3 site key</label><input name="recaptcha_site_key" value="<?= h(setting_get('recaptcha_site_key','')) ?>" placeholder="Leave blank to use Google test key" autocomplete="off"></div>
+              <div class="av-field-block"><label>reCAPTCHA v3 secret key</label><input name="recaptcha_secret_key" value="<?= h(setting_get('recaptcha_secret_key','')) ?>" placeholder="Leave blank to use Google test secret" autocomplete="off"></div>
             </div>
           </div>
           <div class="av-panel-head" style="border-top:1px solid var(--av-border,rgba(0,0,0,.08))"><span>Fees &amp; wallet</span></div>

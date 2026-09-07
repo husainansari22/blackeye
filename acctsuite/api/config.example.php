@@ -36,4 +36,8 @@ return [
     // Create this mailbox in Hostinger → Emails first
     'mail_from' => 'support@acctsuite.com',
     'mail_from_name' => 'AcctSuite',
+
+    // Google reCAPTCHA v3 (Owner Admin → Settings can override)
+    'recaptcha_site_key' => '',
+    'recaptcha_secret_key' => '',
 ];
