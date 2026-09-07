@@ -69,6 +69,7 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('warranty_hours', (string)max(1, min(720, (int)($_POST['warranty_hours'] ?? 24))));
             setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
+            setting_set('recaptcha_enabled', !empty($_POST['recaptcha_enabled']) ? '1' : '0');
             setting_set('recaptcha_site_key', trim((string)($_POST['recaptcha_site_key'] ?? '')));
             setting_set('recaptcha_secret_key', trim((string)($_POST['recaptcha_secret_key'] ?? '')));
             $flash = 'Platform settings saved.';
@@ -2327,8 +2328,17 @@ $tab = $_GET['tab'] ?? 'overview';
               <div class="av-field-block"><label>Support Telegram</label><input name="support_telegram" value="<?= h(setting_get('support_telegram','https://t.me/acctsuite_support')) ?>" placeholder="https://t.me/..."></div>
               <div class="av-field-block"><label>Group / community Telegram</label><input name="group_telegram" value="<?= h(setting_get('group_telegram','https://t.me/acctsuite')) ?>" placeholder="https://t.me/..."></div>
               <div class="av-field-block"><label>WhatsApp (optional)</label><input name="support_whatsapp" value="<?= h(setting_get('support_whatsapp','')) ?>" placeholder="https://wa.me/234..."></div>
-              <div class="av-field-block"><label>reCAPTCHA v3 site key</label><input name="recaptcha_site_key" value="<?= h(setting_get('recaptcha_site_key','')) ?>" placeholder="Leave blank to use Google test key" autocomplete="off"></div>
-              <div class="av-field-block"><label>reCAPTCHA v3 secret key</label><input name="recaptcha_secret_key" value="<?= h(setting_get('recaptcha_secret_key','')) ?>" placeholder="Leave blank to use Google test secret" autocomplete="off"></div>
+            </div>
+          </div>
+          <div class="av-panel-head" style="border-top:1px solid var(--av-border,rgba(0,0,0,.08))"><span>Login / signup security</span></div>
+          <div class="av-panel-body space-y-4">
+            <label class="av-check-row" style="display:flex;gap:.5rem;align-items:flex-start">
+              <input type="checkbox" name="recaptcha_enabled" value="1" <?= setting_get('recaptcha_enabled','0')==='1'?'checked':'' ?>>
+              <span><strong>Require reCAPTCHA before login &amp; signup</strong><br><span class="text-[11px] av-muted">Off by default so users can sign in easily. Turn on when you have Google site + secret keys for acctsuite.com.</span></span>
+            </label>
+            <div class="av-form-grid cols-2">
+              <div class="av-field-block"><label>reCAPTCHA v3 site key</label><input name="recaptcha_site_key" value="<?= h(setting_get('recaptcha_site_key','')) ?>" placeholder="From Google reCAPTCHA console" autocomplete="off"></div>
+              <div class="av-field-block"><label>reCAPTCHA v3 secret key</label><input name="recaptcha_secret_key" value="<?= h(setting_get('recaptcha_secret_key','')) ?>" placeholder="From Google reCAPTCHA console" autocomplete="off"></div>
             </div>
           </div>
           <div class="av-panel-head" style="border-top:1px solid var(--av-border,rgba(0,0,0,.08))"><span>Fees &amp; wallet</span></div>

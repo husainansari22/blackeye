@@ -175,8 +175,7 @@
         badge.classList.remove('flex');
       });
       syncGuestMenu(false);
-      const sellerExtras = document.getElementById('profileSellerExtras');
-      if (sellerExtras) sellerExtras.classList.add('hidden');
+      setSellerProfileMode(false);
       const heading = document.getElementById('rightProfileHeading');
       if (heading) heading.textContent = 'My Profile';
       syncAdsHoldToggle(null);
@@ -283,60 +282,197 @@
     set('dashAccountsSold', String((u.orders || []).filter((o) => o.role === 'seller' && o.status === 'completed').length));
     set('dashAccountsApproved', String(ads.filter((a) => a.status === 'active').length));
 
-    const merchantBox = document.getElementById('profileMerchantLink');
-    const merchantUrlEl = document.getElementById('profileMerchantUrl');
-    if (merchantBox && merchantUrlEl) {
-      const mlink = u.merchantLink || '';
-      if (mlink) {
-        merchantBox.classList.remove('hidden');
-        merchantUrlEl.textContent = mlink.replace(/^https?:\/\//, '');
-        merchantUrlEl.dataset.full = mlink;
-      } else {
-        merchantBox.classList.add('hidden');
-        merchantUrlEl.textContent = '';
-        merchantUrlEl.dataset.full = '';
-      }
-    }
-
-    // Seller profile extras when user has ≥1 ad or a merchant slug
-    const sellerExtras = document.getElementById('profileSellerExtras');
     const heading = document.getElementById('rightProfileHeading');
     const isSeller = (ads && ads.length > 0) || !!(u.merchantSlug || u.merchantLink);
     if (heading) heading.textContent = isSeller ? 'Seller Profile' : 'My Profile';
-    if (sellerExtras) {
-      if (isSeller) {
-        sellerExtras.classList.remove('hidden');
-        const bioEl = document.getElementById('profileBio');
-        if (bioEl && document.activeElement !== bioEl) bioEl.value = u.bio || '';
-        const sold = (u.orders || []).filter((o) => o.role === 'seller' && (o.status === 'completed' || o.status === 'released')).length;
-        const activeCount = ads.filter((a) => a.status === 'active' && Number(a.stock) > 0).length;
-        const cancelled = ads.filter((a) => a.status === 'removed' || a.status === 'denied').length;
-        const reviews = Number(u.sellerReviews || u.reviewCount || 0);
-        set('profileStatReviews', String(reviews));
-        set('profileStatSold', String(sold));
-        set('profileStatActive', String(activeCount));
-        set('profileStatCancelled', String(cancelled));
-        const storeLink = document.getElementById('profileViewStoreLink');
-        if (storeLink) {
-          const slug = u.merchantSlug || '';
-          if (slug) {
-            storeLink.href = '/seller.html?s=' + encodeURIComponent(slug);
-            storeLink.classList.remove('hidden');
-            storeLink.onclick = null;
-          } else if (u.merchantLink) {
-            storeLink.href = u.merchantLink;
-            storeLink.classList.remove('hidden');
-            storeLink.onclick = null;
-          } else {
-            storeLink.classList.add('hidden');
-          }
-        }
-      } else {
-        sellerExtras.classList.add('hidden');
+    setSellerProfileMode(isSeller);
+
+    if (isSeller) {
+      const countryEl = document.getElementById('rightProfileCountry');
+      if (countryEl) countryEl.textContent = countryLabel(u.countryCode || '');
+      try {
+        set(
+          'rightProfileJoinedInline',
+          u.createdAt
+            ? new Date(u.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric' })
+            : '—'
+        );
+      } catch (e) {
+        set('rightProfileJoinedInline', '—');
       }
+
+      const bioText = String(u.bio || '').trim();
+      const bioDisplay = document.getElementById('profileBioDisplay');
+      if (bioDisplay) {
+        bioDisplay.textContent = bioText || 'Tell buyers about your store…';
+        bioDisplay.classList.toggle('opacity-60', !bioText);
+      }
+      const bioEl = document.getElementById('profileBio');
+      if (bioEl && document.activeElement !== bioEl) bioEl.value = u.bio || '';
+      toggleProfileBioEdit(false);
+
+      const merchantBox = document.getElementById('profileMerchantLink');
+      const merchantUrlEl = document.getElementById('profileMerchantUrl');
+      if (merchantBox && merchantUrlEl) {
+        const mlink = u.merchantLink || '';
+        if (mlink) {
+          merchantBox.classList.remove('hidden');
+          merchantUrlEl.textContent = mlink.replace(/^https?:\/\//, '');
+          merchantUrlEl.dataset.full = mlink;
+        } else {
+          merchantBox.classList.add('hidden');
+          merchantUrlEl.textContent = '';
+          merchantUrlEl.dataset.full = '';
+        }
+      }
+
+      const sold = (u.orders || []).filter((o) => o.role === 'seller' && (o.status === 'completed' || o.status === 'released')).length;
+      const activeCount = ads.filter((a) => a.status === 'active' && Number(a.stock) > 0).length;
+      const cancelled = (u.orders || []).filter((o) => o.role === 'seller' && (o.status === 'refunded' || o.status === 'cancelled')).length;
+      const reviews = Number(u.sellerReviews || u.reviewCount || 0);
+      set('profileStatReviews', String(reviews));
+      set('profileStatSold', String(sold));
+      set('profileStatActive', String(activeCount));
+      set('profileStatCancelled', String(cancelled));
+
+      renderProfileStoreAds(u);
+      setProfileStoreTab('ads');
+      loadProfileStoreReviews(u);
     }
 
     syncAdsHoldToggle(u);
+  }
+
+  function countryLabel(code) {
+    const c = String(code || '').trim().toLowerCase();
+    if (!c) return 'Worldwide';
+    try {
+      if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
+        const n = new Intl.DisplayNames(['en'], { type: 'region' }).of(c.toUpperCase());
+        if (n) return n;
+      }
+    } catch (e) {}
+    return c.toUpperCase();
+  }
+
+  function setSellerProfileMode(isSeller) {
+    const buyerMeta = document.getElementById('rightProfileBuyerMeta');
+    const sellerMeta = document.getElementById('rightProfileSellerMeta');
+    const buyerStats = document.getElementById('profileBuyerStats');
+    const buyerNav = document.getElementById('profileBuyerNav');
+    const sellerStore = document.getElementById('profileSellerStore');
+    const hint = document.getElementById('profileHintBuyer');
+    if (buyerMeta) buyerMeta.classList.toggle('hidden', !!isSeller);
+    if (sellerMeta) sellerMeta.classList.toggle('hidden', !isSeller);
+    if (buyerStats) buyerStats.classList.toggle('hidden', !!isSeller);
+    if (buyerNav) buyerNav.classList.toggle('hidden', !!isSeller);
+    if (sellerStore) sellerStore.classList.toggle('hidden', !isSeller);
+    if (hint) hint.classList.toggle('hidden', !!isSeller);
+  }
+
+  function toggleProfileBioEdit(show) {
+    const viewBtn = document.getElementById('profileBioEditBtn');
+    const wrap = document.getElementById('profileBioEditWrap');
+    const display = document.getElementById('profileBioDisplay');
+    if (wrap) wrap.classList.toggle('hidden', !show);
+    if (viewBtn) viewBtn.classList.toggle('hidden', !!show);
+    if (display) display.classList.toggle('hidden', !!show);
+    if (show) {
+      const ta = document.getElementById('profileBio');
+      if (ta) {
+        const u = refreshUser();
+        ta.value = String((u && u.bio) || '');
+        ta.focus();
+      }
+    }
+  }
+  window.toggleProfileBioEdit = toggleProfileBioEdit;
+
+  function setProfileStoreTab(tab) {
+    const adsOn = tab !== 'reviews';
+    document.querySelectorAll('[data-profile-store-tab]').forEach((btn) => {
+      const on = (btn.getAttribute('data-profile-store-tab') === 'ads') === adsOn;
+      btn.classList.toggle('is-active', on);
+    });
+    const adsPane = document.getElementById('profileStoreAds');
+    const revPane = document.getElementById('profileStoreReviews');
+    if (adsPane) adsPane.classList.toggle('hidden', !adsOn);
+    if (revPane) revPane.classList.toggle('hidden', adsOn);
+  }
+  window.setProfileStoreTab = setProfileStoreTab;
+
+  function renderProfileStoreAds(u) {
+    const host = document.getElementById('profileStoreAds');
+    if (!host) return;
+    const held = !!(u && (u.adsHeld || u.ads_held));
+    const ads = ((u && u.ads) || []).filter((a) => {
+      const st = String(a.status || '').toLowerCase();
+      return st === 'active' && Number(a.stock) > 0 && !held;
+    });
+    if (!ads.length) {
+      host.innerHTML = '<div class="text-center py-6 text-sm text-slate-500">No live ads yet. Create one from Sell.</div>';
+      return;
+    }
+    host.innerHTML = ads
+      .slice(0, 40)
+      .map((ad) => {
+        const title = escapeHtml(String(ad.title || 'Listing'));
+        const desc = String(ad.description || '').trim();
+        const snippet = desc ? escapeHtml(desc.length > 72 ? desc.slice(0, 72) + '…' : desc) : '';
+        const stock = Math.max(1, Number(ad.stock || 1));
+        const logo = productLogoMarkFor(ad, 'av-storefront-ad__logo');
+        return `<article class="av-storefront-ad">
+          ${logo || '<div class="av-storefront-ad__logo"></div>'}
+          <div class="av-storefront-ad__body">
+            <p class="av-storefront-ad__title">${title}</p>
+            ${snippet ? `<p class="av-storefront-ad__desc">${snippet}</p>` : ''}
+            <p class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(ad.category || 'Account')} · ${stock} available</p>
+          </div>
+          <div class="av-storefront-ad__side">
+            <p class="av-storefront-ad__price">${money(ad.price)}</p>
+            <button type="button" class="av-storefront-ad__buy" onclick="switchTab('ads'); toggleRightMenu();">Manage</button>
+          </div>
+        </article>`;
+      })
+      .join('');
+  }
+
+  async function loadProfileStoreReviews(u) {
+    const host = document.getElementById('profileStoreReviews');
+    if (!host) return;
+    const sellerId = u && (u.id != null ? u.id : u.userId);
+    if (!sellerId || !window.AcctSuiteApi || !window.AcctSuiteApi.sellerReviews) {
+      host.innerHTML = '<div class="text-sm text-slate-500">No reviews yet.</div>';
+      return;
+    }
+    try {
+      const res = await window.AcctSuiteApi.sellerReviews({ sellerId: sellerId });
+      const list = (res && (res.reviews || res.items)) || [];
+      if (!list.length) {
+        host.innerHTML = '<div class="text-sm text-slate-500">No reviews yet.</div>';
+        return;
+      }
+      host.innerHTML = list
+        .slice(0, 20)
+        .map((r) => {
+          const pos = Number(r.rating || r.stars || 0) >= 3 || r.sentiment === 'positive' || r.is_positive;
+          const name = escapeHtml(r.buyer_name || r.buyerName || 'Buyer');
+          const comment = escapeHtml(r.comment || '');
+          return `<div class="av-storefront-review" data-sentiment="${pos ? 'pos' : 'neg'}">
+            <div class="av-storefront-review__head">
+              <div class="av-storefront-review__avatar">${name.slice(0, 1)}</div>
+              <div>
+                <p class="av-storefront-review__name">${name}</p>
+              </div>
+              <span class="av-storefront-review__badge ${pos ? 'is-pos' : 'is-neg'}"><i class="fa-solid fa-thumbs-${pos ? 'up' : 'down'} mr-1"></i>${pos ? 'Positive' : 'Negative'}</span>
+            </div>
+            ${comment ? `<p class="av-storefront-review__body">${comment}</p>` : ''}
+          </div>`;
+        })
+        .join('');
+    } catch (e) {
+      host.innerHTML = '<div class="text-sm text-slate-500">No reviews yet.</div>';
+    }
   }
 
   function syncAdsHoldToggle(u) {
@@ -348,11 +484,12 @@
     // ON = live (not held)
     const on = !held;
     toggle.setAttribute('aria-checked', on ? 'true' : 'false');
-    toggle.className =
-      'relative w-10 h-5 rounded-full transition-colors shrink-0 ' +
-      (on ? 'bg-brandPrimary' : 'bg-slate-300 dark:bg-slate-600');
+    toggle.classList.add('ads-hold-switch');
+    toggle.classList.toggle('is-on', on);
     if (knob) {
-      knob.style.left = on ? '1.375rem' : '0.125rem';
+      knob.className = 'ads-hold-switch__knob';
+      knob.style.left = '';
+      knob.style.transform = '';
     }
     if (label) {
       if (held) {
@@ -609,9 +746,9 @@
                 : 'No ads in this tab';
       const emptySub =
         adsFilter === 'pending'
-          ? 'New uploads appear here until Owner approves them.'
+          ? 'New uploads appear here until they are reviewed.'
           : adsFilter === 'active'
-            ? 'Sold-out ads move to Removed — list a new product or ask Owner to restock.'
+            ? 'Sold-out ads move to Removed — list a new product when you have stock.'
             : adsFilter === 'denied'
               ? 'Denied listings will show here with the reason.'
               : adsFilter === 'removed'
@@ -635,7 +772,7 @@
           badgeClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300';
           statusLabel = 'Pending';
         } else if (status === 'active' && !soldOut) {
-          badgeClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300';
+          badgeClass = 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950';
           statusLabel = 'Active';
         } else if (soldOut) {
           badgeClass = 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
@@ -679,7 +816,7 @@
           ${actions}
         </div>
         ${a.status === 'denied' && a.denyReason ? `<div class="text-xs bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-lg p-2"><strong>Reason for denied:</strong> ${escapeHtml(a.denyReason)}</div>` : ''}
-        ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">Pending Owner approval before Market.</p>` : ''}
+        ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">Pending review before Market.</p>` : ''}
         ${soldOut ? `<p class="text-[11px] text-amber-600">This unit sold. It will not show on Market until restocked with new login details.</p>` : ''}
       </div>`;
       })
@@ -770,6 +907,7 @@
     }
     const body = document.getElementById('modalBody');
     if (!body) return;
+    const stock = Math.max(1, Number(ad.stock || 1));
     body.innerHTML = `
       <h3 class="font-bold text-lg mb-3">Edit listing</h3>
       <div class="space-y-3">
@@ -785,7 +923,38 @@
           <label class="block text-xs text-slate-500 mb-1">Price ($)</label>
           <input id="editAdPrice" type="number" step="0.01" min="0.01" value="${escapeAttr(String(ad.price != null ? ad.price : ''))}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
         </div>
-        <p class="text-[11px] text-amber-600">Editing a live listing sends it back for Owner review.</p>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5">
+          <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Login credentials${stock > 1 ? ' (next available unit)' : ''}</p>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Username</label>
+            <input id="editAdUsername" type="text" value="${escapeAttr(ad.username || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm" autocomplete="off">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Password</label>
+            <input id="editAdPassword" type="text" value="${escapeAttr(ad.password || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm" autocomplete="off">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Preview link</label>
+            <input id="editAdPreview" type="url" value="${escapeAttr(ad.previewLink || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm" placeholder="https://…">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Attached email</label>
+            <input id="editAdEmail" type="text" value="${escapeAttr(ad.attachedEmail || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Email password</label>
+            <input id="editAdEmailPass" type="text" value="${escapeAttr(ad.attachedEmailPassword || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm" autocomplete="off">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">2FA / recovery</label>
+            <input id="editAdTwoFA" type="text" value="${escapeAttr(ad.twoFA || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Extra info</label>
+            <textarea id="editAdExtra" rows="2" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">${escapeHtml(ad.extraInfo || '')}</textarea>
+          </div>
+        </div>
+        <p class="text-[11px] text-amber-600">Editing a live listing sends it back for a review.</p>
         <button type="button" onclick="saveEditedAd('${escapeAttr(String(ad.id))}')" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3 rounded-xl text-sm">Save changes</button>
       </div>`;
     if (typeof openModal === 'function') openModal();
@@ -795,12 +964,23 @@
     const title = (document.getElementById('editAdTitle') || {}).value;
     const description = (document.getElementById('editAdDesc') || {}).value;
     const price = parseListingPrice((document.getElementById('editAdPrice') || {}).value);
+    const username = String((document.getElementById('editAdUsername') || {}).value || '').trim();
+    const password = String((document.getElementById('editAdPassword') || {}).value || '');
+    const previewLink = String((document.getElementById('editAdPreview') || {}).value || '').trim();
+    const attachedEmail = String((document.getElementById('editAdEmail') || {}).value || '').trim();
+    const attachedEmailPassword = String((document.getElementById('editAdEmailPass') || {}).value || '');
+    const twoFA = String((document.getElementById('editAdTwoFA') || {}).value || '').trim();
+    const extraInfo = String((document.getElementById('editAdExtra') || {}).value || '').trim();
     if (!String(title || '').trim()) {
       alert('Title is required.');
       return;
     }
     if (!Number.isFinite(price) || price <= 0) {
       alert('Enter a valid price.');
+      return;
+    }
+    if (!username || !password) {
+      alert('Username and password are required.');
       return;
     }
     try {
@@ -813,6 +993,13 @@
         title: String(title).trim(),
         description: String(description || '').trim(),
         price,
+        username,
+        password,
+        previewLink,
+        attachedEmail,
+        attachedEmailPassword,
+        twoFA,
+        extraInfo,
       });
       if (typeof closeModal === 'function') closeModal();
       if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.hydrateFromApi) {
@@ -843,6 +1030,7 @@
         } catch (_) {}
       }
       applyProfileChrome(refreshUser() || u);
+      toggleProfileBioEdit(false);
       if (window.AcctSuiteToast) window.AcctSuiteToast.success('Bio saved.');
       else alert('Bio saved.');
     } catch (e) {
@@ -1925,7 +2113,7 @@
             <p id="withdrawLocalConvert" class="text-sm text-slate-400 mt-1 min-h-[1.25rem]"></p>
           </div>
           <div class="flex justify-between gap-2 text-[11px] mt-2"><span class="text-brandPrimary font-semibold shrink-0">Min. withdrawal is ${money(cfg.minWithdraw)}</span><span class="text-slate-400 text-right">Withdrawable balance: <span class="text-brandPrimary font-semibold">${bal}</span></span></div>
-          <p class="text-[10px] text-slate-400 mt-1">Wallet total ${walletBal}. Only sales &amp; referral earnings are withdrawable — deposits are for buying. Payouts are sent by admin after review.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Wallet total ${walletBal}. Only sales &amp; referral earnings are withdrawable — deposits are for buying. Payouts are sent after review.</p>
         </div>
         <div class="pt-1 border-t border-slate-200 dark:border-slate-800">
           <p class="text-xs font-bold mb-2 mt-3">Withdraw to</p>
@@ -2651,7 +2839,7 @@
         : status === 'active'
           ? 'Listing is live. Open My Ads → Active.'
           : res.message ||
-            'Listing submitted. Open My Ads → Pending — Owner must approve before it appears on Market/Home.';
+            'Listing submitted. Open My Ads → Pending — it will appear on Market/Home after review.';
     if (window.AcctSuiteToast) {
       window.AcctSuiteToast[status === 'denied' ? 'error' : 'success'](
         acctCount > 1 ? msg + ' (' + acctCount + ' accounts)' : msg
@@ -2676,7 +2864,7 @@
         <div class="flex justify-between gap-2"><span class="text-slate-500 shrink-0">Preview link</span><span class="font-mono text-[10px] text-right break-all">${escapeHtml(sellDraft.previewLink || '—')}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">2FA</span><span class="font-medium">${escapeHtml(sellDraft.twoFA || '—')}</span></div>
       </div>
-      <p class="text-[11px] text-amber-600 mt-3">After submit, your listing is checked and stays <strong>Pending</strong> until Owner approves it for Market.</p>`;
+      <p class="text-[11px] text-amber-600 mt-3">After submit, your listing is checked and stays <strong>Pending</strong> until it is approved for Market.</p>`;
   }
 
   // -------- Listing detail / buy (AcctBazaar-style) --------

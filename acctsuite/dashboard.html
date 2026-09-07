@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/kyc.css?v=bagA5fix">
-    <link rel="stylesheet" href="/css/profile.css?v=featurePack1">
+    <link rel="stylesheet" href="/css/profile.css?v=storeProfile2">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -369,8 +369,8 @@
                 <div class="flex items-center gap-2.5">
                     <label class="flex items-center gap-2 cursor-pointer select-none" title="ON = ads live · OFF = hold all ads">
                         <span id="adsHoldLabel" class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Live</span>
-                        <button type="button" id="adsHoldToggle" role="switch" aria-checked="true" aria-label="Hold ads toggle" onclick="toggleHoldAds(this.getAttribute('aria-checked')!=='true')" class="relative w-10 h-5 rounded-full bg-brandPrimary transition-colors shrink-0">
-                            <span id="adsHoldKnob" class="absolute top-0.5 left-[1.375rem] w-4 h-4 rounded-full bg-white shadow transition-all"></span>
+                        <button type="button" id="adsHoldToggle" role="switch" aria-checked="true" aria-label="Hold ads toggle" onclick="toggleHoldAds(this.getAttribute('aria-checked')!=='true')" class="ads-hold-switch is-on">
+                            <span id="adsHoldKnob" class="ads-hold-switch__knob"></span>
                         </button>
                     </label>
                     <button onclick="openSellProductWizard()" class="w-10 h-10 rounded-xl bg-brandPrimary hover:bg-brandHover text-white flex items-center justify-center shadow-md" aria-label="Sell product"><i class="fa-solid fa-plus"></i></button>
@@ -738,14 +738,21 @@
                             <h4 id="rightProfileName" class="truncate">Guest</h4>
                             <span id="rightProfileVerified" class="hidden av-verify-badge" title="Verified" aria-label="Verified"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="#1D9BF0" d="M12.0000 1.0000 L12.2695 1.0233 L12.5358 1.0926 L12.7962 1.2060 L13.0479 1.3600 L13.2888 1.5504 L13.5172 1.7717 L13.7321 2.0176 L13.9332 2.2812 L14.1210 2.5550 L14.2967 2.8312 L14.4624 3.1022 L14.6209 3.3601 L14.7758 3.5974 L14.9317 3.8064 L15.0941 3.9788 L15.2719 4.1008 L15.4840 4.1403 L15.7207 4.1333 L15.9787 4.0957 L16.2561 4.0375 L16.5505 3.9672 L16.8593 3.8927 L17.1789 3.8216 L17.5053 3.7608 L17.8338 3.7166 L18.1597 3.6947 L18.4776 3.6997 L18.7826 3.7354 L19.0695 3.8044 L19.3338 3.9084 L19.5711 4.0478 L19.7782 4.2218 L19.9522 4.4289 L20.0916 4.6662 L20.1956 4.9305 L20.2646 5.2174 L20.3003 5.5224 L20.3053 5.8403 L20.2834 6.1662 L20.2392 6.4947 L20.1784 6.8211 L20.1073 7.1407 L20.0328 7.4495 L19.9625 7.7439 L19.9043 8.0213 L19.8667 8.2793 L19.8597 8.5160 L19.8992 8.7281 L20.0212 8.9059 L20.1936 9.0683 L20.4026 9.2242 L20.6399 9.3791 L20.8978 9.5376 L21.1688 9.7033 L21.4450 9.8790 L21.7188 10.0668 L21.9824 10.2679 L22.2283 10.4828 L22.4496 10.7112 L22.6400 10.9521 L22.7940 11.2038 L22.9074 11.4642 L22.9767 11.7305 L23.0000 12.0000 L22.9767 12.2695 L22.9074 12.5358 L22.7940 12.7962 L22.6400 13.0479 L22.4496 13.2888 L22.2283 13.5172 L21.9824 13.7321 L21.7188 13.9332 L21.4450 14.1210 L21.1688 14.2967 L20.8978 14.4624 L20.6399 14.6209 L20.4026 14.7758 L20.1936 14.9317 L20.0212 15.0941 L19.8992 15.2719 L19.8597 15.4840 L19.8667 15.7207 L19.9043 15.9787 L19.9625 16.2561 L20.0328 16.5505 L20.1073 16.8593 L20.1784 17.1789 L20.2392 17.5053 L20.2834 17.8338 L20.3053 18.1597 L20.3003 18.4776 L20.2646 18.7826 L20.1956 19.0695 L20.0916 19.3338 L19.9522 19.5711 L19.7782 19.7782 L19.5711 19.9522 L19.3338 20.0916 L19.0695 20.1956 L18.7826 20.2646 L18.4776 20.3003 L18.1597 20.3053 L17.8338 20.2834 L17.5053 20.2392 L17.1789 20.1784 L16.8593 20.1073 L16.5505 20.0328 L16.2561 19.9625 L15.9787 19.9043 L15.7207 19.8667 L15.4840 19.8597 L15.2719 19.8992 L15.0941 20.0212 L14.9317 20.1936 L14.7758 20.4026 L14.6209 20.6399 L14.4624 20.8978 L14.2967 21.1688 L14.1210 21.4450 L13.9332 21.7188 L13.7321 21.9824 L13.5172 22.2283 L13.2888 22.4496 L13.0479 22.6400 L12.7962 22.7940 L12.5358 22.9074 L12.2695 22.9767 L12.0000 23.0000 L11.7305 22.9767 L11.4642 22.9074 L11.2038 22.7940 L10.9521 22.6400 L10.7112 22.4496 L10.4828 22.2283 L10.2679 21.9824 L10.0668 21.7188 L9.8790 21.4450 L9.7033 21.1688 L9.5376 20.8978 L9.3791 20.6399 L9.2242 20.4026 L9.0683 20.1936 L8.9059 20.0212 L8.7281 19.8992 L8.5160 19.8597 L8.2793 19.8667 L8.0213 19.9043 L7.7439 19.9625 L7.4495 20.0328 L7.1407 20.1073 L6.8211 20.1784 L6.4947 20.2392 L6.1662 20.2834 L5.8403 20.3053 L5.5224 20.3003 L5.2174 20.2646 L4.9305 20.1956 L4.6662 20.0916 L4.4289 19.9522 L4.2218 19.7782 L4.0478 19.5711 L3.9084 19.3338 L3.8044 19.0695 L3.7354 18.7826 L3.6997 18.4776 L3.6947 18.1597 L3.7166 17.8338 L3.7608 17.5053 L3.8216 17.1789 L3.8927 16.8593 L3.9672 16.5505 L4.0375 16.2561 L4.0957 15.9787 L4.1333 15.7207 L4.1403 15.4840 L4.1008 15.2719 L3.9788 15.0941 L3.8064 14.9317 L3.5974 14.7758 L3.3601 14.6209 L3.1022 14.4624 L2.8312 14.2967 L2.5550 14.1210 L2.2812 13.9332 L2.0176 13.7321 L1.7717 13.5172 L1.5504 13.2888 L1.3600 13.0479 L1.2060 12.7962 L1.0926 12.5358 L1.0233 12.2695 L1.0000 12.0000 L1.0233 11.7305 L1.0926 11.4642 L1.2060 11.2038 L1.3600 10.9521 L1.5504 10.7112 L1.7717 10.4828 L2.0176 10.2679 L2.2812 10.0668 L2.5550 9.8790 L2.8312 9.7033 L3.1022 9.5376 L3.3601 9.3791 L3.5974 9.2242 L3.8064 9.0683 L3.9788 8.9059 L4.1008 8.7281 L4.1403 8.5160 L4.1333 8.2793 L4.0957 8.0213 L4.0375 7.7439 L3.9672 7.4495 L3.8927 7.1407 L3.8216 6.8211 L3.7608 6.4947 L3.7166 6.1662 L3.6947 5.8403 L3.6997 5.5224 L3.7354 5.2174 L3.8044 4.9305 L3.9084 4.6662 L4.0478 4.4289 L4.2218 4.2218 L4.4289 4.0478 L4.6662 3.9084 L4.9305 3.8044 L5.2174 3.7354 L5.5224 3.6997 L5.8403 3.6947 L6.1662 3.7166 L6.4947 3.7608 L6.8211 3.8216 L7.1407 3.8927 L7.4495 3.9672 L7.7439 4.0375 L8.0213 4.0957 L8.2793 4.1333 L8.5160 4.1403 L8.7281 4.1008 L8.9059 3.9788 L9.0683 3.8064 L9.2242 3.5974 L9.3791 3.3601 L9.5376 3.1022 L9.7033 2.8312 L9.8790 2.5550 L10.0668 2.2812 L10.2679 2.0176 L10.4828 1.7717 L10.7112 1.5504 L10.9521 1.3600 L11.2038 1.2060 L11.4642 1.0926 L11.7305 1.0233 L12.0000 1.0000 Z"/><path d="M7.15 12.05 L10.55 15.45 L16.85 8.55" stroke="#fff" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>
                         </div>
-                        <a id="rightProfileEmail" class="profile-email" href="#">—</a>
-                        <p id="rightProfilePhone" class="profile-phone">—</p>
+                        <div id="rightProfileBuyerMeta">
+                            <a id="rightProfileEmail" class="profile-email" href="#">—</a>
+                            <p id="rightProfilePhone" class="profile-phone">—</p>
+                        </div>
+                        <div id="rightProfileSellerMeta" class="hidden profile-seller-meta text-[11px] text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                            <span id="rightProfileLocation"><i class="fa-solid fa-location-dot text-red-400 mr-1"></i><span id="rightProfileCountry">—</span></span>
+                            <span><i class="fa-regular fa-clock text-red-400 mr-1"></i>Joined <span id="rightProfileJoinedInline">—</span></span>
+                        </div>
                     </div>
                 </div>
-                <p class="profile-hint">Tap the camera to upload a profile picture</p>
+                <p id="profileHintBuyer" class="profile-hint">Tap the camera to upload a profile picture</p>
             </div>
 
-            <div class="profile-stats">
+            <!-- Buyer-only wallet/referral strip -->
+            <div id="profileBuyerStats" class="profile-stats">
                 <div class="profile-stat">
                     <span>Wallet balance</span>
                     <span id="rightProfileBalance" class="profile-stat-val">$0.00</span>
@@ -760,49 +767,62 @@
                 </div>
             </div>
 
-            <div id="profileMerchantLink" class="hidden profile-merchant-link mx-3 mb-3">
-                <p class="profile-merchant-link__label">Merchant link</p>
-                <div class="profile-merchant-link__row">
-                    <span id="profileMerchantUrl" class="profile-merchant-link__url" data-full="">—</span>
-                    <button type="button" onclick="copyMerchantLink()" class="profile-merchant-link__copy" aria-label="Copy merchant link"><i class="fa-solid fa-copy"></i></button>
-                </div>
-            </div>
-
-            <div id="profileSellerExtras" class="hidden mx-3 mb-3 space-y-3">
-                <div class="rounded-xl border border-brandPrimary/25 bg-brandPrimary/5 p-3 space-y-2">
-                    <div class="flex items-center justify-between gap-2">
-                        <p class="text-xs font-bold text-brandPrimary">Seller store</p>
-                        <a id="profileViewStoreLink" href="#" class="text-[11px] font-semibold text-brandPrimary underline hidden">View my store</a>
-                    </div>
-                    <label class="block text-[11px] text-slate-500" for="profileBio">Store bio</label>
-                    <textarea id="profileBio" rows="3" maxlength="800" placeholder="Tell buyers about your store…" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm focus:outline-none focus:border-brandPrimary"></textarea>
-                    <button type="button" onclick="saveProfileBio()" class="w-full bg-brandPrimary hover:bg-brandHover text-white text-xs font-bold py-2.5 rounded-xl">Save bio</button>
-                    <div id="profileSellerStats" class="grid grid-cols-4 gap-1.5 pt-1">
-                        <div class="text-center rounded-lg bg-white/70 dark:bg-slate-900/60 py-3 px-1 min-h-[4.5rem] flex flex-col justify-center">
-                            <p id="profileStatReviews" class="text-base font-extrabold text-brandPrimary">0</p>
-                            <p class="text-[9px] text-slate-500 uppercase tracking-wide leading-tight mt-0.5">Total Reviews</p>
+            <!-- Seller store body (AcctBazaar-style) -->
+            <div id="profileSellerStore" class="hidden">
+                <div id="profileBioBlock" class="mx-4 mb-3">
+                    <p id="profileBioDisplay" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[1.25rem]"></p>
+                    <button type="button" id="profileBioEditBtn" onclick="toggleProfileBioEdit(true)" class="mt-1 text-[11px] font-semibold text-brandPrimary"><i class="fa-solid fa-pen mr-1"></i>Edit bio</button>
+                    <div id="profileBioEditWrap" class="hidden mt-2 space-y-2">
+                        <textarea id="profileBio" rows="3" maxlength="800" placeholder="Tell buyers about your store…" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm focus:outline-none focus:border-brandPrimary"></textarea>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="saveProfileBio()" class="flex-1 bg-brandPrimary hover:bg-brandHover text-white text-xs font-bold py-2 rounded-xl">Save bio</button>
+                            <button type="button" onclick="toggleProfileBioEdit(false)" class="px-3 text-xs font-semibold border border-slate-300 dark:border-slate-700 rounded-xl">Cancel</button>
                         </div>
-                        <div class="text-center rounded-lg bg-white/70 dark:bg-slate-900/60 py-3 px-1 min-h-[4.5rem] flex flex-col justify-center">
-                            <p id="profileStatSold" class="text-base font-extrabold text-brandPrimary">0</p>
-                            <p class="text-[9px] text-slate-500 uppercase tracking-wide leading-tight mt-0.5">Total sold</p>
-                        </div>
-                        <div class="text-center rounded-lg bg-white/70 dark:bg-slate-900/60 py-3 px-1 min-h-[4.5rem] flex flex-col justify-center">
-                            <p id="profileStatActive" class="text-base font-extrabold text-brandPrimary">0</p>
-                            <p class="text-[9px] text-slate-500 uppercase tracking-wide leading-tight mt-0.5">Active Ads</p>
-                        </div>
-                        <div class="text-center rounded-lg bg-white/70 dark:bg-slate-900/60 py-3 px-1 min-h-[4.5rem] flex flex-col justify-center">
-                            <p id="profileStatCancelled" class="text-base font-extrabold text-brandPrimary">0</p>
-                            <p class="text-[9px] text-slate-500 uppercase tracking-wide leading-tight mt-0.5">Cancelled</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-2 pt-0.5">
-                        <button type="button" onclick="switchTab('ads'); toggleRightMenu();" class="flex-1 text-[11px] font-bold border border-brandPrimary text-brandPrimary py-2 rounded-lg hover:bg-brandPrimary/10">My Ads</button>
-                        <button type="button" onclick="document.getElementById('profileViewStoreLink') && document.getElementById('profileViewStoreLink').click();" class="flex-1 text-[11px] font-bold border border-slate-300 dark:border-slate-700 py-2 rounded-lg">Reviews</button>
                     </div>
                 </div>
+
+                <div id="profileMerchantLink" class="hidden profile-merchant-link mx-4 mb-3">
+                    <p class="profile-merchant-link__label">Merchant link</p>
+                    <div class="profile-merchant-link__row">
+                        <span id="profileMerchantUrl" class="profile-merchant-link__url" data-full="">—</span>
+                        <button type="button" onclick="copyMerchantLink()" class="profile-merchant-link__copy" aria-label="Copy merchant link"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                </div>
+
+                <div id="profileSellerStats" class="av-storefront-stats !mx-4 mb-3">
+                    <div class="av-storefront-stat">
+                        <div class="av-storefront-stat__icon av-storefront-stat__icon--blue"><i class="fa-solid fa-chart-column"></i></div>
+                        <div id="profileStatReviews" class="av-storefront-stat__val">0</div>
+                        <div class="av-storefront-stat__lbl">Total Reviews</div>
+                    </div>
+                    <div class="av-storefront-stat">
+                        <div class="av-storefront-stat__icon av-storefront-stat__icon--green"><i class="fa-solid fa-chart-column"></i></div>
+                        <div id="profileStatSold" class="av-storefront-stat__val">0</div>
+                        <div class="av-storefront-stat__lbl">Total sold</div>
+                    </div>
+                    <div class="av-storefront-stat">
+                        <div class="av-storefront-stat__icon av-storefront-stat__icon--orange"><i class="fa-solid fa-chart-column"></i></div>
+                        <div id="profileStatActive" class="av-storefront-stat__val">0</div>
+                        <div class="av-storefront-stat__lbl">Active Ads</div>
+                    </div>
+                    <div class="av-storefront-stat">
+                        <div class="av-storefront-stat__icon av-storefront-stat__icon--red"><i class="fa-solid fa-chart-column"></i></div>
+                        <div id="profileStatCancelled" class="av-storefront-stat__val">0</div>
+                        <div class="av-storefront-stat__lbl">Cancelled Orders</div>
+                        <div class="av-storefront-stat__note">Lower is better for trust</div>
+                    </div>
+                </div>
+
+                <div class="av-storefront-tabs !mx-4">
+                    <button type="button" class="av-storefront-tab is-active" data-profile-store-tab="ads" onclick="setProfileStoreTab('ads')">Ads</button>
+                    <button type="button" class="av-storefront-tab" data-profile-store-tab="reviews" onclick="setProfileStoreTab('reviews')">Reviews</button>
+                </div>
+                <div id="profileStoreAds" class="av-storefront-ads !mx-4 mb-8"></div>
+                <div id="profileStoreReviews" class="hidden mx-4 mb-8 text-sm text-slate-500">No reviews yet.</div>
             </div>
 
-            <nav class="profile-nav px-3 pt-1 pb-8">
+            <!-- Buyer account menu (also in hamburger) -->
+            <nav id="profileBuyerNav" class="profile-nav px-3 pt-1 pb-8">
                 <a href="#" onclick="openAccountSettings(); toggleRightMenu(); return false;">
                     <i class="fa-solid fa-gear"></i> Account settings
                 </a>
@@ -1010,7 +1030,7 @@
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
     <script src="/js/listing-modal.js?v=badgeFull1"></script>
-    <script src="/js/dashboard-app.js?v=featurePack1"></script>
+    <script src="/js/dashboard-app.js?v=storeProfile2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

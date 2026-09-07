@@ -70,24 +70,30 @@ function ensure_seller_review_reply_column(): void {
 }
 
 /**
- * Google reCAPTCHA v3 verification. If keys are not configured, allow through
- * (so local/dev still works) but prefer configured keys in production.
+ * Google reCAPTCHA v3 — OFF by default. Enable in Owner Admin → Settings
+ * when you want captcha before login / signup.
  */
+function recaptcha_enabled(): bool {
+    return setting_get('recaptcha_enabled', '0') === '1';
+}
+
 function recaptcha_site_key(): string {
-    $k = trim((string)setting_get('recaptcha_site_key', app_config()['recaptcha_site_key'] ?? ''));
-    if ($k !== '') return $k;
-    // Google's published always-pass test key so the badge works until Owner sets production keys.
-    return '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+    if (!recaptcha_enabled()) return '';
+    return trim((string)setting_get('recaptcha_site_key', app_config()['recaptcha_site_key'] ?? ''));
 }
 
 function recaptcha_secret_key(): string {
-    $k = trim((string)setting_get('recaptcha_secret_key', app_config()['recaptcha_secret_key'] ?? ''));
-    if ($k !== '') return $k;
-    return '6LeIxAcTAAAAAGG-vGR1JURfn040YvRRBs65HAwU';
+    if (!recaptcha_enabled()) return '';
+    return trim((string)setting_get('recaptcha_secret_key', app_config()['recaptcha_secret_key'] ?? ''));
 }
 
 function verify_recaptcha_token(?string $token, string $action = ''): bool {
+    if (!recaptcha_enabled()) return true;
     $secret = recaptcha_secret_key();
+    if ($secret === '') {
+        // Enabled in admin but keys missing — don't lock users out
+        return true;
+    }
     $token = trim((string)$token);
     if ($token === '') return false;
     $ctx = stream_context_create([

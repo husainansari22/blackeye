@@ -51,8 +51,8 @@ try {
                     'listingsPausedMessage' => setting_get('listings_paused_message', 'New listings are temporarily paused by the platform owner.'),
                     'referralsEnabled' => setting_get('referrals_enabled', '1') === '1',
                     'registrationsEnabled' => setting_get('registrations_enabled', '1') === '1',
-                    'recaptchaSiteKey' => function_exists('recaptcha_site_key') ? recaptcha_site_key() : '',
-                    'recaptchaEnabled' => function_exists('recaptcha_site_key') && recaptcha_site_key() !== '' && recaptcha_secret_key() !== '',
+                    'recaptchaSiteKey' => function_exists('recaptcha_enabled') && recaptcha_enabled() && function_exists('recaptcha_site_key') ? recaptcha_site_key() : '',
+                    'recaptchaEnabled' => function_exists('recaptcha_enabled') && recaptcha_enabled() && function_exists('recaptcha_site_key') && recaptcha_site_key() !== '' && recaptcha_secret_key() !== '',
                     'disputeWindowMinutes' => $disputeMins,
                     'warrantyHours' => $warrantyHrs,
                     'paymentCurrency' => setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'),
@@ -446,7 +446,7 @@ try {
                 notify_user((int)$u['id'], 'Ad Denied', $denyReason !== '' ? $denyReason : 'Your listing did not pass review.', 'ad_review', (string)$adId);
             } else {
                 $stockNote = $stockQty > 1 ? (' (' . $stockQty . ' accounts)') : '';
-                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $ad['title'] . '"' . $stockNote . ' is pending Owner approval. You will be notified when it goes live.', 'ad_review', (string)$adId);
+                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $ad['title'] . '"' . $stockNote . ' is pending review. You will be notified when it goes live.', 'ad_review', (string)$adId);
             }
             $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
             json_out([
@@ -455,7 +455,7 @@ try {
                 'ai' => $review,
                 'status' => $finalStatus,
                 'message' => $finalStatus === 'pending'
-                    ? 'Listing submitted for Owner approval.'
+                    ? 'Listing submitted for review.'
                     : 'Listing denied by AI checks.',
             ]);
         }
@@ -476,13 +476,52 @@ try {
             $description = trim((string)($body['description'] ?? $ad['description']));
             $price = round((float)($body['price'] ?? $ad['price']), 2);
             if ($title === '' || $price <= 0) json_out(['ok' => false, 'error' => 'Title and price are required'], 422);
+
+            $username = array_key_exists('username', $body) ? trim((string)$body['username']) : (string)($ad['username'] ?? '');
+            $password = array_key_exists('password', $body) ? (string)$body['password'] : (string)($ad['password_plain'] ?? '');
+            $preview = array_key_exists('previewLink', $body) || array_key_exists('preview_link', $body)
+                ? trim((string)($body['previewLink'] ?? $body['preview_link'] ?? ''))
+                : (string)($ad['preview_link'] ?? '');
+            $attachedEmail = array_key_exists('attachedEmail', $body) || array_key_exists('attached_email', $body)
+                ? trim((string)($body['attachedEmail'] ?? $body['attached_email'] ?? ''))
+                : (string)($ad['attached_email'] ?? '');
+            $attachedEmailPassword = array_key_exists('attachedEmailPassword', $body) || array_key_exists('attached_email_password', $body)
+                ? (string)($body['attachedEmailPassword'] ?? $body['attached_email_password'] ?? '')
+                : (string)($ad['attached_email_password'] ?? '');
+            $twoFa = array_key_exists('twoFA', $body) || array_key_exists('two_fa', $body)
+                ? trim((string)($body['twoFA'] ?? $body['two_fa'] ?? ''))
+                : (string)($ad['two_fa'] ?? '');
+            $extraInfo = array_key_exists('extraInfo', $body) || array_key_exists('extra_info', $body)
+                ? trim((string)($body['extraInfo'] ?? $body['extra_info'] ?? ''))
+                : (string)($ad['extra_info'] ?? '');
+            if ($username === '' || $password === '') {
+                json_out(['ok' => false, 'error' => 'Username and password are required'], 422);
+            }
+
             // Editing content sends the listing back for review when it was live
             $newStatus = $status === 'active' ? 'pending' : $status;
             if ($status === 'denied') $newStatus = 'pending';
-            db()->prepare('UPDATE ads SET title = ?, description = ?, price = ?, status = ?, deny_reason = ?, reviewed_at = NULL WHERE id = ?')
-                ->execute([$title, $description, money_f($price), $newStatus, '', $adId]);
+            db()->prepare('UPDATE ads SET title = ?, description = ?, price = ?, username = ?, password_plain = ?, preview_link = ?, attached_email = ?, attached_email_password = ?, two_fa = ?, extra_info = ?, status = ?, deny_reason = ?, reviewed_at = NULL WHERE id = ?')
+                ->execute([
+                    $title, $description, money_f($price), $username, $password, $preview,
+                    $attachedEmail, $attachedEmailPassword, $twoFa, $extraInfo,
+                    $newStatus, '', $adId,
+                ]);
+            try {
+                ensure_ad_credentials_table();
+                $cred = db()->prepare("SELECT id FROM ad_credentials WHERE ad_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1");
+                $cred->execute([$adId]);
+                $rowCred = $cred->fetch();
+                if ($rowCred) {
+                    db()->prepare('UPDATE ad_credentials SET username = ?, password_plain = ?, preview_link = ?, attached_email = ?, attached_email_password = ?, two_fa = ?, extra_info = ? WHERE id = ?')
+                        ->execute([
+                            $username, $password, $preview, $attachedEmail, $attachedEmailPassword, $twoFa, $extraInfo,
+                            (int)$rowCred['id'],
+                        ]);
+                }
+            } catch (Throwable $e) {}
             if ($newStatus === 'pending') {
-                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $title . '" was updated and is pending Owner approval.', 'ad_review', (string)$adId);
+                notify_user((int)$u['id'], 'Ad Under Review', 'Your listing "' . $title . '" was updated and is pending review.', 'ad_review', (string)$adId);
             }
             $row = db()->query('SELECT * FROM ads WHERE id = ' . $adId)->fetch();
             json_out(['ok' => true, 'ad' => $row, 'status' => $newStatus]);

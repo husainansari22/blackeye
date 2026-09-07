@@ -1329,3 +1329,42 @@
 .product-item .av-verify-name.truncate {
   overflow: hidden;
 }
+
+/* My Ads hold switch — knob centered vertically in the track */
+.ads-hold-switch {
+  position: relative;
+  width: 2.5rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.4);
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  display: inline-block;
+  vertical-align: middle;
+}
+.dark .ads-hold-switch {
+  background: rgba(71, 85, 105, 0.85);
+}
+.ads-hold-switch.is-on {
+  background: #8b5cf6;
+}
+.ads-hold-switch__knob {
+  position: absolute;
+  top: 50%;
+  left: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  transform: translateY(-50%);
+  transition: left 0.15s ease;
+  pointer-events: none;
+}
+.ads-hold-switch.is-on .ads-hold-switch__knob {
+  left: calc(100% - 1.125rem);
+}

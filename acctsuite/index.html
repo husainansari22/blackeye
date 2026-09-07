@@ -922,7 +922,9 @@
         }
 
         async function getRecaptchaToken(action) {
-            const siteKey = (window.__recaptchaSiteKey) || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+            if (!window.__recaptchaEnabled) return '';
+            const siteKey = window.__recaptchaSiteKey || '';
+            if (!siteKey) return '';
             try {
                 if (!window.grecaptcha || !window.grecaptcha.execute) {
                     await new Promise((resolve, reject) => {
@@ -942,27 +944,30 @@
             }
         }
 
-        (async function loadRecaptchaSiteKey() {
+        (async function loadRecaptchaIfEnabled() {
+            window.__recaptchaEnabled = false;
+            window.__recaptchaSiteKey = '';
             try {
+                let cfg = null;
                 if (window.AcctSuiteApi && window.AcctSuiteApi.publicConfig) {
                     const res = await window.AcctSuiteApi.publicConfig();
-                    const key = res && res.config && res.config.recaptchaSiteKey;
-                    if (key) window.__recaptchaSiteKey = key;
+                    cfg = res && res.config;
                 } else {
                     const res = await fetch('/api/index.php?action=config.public').then((r) => r.json());
-                    if (res && res.config && res.config.recaptchaSiteKey) window.__recaptchaSiteKey = res.config.recaptchaSiteKey;
+                    cfg = res && res.config;
+                }
+                if (cfg && cfg.recaptchaEnabled && cfg.recaptchaSiteKey) {
+                    window.__recaptchaEnabled = true;
+                    window.__recaptchaSiteKey = cfg.recaptchaSiteKey;
+                    if (!document.getElementById('grecaptchaV3')) {
+                        const s = document.createElement('script');
+                        s.id = 'grecaptchaV3';
+                        s.src = 'https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(cfg.recaptchaSiteKey);
+                        s.async = true;
+                        document.head.appendChild(s);
+                    }
                 }
             } catch (e) {}
-            const key = window.__recaptchaSiteKey || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
-            window.__recaptchaSiteKey = key;
-            // Load v3 with site key so the bottom-right badge appears (AcctBazaar style)
-            if (!document.getElementById('grecaptchaV3')) {
-                const s = document.createElement('script');
-                s.id = 'grecaptchaV3';
-                s.src = 'https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(key);
-                s.async = true;
-                document.head.appendChild(s);
-            }
         })();
 
         async function handleSignup(e) {
@@ -985,22 +990,23 @@
 
             const fullPhone = (code ? code + ' ' : '') + phone;
             const ref = new URLSearchParams(window.location.search).get('ref') || '';
-            const recaptchaToken = await getRecaptchaToken('signup');
+            const recaptchaToken = window.__recaptchaEnabled ? await getRecaptchaToken('signup') : '';
 
             // Prefer MySQL API when installed on Hostinger
             if (window.AcctSuiteApi) {
                 try {
                     const online = await window.AcctSuiteApi.isAvailable();
                     if (online) {
-                        await window.AcctSuiteApi.register({
+                        const payload = {
                             name: name,
                             email: email,
                             phone: fullPhone,
                             password: pass,
                             referredBy: ref,
-                            countryCode: (window.__signupCountryCode || document.getElementById('country_flag')?.src?.match(/\/([a-z]{2})\.png/i)?.[1] || 'ng'),
-                            recaptchaToken: recaptchaToken
-                        });
+                            countryCode: (window.__signupCountryCode || document.getElementById('country_flag')?.src?.match(/\/([a-z]{2})\.png/i)?.[1] || 'ng')
+                        };
+                        if (recaptchaToken) payload.recaptchaToken = recaptchaToken;
+                        await window.AcctSuiteApi.register(payload);
                         window.location.href = "/dashboard.html";
                         return;
                     }
@@ -1060,13 +1066,15 @@
             e.preventDefault();
             const email = (document.getElementById('li_email').value || '').trim().toLowerCase();
             const pass = document.getElementById('li_pass').value || '';
-            const recaptchaToken = await getRecaptchaToken('login');
+            const recaptchaToken = window.__recaptchaEnabled ? await getRecaptchaToken('login') : '';
 
             if (window.AcctSuiteApi) {
                 try {
                     const online = await window.AcctSuiteApi.isAvailable();
                     if (online) {
-                        await window.AcctSuiteApi.login({ email: email, password: pass, recaptchaToken: recaptchaToken });
+                        const payload = { email: email, password: pass };
+                        if (recaptchaToken) payload.recaptchaToken = recaptchaToken;
+                        await window.AcctSuiteApi.login(payload);
                         window.location.href = "/dashboard.html";
                         return;
                     }
