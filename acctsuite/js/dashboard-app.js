@@ -175,6 +175,11 @@
         badge.classList.remove('flex');
       });
       syncGuestMenu(false);
+      const sellerExtras = document.getElementById('profileSellerExtras');
+      if (sellerExtras) sellerExtras.classList.add('hidden');
+      const heading = document.getElementById('rightProfileHeading');
+      if (heading) heading.textContent = 'My Profile';
+      syncAdsHoldToggle(null);
       return;
     }
     syncGuestMenu(true);
@@ -292,6 +297,72 @@
         merchantUrlEl.dataset.full = '';
       }
     }
+
+    // Seller profile extras when user has ≥1 ad or a merchant slug
+    const sellerExtras = document.getElementById('profileSellerExtras');
+    const heading = document.getElementById('rightProfileHeading');
+    const isSeller = (ads && ads.length > 0) || !!(u.merchantSlug || u.merchantLink);
+    if (heading) heading.textContent = isSeller ? 'Seller Profile' : 'My Profile';
+    if (sellerExtras) {
+      if (isSeller) {
+        sellerExtras.classList.remove('hidden');
+        const bioEl = document.getElementById('profileBio');
+        if (bioEl && document.activeElement !== bioEl) bioEl.value = u.bio || '';
+        const sold = (u.orders || []).filter((o) => o.role === 'seller' && (o.status === 'completed' || o.status === 'released')).length;
+        const activeCount = ads.filter((a) => a.status === 'active' && Number(a.stock) > 0).length;
+        const cancelled = ads.filter((a) => a.status === 'removed' || a.status === 'denied').length;
+        const reviews = Number(u.sellerReviews || u.reviewCount || 0);
+        set('profileStatReviews', String(reviews));
+        set('profileStatSold', String(sold));
+        set('profileStatActive', String(activeCount));
+        set('profileStatCancelled', String(cancelled));
+        const storeLink = document.getElementById('profileViewStoreLink');
+        if (storeLink) {
+          const slug = u.merchantSlug || '';
+          if (slug) {
+            storeLink.href = '/seller.html?s=' + encodeURIComponent(slug);
+            storeLink.classList.remove('hidden');
+            storeLink.onclick = null;
+          } else if (u.merchantLink) {
+            storeLink.href = u.merchantLink;
+            storeLink.classList.remove('hidden');
+            storeLink.onclick = null;
+          } else {
+            storeLink.classList.add('hidden');
+          }
+        }
+      } else {
+        sellerExtras.classList.add('hidden');
+      }
+    }
+
+    syncAdsHoldToggle(u);
+  }
+
+  function syncAdsHoldToggle(u) {
+    const toggle = document.getElementById('adsHoldToggle');
+    const knob = document.getElementById('adsHoldKnob');
+    const label = document.getElementById('adsHoldLabel');
+    if (!toggle) return;
+    const held = !!(u && (u.adsHeld || u.ads_held));
+    // ON = live (not held)
+    const on = !held;
+    toggle.setAttribute('aria-checked', on ? 'true' : 'false');
+    toggle.className =
+      'relative w-10 h-5 rounded-full transition-colors shrink-0 ' +
+      (on ? 'bg-brandPrimary' : 'bg-slate-300 dark:bg-slate-600');
+    if (knob) {
+      knob.style.left = on ? '1.375rem' : '0.125rem';
+    }
+    if (label) {
+      if (held) {
+        label.textContent = 'Held';
+        label.className = 'text-[10px] font-semibold text-amber-600 dark:text-amber-400';
+      } else {
+        label.textContent = 'Live';
+        label.className = 'text-[10px] font-semibold text-emerald-600 dark:text-emerald-400';
+      }
+    }
   }
 
   function productLogoFor(item) {
@@ -348,7 +419,7 @@
           <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
         </div>
         <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
-        ${item.sellerRating ? `<div class="mb-1 scale-90 origin-left">${starsRowHtml(item.sellerRating, item.sellerReviews)}</div>` : ''}
+        <div class="mb-1 scale-90 origin-left">${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
         <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0 overflow-visible">By <span class="inline-flex items-center min-w-0 max-w-full overflow-visible">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
         <p class="text-[10px] text-emerald-500 mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>${stock} available</p>
         <div class="flex justify-between items-center mt-2">
@@ -381,7 +452,7 @@
       ${productLogoMarkFor(item, 'w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center')}
       <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
         <h4 class="font-bold text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
-        ${item.sellerRating ? `<div>${starsRowHtml(item.sellerRating, item.sellerReviews)}</div>` : ''}
+        <div>${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
         <p class="text-[11px] text-slate-500 flex items-center gap-0.5 min-w-0 flex-wrap">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
         <p class="text-[11px] text-emerald-500"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 align-middle"></span>${stock} available</p>
       </div>
@@ -509,6 +580,7 @@
   function renderAds() {
     const u = refreshUser();
     if (!u) return;
+    syncAdsHoldToggle(u);
     const box = document.getElementById('adsListContainer');
     if (!box) return;
     let ads = u.ads || [];
@@ -556,31 +628,55 @@
       .map((a) => {
         const stock = Number(a.stock);
         const soldOut = a.status === 'active' && !(stock > 0);
-        const statusColor =
-          a.status === 'active' && !soldOut
-            ? 'text-emerald-500'
-            : a.status === 'pending'
-              ? 'text-amber-500'
-              : a.status === 'denied'
-                ? 'text-red-500'
-                : 'text-slate-400';
-        let statusLabel =
-          a.status === 'pending'
-            ? 'Under Review'
-            : soldOut
-              ? 'Sold out'
-              : (a.status || '').charAt(0).toUpperCase() + (a.status || '').slice(1);
-        if (a.status === 'active' && !soldOut) statusLabel = 'Live · stock ' + (stock || 1);
-        return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm space-y-2">
-        <div class="flex justify-between gap-3">
-          <div class="min-w-0">
-            <h4 class="font-bold text-sm">${escapeHtml(a.title)}</h4>
-            <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(a.category || '')} · ${a.releaseType === 'manual' ? 'Manual release' : 'Auto confirm'}</p>
+        const status = String(a.status || '').toLowerCase();
+        let badgeClass = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
+        let statusLabel = (a.status || '').charAt(0).toUpperCase() + (a.status || '').slice(1);
+        if (status === 'pending') {
+          badgeClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300';
+          statusLabel = 'Pending';
+        } else if (status === 'active' && !soldOut) {
+          badgeClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300';
+          statusLabel = 'Active';
+        } else if (soldOut) {
+          badgeClass = 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+          statusLabel = 'Sold out';
+        } else if (status === 'denied') {
+          badgeClass = 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300';
+          statusLabel = 'Denied';
+        } else if (status === 'removed') {
+          badgeClass = 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+          statusLabel = 'Removed';
+        }
+        const desc = String(a.description || '').trim();
+        const snippet = desc
+          ? escapeHtml(desc.length > 90 ? desc.slice(0, 90) + '…' : desc)
+          : '<span class="text-slate-400">No description</span>';
+        const instant =
+          a.releaseType !== 'manual'
+            ? `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-bolt"></i> Instant delivery</span>`
+            : `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500"><i class="fa-solid fa-hand"></i> Manual release</span>`;
+        const canEdit = status === 'pending' || status === 'active';
+        const actions = canEdit
+          ? `<div class="flex items-center gap-1.5 ml-2">
+              <button type="button" onclick="editMyAd('${escapeAttr(String(a.id))}')" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-brandPrimary hover:border-brandPrimary flex items-center justify-center" aria-label="Edit ad"><i class="fa-solid fa-pencil text-xs"></i></button>
+              <button type="button" onclick="deleteMyAd('${escapeAttr(String(a.id))}')" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 hover:border-red-400 flex items-center justify-center" aria-label="Delete ad"><i class="fa-solid fa-trash text-xs"></i></button>
+            </div>`
+          : '';
+        return `<div class="bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm space-y-2.5">
+        <div class="flex justify-between gap-3 items-start">
+          <div class="min-w-0 flex-1">
+            <h4 class="font-bold text-sm leading-snug">${escapeHtml(a.title)}</h4>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">${snippet}</p>
           </div>
-          <div class="text-right shrink-0">
-            <p class="font-extrabold text-brandPrimary text-sm">${money(a.price)}</p>
-            <p class="text-xs font-semibold ${statusColor} mt-1">${statusLabel}</p>
-          </div>
+          <span class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeClass}">${statusLabel}</span>
+        </div>
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          ${instant}
+          <span class="text-[10px] text-slate-400">${escapeHtml(a.category || '')}${stock > 0 ? ' · ' + stock + ' available' : ''}</span>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+          <p class="font-extrabold text-brandPrimary text-base">${money(a.price)}</p>
+          ${actions}
         </div>
         ${a.status === 'denied' && a.denyReason ? `<div class="text-xs bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-lg p-2"><strong>Reason for denied:</strong> ${escapeHtml(a.denyReason)}</div>` : ''}
         ${a.status === 'pending' ? `<p class="text-[11px] text-amber-600">Pending Owner approval before Market.</p>` : ''}
@@ -589,6 +685,170 @@
       })
       .join('');
   }
+
+  window.toggleHoldAds = async function (on) {
+    const u = refreshUser();
+    if (!u) {
+      if (typeof promptDashSignIn === 'function') promptDashSignIn('Sign in to manage ads.');
+      return;
+    }
+    const held = !on;
+    try {
+      if (window.AcctSuiteApi && window.AcctSuiteApi.holdAds) {
+        const res = await window.AcctSuiteApi.holdAds({ held: held });
+        u.adsHeld = !!(res && (res.adsHeld != null ? res.adsHeld : held));
+      } else {
+        u.adsHeld = held;
+      }
+      if (window.AcctSuiteApi && window.AcctSuiteApi.updateProfile) {
+        try {
+          await window.AcctSuiteApi.updateProfile({ adsHeld: held });
+        } catch (_) {}
+      }
+      A().persistUser(u);
+      if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.hydrateFromApi) {
+        try {
+          await window.AcctSuiteApiSync.hydrateFromApi();
+        } catch (_) {}
+      }
+      const fresh = refreshUser() || u;
+      fresh.adsHeld = fresh.adsHeld != null ? fresh.adsHeld : held;
+      A().persistUser(fresh);
+      applyProfileChrome(fresh);
+      renderAds();
+      if (window.AcctSuiteToast) {
+        window.AcctSuiteToast.success(held ? 'Ads held — hidden from marketplace.' : 'Ads are live again.');
+      }
+    } catch (e) {
+      syncAdsHoldToggle(u);
+      alert((e && e.message) || 'Could not update hold status.');
+    }
+  };
+
+  window.deleteMyAd = async function (id) {
+    const u = refreshUser();
+    if (!u) return;
+    const ok = window.AcctSuiteConfirm
+      ? await window.AcctSuiteConfirm({
+          title: 'Delete listing?',
+          message: 'This removes the ad from your store. This cannot be undone.',
+          okText: 'Delete',
+          icon: 'fa-trash',
+          danger: true,
+        })
+      : confirm('Delete this listing? This cannot be undone.');
+    if (!ok) return;
+    try {
+      if (!window.AcctSuiteApi || !window.AcctSuiteApi.deleteAd) {
+        alert('API unavailable.');
+        return;
+      }
+      await window.AcctSuiteApi.deleteAd({ id: Number(id) || id });
+      if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.hydrateFromApi) {
+        await window.AcctSuiteApiSync.hydrateFromApi();
+      } else {
+        u.ads = (u.ads || []).map((a) =>
+          String(a.id) === String(id) ? Object.assign({}, a, { status: 'removed', stock: 0 }) : a
+        );
+        A().persistUser(u);
+      }
+      applyProfileChrome(refreshUser());
+      renderAds();
+      if (window.AcctSuiteToast) window.AcctSuiteToast.success('Listing deleted.');
+    } catch (e) {
+      alert((e && e.message) || 'Could not delete listing.');
+    }
+  };
+
+  window.editMyAd = function (id) {
+    const u = refreshUser();
+    if (!u) return;
+    const ad = (u.ads || []).find((a) => String(a.id) === String(id));
+    if (!ad) {
+      alert('Listing not found.');
+      return;
+    }
+    const body = document.getElementById('modalBody');
+    if (!body) return;
+    body.innerHTML = `
+      <h3 class="font-bold text-lg mb-3">Edit listing</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Title</label>
+          <input id="editAdTitle" type="text" value="${escapeAttr(ad.title || '')}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Description</label>
+          <textarea id="editAdDesc" rows="3" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">${escapeHtml(ad.description || '')}</textarea>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Price ($)</label>
+          <input id="editAdPrice" type="number" step="0.01" min="0.01" value="${escapeAttr(String(ad.price != null ? ad.price : ''))}" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+        </div>
+        <p class="text-[11px] text-amber-600">Editing a live listing sends it back for Owner review.</p>
+        <button type="button" onclick="saveEditedAd('${escapeAttr(String(ad.id))}')" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3 rounded-xl text-sm">Save changes</button>
+      </div>`;
+    if (typeof openModal === 'function') openModal();
+  };
+
+  window.saveEditedAd = async function (id) {
+    const title = (document.getElementById('editAdTitle') || {}).value;
+    const description = (document.getElementById('editAdDesc') || {}).value;
+    const price = parseListingPrice((document.getElementById('editAdPrice') || {}).value);
+    if (!String(title || '').trim()) {
+      alert('Title is required.');
+      return;
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      alert('Enter a valid price.');
+      return;
+    }
+    try {
+      if (!window.AcctSuiteApi || !window.AcctSuiteApi.updateAd) {
+        alert('API unavailable.');
+        return;
+      }
+      await window.AcctSuiteApi.updateAd({
+        id: Number(id) || id,
+        title: String(title).trim(),
+        description: String(description || '').trim(),
+        price,
+      });
+      if (typeof closeModal === 'function') closeModal();
+      if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.hydrateFromApi) {
+        await window.AcctSuiteApiSync.hydrateFromApi();
+      }
+      applyProfileChrome(refreshUser());
+      renderAds();
+      if (window.AcctSuiteToast) window.AcctSuiteToast.success('Listing updated.');
+    } catch (e) {
+      alert((e && e.message) || 'Could not update listing.');
+    }
+  };
+
+  window.saveProfileBio = async function () {
+    const u = refreshUser();
+    if (!u) return;
+    const bioEl = document.getElementById('profileBio');
+    const bio = bioEl ? String(bioEl.value || '').trim().slice(0, 800) : '';
+    try {
+      if (window.AcctSuiteApi && window.AcctSuiteApi.updateProfile) {
+        await window.AcctSuiteApi.updateProfile({ bio });
+      }
+      u.bio = bio;
+      A().persistUser(u);
+      if (window.AcctSuiteApiSync && window.AcctSuiteApiSync.hydrateFromApi) {
+        try {
+          await window.AcctSuiteApiSync.hydrateFromApi();
+        } catch (_) {}
+      }
+      applyProfileChrome(refreshUser() || u);
+      if (window.AcctSuiteToast) window.AcctSuiteToast.success('Bio saved.');
+      else alert('Bio saved.');
+    } catch (e) {
+      alert((e && e.message) || 'Could not save bio.');
+    }
+  };
 
   function formatOrderWhen(iso) {
     try {
@@ -811,10 +1071,41 @@
     }
 
     if (type === 'ad_review') {
+      const title = String(n.title || '');
+      const isApproved =
+        /Product Approved/i.test(title) ||
+        /approved|active|live|restocked/i.test(blob);
+      const isDenied = /denied/i.test(title) || /denied/i.test(blob);
+      const isPending = /under review|pending/i.test(blob) || /Under Review/i.test(title);
+
+      if (isApproved && ref) {
+        let live = null;
+        try {
+          live = typeof A().findListingById === 'function' ? A().findListingById(ref) : null;
+        } catch (e) {}
+        if (!live) {
+          try {
+            const list = A().getMarketplaceListings() || [];
+            live = list.find((l) => String(l.id) === String(ref)) || null;
+          } catch (e) {}
+        }
+        if (live && typeof window.openListingDetail === 'function') {
+          window.openListingDetail(ref);
+          return;
+        }
+        try {
+          adsFilter = 'active';
+        } catch (e) {}
+        goTab('ads');
+        if (typeof setAdsFilter === 'function') setAdsFilter('active');
+        else renderAds();
+        return;
+      }
+
       try {
-        if (/denied/i.test(blob)) adsFilter = 'denied';
-        else if (/under review|pending/i.test(blob)) adsFilter = 'pending';
-        else if (/active|approved|restocked|live/i.test(blob)) adsFilter = 'active';
+        if (isDenied) adsFilter = 'denied';
+        else if (isPending) adsFilter = 'pending';
+        else if (isApproved) adsFilter = 'active';
         else adsFilter = 'all';
       } catch (e) {}
       goTab('ads');
@@ -2029,7 +2320,7 @@
       switchTab('plans');
       return;
     }
-    sellDraft = { releaseType: 'auto' };
+    sellDraft = { releaseType: 'auto', accounts: [] };
     sellStep = 1;
     showSellStep(1);
     const cat = document.getElementById('wizardCat');
@@ -2040,10 +2331,11 @@
     if (search) search.value = '';
     if (selected) { selected.classList.add('hidden'); selected.innerHTML = ''; }
     if (picker) picker.classList.add('hidden');
-    ['wizardTitle', 'wizardDesc', 'wizardPrice', 'wizardUser', 'wizardPass', 'wizardPreview', 'wizardEmail', 'wizardEmailPass', 'wizard2fa', 'wizardExtra'].forEach((id) => {
+    ['wizardTitle', 'wizardDesc', 'wizardPrice'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    renderWizardAccounts(1);
     document.getElementById('sellWizardOverlay').classList.remove('hidden');
     document.getElementById('sellWizardOverlay').classList.add('flex');
     const banner = document.getElementById('uploadLimitBannerText');
@@ -2077,19 +2369,121 @@
     const optional = previewLinkOptionalForDraft();
     const hint = document.getElementById('wizardPreviewHint');
     const help = document.getElementById('wizardPreviewHelp');
-    const label = document.getElementById('wizardPreviewLabel');
     if (hint) hint.classList.toggle('hidden', !optional);
     if (help) {
       help.textContent = optional
         ? 'Optional for this account type — WhatsApp / phone messaging passes do not need a preview link.'
         : 'Required for social profiles (Facebook, Instagram, etc.). Optional for WhatsApp and phone/messaging passes.';
     }
-    if (label) {
-      label.innerHTML = optional
-        ? 'Preview link of account <span class="font-normal text-slate-400">(optional)</span>'
-        : 'Preview link of account <span class="font-normal text-slate-400">(required for social profiles)</span>';
-    }
+    document.querySelectorAll('#wizardAccountsList [data-preview-label]').forEach((el) => {
+      el.innerHTML = optional
+        ? 'Preview link <span class="font-normal text-slate-400">(optional)</span>'
+        : 'Preview link <span class="font-normal text-slate-400">(required for social)</span>';
+    });
   }
+
+  function emptyWizardAccount() {
+    return {
+      username: '',
+      password: '',
+      previewLink: '',
+      attachedEmail: '',
+      attachedEmailPassword: '',
+      twoFA: '',
+      extraInfo: '',
+    };
+  }
+
+  function collectWizardAccountRows() {
+    return Array.from(document.querySelectorAll('#wizardAccountsList .wizard-account-card')).map((card) => ({
+      username: (card.querySelector('[data-field="username"]') || {}).value
+        ? String(card.querySelector('[data-field="username"]').value).trim()
+        : '',
+      password: (card.querySelector('[data-field="password"]') || {}).value
+        ? String(card.querySelector('[data-field="password"]').value).trim()
+        : '',
+      previewLink: (card.querySelector('[data-field="previewLink"]') || {}).value
+        ? String(card.querySelector('[data-field="previewLink"]').value).trim()
+        : '',
+      attachedEmail: (card.querySelector('[data-field="attachedEmail"]') || {}).value
+        ? String(card.querySelector('[data-field="attachedEmail"]').value).trim()
+        : '',
+      attachedEmailPassword: (card.querySelector('[data-field="attachedEmailPassword"]') || {}).value
+        ? String(card.querySelector('[data-field="attachedEmailPassword"]').value).trim()
+        : '',
+      twoFA: (card.querySelector('[data-field="twoFA"]') || {}).value
+        ? String(card.querySelector('[data-field="twoFA"]').value).trim()
+        : '',
+      extraInfo: (card.querySelector('[data-field="extraInfo"]') || {}).value
+        ? String(card.querySelector('[data-field="extraInfo"]').value).trim()
+        : '',
+    }));
+  }
+
+  function wizardAccountCardHtml(acc, index, total) {
+    const a = acc || emptyWizardAccount();
+    const removeBtn =
+      total > 1
+        ? `<button type="button" onclick="removeWizardAccount(${index})" class="text-[11px] text-red-500 font-semibold" aria-label="Remove account"><i class="fa-solid fa-trash mr-0.5"></i>Remove</button>`
+        : '';
+    return `<div class="wizard-account-card bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3" data-account-index="${index}">
+      <div class="flex justify-between items-center">
+        <h4 class="text-sm font-bold">Account ${index + 1}</h4>
+        ${removeBtn}
+      </div>
+      <div>
+        <label class="block mb-1 text-xs font-medium text-slate-500">Username *</label>
+        <input type="text" data-field="username" value="${escapeAttr(a.username || '')}" placeholder="Account username" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+      </div>
+      <div>
+        <label class="block mb-1 text-xs font-medium text-slate-500">Account Password *</label>
+        <input type="text" data-field="password" value="${escapeAttr(a.password || '')}" placeholder="Account password" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+      </div>
+      <div>
+        <label class="block mb-1 text-xs font-medium text-slate-500" data-preview-label>Preview link</label>
+        <input type="url" data-field="previewLink" value="${escapeAttr(a.previewLink || '')}" placeholder="https://…" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+      </div>
+      <p class="text-[11px] font-bold text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">Optional extras</p>
+      <div class="grid grid-cols-1 gap-2.5">
+        <input type="email" data-field="attachedEmail" value="${escapeAttr(a.attachedEmail || '')}" placeholder="Email attached to account" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+        <input type="text" data-field="attachedEmailPassword" value="${escapeAttr(a.attachedEmailPassword || '')}" placeholder="Email password" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+        <input type="text" data-field="twoFA" value="${escapeAttr(a.twoFA || '')}" placeholder="2FA code" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">
+        <textarea data-field="extraInfo" rows="2" placeholder="Extra notes for the buyer…" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm">${escapeHtml(a.extraInfo || '')}</textarea>
+      </div>
+    </div>`;
+  }
+
+  function renderWizardAccounts(countOrAccounts) {
+    const box = document.getElementById('wizardAccountsList');
+    if (!box) return;
+    let accounts;
+    if (typeof countOrAccounts === 'number') {
+      accounts = Array.from({ length: Math.max(1, countOrAccounts) }, () => emptyWizardAccount());
+    } else if (Array.isArray(countOrAccounts) && countOrAccounts.length) {
+      accounts = countOrAccounts;
+    } else {
+      accounts = [emptyWizardAccount()];
+    }
+    box.innerHTML = accounts.map((a, i) => wizardAccountCardHtml(a, i, accounts.length)).join('');
+    syncWizardPreviewHints();
+  }
+
+  window.addWizardAccount = function () {
+    const rows = collectWizardAccountRows();
+    if (rows.length >= 50) {
+      alert('You can upload at most 50 accounts in one listing.');
+      return;
+    }
+    rows.push(emptyWizardAccount());
+    renderWizardAccounts(rows);
+  };
+
+  window.removeWizardAccount = function (index) {
+    const rows = collectWizardAccountRows();
+    if (rows.length <= 1) return;
+    rows.splice(index, 1);
+    renderWizardAccounts(rows);
+  };
 
   function showSellStep(step) {
     sellStep = step;
@@ -2167,18 +2561,28 @@
       return;
     }
     if (sellStep === 2) {
-      const username = document.getElementById('wizardUser').value.trim();
-      const password = document.getElementById('wizardPass').value.trim();
-      const previewLink = document.getElementById('wizardPreview').value.trim();
-      const attachedEmail = document.getElementById('wizardEmail').value.trim();
-      const attachedEmailPassword = document.getElementById('wizardEmailPass').value.trim();
-      const twoFA = document.getElementById('wizard2fa').value.trim();
-      const extraInfo = document.getElementById('wizardExtra').value.trim();
-      if (!username || !password) {
-        alert('Username and account password are required.');
+      const accounts = collectWizardAccountRows().filter((a) => a.username || a.password);
+      const valid = accounts.filter((a) => a.username && a.password);
+      if (!valid.length) {
+        alert('Add at least one account with username and password.');
         return;
       }
-      sellDraft = { ...sellDraft, username, password, previewLink, attachedEmail, attachedEmailPassword, twoFA, extraInfo };
+      if (accounts.length !== valid.length) {
+        alert('Each account needs both username and password (or remove incomplete rows).');
+        return;
+      }
+      const first = valid[0];
+      sellDraft = {
+        ...sellDraft,
+        accounts: valid,
+        username: first.username,
+        password: first.password,
+        previewLink: first.previewLink || '',
+        attachedEmail: first.attachedEmail || '',
+        attachedEmailPassword: first.attachedEmailPassword || '',
+        twoFA: first.twoFA || '',
+        extraInfo: first.extraInfo || '',
+      };
       showSellStep(3);
       return;
     }
@@ -2229,16 +2633,18 @@
     const status = String(res.status || res.ad?.status || 'pending').toLowerCase();
     document.getElementById('sellWizardOverlay').classList.remove('flex');
     document.getElementById('sellWizardOverlay').classList.add('hidden');
-    ['wizardTitle', 'wizardDesc', 'wizardPrice', 'wizardUser', 'wizardPass', 'wizardPreview', 'wizardEmail', 'wizardEmailPass', 'wizard2fa', 'wizardExtra'].forEach((id) => {
+    ['wizardTitle', 'wizardDesc', 'wizardPrice'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    renderWizardAccounts(1);
     applyProfileChrome(refreshUser());
     switchTab('ads');
     const filter =
       status === 'denied' ? 'denied' : status === 'active' ? 'active' : 'pending';
     setAdsFilter(filter);
     renderAds();
+    const acctCount = (sellDraft.accounts && sellDraft.accounts.length) || 1;
     const msg =
       status === 'denied'
         ? res.message || 'Listing denied by AI review. Open My Ads → Denied.'
@@ -2247,7 +2653,9 @@
           : res.message ||
             'Listing submitted. Open My Ads → Pending — Owner must approve before it appears on Market/Home.';
     if (window.AcctSuiteToast) {
-      window.AcctSuiteToast[status === 'denied' ? 'error' : 'success'](msg);
+      window.AcctSuiteToast[status === 'denied' ? 'error' : 'success'](
+        acctCount > 1 ? msg + ' (' + acctCount + ' accounts)' : msg
+      );
     } else {
       alert(msg);
     }
@@ -2256,13 +2664,15 @@
   function fillSellReview() {
     const box = document.getElementById('sellReviewSummary');
     if (!box) return;
+    const acctCount = (sellDraft.accounts && sellDraft.accounts.length) || (sellDraft.username ? 1 : 0);
     box.innerHTML = `
       <div class="space-y-2 text-sm">
         <div class="flex justify-between"><span class="text-slate-500">Title</span><span class="font-medium text-right ml-4">${escapeHtml(sellDraft.title || '')}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Category</span><span class="font-medium">${escapeHtml(sellDraft.category || '')}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Price</span><span class="font-bold text-brandPrimary">${money(sellDraft.price)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Release</span><span class="font-medium">${sellDraft.releaseType === 'manual' ? 'Manual' : 'Auto confirm'}</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Username</span><span class="font-mono text-xs">${escapeHtml(sellDraft.username || '')}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Accounts</span><span class="font-bold text-brandPrimary">${acctCount} available</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">First username</span><span class="font-mono text-xs">${escapeHtml(sellDraft.username || '')}</span></div>
         <div class="flex justify-between gap-2"><span class="text-slate-500 shrink-0">Preview link</span><span class="font-mono text-[10px] text-right break-all">${escapeHtml(sellDraft.previewLink || '—')}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">2FA</span><span class="font-medium">${escapeHtml(sellDraft.twoFA || '—')}</span></div>
       </div>

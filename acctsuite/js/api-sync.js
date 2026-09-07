@@ -418,6 +418,8 @@
         avatarUrl: user.avatarUrl || '',
         merchantSlug: user.merchantSlug || null,
         merchantLink: user.merchantLink || null,
+        bio: user.bio || '',
+        adsHeld: !!(user.adsHeld || user.ads_held),
         ads: ads,
         orders: orders,
         transactions: txs,
@@ -550,6 +552,7 @@
           attachedEmailPassword: draft.attachedEmailPassword || '',
           twoFA: draft.twoFA || '',
           extraInfo: draft.extraInfo || '',
+          accounts: draft.accounts || [],
         };
         const res = await Api.createAd(payload);
         const mapped = mapAd(res.ad || {});

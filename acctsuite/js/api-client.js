@@ -287,6 +287,18 @@
     createAd(payload) {
       return request('ads.create', { method: 'POST', body: payload });
     },
+    updateAd(payload) {
+      return request('ads.update', { method: 'POST', body: payload });
+    },
+    deleteAd(payload) {
+      return request('ads.delete', { method: 'POST', body: payload });
+    },
+    holdAds(payload) {
+      return request('ads.hold', { method: 'POST', body: payload });
+    },
+    replyReview(payload) {
+      return request('reviews.reply', { method: 'POST', body: payload });
+    },
     createOrder(payload) {
       return request('orders.buy', { method: 'POST', body: payload }).then((data) => {
         applyPurchaseResult(data);
