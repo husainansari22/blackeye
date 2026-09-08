@@ -551,53 +551,59 @@
     const previewBtn = item.previewLink
       ? `<a href="${escapeAttr(item.previewLink)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-[10px] text-brandPrimary underline">Preview</a>`
       : `<span class="text-[10px] text-slate-400">No preview</span>`;
+    const bolt =
+      item.releaseType !== 'manual'
+        ? ' <i class="fa-solid fa-bolt text-emerald-500 text-[9px]" title="Instant delivery"></i>'
+        : '';
     if (compact) {
-      return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 w-40 shrink-0 relative" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-        <div class="flex items-center gap-1.5 mb-1.5">
-          ${productLogoMarkFor(item, 'av-prod-logo')}
-          <span class="text-[10px] text-slate-500 truncate">${escapeHtml(cat)}</span>
-        </div>
-        <h4 class="font-bold text-xs leading-snug mb-1 h-8 overflow-hidden">${escapeHtml(item.title)}</h4>
+      return `<div class="product-item home-trend-card" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
+        <button type="button" class="home-trend-card__heart" onclick="event.stopPropagation(); toggleWishlist(this.querySelector('i')||this)" aria-label="Save"><i class="fa-regular fa-heart"></i></button>
+        ${productLogoMarkFor(item, 'home-trend-card__logo')}
+        <h4 class="home-trend-card__title">${escapeHtml(item.title)}</h4>
         <div class="mb-0.5">${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
-        <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0 overflow-visible">By <span class="inline-flex items-center min-w-0 max-w-full overflow-visible">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
+        <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0 overflow-visible">By <span class="inline-flex items-center min-w-0 max-w-full overflow-visible">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span>${bolt}</p>
         <p class="text-[10px] text-emerald-500 mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>${stock} available</p>
-        <div class="flex justify-between items-center mt-2">
-          <span class="text-sm font-bold text-brandPrimary">${money(item.price)}</span>
-          <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Buy now</button>
+        <div class="flex justify-between items-center mt-2 gap-1.5">
+          <span class="home-trend-card__price">${money(item.price)}</span>
+          <button type="button" onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shrink-0">Buy now</button>
         </div>
       </div>`;
     }
-    return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
+    return `<div class="product-item bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex gap-2.5 items-center" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
       ${productLogoMarkFor(item, 'w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0')}
       <div class="min-w-0 flex-1">
-        <h4 class="font-bold text-sm leading-snug truncate">${escapeHtml(item.title)}</h4>
+        <h4 class="font-bold text-sm leading-snug truncate text-slate-900 dark:text-white">${escapeHtml(item.title)}</h4>
         <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0 overflow-visible">By <span class="inline-flex items-center min-w-0 max-w-full overflow-visible">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span><span class="truncate"> · ${escapeHtml(cat)}</span></p>
         <div class="mt-0.5">${previewBtn}</div>
       </div>
       <div class="text-right shrink-0">
-        <div class="text-sm font-bold text-brandPrimary mb-1">${money(item.price)}</div>
-        <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Buy</button>
+        <div class="text-sm font-bold text-slate-900 dark:text-white mb-1">${money(item.price)}</div>
+        <button onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">Buy</button>
       </div>
     </div>`;
   }
 
   /** Full-width home row — AcctBazaar “Other product” pattern */
   function homeOtherListingCard(item) {
-    const logo = productLogoFor(item);
     const group = productGroupFor(item);
     const cat = item.platform || item.category || '';
     const stock = Math.max(1, Number(item.stock) || 1);
-    return `<div class="product-item bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-stretch" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
-      ${productLogoMarkFor(item, 'w-11 h-11 rounded-xl object-cover bg-slate-800 shrink-0 self-center')}
+    const bolt =
+      item.releaseType !== 'manual'
+        ? ' <i class="fa-solid fa-bolt text-emerald-500 text-[10px]" title="Instant delivery"></i>'
+        : '';
+    return `<div class="product-item bg-white dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-3 items-stretch" data-category="${escapeAttr(cat)}" data-group="${escapeAttr(group)}" data-price="${Number(item.price) || 0}">
+      ${productLogoMarkFor(item, 'w-12 h-12 rounded-full object-cover bg-slate-800 shrink-0 self-center')}
       <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
-        <h4 class="font-bold text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
+        <h4 class="font-bold text-sm leading-snug line-clamp-2 text-slate-900 dark:text-white">${escapeHtml(item.title)}</h4>
         <div>${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
-        <p class="text-[11px] text-slate-500 flex items-center gap-0.5 min-w-0 flex-wrap">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span></p>
+        <p class="text-[11px] text-slate-500 flex items-center gap-0.5 min-w-0 flex-wrap">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span>${bolt}</p>
         <p class="text-[11px] text-emerald-500"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 align-middle"></span>${stock} available</p>
       </div>
       <div class="shrink-0 flex flex-col items-end justify-center gap-1.5 pl-1">
-        <span class="text-base font-extrabold text-brandPrimary">${money(item.price)}</span>
-        <button type="button" onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[11px] font-bold px-4 py-2 rounded-full whitespace-nowrap">Buy now</button>
+        <button type="button" class="text-slate-400 mb-auto" onclick="event.stopPropagation(); toggleWishlist(this.querySelector('i')||this)" aria-label="Save"><i class="fa-regular fa-heart"></i></button>
+        <span class="text-base font-extrabold text-slate-900 dark:text-white">${money(item.price)}</span>
+        <button type="button" onclick="openListingDetail('${item.id}')" class="bg-brandPrimary hover:bg-brandHover text-white text-[11px] font-bold px-3.5 py-1.5 rounded-lg whitespace-nowrap">Buy now</button>
       </div>
     </div>`;
   }
@@ -664,10 +670,18 @@
             avatarUrl: i.sellerAvatar || '',
             sellerId: i.sellerId || '',
             sales: 0,
+            rating: Number(i.sellerRating) || 0,
+            reviews: Number(i.sellerReviews) || 0,
+            completedSales: Number(i.sellerCompletedSales) || 0,
             hasStory: false,
           };
         }
         map[i.sellerEmail].sales += 1;
+        if (Number(i.sellerRating) > map[i.sellerEmail].rating) map[i.sellerEmail].rating = Number(i.sellerRating) || 0;
+        if (Number(i.sellerReviews) > map[i.sellerEmail].reviews) map[i.sellerEmail].reviews = Number(i.sellerReviews) || 0;
+        if (Number(i.sellerCompletedSales) > map[i.sellerEmail].completedSales) {
+          map[i.sellerEmail].completedSales = Number(i.sellerCompletedSales) || 0;
+        }
         if (!map[i.sellerEmail].merchantSlug && i.sellerMerchantSlug) map[i.sellerEmail].merchantSlug = i.sellerMerchantSlug;
         if (!map[i.sellerEmail].avatarUrl && i.sellerAvatar) map[i.sellerEmail].avatarUrl = i.sellerAvatar;
         if (!map[i.sellerEmail].sellerId && i.sellerId) map[i.sellerEmail].sellerId = i.sellerId;
@@ -705,10 +719,10 @@
             const action = m.hasStory
               ? `openMerchantStory('${escapeAttr(m.email)}')`
               : `goToSellerStore('${escapeAttr(m.merchantSlug || m.email)}')`;
-            return `<button type="button" onclick="${action}" class="av-merchant-chip flex flex-col items-center shrink-0 text-center w-16">
+            return `<button type="button" onclick="${action}" class="av-merchant-chip flex flex-col items-center shrink-0 text-center w-[4.5rem]">
           <span class="${ring}"><span class="av-merchant-face">${face}</span></span>
-          <span class="text-xs font-bold truncate w-full mt-1">${escapeHtml(m.name)}</span>
-          <span class="text-[10px] text-slate-500">${m.hasStory ? 'Story' : m.sales + ' live'}</span>
+          <span class="text-xs font-bold truncate w-full mt-1 text-slate-900 dark:text-white">${escapeHtml(m.name)}</span>
+          <span class="av-merchant-meta">${(Number(m.rating) || 0).toFixed(1)} <i class="fa-solid fa-star av-merchant-star"></i> ${formatSalesLabel(m.completedSales || m.sales)}</span>
         </button>`;
           })
           .join('');
@@ -3027,9 +3041,9 @@
     if (v >= 1000) {
       const k = v / 1000;
       const s = k >= 10 ? Math.round(k) + 'k' : k.toFixed(1).replace(/\.0$/, '') + 'k';
-      return s + '+ Sales';
+      return s + ' sales';
     }
-    return v + ' Sales';
+    return v + ' sales';
   }
 
   function starsRowHtml(rating, reviewCount) {

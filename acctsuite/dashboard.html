@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/kyc.css?v=bagA5fix">
-    <link rel="stylesheet" href="/css/profile.css?v=miniStars2">
+    <link rel="stylesheet" href="/css/profile.css?v=bazaarHome1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -118,8 +118,193 @@
         }
         #bottomNav .nav-item i { font-size: 1.15rem; line-height: 1; }
         #bottomNav .nav-item.is-active { color: #8B5CF6; }
-        #bottomNav .nav-item.is-idle { color: #9ca3af; }
-        .dark #bottomNav .nav-item.is-idle { color: #94a3b8; }
+        #bottomNav .nav-item.is-idle { color: #0f172a; }
+        .dark #bottomNav .nav-item.is-idle { color: #e2e8f0; }
+        /* Home category grid — AcctBazaar 4×2 tiles, AcctSuite purple icons */
+        .home-cat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.55rem;
+        }
+        .home-cat-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            min-height: 4.35rem;
+            padding: 0.55rem 0.25rem 0.5rem;
+            border-radius: 0.75rem;
+            background: #fff;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            cursor: pointer;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .dark .home-cat-tile {
+            background: #0f172a;
+            border-color: rgba(51, 65, 85, 0.9);
+        }
+        .home-cat-tile:hover { border-color: #8B5CF6; }
+        .home-cat-tile i {
+            font-size: 1.15rem;
+            color: #8B5CF6;
+            line-height: 1;
+        }
+        .home-cat-tile span {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: #0f172a;
+            text-align: center;
+            line-height: 1.15;
+        }
+        .dark .home-cat-tile span { color: #f1f5f9; }
+        .home-cat-tile .home-cat-offer {
+            position: absolute;
+            top: 0.2rem;
+            right: 0.2rem;
+            font-size: 0.45rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            background: #ef4444;
+            color: #fff;
+            border-radius: 0.25rem;
+            padding: 0.08rem 0.22rem;
+            line-height: 1.1;
+        }
+        .home-cat-tile { position: relative; }
+        .av-merchant-meta {
+            font-size: 0.58rem;
+            color: #64748b;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .av-merchant-meta .av-merchant-star { color: #f59e0b; font-size: 0.55rem; }
+        .home-trend-card {
+            width: 10.5rem;
+            flex-shrink: 0;
+            background: #fff;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 0.85rem;
+            padding: 0.7rem 0.7rem 0.65rem;
+            position: relative;
+        }
+        .dark .home-trend-card {
+            background: #0f172a;
+            border-color: rgba(51, 65, 85, 0.9);
+        }
+        .home-trend-card__logo {
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 0.65rem;
+            object-fit: cover;
+            display: block;
+            margin-bottom: 0.55rem;
+            background: rgba(148, 163, 184, 0.15);
+        }
+        .home-trend-card__heart {
+            position: absolute;
+            top: 0.55rem;
+            right: 0.55rem;
+            color: #94a3b8;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .home-trend-card__title {
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.25;
+            min-height: 2rem;
+            margin: 0 0 0.25rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .dark .home-trend-card__title { color: #f8fafc; }
+        .home-trend-card__price {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .dark .home-trend-card__price { color: #f8fafc; }
+        .home-support-banner {
+            border-radius: 0.9rem;
+            padding: 0.85rem 0.95rem;
+            background: linear-gradient(105deg, #1e1b4b 0%, #4c1d95 52%, #7c3aed 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.65rem;
+            overflow: hidden;
+            position: relative;
+        }
+        .home-support-banner__copy {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.45rem;
+        }
+        .home-support-banner p {
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin: 0;
+        }
+        .home-support-banner__faces {
+            display: flex;
+            align-items: center;
+        }
+        .home-support-banner__faces span {
+            width: 1.15rem;
+            height: 1.15rem;
+            border-radius: 999px;
+            border: 1.5px solid #fff;
+            background: linear-gradient(135deg, #c4b5fd, #8b5cf6);
+            margin-left: -0.35rem;
+        }
+        .home-support-banner__faces span:first-child { margin-left: 0; background: linear-gradient(135deg, #fda4af, #f43f5e); }
+        .home-support-banner__faces span:nth-child(2) { background: linear-gradient(135deg, #93c5fd, #3b82f6); }
+        .home-support-banner button {
+            background: #fff;
+            color: #7c3aed;
+            font-size: 0.65rem;
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 0.4rem 0.75rem;
+            white-space: nowrap;
+            border: none;
+            cursor: pointer;
+        }
+        .home-support-banner__bag {
+            width: 3.4rem;
+            height: 3.4rem;
+            border-radius: 0.85rem;
+            background: linear-gradient(160deg, #a78bfa 0%, #7c3aed 55%, #5b21b6 100%);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transform: rotate(8deg);
+        }
+        .home-support-banner__bag span {
+            color: #fff;
+            font-weight: 900;
+            font-size: 1.35rem;
+            line-height: 1;
+        }
+        #bottomNav .nav-item.is-idle span,
+        #bottomNav .nav-item.is-idle i {
+            color: inherit;
+        }
         /* Brand lockup: wordmark vertically centered to bag middle */
         .as-brand-lockup {
             display: inline-flex !important;
@@ -207,21 +392,21 @@
                 <a href="#" onclick="switchTab('home'); return false;" class="as-brand-lockup" aria-label="AcctSuite home"><img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" width="36" height="36" decoding="async"><span class="as-brand-word text-slate-900 dark:text-white">cctsuite</span></a>
             </div>
             <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
-                <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-2 sm:gap-3">
+                <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-2 sm:gap-2.5">
                     <button type="button" onclick="openSupportCenter()" class="as-help-btn" title="Help" aria-label="Help">
                         <span class="as-help-pill">HELP</span>
                         <i class="fa-solid fa-headset" aria-hidden="true"></i>
                     </button>
-                    <button type="button" onclick="toggleNotificationDrawer()" class="relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-brandPrimary/15 text-brandPrimary hover:bg-brandPrimary hover:text-white transition" title="Notifications" aria-label="Open notifications">
-                        <i class="fa-solid fa-bell text-lg"></i>
-                        <span id="notifBadge" class="absolute -right-1 -top-1 hidden h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
-                    </button>
-                    <button type="button" id="headerCartBtn" onclick="window.CommerceUI ? window.CommerceUI.openCartDrawer() : (typeof openCartDrawer==='function'&&openCartDrawer())" class="relative hover:text-brandPrimary transition" title="Cart">
+                    <button type="button" id="headerCartBtn" onclick="window.CommerceUI ? window.CommerceUI.openCartDrawer() : (typeof openCartDrawer==='function'&&openCartDrawer())" class="relative hover:text-brandPrimary transition text-slate-900 dark:text-white" title="Cart" aria-label="Cart">
                         <i class="fa-solid fa-cart-shopping text-lg"></i>
                         <span id="cartBadge" class="absolute -right-2 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                     </button>
+                    <button type="button" onclick="toggleNotificationDrawer()" class="relative inline-flex items-center justify-center text-slate-900 dark:text-white hover:text-brandPrimary transition" title="Notifications" aria-label="Open notifications">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span id="notifBadge" class="absolute -right-1.5 -top-1.5 hidden h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
+                    </button>
                     <button type="button" onclick="openProfileOrSignIn()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
-                        <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-brandPrimary text-white text-xs font-bold uppercase overflow-hidden">?</span>
+                        <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-md bg-brandPrimary text-white text-sm font-bold uppercase overflow-hidden">?</span>
                     </button>
                 </div>
                 <div id="headerGuestRight" data-guest-only class="flex items-center gap-2.5">
@@ -245,8 +430,8 @@
             <!-- Top Merchants -->
             <div>
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
-                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                    <h3 class="font-bold text-sm text-slate-900 dark:text-white"><span class="text-brandPrimary mr-1">✦</span>Top Merchants</h3>
+                    <span class="text-xs text-brandPrimary cursor-pointer font-semibold" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
                 <div id="topMerchantsRow" class="flex gap-3 overflow-x-auto pb-1 scrollbar-none"></div>
             </div>
@@ -254,37 +439,50 @@
             <!-- Search Bar & Filter Button -->
             <div class="relative flex items-center gap-2">
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="Search accounts, VPN, numbers..." oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Search" oninput="handleSearch(this.value)" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-9 pr-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary transition placeholder-slate-400">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
                 </div>
-                <button onclick="toggleFilterDrawer()" class="w-9 h-9 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-md hover:bg-brandHover transition" title="Filters"><i class="fa-solid fa-bars-staggered text-sm"></i></button>
+                <button onclick="toggleFilterDrawer()" class="w-11 h-11 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-md hover:bg-brandHover transition shrink-0" title="Filters" aria-label="Filters"><i class="fa-solid fa-bars-staggered text-sm"></i></button>
             </div>
 
-            <!-- Filter Chips (built from catalog) -->
-            <div id="homeFilterChips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs"></div>
-            <!-- Platform banner -->
-            <div class="rounded-xl p-3 flex justify-between items-center shadow-md relative overflow-hidden" style="background:linear-gradient(90deg,#7C3AED 0%,#1e3a8a 100%);color:#fff">
-                <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full blur-xl" style="background:rgba(255,255,255,0.1)"></div>
-                <div class="relative z-10 pr-2 min-w-0">
-                    <span class="text-[10px] font-bold tracking-wide" style="color:#ede9fe">SECURE MARKETPLACE</span>
-                    <p class="font-bold text-sm mt-0.5 leading-snug" style="color:#fff">Buy &amp; sell with escrow protection</p>
-                </div>
-                <button type="button" onclick="openSupportCenter()" class="relative z-10 bg-white text-brandPrimary text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">Support</button>
+            <!-- Category grid (AcctBazaar-style) -->
+            <div id="homeCategoryGrid" class="home-cat-grid" aria-label="Categories">
+                <button type="button" class="home-cat-tile" onclick="filterCategory('social')"><i class="fa-solid fa-mobile-screen-button"></i><span>Accounts</span></button>
+                <button type="button" class="home-cat-tile" onclick="filterCategory('email')"><i class="fa-solid fa-envelope"></i><span>SMS</span></button>
+                <button type="button" class="home-cat-tile" onclick="filterCategory('accounts')"><i class="fa-solid fa-rocket"></i><span>Boost</span></button>
+                <button type="button" class="home-cat-tile" onclick="filterCategory('giftcards')"><i class="fa-solid fa-credit-card"></i><span class="home-cat-offer">OFFER</span><span>Virtual Card</span></button>
+                <button type="button" class="home-cat-tile" onclick="filterCategory('giftcards')"><i class="fa-solid fa-gift"></i><span>Giftcard</span></button>
+                <button type="button" class="home-cat-tile" onclick="openGetVerifiedHome()"><i class="fa-solid fa-crown"></i><span>Get Verified</span></button>
+                <button type="button" class="home-cat-tile" onclick="handleMarketSearch('esim')"><i class="fa-solid fa-sim-card"></i><span>eSIM</span></button>
+                <button type="button" class="home-cat-tile" onclick="filterCategory('vpn')"><i class="fa-solid fa-globe"></i><span>Proxy</span></button>
             </div>
+
             <!-- Trending Catalog -->
             <div>
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-sm flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
-                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                    <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
+                    <span class="text-xs text-brandPrimary cursor-pointer font-semibold" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
                 <div id="homeListings" class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none"></div>
             </div>
 
-            <!-- Other products (AcctBazaar-style vertical list) -->
+            <!-- Support banner (AcctBazaar placement under trending) -->
+            <div class="home-support-banner">
+                <div class="home-support-banner__copy">
+                    <p>Need help? Talk to our support team</p>
+                    <div class="home-support-banner__faces" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <button type="button" onclick="openSupportCenter()">Contact support &gt;</button>
+                </div>
+                <div class="home-support-banner__bag" aria-hidden="true"><span>A</span></div>
+            </div>
+
+            <!-- Other products -->
             <div id="homeOtherSection">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">Other product</h3>
-                    <span class="text-xs text-slate-500 cursor-pointer hover:text-brandPrimary transition" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
+                    <h3 class="font-bold text-sm text-slate-900 dark:text-white">Other product</h3>
+                    <span class="text-xs text-brandPrimary cursor-pointer font-semibold" onclick="switchTab('market')">View all <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></span>
                 </div>
                 <div id="homeOtherListings" class="space-y-2.5"></div>
             </div>
@@ -1033,8 +1231,8 @@
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
-    <script src="/js/listing-modal.js?v=miniStars1"></script>
-    <script src="/js/dashboard-app.js?v=miniStars1"></script>
+    <script src="/js/listing-modal.js?v=bazaarHome1"></script>
+    <script src="/js/dashboard-app.js?v=bazaarHome1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
@@ -1179,15 +1377,8 @@
         function toggleWishlist(icon) { icon.classList.toggle('fa-regular'); icon.classList.toggle('fa-solid'); icon.classList.toggle('text-red-500'); }
 
         function buildHomeChips() {
-            const box = document.getElementById('homeFilterChips');
-            if (!box || !window.AcctSuiteCatalog) return;
-            const chips = window.AcctSuiteCatalog.chipGroups();
-            box.innerHTML = chips.map(function (c, i) {
-                const on = i === 0;
-                return '<button type="button" data-chip="' + c.id + '" onclick="filterCategory(\'' + c.id + '\')" class="filter-chip rounded-full font-medium shrink-0 flex items-center gap-1.5 transition ' +
-                    (on ? 'bg-brandPrimary text-white' : 'bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 hover:border-brandPrimary hover:text-brandPrimary') +
-                    '"><i class="' + c.icon + '"></i> ' + c.name + '</button>';
-            }).join('');
+            // Category grid is static in HTML (AcctBazaar-style). Keep hook for init callers.
+            return;
         }
 
         function buildFilterCategoryTree() {
@@ -1212,18 +1403,20 @@
             }).join('');
         }
 
+        function openGetVerifiedHome() {
+            if (!dashIsLoggedIn()) {
+                promptDashSignIn('Sign in to get verified.');
+                return;
+            }
+            if (window.AcctSuiteKyc && typeof window.AcctSuiteKyc.open === 'function') {
+                window.AcctSuiteKyc.open();
+                return;
+            }
+            switchTab('plans');
+        }
+
         function filterCategory(cat) {
             switchTab('market');
-            document.querySelectorAll('#homeFilterChips .filter-chip').forEach(function (b) {
-                const on = b.getAttribute('data-chip') === cat;
-                b.classList.toggle('bg-brandPrimary', on);
-                b.classList.toggle('text-white', on);
-                b.classList.toggle('bg-lightCard', !on);
-                b.classList.toggle('dark:bg-darkCard', !on);
-                b.classList.toggle('border', !on);
-                b.classList.toggle('border-slate-200', !on);
-                b.classList.toggle('dark:border-slate-800', !on);
-            });
             if (!window.AcctSuiteCatalog) return;
             const group = (window.AcctSuiteCatalog.GROUPS || []).find(function (g) { return g.id === cat; });
             const names = group ? group.products.map(function (p) { return p.name.toLowerCase(); }) : null;
