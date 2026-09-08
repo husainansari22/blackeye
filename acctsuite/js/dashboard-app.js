@@ -712,7 +712,6 @@
         .slice(0, 12);
       if (!arr.length) {
         merchants.innerHTML = `<p class="text-xs text-slate-400 py-2">Merchants will appear after approved sales listings go live.</p>`;
-        paintSupportFaces([]);
       } else {
         merchants.innerHTML = arr
           .map((m) => {
@@ -728,29 +727,13 @@
         </button>`;
           })
           .join('');
-        paintSupportFaces(arr);
       }
     }
   }
 
-  /** Support banner faces — round photos, plain "?" when no avatar */
-  function paintSupportFaces(merchants) {
-    const box = document.getElementById('homeSupportFaces');
-    if (!box) return;
-    const list = (merchants || []).slice(0, 5);
-    const slots = [];
-    for (let i = 0; i < 5; i++) {
-      const m = list[i];
-      const url = m && String(m.avatarUrl || '').trim();
-      if (url) {
-        slots.push(
-          `<span class="home-support-face"><img src="${escapeAttr(url)}" alt="" loading="lazy" onerror="this.remove();this.parentNode.textContent='?';"></span>`
-        );
-      } else {
-        slots.push('<span class="home-support-face">?</span>');
-      }
-    }
-    box.innerHTML = slots.join('');
+  /** Kept for callers — support faces are static staff photos in HTML (not marketplace users). */
+  function paintSupportFaces() {
+    /* no-op */
   }
 
   /**
