@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/kyc.css?v=bagA5fix">
-    <link rel="stylesheet" href="/css/profile.css?v=headerExact1">
+    <link rel="stylesheet" href="/css/profile.css?v=helpFix1">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -449,10 +449,21 @@
             line-height: 1.15;
             text-transform: uppercase;
         }
-        .as-help-btn > i {
-            font-size: 1.15rem;
+        .as-help-btn > i,
+        .as-help-btn .as-help-headset {
+            font-size: 1.2rem;
             line-height: 1;
-            font-weight: 400;
+            font-weight: 900;
+            width: 1.25rem;
+            height: 1.25rem;
+            display: block;
+        }
+        .as-help-btn .as-help-headset {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
         #headerAuthIcons {
             gap: 0.85rem !important;
@@ -530,7 +541,13 @@
                 <div id="headerAuthIcons" data-auth-only class="hidden items-center">
                     <button type="button" onclick="openSupportCenter()" class="as-help-btn" title="Help" aria-label="Help">
                         <span class="as-help-pill">HELP</span>
-                        <i class="fa-solid fa-headset" aria-hidden="true"></i>
+                        <svg class="as-help-headset" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M4 13v-1a8 8 0 0 1 16 0v1"/>
+                            <rect x="2.75" y="12" width="4.5" height="7" rx="2"/>
+                            <rect x="16.75" y="12" width="4.5" height="7" rx="2"/>
+                            <path d="M20 16.5v1.2A2.8 2.8 0 0 1 17.2 20H13"/>
+                            <circle cx="12" cy="20" r="1.15" fill="currentColor" stroke="none"/>
+                        </svg>
                     </button>
                     <button type="button" id="headerCartBtn" onclick="window.CommerceUI ? window.CommerceUI.openCartDrawer() : (typeof openCartDrawer==='function'&&openCartDrawer())" class="as-header-icon" title="Cart" aria-label="Cart">
                         <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
@@ -1365,8 +1382,8 @@
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
-    <script src="/js/listing-modal.js?v=headerExact1"></script>
-    <script src="/js/dashboard-app.js?v=headerExact1"></script>
+    <script src="/js/listing-modal.js?v=helpFix1"></script>
+    <script src="/js/dashboard-app.js?v=helpFix1"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
