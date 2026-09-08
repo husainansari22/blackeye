@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/kyc.css?v=bagA5fix">
-    <link rel="stylesheet" href="/css/profile.css?v=bazaarHome1">
+    <link rel="stylesheet" href="/css/profile.css?v=bazaarHome2">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -120,59 +120,6 @@
         #bottomNav .nav-item.is-active { color: #8B5CF6; }
         #bottomNav .nav-item.is-idle { color: #0f172a; }
         .dark #bottomNav .nav-item.is-idle { color: #e2e8f0; }
-        /* Home category grid — AcctBazaar 4×2 tiles, AcctSuite purple icons */
-        .home-cat-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.55rem;
-        }
-        .home-cat-tile {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.35rem;
-            min-height: 4.35rem;
-            padding: 0.55rem 0.25rem 0.5rem;
-            border-radius: 0.75rem;
-            background: #fff;
-            border: 1px solid rgba(148, 163, 184, 0.28);
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-            cursor: pointer;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .dark .home-cat-tile {
-            background: #0f172a;
-            border-color: rgba(51, 65, 85, 0.9);
-        }
-        .home-cat-tile:hover { border-color: #8B5CF6; }
-        .home-cat-tile i {
-            font-size: 1.15rem;
-            color: #8B5CF6;
-            line-height: 1;
-        }
-        .home-cat-tile span {
-            font-size: 0.62rem;
-            font-weight: 700;
-            color: #0f172a;
-            text-align: center;
-            line-height: 1.15;
-        }
-        .dark .home-cat-tile span { color: #f1f5f9; }
-        .home-cat-tile .home-cat-offer {
-            position: absolute;
-            top: 0.2rem;
-            right: 0.2rem;
-            font-size: 0.45rem;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            background: #ef4444;
-            color: #fff;
-            border-radius: 0.25rem;
-            padding: 0.08rem 0.22rem;
-            line-height: 1.1;
-        }
-        .home-cat-tile { position: relative; }
         .av-merchant-meta {
             font-size: 0.58rem;
             color: #64748b;
@@ -194,13 +141,50 @@
             border-color: rgba(51, 65, 85, 0.9);
         }
         .home-trend-card__logo {
-            width: 2.75rem;
-            height: 2.75rem;
-            border-radius: 0.65rem;
+            width: 3.25rem;
+            height: 3.25rem;
+            border-radius: 0.75rem;
             object-fit: cover;
             display: block;
             margin-bottom: 0.55rem;
             background: rgba(148, 163, 184, 0.15);
+        }
+        .home-trend-card .home-by,
+        .home-other-by {
+            color: #0f172a !important;
+            font-weight: 600;
+        }
+        .dark .home-trend-card .home-by,
+        .dark .home-other-by { color: #f1f5f9 !important; }
+        .as-header-q {
+            display: inline-flex;
+            width: 1.85rem;
+            height: 1.85rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.35rem;
+            background: #2563eb;
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .home-support-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.45rem;
+        }
+        .home-support-dots span {
+            width: 0.35rem;
+            height: 0.35rem;
+            border-radius: 999px;
+            background: #cbd5e1;
+        }
+        .home-support-dots span.is-on {
+            width: 1rem;
+            background: #8B5CF6;
         }
         .home-trend-card__heart {
             position: absolute;
@@ -382,17 +366,17 @@
 </head>
 <body class="bg-lightBg text-slate-900 dark:bg-darkBg dark:text-slate-100 font-sans pb-4 transition-colors duration-200" data-theme="light" id="dashBody">
 
-    <!-- TOP HEADER: guest = logo + theme/menu right · signed-in = hamburger+logo left, shortcuts right -->
+    <!-- TOP HEADER: guest = logo + theme/menu · signed-in = AcctBazaar row (hamburger | HELP/cart/bell/?) -->
     <header class="fixed top-0 z-[100] w-full border-b border-slate-200 dark:border-slate-800 bg-lightCard dark:bg-darkBg shadow backdrop-blur-sm">
         <div class="mx-auto flex h-14 max-w-[500px] items-center justify-between px-4">
             <div class="flex items-center gap-2.5 shrink-0">
-                <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-800 dark:text-white shrink-0" onclick="toggleLeftMenu()" aria-label="Menu">
-                    <i class="fa-solid fa-bars text-lg"></i>
+                <button type="button" id="headerAuthMenuBtn" data-auth-only class="hidden text-slate-900 dark:text-white shrink-0" onclick="toggleLeftMenu()" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-xl"></i>
                 </button>
-                <a href="#" onclick="switchTab('home'); return false;" class="as-brand-lockup" aria-label="AcctSuite home"><img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" width="36" height="36" decoding="async"><span class="as-brand-word text-slate-900 dark:text-white">cctsuite</span></a>
+                <a href="#" onclick="switchTab('home'); return false;" data-guest-only class="as-brand-lockup" aria-label="AcctSuite home"><img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" width="36" height="36" decoding="async"><span class="as-brand-word text-slate-900 dark:text-white">cctsuite</span></a>
             </div>
-            <div class="flex items-center gap-2.5 text-slate-800 dark:text-white shrink-0">
-                <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-2 sm:gap-2.5">
+            <div class="flex items-center gap-2.5 text-slate-900 dark:text-white shrink-0">
+                <div id="headerAuthIcons" data-auth-only class="hidden items-center gap-2.5 sm:gap-3">
                     <button type="button" onclick="openSupportCenter()" class="as-help-btn" title="Help" aria-label="Help">
                         <span class="as-help-pill">HELP</span>
                         <i class="fa-solid fa-headset" aria-hidden="true"></i>
@@ -406,7 +390,7 @@
                         <span id="notifBadge" class="absolute -right-1.5 -top-1.5 hidden h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-brandPrimary text-[9px] font-bold text-white">0</span>
                     </button>
                     <button type="button" onclick="openProfileOrSignIn()" class="hover:opacity-90 transition" title="Profile" aria-label="Open profile">
-                        <span id="headerProfileAvatar" class="flex h-8 w-8 items-center justify-center rounded-md bg-brandPrimary text-white text-sm font-bold uppercase overflow-hidden">?</span>
+                        <span id="headerProfileAvatar" class="as-header-q" aria-hidden="true">?</span>
                     </button>
                 </div>
                 <div id="headerGuestRight" data-guest-only class="flex items-center gap-2.5">
@@ -445,19 +429,7 @@
                 <button onclick="toggleFilterDrawer()" class="w-11 h-11 rounded-full bg-brandPrimary text-white flex items-center justify-center shadow-md hover:bg-brandHover transition shrink-0" title="Filters" aria-label="Filters"><i class="fa-solid fa-bars-staggered text-sm"></i></button>
             </div>
 
-            <!-- Category grid (AcctBazaar-style) -->
-            <div id="homeCategoryGrid" class="home-cat-grid" aria-label="Categories">
-                <button type="button" class="home-cat-tile" onclick="filterCategory('social')"><i class="fa-solid fa-mobile-screen-button"></i><span>Accounts</span></button>
-                <button type="button" class="home-cat-tile" onclick="filterCategory('email')"><i class="fa-solid fa-envelope"></i><span>SMS</span></button>
-                <button type="button" class="home-cat-tile" onclick="filterCategory('accounts')"><i class="fa-solid fa-rocket"></i><span>Boost</span></button>
-                <button type="button" class="home-cat-tile" onclick="filterCategory('giftcards')"><i class="fa-solid fa-credit-card"></i><span class="home-cat-offer">OFFER</span><span>Virtual Card</span></button>
-                <button type="button" class="home-cat-tile" onclick="filterCategory('giftcards')"><i class="fa-solid fa-gift"></i><span>Giftcard</span></button>
-                <button type="button" class="home-cat-tile" onclick="openGetVerifiedHome()"><i class="fa-solid fa-crown"></i><span>Get Verified</span></button>
-                <button type="button" class="home-cat-tile" onclick="handleMarketSearch('esim')"><i class="fa-solid fa-sim-card"></i><span>eSIM</span></button>
-                <button type="button" class="home-cat-tile" onclick="filterCategory('vpn')"><i class="fa-solid fa-globe"></i><span>Proxy</span></button>
-            </div>
-
-            <!-- Trending Catalog -->
+            <!-- Trending Catalog (no category grid — excluded per AcctBazaar markup) -->
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5"><i class="fa-solid fa-fire text-brandPrimary text-xs"></i> Trending now</h3>
@@ -466,16 +438,19 @@
                 <div id="homeListings" class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none"></div>
             </div>
 
-            <!-- Support banner (AcctBazaar placement under trending) -->
-            <div class="home-support-banner">
-                <div class="home-support-banner__copy">
-                    <p>Need help? Talk to our support team</p>
-                    <div class="home-support-banner__faces" aria-hidden="true">
-                        <span></span><span></span><span></span>
+            <!-- Support banner under trending -->
+            <div>
+                <div class="home-support-banner">
+                    <div class="home-support-banner__copy">
+                        <p>Need help? Talk to our support team</p>
+                        <div class="home-support-banner__faces" aria-hidden="true">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <button type="button" onclick="openSupportCenter()">Contact support &gt;</button>
                     </div>
-                    <button type="button" onclick="openSupportCenter()">Contact support &gt;</button>
+                    <div class="home-support-banner__bag" aria-hidden="true"><span>A</span></div>
                 </div>
-                <div class="home-support-banner__bag" aria-hidden="true"><span>A</span></div>
+                <div class="home-support-dots" aria-hidden="true"><span class="is-on"></span><span></span></div>
             </div>
 
             <!-- Other products -->
@@ -1231,8 +1206,8 @@
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
-    <script src="/js/listing-modal.js?v=bazaarHome1"></script>
-    <script src="/js/dashboard-app.js?v=bazaarHome1"></script>
+    <script src="/js/listing-modal.js?v=bazaarHome2"></script>
+    <script src="/js/dashboard-app.js?v=bazaarHome2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [

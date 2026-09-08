@@ -131,6 +131,15 @@
     }
   }
 
+  /** AcctBazaar header uses a fixed blue “?” tile (not the user photo). */
+  function paintHeaderQuestionMark() {
+    const el = document.getElementById('headerProfileAvatar');
+    if (!el) return;
+    el.className = 'as-header-q';
+    el.classList.remove('has-photo');
+    el.innerHTML = '?';
+  }
+
   function paintCover(coverUrl) {
     const el = document.getElementById('rightProfileCover');
     if (!el) return;
@@ -150,7 +159,7 @@
       if (el) el.textContent = val;
     };
     if (!u) {
-      paintAvatar('headerProfileAvatar', { name: 'Guest' });
+      paintHeaderQuestionMark();
       paintAvatar('leftProfileAvatar', { name: 'Guest' });
       paintAvatar('rightProfileAvatar', { name: 'Guest' });
       paintCover('');
@@ -183,7 +192,7 @@
       return;
     }
     syncGuestMenu(true);
-    paintAvatar('headerProfileAvatar', u);
+    paintHeaderQuestionMark();
     paintAvatar('leftProfileAvatar', u);
     paintAvatar('rightProfileAvatar', u);
     paintCover(u.coverUrl || u.cover_url || '');
@@ -561,7 +570,7 @@
         ${productLogoMarkFor(item, 'home-trend-card__logo')}
         <h4 class="home-trend-card__title">${escapeHtml(item.title)}</h4>
         <div class="mb-0.5">${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
-        <p class="text-[10px] text-slate-500 flex items-center gap-0.5 min-w-0 overflow-visible">By <span class="inline-flex items-center min-w-0 max-w-full overflow-visible">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span>${bolt}</p>
+        <p class="text-[10px] home-by flex items-center gap-0.5 min-w-0 overflow-visible">By <span class="inline-flex items-center min-w-0 max-w-full overflow-visible">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span>${bolt}</p>
         <p class="text-[10px] text-emerald-500 mt-0.5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>${stock} available</p>
         <div class="flex justify-between items-center mt-2 gap-1.5">
           <span class="home-trend-card__price">${money(item.price)}</span>
@@ -597,7 +606,7 @@
       <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
         <h4 class="font-bold text-sm leading-snug line-clamp-2 text-slate-900 dark:text-white">${escapeHtml(item.title)}</h4>
         <div>${starsRowHtml(item.sellerRating || 0, item.sellerReviews || 0)}</div>
-        <p class="text-[11px] text-slate-500 flex items-center gap-0.5 min-w-0 flex-wrap">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span>${bolt}</p>
+        <p class="text-[11px] home-other-by flex items-center gap-0.5 min-w-0 flex-wrap">By <span class="min-w-0 inline-flex max-w-full">${nameWithVerify(item.sellerName || 'Seller', item.sellerVerified, 'sm')}</span>${bolt}</p>
         <p class="text-[11px] text-emerald-500"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 align-middle"></span>${stock} available</p>
       </div>
       <div class="shrink-0 flex flex-col items-end justify-center gap-1.5 pl-1">
