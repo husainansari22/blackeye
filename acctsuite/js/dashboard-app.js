@@ -121,23 +121,15 @@
     const el = document.getElementById(id);
     if (!el) return;
     const url = (u && (u.avatarUrl || u.avatar)) || '';
-    const initials = A().getInitials((u && u.name) || '');
+    // Header / missing photo: plain "?" in a round circle (never a box or emoji).
+    const emptyMark = id === 'headerProfileAvatar' ? '?' : A().getInitials((u && u.name) || '') || '?';
     if (url) {
       el.innerHTML = '<img alt="" src="' + String(url).replace(/"/g, '&quot;') + '">';
       el.classList.add('has-photo');
     } else {
-      el.textContent = initials;
+      el.textContent = emptyMark;
       el.classList.remove('has-photo');
     }
-  }
-
-  /** AcctBazaar header uses a fixed blue “?” tile (not the user photo). */
-  function paintHeaderQuestionMark() {
-    const el = document.getElementById('headerProfileAvatar');
-    if (!el) return;
-    el.className = 'as-header-q';
-    el.classList.remove('has-photo');
-    el.innerHTML = '?';
   }
 
   function paintCover(coverUrl) {
@@ -159,7 +151,7 @@
       if (el) el.textContent = val;
     };
     if (!u) {
-      paintHeaderQuestionMark();
+      paintAvatar('headerProfileAvatar', { name: 'Guest' });
       paintAvatar('leftProfileAvatar', { name: 'Guest' });
       paintAvatar('rightProfileAvatar', { name: 'Guest' });
       paintCover('');
@@ -192,7 +184,7 @@
       return;
     }
     syncGuestMenu(true);
-    paintHeaderQuestionMark();
+    paintAvatar('headerProfileAvatar', u);
     paintAvatar('leftProfileAvatar', u);
     paintAvatar('rightProfileAvatar', u);
     paintCover(u.coverUrl || u.cover_url || '');
@@ -720,6 +712,7 @@
         .slice(0, 12);
       if (!arr.length) {
         merchants.innerHTML = `<p class="text-xs text-slate-400 py-2">Merchants will appear after approved sales listings go live.</p>`;
+        paintSupportFaces([]);
       } else {
         merchants.innerHTML = arr
           .map((m) => {
@@ -735,8 +728,29 @@
         </button>`;
           })
           .join('');
+        paintSupportFaces(arr);
       }
     }
+  }
+
+  /** Support banner faces — round photos, plain "?" when no avatar */
+  function paintSupportFaces(merchants) {
+    const box = document.getElementById('homeSupportFaces');
+    if (!box) return;
+    const list = (merchants || []).slice(0, 5);
+    const slots = [];
+    for (let i = 0; i < 5; i++) {
+      const m = list[i];
+      const url = m && String(m.avatarUrl || '').trim();
+      if (url) {
+        slots.push(
+          `<span class="home-support-face"><img src="${escapeAttr(url)}" alt="" loading="lazy" onerror="this.remove();this.parentNode.textContent='?';"></span>`
+        );
+      } else {
+        slots.push('<span class="home-support-face">?</span>');
+      }
+    }
+    box.innerHTML = slots.join('');
   }
 
   /**
