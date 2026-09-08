@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="/js/theme-init.js?v=bagA5fix"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>AcctSuite</title>
+<meta name="description" content="The marketplace for digital products and services. Buy and sell social media accounts, VPNs, emails, and more from trusted sellers with escrow protection.">
+    <link rel="canonical" href="https://acctsuite.com/">
+    <!-- Google SERP favicon: PNG 48/96 first (absolute URLs). SVG is optional for modern browsers. -->
+    <link rel="icon" href="https://acctsuite.com/favicon-96x96.png?v=bagA7app" type="image/png" sizes="96x96">
+    <link rel="icon" href="https://acctsuite.com/favicon-48x48.png?v=bagA7app" type="image/png" sizes="48x48">
+    <link rel="icon" href="https://acctsuite.com/favicon-32x32.png?v=bagA7app" type="image/png" sizes="32x32">
+    <link rel="shortcut icon" href="https://acctsuite.com/favicon.ico?v=bagA7app">
+    <link rel="icon" href="https://acctsuite.com/favicon.ico?v=bagA7app" sizes="any">
+    <link rel="icon" href="https://acctsuite.com/favicon.svg?v=bagA7app" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="https://acctsuite.com/img/brand/apple-touch-icon.png?v=bagA7app" sizes="180x180">
+    <link rel="manifest" href="https://acctsuite.com/site.webmanifest?v=bagA7app">
+    <meta name="theme-color" content="#8B5CF6">
+    <meta name="msapplication-TileColor" content="#8B5CF6">
+    <meta name="msapplication-TileImage" content="https://acctsuite.com/img/brand/icon-192.png?v=bagA7app">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AcctSuite">
+    <meta property="og:title" content="AcctSuite">
+    <meta property="og:description" content="The marketplace for digital products and services. Buy social media accounts, VPNs, emails, and virtual numbers from trusted sellers.">
+    <meta property="og:url" content="https://acctsuite.com/">
+    <meta property="og:image" content="https://acctsuite.com/img/brand/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="AcctSuite">
+    <meta name="twitter:description" content="Buy and sell digital accounts securely.">
+    <meta name="twitter:image" content="https://acctsuite.com/img/brand/icon-512.png?v=bagA7app">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "AcctSuite",
+      "alternateName": "AcctSuite",
+      "url": "https://acctsuite.com/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://acctsuite.com/marketplace?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "AcctSuite",
+      "legalName": "AcctSuite Services",
+      "url": "https://acctsuite.com/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://acctsuite.com/img/brand/icon-512.png?v=bagA7app",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://acctsuite.com/img/brand/google-favicon.png",
+      "email": "support@acctsuite.com",
+      "identifier": {
+        "@type": "PropertyValue",
+        "propertyID": "CAC Business Name Registration",
+        "value": "9796330"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Benin City",
+        "addressRegion": "Edo State",
+        "addressCountry": "NG"
+      },
+      "sameAs": [
+        "https://instagram.com/acctsuite",
+        "https://x.com/acctsuite",
+        "https://t.me/acctsuite",
+        "https://t.me/acctsuite_support",
+        "https://tiktok.com/@acctsuite"
+      ]
+    }
+    </script>
+    <link rel="stylesheet" href="/css/tailwind.css?v=bagA5fix">
+    <script src="/js/api-client.js?v=featurePack1"></script>
+    <style>
+      .grecaptcha-badge { z-index: 9999 !important; }
+    </style>
+    
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=bagA5fix">
+    <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
+    <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
+    <script src="/js/mobile-fix.js?v=bagA5fix"></script>
+    <script src="/js/ui-toast.js?v=bagA5fix"></script>
+    <style>
+        /* Auth fields: bg-inputBg is not in compiled Tailwind — force readable text */
+        #page_login input:not([type="checkbox"]),
+        #page_signup input:not([type="checkbox"]),
+        #appModal input:not([type="checkbox"]) {
+            color: #0f172a !important;
+            background-color: #ffffff !important;
+            caret-color: #8B5CF6;
+            -webkit-text-fill-color: #0f172a;
+        }
+        #page_login input::placeholder,
+        #page_signup input::placeholder,
+        #appModal input::placeholder {
+            color: #94a3b8 !important;
+            -webkit-text-fill-color: #94a3b8;
+            opacity: 1;
+        }
+        #page_login .auth-phone-wrap,
+        #page_signup .auth-phone-wrap {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+        #page_login .auth-phone-wrap .auth-phone-prefix,
+        #page_signup .auth-phone-wrap .auth-phone-prefix {
+            color: #0f172a !important;
+            background-color: #f8fafc !important;
+        }
+        .auth-submit-ready {
+            background-color: #8B5CF6 !important;
+            border-color: #8B5CF6 !important;
+            color: #ffffff !important;
+        }
+        .auth-submit-idle {
+            background-color: transparent !important;
+            border: 1px solid #64748b !important;
+            color: #cbd5e1 !important;
+            opacity: 0.55;
+            pointer-events: none;
+        }
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-3px) scale(1.05); }
+        }
+        
+            100% { transform: rotate(360deg) translateX(14px) rotate(-360deg); }
+        }
+        .live-logo-glow {
+            animation: floatLogo 3s ease-in-out infinite;
+            border-radius: 0.55rem;
+            box-shadow: 0 0 0 1px rgba(139,92,246,0.18), 0 4px 14px rgba(139,92,246,0.28);
+        }
+
+        /* Brand lockup — match dashboard home: wordmark centered to bag middle */
+        .as-brand-lockup {
+            display: inline-flex !important;
+            flex-direction: row;
+            align-items: center !important;
+            justify-content: flex-start;
+            height: 2rem;
+            gap: 0.28rem;
+            line-height: 0;
+            min-width: 0;
+            flex-shrink: 0;
+        }
+        @media (min-width: 640px) {
+            .as-brand-lockup { height: 2.25rem; }
+        }
+        .as-brand-lockup img {
+            display: block;
+            height: 100% !important;
+            width: auto !important;
+            margin: 0;
+            padding: 0;
+            align-self: center !important;
+        }
+        .as-brand-lockup .as-brand-word {
+            display: inline-flex !important;
+            align-items: center !important;
+            height: 100% !important;
+            margin: 0;
+            padding: 0;
+            line-height: 1 !important;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            white-space: nowrap;
+            transform: translateY(0.14em);
+        }
+        @media (min-width: 640px) {
+            .as-brand-lockup .as-brand-word { font-size: 1.65rem; }
+        }
+
+        /* Header live activity ticker */
+        .as-live-ticker {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 11rem;
+            height: 1.55rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0 0.5rem 0 0.4rem;
+            border-radius: 999px;
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(109, 40, 217, 0.08));
+            overflow: hidden;
+        }
+        .as-live-ticker__live {
+            flex-shrink: 0;
+            min-width: 2.1rem;
+            text-align: center;
+            font-size: 0.55rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #34d399;
+            line-height: 1;
+            transition: opacity 0.28s ease;
+        }
+        .as-live-ticker__live.is-swap {
+            opacity: 0;
+        }
+        html.dark .as-live-ticker__live,
+        .dark .as-live-ticker__live {
+            color: #6ee7b7;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .as-live-ticker__live { transition: none; }
+        }
+        html.dark .as-live-ticker,
+        .dark .as-live-ticker {
+            border-color: rgba(167, 139, 250, 0.4);
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.22), rgba(76, 29, 149, 0.18));
+        }
+        .as-live-ticker__dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 999px;
+            background: #34d399;
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
+            animation: asLivePulse 1.6s ease-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes asLivePulse {
+            0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
+            70% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+        }
+        .as-live-ticker__track {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+        }
+        .as-live-ticker__rail {
+            display: inline-flex;
+            gap: 1.25rem;
+            white-space: nowrap;
+            will-change: transform;
+            animation: asLiveMarquee 22s linear infinite;
+        }
+        .as-live-ticker__rail span {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            color: #7c3aed;
+        }
+        html.dark .as-live-ticker__rail span,
+        .dark .as-live-ticker__rail span {
+            color: #ddd6fe;
+        }
+        .as-live-ticker__rail em {
+            font-style: normal;
+            color: #8b5cf6;
+            font-weight: 700;
+        }
+        html.dark .as-live-ticker__rail em,
+        .dark .as-live-ticker__rail em {
+            color: #c4b5fd;
+        }
+        @keyframes asLiveMarquee {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .as-live-ticker__rail { animation: none; }
+            .as-live-ticker__dot { animation: none; }
+        }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+
+    <!-- HEADER / NAVBAR -->
+    <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3">
+        <div class="max-w-md mx-auto flex items-center justify-between gap-2">
+            <a href="/" class="as-brand-lockup" aria-label="AcctSuite home" onclick="switchPage('home'); return false;">
+                <img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" class="live-logo-glow" width="36" height="36" decoding="async"><span class="as-brand-word text-slate-900 dark:text-white">cctsuite</span>
+            </a>
+            <div class="as-live-ticker" aria-label="Live marketplace activity" role="status">
+                <span class="as-live-ticker__dot" aria-hidden="true"></span>
+                <span class="as-live-ticker__live" id="headerLiveVerb" aria-hidden="true">BUY</span>
+                <div class="as-live-ticker__track">
+                    <div class="as-live-ticker__rail" id="headerLiveRail">
+                        <span>Just sold · TikTok 12k</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Buyer secured · Instagram</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Escrow cleared · $48</span>
+                        <span aria-hidden="true">·</span>
+                        <span>New listing · Discord Nitro</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Live deals · Marketplace</span>
+                        <span aria-hidden="true">·</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <button id="themeToggle" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300" type="button" aria-label="Toggle theme">
+                    <i class="fa-solid fa-sun dark:hidden"></i>
+                    <i class="fa-solid fa-moon hidden dark:block"></i>
+                </button>
+                <button onclick="toggleMenu()" class="w-9 h-9 rounded-full bg-brandPrimary text-white flex items-center justify-center focus:outline-none" type="button" aria-label="Menu">
+                    <i class="fa-solid fa-bars" id="menuIcon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- DROPDOWN MENU -->
+        <div id="mobileMenu" class="hidden absolute top-full left-0 w-full bg-white dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 shadow-xl py-4 px-6 space-y-4">
+            <div class="flex flex-col space-y-3 font-medium text-sm">
+                <a href="#" onclick="switchPage('home'); toggleMenu();" class="hover:text-brandPrimary">Home</a>
+                <a href="#features" onclick="toggleMenu()" class="hover:text-brandPrimary">Features</a>
+                <a href="#howitworks" onclick="toggleMenu()" class="hover:text-brandPrimary">How it Works</a>
+                <a href="#whyus" onclick="toggleMenu()" class="hover:text-brandPrimary">Why Us</a>
+                <a href="/marketplace" class="hover:text-brandPrimary">Go to Marketplace</a>
+                <a href="/sell" class="hover:text-brandPrimary">Become a Merchant</a>
+                <a href="/guidelines" class="hover:text-brandPrimary">Community Standards</a>
+                <a href="/login" onclick="switchPage('login'); toggleMenu(); return false;" class="text-brandPrimary font-bold pt-2 border-t border-gray-100 dark:border-gray-800"><i class="fa-solid fa-right-to-bracket mr-2"></i> Login</a>
+                <a href="/signup" onclick="switchPage('signup'); toggleMenu(); return false;" class="bg-brandPrimary text-white text-center py-2.5 rounded-xl font-bold"><i class="fa-solid fa-user-plus mr-2"></i> Sign Up</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- PAGE 1: HOME PAGE -->
+    <div id="page_home" class="block pb-10">
+        <!-- HERO SECTION -->
+        <section class="px-4 pt-6 pb-6 text-center max-w-md mx-auto">
+            <div class="inline-flex items-center gap-1.5 bg-violet-100 dark:bg-violet-950/60 text-brandPrimary text-xs px-3 py-1.5 rounded-full font-medium mb-6">
+                <span class="animate-pulse">✨</span> Trusted by 300k+ users
+            </div>
+
+            <h1 class="text-3xl font-extrabold tracking-tight mb-4 leading-tight">
+                The Marketplace for Digital Products & Services.
+            </h1>
+
+            <p class="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed">
+                Buy and sell digital products, business tools, subscriptions, virtual numbers, gift cards, and more through verified merchants with secure escrow protection.
+            </p>
+
+            <div class="flex flex-col gap-3 mb-6">
+                <button onclick="handleBrowseMarket()" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-store"></i> Browse Marketplace
+                </button>
+                <button onclick="openAppInstallModal()" class="w-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-mobile-screen"></i> Mobile App
+                </button>
+                <a href="https://t.me/acctsuite" data-as-group-telegram target="_blank" rel="noopener noreferrer" class="w-full bg-brandPrimary hover:bg-brandHover text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-paper-plane"></i> Join Groupchat
+                </a>
+            </div>
+
+            <!-- Marketplace preview photo sits under Browse Marketplace CTAs (AcctBazaar frontage order) -->
+            <img
+                src="/img/marketing/hero-digital-assets.jpg?v=landingPromo2"
+                alt="Looking for Digital Assets? Aged accounts, verified profiles, and premium tools on AcctSuite"
+                width="944"
+                height="1131"
+                class="w-full h-auto block rounded-2xl mb-6"
+                decoding="async"
+                fetchpriority="high"
+            />
+
+            <div class="pt-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Follow us on social media</p>
+                <div class="flex justify-center gap-3">
+                    <a href="https://instagram.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on Instagram" class="w-10 h-10 rounded-full bg-violet-100 dark:bg-gray-800 text-brandPrimary hover:bg-brandPrimary hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://x.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on X" class="w-10 h-10 rounded-full bg-violet-100 dark:bg-gray-800 text-brandPrimary hover:bg-brandPrimary hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://tiktok.com/@acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on TikTok" class="w-10 h-10 rounded-full bg-violet-100 dark:bg-gray-800 text-brandPrimary hover:bg-brandPrimary hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-tiktok"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES SECTION -->
+        <section id="features" class="px-4 py-8 max-w-md mx-auto space-y-6">
+            <div class="text-center">
+                <span class="bg-violet-100 dark:bg-violet-950/60 text-brandPrimary text-xs px-4 py-1.5 rounded-full font-semibold">Features</span>
+                <h2 class="text-2xl font-bold mt-4">Buy & Sell Verified Digital Products Securely</h2>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Verified Digital Products Marketplace</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Buy and sell TikTok accounts, Telegram numbers, social media accounts, VPN accounts, email accounts, and websites from verified sellers on AcctSuite.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Secure Escrow Transactions</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    All purchases are protected through secure escrow payments, ensuring buyers receive their digital accounts before funds are released to sellers.
+                </p>
+                <div class="bg-gray-100 dark:bg-gray-900 p-4 rounded-xl text-center">
+                    <div class="w-full bg-brandPrimary text-white text-xs py-2 rounded-lg font-bold">Pay</div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Chat With Sellers Before Buying</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Message sellers directly to verify account details, ask questions, and confirm delivery before purchasing digital accounts.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <h3 class="text-lg font-bold mb-2">Buyer Reviews & Seller Ratings</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    View seller ratings, buyer reviews, and transaction history to safely buy verified digital accounts from trusted merchants.
+                </p>
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS SECTION -->
+        <section id="howitworks" class="px-4 py-8 max-w-md mx-auto space-y-6">
+            <div class="text-center">
+                <span class="bg-violet-100 dark:bg-violet-950/60 text-brandPrimary text-xs px-4 py-1.5 rounded-full font-semibold">How It Works</span>
+                <h2 class="text-2xl font-bold mt-4">Buy & Sell Digital Products in 3 Simple Steps</h2>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-950/60 text-brandPrimary flex items-center justify-center font-bold text-sm mb-4">01</span>
+                <h3 class="font-bold text-base mb-2">Browse Digital Accounts Marketplace</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Search and explore TikTok accounts, Telegram numbers, email accounts, VPN accounts, and other digital products listed by verified sellers on AcctSuite.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-950/60 text-brandPrimary flex items-center justify-center font-bold text-sm mb-4">02</span>
+                <h3 class="font-bold text-base mb-2">Secure Payment & Escrow Protection</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Payments are protected through escrow until the digital accounts are fully delivered.
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <span class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-950/60 text-brandPrimary flex items-center justify-center font-bold text-sm mb-4">03</span>
+                <h3 class="font-bold text-base mb-2">Receive Your Digital Product Instantly</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Get your TikTok account, Telegram number, VPN access, or other digital product delivered instantly or within the seller's delivery time.
+                </p>
+            </div>
+        </section>
+
+        <!-- WHY US SECTION -->
+        <section id="whyus" class="px-4 py-8 max-w-md mx-auto space-y-4">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold">Why Choose AcctSuite</h2>
+            </div>
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3 text-xs text-gray-600 dark:text-gray-300">
+                <p><i class="fa-solid fa-circle-check text-brandPrimary mr-2"></i><strong>Trusted Digital Accounts Marketplace:</strong> Buy and sell verified accounts safely.</p>
+                <p><i class="fa-solid fa-circle-check text-brandPrimary mr-2"></i><strong>Secure Escrow Protection:</strong> Every purchase is guarded against fraud.</p>
+                <p><i class="fa-solid fa-circle-check text-brandPrimary mr-2"></i><strong>Instant Delivery:</strong> Automated dispatch for digital assets.</p>
+                <p><i class="fa-solid fa-circle-check text-brandPrimary mr-2"></i><strong>CAC Registered Business:</strong> Operated by AcctSuite Services (BN 9796330), Nigeria.</p>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="bg-white dark:bg-darkCard border-t border-gray-200 dark:border-gray-800 px-4 py-8 mt-6">
+            <div class="max-w-md mx-auto space-y-6 text-sm">
+                <div class="flex items-center gap-2">
+                    <img src="/img/brand/logo-mark-violet.svg?v=bagA7app" alt="" class="h-8 w-8 shrink-0 " width="32" height="32" decoding="async"><span class="font-bold text-lg tracking-tight">cctsuite</span>
+                </div>
+
+                <a href="/company" class="flex items-center gap-3 p-3.5 rounded-xl border border-violet-500/30 bg-violet-500/10 no-underline text-inherit">
+                    <img src="/img/trust/cac-nigeria.svg" alt="" class="w-8 h-8 shrink-0" width="32" height="32">
+                    <div>
+                        <strong class="block text-xs font-bold text-slate-900 dark:text-white">CAC registered · Nigeria</strong>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug m-0">AcctSuite Services · BN 9796330 · View registration</p>
+                    </div>
+                </a>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    AcctSuite is a global marketplace for digital products and services. Browse virtual numbers, VPN services, subscriptions, gift cards, software tools, and other digital solutions from verified merchants.
+                </p>
+
+                <div class="flex gap-3">
+                    <a href="https://instagram.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on Instagram" class="w-9 h-9 rounded-full bg-violet-100 dark:bg-gray-800 text-brandPrimary hover:bg-brandPrimary hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://x.com/acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on X" class="w-9 h-9 rounded-full bg-violet-100 dark:bg-gray-800 text-brandPrimary hover:bg-brandPrimary hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://tiktok.com/@acctsuite" target="_blank" rel="noopener noreferrer" aria-label="AcctSuite on TikTok" class="w-9 h-9 rounded-full bg-violet-100 dark:bg-gray-800 text-brandPrimary hover:bg-brandPrimary hover:text-white flex items-center justify-center transition"><i class="fa-brands fa-tiktok"></i></a>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold">Quick Links</h4>
+                    <div class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <a href="/">Home</a>
+                        <a href="/login">Login to your account</a>
+                        <a href="/signup">Sign up</a>
+                        <a href="/marketplace">Go to Marketplace</a>
+                        <a href="/sell">Become a Merchant</a>
+                        <a href="/guidelines">Community Standards</a>
+                        <a href="/company">Company &amp; CAC</a>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold">Contact Us</h4>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                        <p>support@acctsuite.com</p>
+                        <p>Support Telegram: <a href="https://t.me/acctsuite_support" data-as-support-telegram target="_blank" rel="noopener noreferrer" class="text-brandPrimary hover:underline">@acctsuite_support</a></p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+                    <span>Copyright © 2026 AcctSuite. All rights reserved</span>
+                    <span class="flex gap-3">
+                      <a href="/privacy">Privacy Policy</a>
+                      <a href="/terms">Terms</a>
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- PAGE 2: SIGN UP PAGE -->
+    <div id="page_signup" class="hidden min-h-screen bg-black px-6 py-10 flex flex-col max-w-md mx-auto relative">
+        <div class="mb-6 mt-4">
+            <h1 class="text-2xl font-bold text-white mb-1">Welcome to AcctSuite 👋</h1>
+            <p class="text-gray-300 text-sm">Already have an account? <span class="text-brandPrimary cursor-pointer font-medium" onclick="switchPage('login')">Login</span></p>
+        </div>
+
+        <form class="space-y-4" onsubmit="handleSignup(event)">
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Full Name <span class="text-red-500">*</span></label>
+                <input type="text" id="su_name" placeholder="Type your full name" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Email address <span class="text-red-500">*</span></label>
+                <input type="email" id="su_email" placeholder="Type your Email address" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                <div class="auth-phone-wrap flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-brandPrimary transition">
+                    <div class="auth-phone-prefix flex items-center px-3 border-r border-slate-200 bg-slate-50 text-slate-900 text-sm gap-2">
+                        <img id="country_flag" src="https://flagcdn.com/24x18/ng.png" alt="flag" class="w-6 h-4 rounded-sm object-cover">
+                        <span id="country_code" class="text-xs font-semibold">+234</span>
+                    </div>
+                    <input type="tel" id="su_phone" placeholder="8012345678" class="w-full bg-transparent px-3 py-3 text-slate-900 text-sm focus:outline-none placeholder-slate-400" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="su_pass" placeholder="Type your Password" class="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_pass', this)"></i>
+                </div>
+                <ul class="text-gray-500 text-xs mt-1.5 space-y-0.5 list-disc pl-4">
+                    <li>Minimum length of 3-30 characters</li>
+                    <li>Only lowercase, numeric and symbols allowed</li>
+                </ul>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Confirm password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="su_cpass" placeholder="Type your Confirm password" class="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('su_cpass', this)"></i>
+                </div>
+            </div>
+
+            <div class="flex items-start gap-2.5 mt-2">
+                <input type="checkbox" id="su_terms" class="mt-1 w-4 h-4 rounded border-gray-600 bg-inputBg focus:ring-brandPrimary" required>
+                <p class="text-xs text-gray-400 leading-tight">By clicking on this, I give consent to AcctSuite <a href="/privacy" class="text-brandPrimary underline">Privacy Policy</a> and <a href="/terms" class="text-brandPrimary underline">Terms of Use</a></p>
+            </div>
+
+            <button type="submit" id="su_submit" disabled class="auth-submit-idle w-full font-semibold py-3.5 rounded-xl transition mt-3">
+                Sign up
+            </button>
+        </form>
+        
+        <button class="absolute top-4 left-4 text-gray-400 hover:text-white" onclick="switchPage('home')">
+            <i class="fa-solid fa-arrow-left text-lg"></i>
+        </button>
+    </div>
+
+    <!-- PAGE 3: LOGIN PAGE -->
+    <div id="page_login" class="hidden min-h-screen bg-black px-6 py-12 flex flex-col max-w-md mx-auto relative justify-center">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Login to your account</h1>
+            <p class="text-gray-300 text-sm">Don't have an account? <span class="text-brandPrimary cursor-pointer font-medium" onclick="switchPage('signup')">Sign up</span></p>
+        </div>
+
+        <form class="space-y-5" onsubmit="handleLogin(event)">
+            <div>
+                <label class="block text-xs text-gray-300 mb-1.5">Email address <span class="text-red-500">*</span></label>
+                <input type="email" id="li_email" placeholder="Type your Email address" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
+            </div>
+            
+            <div>
+                <label class="block text-xs text-gray-300 mb-1.5">Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="password" id="li_pass" placeholder="Type your Password" class="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3.5 text-slate-900 text-sm focus:outline-none focus:border-brandPrimary transition placeholder-slate-400" required>
+                    <i class="fa-regular fa-eye absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-300" onclick="togglePass('li_pass', this)"></i>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <a href="#" onclick="openForgotPassword(event)" class="text-xs text-brandPrimary hover:underline">Forgot Password?</a>
+            </div>
+
+            <button type="submit" id="li_submit" disabled class="auth-submit-idle w-full font-semibold py-3.5 rounded-xl transition">
+                Login
+            </button>
+        </form>
+        
+        <button class="absolute top-6 left-6 text-gray-400 hover:text-white" onclick="switchPage('home')">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+        </button>
+    </div>
+
+    <!-- MODAL POPUP (FORGOT PASSWORD & MOBILE APP INSTALL) -->
+    <div id="appModal" class="hidden fixed inset-0 bg-black/80 z-50 items-center justify-center p-4">
+        <div class="bg-darkCard border border-gray-800 w-full max-w-sm rounded-2xl p-6 relative space-y-4 text-white">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function switchPage(pageId) {
+            document.getElementById('page_home').classList.add('hidden');
+            document.getElementById('page_signup').classList.add('hidden');
+            document.getElementById('page_login').classList.add('hidden');
+            document.getElementById('page_' + pageId).classList.remove('hidden');
+            if (pageId === 'login') refreshLoginSubmit();
+            if (pageId === 'signup') refreshSignupSubmit();
+            window.scrollTo(0, 0);
+            const titles = {
+                home: 'AcctSuite',
+                login: 'Login to your account | AcctSuite',
+                signup: 'Sign up | AcctSuite'
+            };
+            document.title = titles[pageId] || titles.home;
+        }
+
+
+        function setAuthSubmitReady(btn, ready) {
+            if (!btn) return;
+            btn.disabled = !ready;
+            btn.classList.toggle('auth-submit-ready', ready);
+            btn.classList.toggle('auth-submit-idle', !ready);
+        }
+        function refreshLoginSubmit() {
+            const email = (document.getElementById('li_email')?.value || '').trim();
+            const pass = document.getElementById('li_pass')?.value || '';
+            setAuthSubmitReady(document.getElementById('li_submit'), email.length > 0 && pass.length > 0);
+        }
+        function refreshSignupSubmit() {
+            const name = (document.getElementById('su_name')?.value || '').trim();
+            const email = (document.getElementById('su_email')?.value || '').trim();
+            const phone = (document.getElementById('su_phone')?.value || '').trim();
+            const pass = document.getElementById('su_pass')?.value || '';
+            const cpass = document.getElementById('su_cpass')?.value || '';
+            const terms = !!document.getElementById('su_terms')?.checked;
+            const ready = name && email && phone && pass && cpass && terms;
+            setAuthSubmitReady(document.getElementById('su_submit'), !!ready);
+        }
+        function bindAuthSubmitGuards() {
+            ['li_email','li_pass'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', refreshLoginSubmit);
+            });
+            ['su_name','su_email','su_phone','su_pass','su_cpass'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', refreshSignupSubmit);
+            });
+            const terms = document.getElementById('su_terms');
+            if (terms) terms.addEventListener('change', refreshSignupSubmit);
+            refreshLoginSubmit();
+            refreshSignupSubmit();
+        }
+        document.addEventListener('DOMContentLoaded', bindAuthSubmitGuards);
+
+        function togglePass(fieldId, icon) {
+            const input = document.getElementById(fieldId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function showAuthToast(message) {
+            if (window.AcctSuiteToast) {
+                window.AcctSuiteToast.show(message || 'Something went wrong', { type: 'error', duration: 4500 });
+                return;
+            }
+            alert(message || 'Something went wrong');
+        }
+
+        function hideAuthToast() {
+            /* legacy no-op — toasts auto-dismiss */
+        }
+
+        function openForgotPassword(e) {
+            e.preventDefault();
+            const modal = document.getElementById('appModal');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="pr-4">
+                  <div class="w-11 h-11 rounded-xl bg-brandPrimary/15 text-brandPrimary flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-key"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-1.5 tracking-tight">Forgot your password?</h3>
+                  <p class="text-xs text-gray-400 mb-5 leading-relaxed">Enter the email on your AcctSuite account. We’ll send a secure link so you can choose a new password.</p>
+                  <label class="block text-xs text-gray-300 mb-1.5">Email address</label>
+                  <input id="forgotEmail" type="email" placeholder="you@email.com" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm mb-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brandPrimary" required>
+                  <p id="forgotErr" class="hidden text-xs text-red-400 mb-3"></p>
+                  <button id="forgotBtn" onclick="submitForgotPassword()" class="w-full bg-brandPrimary hover:bg-brandHover py-3.5 rounded-xl font-bold text-sm transition">Send reset link</button>
+                  <p class="text-[11px] text-gray-500 mt-4 text-center">Remembered it? <button type="button" onclick="closeModal()" class="text-brandPrimary font-medium">Back to login</button></p>
+                </div>
+            `;
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            const known = document.getElementById('li_email');
+            if (known && known.value) document.getElementById('forgotEmail').value = known.value;
+        }
+
+        async function submitForgotPassword() {
+            const email = (document.getElementById('forgotEmail').value || '').trim().toLowerCase();
+            const err = document.getElementById('forgotErr');
+            const btn = document.getElementById('forgotBtn');
+            err.classList.add('hidden');
+            if (!email) {
+                err.textContent = 'Please enter your email address.';
+                err.classList.remove('hidden');
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Sending…';
+            try {
+                if (!window.AcctSuiteApi || !(await window.AcctSuiteApi.isAvailable())) {
+                    throw new Error('Email service is not connected yet. Make sure the backend is installed.');
+                }
+                await window.AcctSuiteApi.forgotPassword({ email });
+                showForgotSuccess(email);
+            } catch (ex) {
+                const code = (ex.data && ex.data.code) || '';
+                if (code === 'user_not_found' || /does not exist|not found|no account/i.test(ex.message || '')) {
+                    showForgotNotRegistered(email);
+                    return;
+                }
+                err.textContent = ex.message || 'Could not send reset email.';
+                err.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Send reset link';
+            }
+        }
+
+        function showForgotNotRegistered(email) {
+            const safe = String(email || '').replace(/</g, '&lt;');
+            showAuthToast('User does not exist');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-center py-2">
+                  <div class="mx-auto w-14 h-14 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center text-2xl mb-4">
+                    <i class="fa-solid fa-user-xmark"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-2 tracking-tight">No account found</h3>
+                  <p class="text-sm text-gray-300 mb-1">We couldn’t find</p>
+                  <p class="text-sm font-semibold text-brandPrimary mb-4 break-all">${safe}</p>
+                  <p class="text-xs text-gray-400 mb-5 leading-relaxed">That email isn’t registered on AcctSuite yet. Create an account to get started.</p>
+                  <button onclick="closeModal(); switchPage('signup');" class="w-full bg-brandPrimary hover:bg-brandHover py-3.5 rounded-xl font-bold text-sm mb-2">Create an account</button>
+                  <button onclick="openForgotPassword(event)" class="w-full text-xs text-gray-400 py-2">Try a different email</button>
+                </div>
+            `;
+        }
+
+        function showForgotSuccess(email) {
+            const safe = String(email || '').replace(/</g, '&lt;');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-center py-2">
+                  <div class="mx-auto w-14 h-14 rounded-full bg-brandPrimary/15 text-brandPrimary flex items-center justify-center text-2xl mb-4">
+                    <i class="fa-regular fa-envelope"></i>
+                  </div>
+                  <h3 class="font-bold text-xl mb-2 tracking-tight">Check your inbox</h3>
+                  <p class="text-sm text-gray-300 mb-1">We sent a reset link to</p>
+                  <p class="text-sm font-semibold text-brandPrimary mb-4 break-all">${safe}</p>
+                  <div class="bg-black/40 border border-gray-800 rounded-xl p-3 text-left mb-5">
+                    <p class="text-[11px] text-gray-400 leading-relaxed">Open the email from <strong class="text-gray-200">AcctSuite</strong>, tap <strong class="text-gray-200">Choose a new password</strong>, and you’re done. The link expires in 30 minutes. Check spam if you don’t see it.</p>
+                  </div>
+                  <button onclick="closeModal()" class="w-full bg-brandPrimary hover:bg-brandHover py-3.5 rounded-xl font-bold text-sm">Back to login</button>
+                </div>
+            `;
+        }
+
+        let deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+        });
+
+        function openAppInstallModal() {
+            const modal = document.getElementById('appModal');
+            document.getElementById('modalBody').innerHTML = `
+                <h3 class="font-bold text-xl mb-1 text-white">Install the AcctSuite App</h3>
+                <p class="text-xs text-gray-400 mb-4">Add <strong class="text-brandPrimary">acctsuite.com</strong> to your home screen and use it like a native app — no app store required.</p>
+                
+                <div class="bg-darkBg p-4 rounded-xl border border-gray-800 space-y-2 mb-3">
+                    <div class="flex items-center gap-2 text-sm font-bold text-white">
+                        <i class="fa-brands fa-apple text-xl"></i> iOS (Safari)
+                    </div>
+                    <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
+                        <li>Open <a href="https://acctsuite.com/" class="text-brandPrimary underline">acctsuite.com</a> in Safari</li>
+                        <li>Tap the Share icon in the toolbar</li>
+                        <li>Select <strong>Add to Home Screen</strong></li>
+                    </ol>
+                </div>
+
+                <div class="bg-darkBg p-4 rounded-xl border border-gray-800 space-y-2 mb-4">
+                    <div class="flex items-center gap-2 text-sm font-bold text-white">
+                        <i class="fa-brands fa-android text-emerald-400 text-xl"></i> Android (Chrome)
+                    </div>
+                    <ol class="text-xs text-gray-400 space-y-2 list-decimal pl-4 pt-1">
+                        <li>Open <a href="https://acctsuite.com/" class="text-brandPrimary underline">acctsuite.com</a> in Chrome</li>
+                        <li>Tap the menu (⋮) top-right corner</li>
+                        <li>Select <strong>Install app</strong> or <strong>Add to Home screen</strong></li>
+                    </ol>
+                </div>
+
+                <button type="button" onclick="downloadAcctSuiteApp()" class="w-full bg-brandPrimary hover:bg-brandHover text-white py-3.5 rounded-xl font-bold text-sm transition shadow-lg">Download Now</button>
+            `;
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        async function downloadAcctSuiteApp() {
+            // Prefer the browser's native install prompt when available
+            if (deferredPwaPrompt) {
+                try {
+                    deferredPwaPrompt.prompt();
+                    await deferredPwaPrompt.userChoice;
+                    deferredPwaPrompt = null;
+                    closeModal();
+                    if (window.AcctSuiteToast) window.AcctSuiteToast.success('Install started');
+                    return;
+                } catch (e) {}
+            }
+
+            const ua = navigator.userAgent || '';
+            const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(ua);
+
+            if (isIOS) {
+                if (window.AcctSuiteToast) {
+                    window.AcctSuiteToast.info('On Safari: tap Share → Add to Home Screen');
+                } else {
+                    alert('On Safari: tap Share → Add to Home Screen to install AcctSuite.');
+                }
+                closeModal();
+                // Stay on the main site so they can add the current page
+                if (location.hostname !== 'acctsuite.com' && location.hostname !== 'www.acctsuite.com') {
+                    location.href = 'https://acctsuite.com/';
+                }
+                return;
+            }
+
+            if (isAndroid) {
+                if (window.AcctSuiteToast) {
+                    window.AcctSuiteToast.info('Tap menu (⋮) → Install app / Add to Home screen');
+                } else {
+                    alert('In Chrome: tap menu (⋮) → Install app or Add to Home screen.');
+                }
+                closeModal();
+                if (location.hostname !== 'acctsuite.com' && location.hostname !== 'www.acctsuite.com') {
+                    location.href = 'https://acctsuite.com/';
+                }
+                return;
+            }
+
+            // Desktop / other: open the live app
+            closeModal();
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                location.href = '/dashboard.html';
+            } else {
+                location.href = '/login';
+            }
+        }
+
+        function handleBrowseMarket() {
+            // Anyone can browse listings; buy/sell still require sign-in on the dashboard
+            window.location.href = '/dashboard.html#home';
+        }
+
+        function getUsers() {
+            try { return JSON.parse(localStorage.getItem('acctsuite_users') || '{}'); }
+            catch (e) { return {}; }
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('acctsuite_users', JSON.stringify(users));
+        }
+
+        function setSession(user) {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('acctsuite_session', user.email.toLowerCase());
+            localStorage.setItem('userName', user.name);
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userPhone', user.phone || '');
+            localStorage.setItem('walletBalance', String(user.balance ?? 0));
+        }
+
+        async function getRecaptchaToken(action) {
+            if (!window.__recaptchaEnabled) return '';
+            const siteKey = window.__recaptchaSiteKey || '';
+            if (!siteKey) return '';
+            try {
+                if (!window.grecaptcha || !window.grecaptcha.execute) {
+                    await new Promise((resolve, reject) => {
+                        let n = 0;
+                        const t = setInterval(() => {
+                            n++;
+                            if (window.grecaptcha && window.grecaptcha.execute) { clearInterval(t); resolve(); }
+                            else if (n > 40) { clearInterval(t); reject(new Error('reCAPTCHA load timeout')); }
+                        }, 100);
+                    });
+                }
+                await new Promise((r) => window.grecaptcha.ready(r));
+                return await window.grecaptcha.execute(siteKey, { action: action || 'submit' });
+            } catch (e) {
+                console.warn('reCAPTCHA', e);
+                return '';
+            }
+        }
+
+        (async function loadRecaptchaIfEnabled() {
+            window.__recaptchaEnabled = false;
+            window.__recaptchaSiteKey = '';
+            try {
+                let cfg = null;
+                if (window.AcctSuiteApi && window.AcctSuiteApi.publicConfig) {
+                    const res = await window.AcctSuiteApi.publicConfig();
+                    cfg = res && res.config;
+                } else {
+                    const res = await fetch('/api/index.php?action=config.public').then((r) => r.json());
+                    cfg = res && res.config;
+                }
+                if (cfg && cfg.recaptchaEnabled && cfg.recaptchaSiteKey) {
+                    window.__recaptchaEnabled = true;
+                    window.__recaptchaSiteKey = cfg.recaptchaSiteKey;
+                    if (!document.getElementById('grecaptchaV3')) {
+                        const s = document.createElement('script');
+                        s.id = 'grecaptchaV3';
+                        s.src = 'https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(cfg.recaptchaSiteKey);
+                        s.async = true;
+                        document.head.appendChild(s);
+                    }
+                }
+            } catch (e) {}
+        })();
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const name = (document.getElementById('su_name').value || '').trim();
+            const email = (document.getElementById('su_email').value || '').trim().toLowerCase();
+            const phone = (document.getElementById('su_phone').value || '').trim();
+            const pass = document.getElementById('su_pass').value || '';
+            const cpass = document.getElementById('su_cpass').value || '';
+            const code = document.getElementById('country_code') ? document.getElementById('country_code').innerText : '';
+
+            if (!name || !email || !phone || !pass) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            if (pass !== cpass) {
+                alert('Passwords do not match.');
+                return;
+            }
+
+            const fullPhone = (code ? code + ' ' : '') + phone;
+            const ref = new URLSearchParams(window.location.search).get('ref') || '';
+            const recaptchaToken = window.__recaptchaEnabled ? await getRecaptchaToken('signup') : '';
+
+            // Prefer MySQL API when installed on Hostinger
+            if (window.AcctSuiteApi) {
+                try {
+                    const online = await window.AcctSuiteApi.isAvailable();
+                    if (online) {
+                        const payload = {
+                            name: name,
+                            email: email,
+                            phone: fullPhone,
+                            password: pass,
+                            referredBy: ref,
+                            countryCode: (window.__signupCountryCode || document.getElementById('country_flag')?.src?.match(/\/([a-z]{2})\.png/i)?.[1] || 'ng')
+                        };
+                        if (recaptchaToken) payload.recaptchaToken = recaptchaToken;
+                        await window.AcctSuiteApi.register(payload);
+                        window.location.href = "/dashboard.html";
+                        return;
+                    }
+                } catch (err) {
+                    alert(err.message || 'Signup failed. Please try again.');
+                    return;
+                }
+            }
+
+            const users = getUsers();
+            if (users[email]) {
+                alert('An account with this email already exists. Please login.');
+                switchPage('login');
+                return;
+            }
+
+            let ownCode = '';
+            if (window.AcctSuite && typeof window.AcctSuite.randomReferralCode === 'function') {
+                ownCode = window.AcctSuite.randomReferralCode();
+            } else {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+                for (let a = 0; a < 40 && (!/[A-Za-z]/.test(ownCode) || !/[0-9]/.test(ownCode)); a++) {
+                    ownCode = '';
+                    for (let i = 0; i < 5; i++) ownCode += chars[Math.floor(Math.random() * chars.length)];
+                }
+                if (!ownCode || ownCode.length !== 5) ownCode = 'a7K2m';
+            }
+            const user = {
+                name: name,
+                email: email,
+                phone: fullPhone,
+                countryCode: window.__signupCountryCode || 'ng',
+                password: pass,
+                balance: 0,
+                escrowBalance: 0,
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                plan: 'free',
+                uploadsByDay: {},
+                orders: [],
+                ads: [],
+                notifications: [],
+                transactions: [],
+                messages: {},
+                referralCode: ownCode,
+                referredBy: ref,
+                createdAt: new Date().toISOString()
+            };
+            users[email] = user;
+            saveUsers(users);
+            setSession(user);
+            try { localStorage.removeItem('acctsuite_backend'); } catch (e) {}
+            window.location.href = "/dashboard.html";
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = (document.getElementById('li_email').value || '').trim().toLowerCase();
+            const pass = document.getElementById('li_pass').value || '';
+            const recaptchaToken = window.__recaptchaEnabled ? await getRecaptchaToken('login') : '';
+
+            if (window.AcctSuiteApi) {
+                try {
+                    const online = await window.AcctSuiteApi.isAvailable();
+                    if (online) {
+                        const payload = { email: email, password: pass };
+                        if (recaptchaToken) payload.recaptchaToken = recaptchaToken;
+                        await window.AcctSuiteApi.login(payload);
+                        window.location.href = "/dashboard.html";
+                        return;
+                    }
+                } catch (err) {
+                    const code = (err.data && err.data.code) || '';
+                    if (code === 'user_not_found') showAuthToast('User does not exist');
+                    else showAuthToast(err.message || 'Invalid email or password');
+                    return;
+                }
+            }
+
+            const users = getUsers();
+            const user = users[email];
+
+            if (!user) {
+                showAuthToast('User does not exist');
+                return;
+            }
+            if (user.password !== pass) {
+                showAuthToast('Invalid email or password');
+                return;
+            }
+            setSession(user);
+            try { localStorage.removeItem('acctsuite_backend'); } catch (e) {}
+            window.location.href = "/dashboard.html";
+        }
+
+        function openModal() {
+            const el = document.getElementById('appModal');
+            if (!el) return;
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+        function closeModal() {
+            const el = document.getElementById('appModal');
+            if (!el) return;
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+
+        (function initHeaderLiveTicker() {
+            var rail = document.getElementById('headerLiveRail');
+            if (rail && rail.dataset.cloned !== '1') {
+                var kids = Array.prototype.slice.call(rail.children);
+                kids.forEach(function (node) { rail.appendChild(node.cloneNode(true)); });
+                rail.dataset.cloned = '1';
+            }
+            var verb = document.getElementById('headerLiveVerb');
+            if (!verb) return;
+            var words = ['buy', 'sell', 'buy', 'sell', 'deal', 'trade'];
+            var i = 0;
+            var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            setInterval(function () {
+                i = (i + 1) % words.length;
+                if (reduce) {
+                    verb.textContent = words[i].toUpperCase();
+                    return;
+                }
+                verb.classList.add('is-swap');
+                setTimeout(function () {
+                    verb.textContent = words[i].toUpperCase();
+                    verb.classList.remove('is-swap');
+                }, 280);
+            }, 2500);
+        })();
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // Open signup/login when visiting /auth/sign-up or ?page=signup
+        (function openAuthPageFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const page = (params.get('page') || '').toLowerCase();
+            const path = window.location.pathname.toLowerCase();
+            if (page === 'signup' || path.indexOf('/auth/sign-up') !== -1 || path.indexOf('/signup') !== -1 || path.indexOf('/register') !== -1 || path.indexOf('/user/sign-up') !== -1 || path.indexOf('/user/signup') !== -1 || path.indexOf('/user/register') !== -1) {
+                switchPage('signup');
+            } else if (page === 'login' || path.indexOf('/auth/login') !== -1 || path.indexOf('/auth/sign-in') !== -1 || path.indexOf('/login') !== -1 || path.indexOf('/user/login') !== -1 || path.indexOf('/user/sign-in') !== -1) {
+                switchPage('login');
+            }
+        })();
+
+        // Detect user country for signup phone prefix
+        async function detectUserCountry() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data.country_code && data.country_calling_code) {
+                    window.__signupCountryCode = String(data.country_code).toLowerCase();
+                    document.getElementById('country_flag').src = `https://flagcdn.com/24x18/${data.country_code.toLowerCase()}.png`;
+                    document.getElementById('country_code').innerText = data.country_calling_code;
+                }
+            } catch (e) {
+                console.log("Using default country settings.");
+            }
+        }
+        detectUserCountry();
+    </script>
+  <script src="/js/site-controls.js?v=ownerCtrl2"></script>
+</body>
+</html>
