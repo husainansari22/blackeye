@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/css/mobile-fix.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/ui-toast.css?v=bagA5fix">
     <link rel="stylesheet" href="/css/kyc.css?v=bagA5fix">
-    <link rel="stylesheet" href="/css/profile.css?v=supportBag1">
+    <link rel="stylesheet" href="/css/profile.css?v=supportBag2">
     <style>
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -284,22 +284,24 @@
         .home-support-banner__row {
             display: flex;
             align-items: center;
-            gap: 0.55rem;
-            flex-wrap: wrap;
+            gap: 0.45rem;
+            flex-wrap: nowrap;
+            max-width: 100%;
         }
         .home-support-banner__faces {
             display: flex;
             align-items: center;
+            flex-shrink: 0;
         }
         .home-support-banner__faces .home-support-face {
-            width: 1.55rem;
-            height: 1.55rem;
+            width: 1.45rem;
+            height: 1.45rem;
             border-radius: 9999px;
             border: 1.5px solid #fff;
-            margin-left: -0.4rem;
+            margin-left: -0.38rem;
             background: #3f3f46;
             color: #fff;
-            font-size: 0.62rem;
+            font-size: 0.58rem;
             font-weight: 800;
             display: inline-flex;
             align-items: center;
@@ -318,17 +320,19 @@
         .home-support-banner button {
             background: #fff;
             color: #0f172a;
-            font-size: 0.68rem;
+            font-size: 0.62rem;
             font-weight: 800;
             border-radius: 999px;
-            padding: 0.42rem 0.8rem;
+            padding: 0.38rem 0.65rem;
             white-space: nowrap;
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.28rem;
             line-height: 1.1;
+            flex-shrink: 1;
+            min-width: 0;
         }
         .home-support-banner button i {
             color: #8B5CF6;
@@ -1293,8 +1297,8 @@
     <script src="/js/kyc-app.js?v=bagA5fix"></script>
     <script src="/js/av-confirm.js?v=bagA5fix"></script>
     <script src="/js/commerce-ui.js?v=ngFix1"></script>
-    <script src="/js/listing-modal.js?v=supportBag1"></script>
-    <script src="/js/dashboard-app.js?v=supportBag1"></script>
+    <script src="/js/listing-modal.js?v=supportBag2"></script>
+    <script src="/js/dashboard-app.js?v=supportBag2"></script>
     <!-- SCRIPT LOGIC (shell) -->
     <script>
         const DASH_TABS = [
