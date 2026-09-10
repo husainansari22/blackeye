@@ -224,7 +224,7 @@ ul {
   background:
     linear-gradient(120deg, rgba(10, 10, 10, 0.35), rgba(39, 49, 113, 0.25)),
     url("https://res.cloudinary.com/dymaqjodi/images/w_2560,h_2560,c_scale/v1765537452/bubbles/bubbles.png") center/cover no-repeat,
-    url("https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1800&q=80") center/cover no-repeat;
+    url("https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1800&q=80") center/cover no-repeat;
   animation: kenburns 18s ease-in-out infinite alternate;
   will-change: transform;
 }
