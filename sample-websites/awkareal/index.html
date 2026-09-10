@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Samples | Property Listings — Rentals, Hostels, Land & Homes</title>
+  <meta name="description" content="Browse current property listings in Awka and nearby Anambra locations with Samples. Compare asking prices, locations, photos, and contact listing managers directly." />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="author" content="Samples" />
+  <link rel="canonical" href="https://awkareal.kelvinoz.com/" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Samples home">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span class="brand-word">Samp<span>les</span></span>
+      </a>
+
+      <nav class="nav-desktop" aria-label="Primary">
+        <a href="#listings">Properties</a>
+        <a href="#safety">Safety</a>
+        <a href="#about">About</a>
+        <a href="#managers">Property Managers</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="btn btn-ghost" href="#sign-in">Sign in</a>
+        <a class="btn btn-dark" href="#list">List a property</a>
+        <button type="button" class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileNav">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-nav" id="mobileNav" hidden>
+      <a href="#listings">Properties</a>
+      <a href="#safety">Safety</a>
+      <a href="#about">About</a>
+      <a href="#managers">Property Managers</a>
+      <div class="mobile-nav-actions">
+        <a class="btn btn-ghost" href="#sign-in">Sign in</a>
+        <a class="btn btn-dark" href="#list">List a property</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="container hero-inner">
+        <p class="hero-pill">Awka &amp; nearby Anambra locations</p>
+        <h1>Find property with <em>Samples</em>.</h1>
+        <p class="hero-sub">Rentals, hostels, land &amp; homes. Search current listings, then move straight into the catalogue.</p>
+
+        <form class="search-panel" id="searchForm" role="search" aria-label="Property search">
+          <label class="field grow">
+            <span class="sr-only">Search</span>
+            <input type="search" id="searchInput" name="q" placeholder="Search by title, area, or landmark…" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span class="sr-only">Filter by area</span>
+            <select id="areaFilter" aria-label="Filter by area">
+              <option value="">All areas</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="sr-only">Filter by state</span>
+            <select id="stateFilter" aria-label="Filter by state">
+              <option value="">All states</option>
+            </select>
+          </label>
+          <button type="submit" class="btn btn-accent">View listings</button>
+        </form>
+
+        <div class="stats-row" aria-live="polite">
+          <span class="stat-chip"><strong id="liveCount">—</strong> live listings</span>
+          <span class="stat-chip"><strong id="stateCount">—</strong> states</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="listings-section" id="listings">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Recently added</p>
+            <h2>Current property listings</h2>
+            <p class="section-lead">The catalogue below is seeded from live listing media — filter by area or state to narrow results.</p>
+          </div>
+        </div>
+        <div class="listings-grid" id="listingsGrid" aria-live="polite"></div>
+        <p class="empty-state" id="emptyState" hidden>No listings match your filters. Try another area or state.</p>
+      </div>
+    </section>
+
+    <section class="how-section" id="about">
+      <div class="container">
+        <div class="section-head center">
+          <p class="eyebrow">How it works</p>
+          <h2>Compare, inspect, then verify</h2>
+          <p class="section-lead">A property catalogue for Awka and nearby Anambra locations. Listings show the information supplied to the platform; buyers and tenants should inspect and independently verify before payment.</p>
+        </div>
+        <div class="steps-grid">
+          <article class="step-card">
+            <div class="step-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16M8 17V9m4 8V7m4 10v-4"/></svg>
+            </div>
+            <h3>Compare the facts</h3>
+            <p>Start with asking price, location, state, features and the media supplied with the listing.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 15-4.5-4.5L9 18"/></svg>
+            </div>
+            <h3>Inspect the media</h3>
+            <p>Listings with photos and video help you assess the space before arranging a physical inspection.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4 7v5c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <h3>Verify before payment</h3>
+            <p>Availability can change. Contact the listing manager, inspect physically and verify payment instructions before committing funds.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="safety-section" id="safety">
+      <div class="container safety-panel">
+        <div>
+          <p class="eyebrow">Safety guidance</p>
+          <h2>Stay cautious with every deal</h2>
+          <p>Samples surfaces listing details supplied by property managers. Always visit in person, confirm ownership documents, and never pay into unfamiliar accounts without verification.</p>
+        </div>
+        <ul>
+          <li>Inspect the property before any deposit</li>
+          <li>Confirm manager identity and WhatsApp numbers</li>
+          <li>Keep receipts and written agreements</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="managers-section" id="managers">
+      <div class="container managers-panel">
+        <div>
+          <p class="eyebrow">Property managers</p>
+          <h2>List with Samples</h2>
+          <p>Publish rentals, hostels, land and homes for seekers browsing Awka and nearby states. Keep prices and media current so tenants can compare confidently.</p>
+        </div>
+        <a class="btn btn-accent" href="#list" id="list">List a property</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="sign-in">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="index.html">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <span class="brand-word">Samp<span>les</span></span>
+        </a>
+        <p>Property listings for Awka and nearby Anambra locations — rentals, hostels, land and homes.</p>
+        <p class="domain-note">Demo domain: <strong>awkareal.kelvinoz.com</strong></p>
+      </div>
+      <div>
+        <h3>Listings</h3>
+        <ul>
+          <li><a href="#listings">Current properties</a></li>
+          <li><a href="#listings">Filter by area</a></li>
+          <li><a href="#listings">Filter by state</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Managers</h3>
+        <ul>
+          <li><a href="#list">List a property</a></li>
+          <li><a href="#managers">Partner overview</a></li>
+          <li><a href="#sign-in">Sign in</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Info</h3>
+        <ul>
+          <li><a href="#safety">Safety guidance</a></li>
+          <li><a href="#about">About Samples</a></li>
+          <li><a href="#top">Back to top</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; <span id="year"></span> Samples. Sample marketing site — not affiliated with awkarealestate.ng.</p>
+    </div>
+  </footer>
+
+  <script src="main.js" defer></script>
+</body>
+</html>
