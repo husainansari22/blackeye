@@ -22,6 +22,9 @@
     siteName: 'acctventa',
     walletCurrencies: {
       local: [
+        { code: 'USD', name: 'US Dollar', flag: 'us', rate: 1, enabled: true },
+        { code: 'EUR', name: 'Euro', flag: 'eu', rate: 0.92, enabled: true },
+        { code: 'GBP', name: 'UK Pound', flag: 'gb', rate: 0.79, enabled: true },
         { code: 'NGN', name: 'Nigeria', flag: 'ng', rate: 1600, enabled: true },
         { code: 'GHS', name: 'Ghana', flag: 'gh', rate: 15, enabled: true },
         { code: 'KES', name: 'Kenya', flag: 'ke', rate: 130, enabled: true },

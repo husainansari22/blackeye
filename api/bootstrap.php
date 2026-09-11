@@ -563,14 +563,20 @@ function country_to_currency(string $countryCode): string {
         'ng' => 'NGN', 'gh' => 'GHS', 'ke' => 'KES', 'za' => 'ZAR',
         'cm' => 'XAF', 'td' => 'XAF', 'cg' => 'XAF', 'ga' => 'XAF',
         'sn' => 'XOF', 'ci' => 'XOF', 'bj' => 'XOF', 'tg' => 'XOF', 'bf' => 'XOF', 'ml' => 'XOF',
-        'us' => 'USD', 'gb' => 'GBP',
+        'us' => 'USD', 'gb' => 'GBP', 'uk' => 'GBP',
+        'de' => 'EUR', 'fr' => 'EUR', 'it' => 'EUR', 'es' => 'EUR', 'nl' => 'EUR',
+        'ie' => 'EUR', 'pt' => 'EUR', 'be' => 'EUR', 'at' => 'EUR', 'fi' => 'EUR',
     ];
     $cc = strtolower(trim($countryCode));
     return $map[$cc] ?? 'NGN';
 }
 
 function currency_symbol(string $code): string {
-    $map = ['NGN' => '₦', 'GHS' => 'GH₵', 'KES' => 'KSh', 'ZAR' => 'R', 'XAF' => 'CFA', 'XOF' => 'CFA', 'USD' => '$', 'GBP' => '£'];
+    $map = [
+        'NGN' => '₦', 'GHS' => 'GH₵', 'KES' => 'KSh', 'ZAR' => 'R',
+        'XAF' => 'CFA', 'XOF' => 'CFA',
+        'USD' => '$', 'EUR' => '€', 'GBP' => '£',
+    ];
     return $map[strtoupper($code)] ?? (strtoupper($code) . ' ');
 }
 
@@ -729,6 +735,10 @@ function ensure_password_resets_table(): void {
 function default_wallet_currencies(): array {
     return [
         'local' => [
+            // Major deposit / withdraw currencies (1 USD = rate units)
+            ['code' => 'USD', 'name' => 'US Dollar', 'flag' => 'us', 'rate' => 1, 'enabled' => true],
+            ['code' => 'EUR', 'name' => 'Euro', 'flag' => 'eu', 'rate' => 0.92, 'enabled' => true],
+            ['code' => 'GBP', 'name' => 'UK Pound', 'flag' => 'gb', 'rate' => 0.79, 'enabled' => true],
             ['code' => 'NGN', 'name' => 'Nigeria', 'flag' => 'ng', 'rate' => 1600, 'enabled' => true],
             ['code' => 'GHS', 'name' => 'Ghana', 'flag' => 'gh', 'rate' => 15, 'enabled' => true],
             ['code' => 'KES', 'name' => 'Kenya', 'flag' => 'ke', 'rate' => 130, 'enabled' => true],
@@ -779,6 +789,32 @@ function wallet_currencies_get(): array {
                 }
                 unset($c);
             }
+            // Merge any new default local currencies (USD/EUR/GBP) into saved settings
+            $have = [];
+            foreach ($decoded['local'] as $row) {
+                if (!is_array($row)) continue;
+                $have[strtoupper((string)($row['code'] ?? ''))] = true;
+            }
+            $missing = [];
+            foreach ($defaults['local'] as $def) {
+                $code = strtoupper((string)($def['code'] ?? ''));
+                if ($code !== '' && empty($have[$code])) {
+                    $missing[] = $def;
+                }
+            }
+            if ($missing) {
+                $decoded['local'] = array_merge($missing, $decoded['local']);
+            }
+            // Keep major currencies near the top for Deposit / Withdraw pickers
+            $priority = ['USD' => 0, 'EUR' => 1, 'GBP' => 2, 'NGN' => 3];
+            usort($decoded['local'], static function ($a, $b) use ($priority) {
+                $ca = strtoupper((string)($a['code'] ?? ''));
+                $cb = strtoupper((string)($b['code'] ?? ''));
+                $pa = $priority[$ca] ?? 50;
+                $pb = $priority[$cb] ?? 50;
+                if ($pa === $pb) return 0;
+                return $pa < $pb ? -1 : 1;
+            });
             return $decoded;
         }
     }

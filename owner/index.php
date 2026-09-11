@@ -53,7 +53,9 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             setting_set('referral_min_deposit', (string)(float)($_POST['referral_min_deposit'] ?? 50));
             setting_set('support_telegram', trim((string)$_POST['support_telegram']));
             setting_set('support_email', trim((string)$_POST['support_email']));
-            setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
+            $pcSave = strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN')));
+            if (!in_array($pcSave, ['NGN', 'USD', 'EUR', 'GBP'], true)) $pcSave = 'NGN';
+            setting_set('payment_currency', $pcSave);
             setting_set('usd_ngn_rate', (string)max(1, (float)($_POST['usd_ngn_rate'] ?? 1600)));
             $flash = 'Platform settings saved.';
         }
@@ -112,7 +114,9 @@ if ($authed && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = 'Plan updated.';
         }
         if ($form === 'fx_rate') {
-            setting_set('payment_currency', strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN'))) === 'USD' ? 'USD' : 'NGN');
+            $pcSave = strtoupper(trim((string)($_POST['payment_currency'] ?? 'NGN')));
+            if (!in_array($pcSave, ['NGN', 'USD', 'EUR', 'GBP'], true)) $pcSave = 'NGN';
+            setting_set('payment_currency', $pcSave);
             $ngnRate = max(1, (float)($_POST['usd_ngn_rate'] ?? 1600));
             setting_set('usd_ngn_rate', (string)$ngnRate);
             $wc = wallet_currencies_get();
@@ -2163,7 +2167,9 @@ $tab = $_GET['tab'] ?? 'overview';
                 <label>Charge currency</label>
                 <select name="payment_currency">
                   <option value="NGN" <?= $fxCur==='NGN'?'selected':'' ?>>NGN (Naira)</option>
-                  <option value="USD" <?= $fxCur==='USD'?'selected':'' ?>>USD (no convert)</option>
+                  <option value="USD" <?= $fxCur==='USD'?'selected':'' ?>>USD</option>
+                  <option value="EUR" <?= $fxCur==='EUR'?'selected':'' ?>>EUR (Euro)</option>
+                  <option value="GBP" <?= $fxCur==='GBP'?'selected':'' ?>>GBP (UK Pound)</option>
                 </select>
               </div>
               <div class="av-field-block">
@@ -2248,6 +2254,8 @@ $tab = $_GET['tab'] ?? 'overview';
                     <?php $pc = setting_get('payment_currency', 'NGN'); ?>
                     <option value="NGN" <?= $pc==='NGN'?'selected':'' ?>>NGN (Naira)</option>
                     <option value="USD" <?= $pc==='USD'?'selected':'' ?>>USD</option>
+                    <option value="EUR" <?= $pc==='EUR'?'selected':'' ?>>EUR (Euro)</option>
+                    <option value="GBP" <?= $pc==='GBP'?'selected':'' ?>>GBP (UK Pound)</option>
                   </select>
                 </div>
                 <div class="av-field-block">

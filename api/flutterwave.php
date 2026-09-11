@@ -86,7 +86,11 @@ function flw_withdraw_enabled(): bool {
 }
 
 function flw_currency(): string {
-    return strtoupper((string)setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'));
+    $c = strtoupper((string)setting_get('payment_currency', app_config()['payment_currency'] ?? 'NGN'));
+    if (!in_array($c, ['NGN', 'USD', 'EUR', 'GBP'], true)) {
+        return 'NGN';
+    }
+    return $c;
 }
 
 function usd_ngn_rate(): float {
@@ -94,25 +98,63 @@ function usd_ngn_rate(): float {
     return $rate > 0 ? $rate : 1600.0;
 }
 
-/** Site wallet is USD; Flutterwave charge may be NGN (or selected local currency converted to NGN). */
+/** Site wallet is USD. Flutterwave can charge in the user's selected currency when supported. */
 function flw_charge_amount(float $usdAmount, string $preferCode = 'NGN'): array {
     $currencies = wallet_currencies_get();
+    $code = strtoupper(trim($preferCode ?: 'NGN'));
     $rate = usd_ngn_rate();
-    $code = strtoupper($preferCode ?: 'NGN');
+    $found = false;
     foreach (($currencies['local'] ?? []) as $row) {
-        if (strtoupper((string)($row['code'] ?? '')) === $code && !empty($row['enabled'])) {
-            $rate = (float)($row['rate'] ?? $rate);
-            break;
-        }
+        if (!is_array($row)) continue;
+        if (strtoupper((string)($row['code'] ?? '')) !== $code) continue;
+        if (isset($row['enabled']) && !$row['enabled']) break;
+        $rate = (float)($row['rate'] ?? $rate);
+        if ($rate <= 0) $rate = 1.0;
+        $found = true;
+        break;
     }
-    // Flutterwave hosted checkout on this site charges NGN
+
+    // Flutterwave-supported checkout currencies we expose in the wallet UI.
+    // When the user picks one of these, charge in that currency (not forced NGN).
+    $directPay = ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'TZS', 'RWF', 'XAF', 'XOF'];
+    if ($found && in_array($code, $directPay, true)) {
+        if ($code === 'USD') {
+            $amount = round($usdAmount, 2);
+            if ($amount < 0.5) $amount = 0.5;
+            return ['amount' => $amount, 'currency' => 'USD', 'usd' => $usdAmount, 'rate' => 1.0, 'display' => 'USD'];
+        }
+        if ($code === 'NGN') {
+            $ngn = (int)round($usdAmount * $rate);
+            if ($ngn < 100) $ngn = 100;
+            return ['amount' => $ngn, 'currency' => 'NGN', 'usd' => $usdAmount, 'rate' => $rate, 'display' => 'NGN'];
+        }
+        // EUR, GBP, and other FLW local currencies — 2 decimal places
+        $amount = round($usdAmount * $rate, 2);
+        if ($amount < 0.5) $amount = 0.5;
+        return ['amount' => $amount, 'currency' => $code, 'usd' => $usdAmount, 'rate' => $rate, 'display' => $code];
+    }
+
+    // Fallback: site-wide payment_currency
     $currency = flw_currency();
     if ($currency === 'NGN') {
         $ngn = (int)round($usdAmount * $rate);
         if ($ngn < 100) $ngn = 100;
         return ['amount' => $ngn, 'currency' => 'NGN', 'usd' => $usdAmount, 'rate' => $rate, 'display' => $code];
     }
-    return ['amount' => round($usdAmount, 2), 'currency' => $currency, 'usd' => $usdAmount, 'rate' => 1, 'display' => $code];
+    if (in_array($currency, ['EUR', 'GBP'], true)) {
+        $fx = 1.0;
+        foreach (($currencies['local'] ?? []) as $row) {
+            if (!is_array($row)) continue;
+            if (strtoupper((string)($row['code'] ?? '')) !== $currency) continue;
+            $fx = (float)($row['rate'] ?? 0);
+            break;
+        }
+        if ($fx <= 0) $fx = $currency === 'GBP' ? 0.79 : 0.92;
+        $amount = round($usdAmount * $fx, 2);
+        if ($amount < 0.5) $amount = 0.5;
+        return ['amount' => $amount, 'currency' => $currency, 'usd' => $usdAmount, 'rate' => $fx, 'display' => $code];
+    }
+    return ['amount' => round($usdAmount, 2), 'currency' => 'USD', 'usd' => $usdAmount, 'rate' => 1, 'display' => $code];
 }
 
 /**

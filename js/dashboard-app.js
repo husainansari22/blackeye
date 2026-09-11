@@ -779,6 +779,9 @@
   function defaultCurrencies() {
     return {
       local: [
+        { code: 'USD', name: 'US Dollar', flag: 'us', rate: 1, enabled: true },
+        { code: 'EUR', name: 'Euro', flag: 'eu', rate: 0.92, enabled: true },
+        { code: 'GBP', name: 'UK Pound', flag: 'gb', rate: 0.79, enabled: true },
         { code: 'NGN', name: 'Nigeria', flag: 'ng', rate: 1600, enabled: true },
         { code: 'GHS', name: 'Ghana', flag: 'gh', rate: 15, enabled: true },
         { code: 'KES', name: 'Kenya', flag: 'ke', rate: 130, enabled: true },
@@ -800,10 +803,24 @@
   }
 
   function walletCurrencies() {
-    const c = (A().CONFIG && A().CONFIG.walletCurrencies) || {};
     const d = defaultCurrencies();
+    const c = (A().CONFIG && A().CONFIG.walletCurrencies) || {};
+    const byCode = {};
+    (Array.isArray(c.local) ? c.local : []).forEach((row) => {
+      if (!row || !row.code) return;
+      byCode[String(row.code).toUpperCase()] = row;
+    });
+    const local = d.local.map((def) => {
+      const hit = byCode[def.code];
+      return hit ? Object.assign({}, def, hit, { code: def.code }) : def;
+    });
+    (Array.isArray(c.local) ? c.local : []).forEach((row) => {
+      if (!row || !row.code) return;
+      const code = String(row.code).toUpperCase();
+      if (!local.find((x) => x.code === code)) local.push(Object.assign({}, row, { code: code }));
+    });
     return {
-      local: Array.isArray(c.local) && c.local.length ? c.local : d.local,
+      local: local,
       crypto: Array.isArray(c.crypto) && c.crypto.length ? c.crypto : d.crypto,
     };
   }
@@ -1132,7 +1149,7 @@
   };
 
   function currencySymbol(code) {
-    const map = { NGN: '₦', GHS: 'GH₵', KES: 'KSh', ZAR: 'R', XAF: 'CFA ', XOF: 'CFA ', USD: '$', GBP: '£' };
+    const map = { NGN: '₦', GHS: 'GH₵', KES: 'KSh', ZAR: 'R', XAF: 'CFA ', XOF: 'CFA ', USD: '$', EUR: '€', GBP: '£' };
     return map[code] || code + ' ';
   }
 
@@ -1141,9 +1158,11 @@
       ng: 'NGN', gh: 'GHS', ke: 'KES', za: 'ZAR',
       cm: 'XAF', td: 'XAF', cg: 'XAF', ga: 'XAF',
       sn: 'XOF', ci: 'XOF', bj: 'XOF', tg: 'XOF', bf: 'XOF', ml: 'XOF',
-      us: 'USD', gb: 'GBP',
+      us: 'USD', gb: 'GBP', uk: 'GBP',
+      de: 'EUR', fr: 'EUR', it: 'EUR', es: 'EUR', nl: 'EUR',
+      ie: 'EUR', pt: 'EUR', be: 'EUR', at: 'EUR', fi: 'EUR',
     };
-    return map[String(cc || '').toLowerCase()] || 'NGN';
+    return map[String(cc || '').toLowerCase()] || 'USD';
   }
 
   function preferredLocalCurrency(user) {
@@ -1154,7 +1173,55 @@
     }
     const fromCountry = countryToCurrency(user && user.countryCode);
     if (cur.find((c) => c.code === fromCountry)) return fromCountry;
-    return (cur[0] || { code: 'NGN' }).code;
+    return (cur[0] || { code: 'USD' }).code;
+  }
+
+
+  function isIntlPayoutCurrency(code) {
+    return ['USD', 'EUR', 'GBP'].includes(String(code || '').toUpperCase());
+  }
+
+  function syncWithdrawBankFieldsForCurrency() {
+    const intl = isIntlPayoutCurrency(withdrawCurrency);
+    const search = document.getElementById('withdrawBankSearch');
+    const list = document.getElementById('withdrawBankList');
+    const dest = document.getElementById('withdrawDest');
+    const bankLabel = document.querySelector('#wdFieldsBank label');
+    // Find labels by walking inputs' previous siblings via parent wrappers
+    const bankWrap = document.getElementById('wdFieldsBank');
+    if (!bankWrap) return;
+    const labels = bankWrap.querySelectorAll('label');
+    if (labels[0]) {
+      labels[0].innerHTML = intl
+        ? 'Bank / payment service <span class="text-red-500">*</span>'
+        : 'Select bank <span class="text-red-500">*</span>';
+    }
+    if (labels[1]) {
+      labels[1].innerHTML = intl
+        ? (withdrawCurrency === 'USD' ? 'Account / routing number <span class="text-red-500">*</span>' : 'IBAN / account number <span class="text-red-500">*</span>')
+        : 'Account number <span class="text-red-500">*</span>';
+    }
+    if (search) {
+      search.placeholder = intl ? 'Enter bank name' : 'Search bank…';
+      search.type = intl ? 'text' : 'search';
+      if (intl) {
+        // Free-text: clear bank list UI
+        if (list) list.classList.add('hidden');
+        search.onfocus = null;
+        search.oninput = function () {
+          const nameEl = document.getElementById('withdrawBank');
+          const codeEl = document.getElementById('withdrawBankCode');
+          if (nameEl) nameEl.value = search.value.trim();
+          if (codeEl) codeEl.value = '';
+        };
+      }
+    }
+    if (dest) {
+      dest.inputMode = intl ? 'text' : 'numeric';
+      dest.placeholder = intl
+        ? (withdrawCurrency === 'USD' ? 'Account or routing number' : 'IBAN or account number')
+        : 'Enter account number';
+    }
   }
 
   function localConvertLine(usdAmount, code) {
@@ -1163,7 +1230,12 @@
     const sym = currencySymbol(code);
     const usd = Number(usdAmount) || 0;
     if (usd <= 0) return '';
-    return `≈ ${sym}${Math.round(usd * rate).toLocaleString()}`;
+    const local = usd * rate;
+    const pretty =
+      rate >= 50
+        ? Math.round(local).toLocaleString()
+        : local.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `≈ ${sym}${pretty}`;
   }
 
   // -------- Wallet --------
@@ -1211,7 +1283,7 @@
     depositNetwork = '';
     depositCurrency = preferredLocalCurrency(u);
     if (!cur.local.find((c) => c.code === depositCurrency && c.enabled !== false)) {
-      depositCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+      depositCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'USD' }).code;
     }
     openWalletFlow(
       'Add Funds',
@@ -1425,8 +1497,12 @@
     const symbol = currencySymbol(depositCurrency);
     if (convertEl) convertEl.textContent = localConvertLine(usd, depositCurrency);
     if (el) {
-      if (usd <= 0) el.textContent = `$1 ≈ ${symbol}${rate.toLocaleString()}`;
-      else el.textContent = `You will pay about ${symbol}${Math.round(usd * rate).toLocaleString()} · wallet credits $${usd.toFixed(2)}`;
+      const fmtLocal = (n) =>
+        rate >= 50
+          ? Math.round(n).toLocaleString()
+          : Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (usd <= 0) el.textContent = `$1 ≈ ${symbol}${fmtLocal(rate)}`;
+      else el.textContent = `You will pay about ${symbol}${fmtLocal(usd * rate)} · wallet credits $${usd.toFixed(2)}`;
     }
   };
 
@@ -1440,7 +1516,7 @@
     withdrawMethodCard = 'bank';
     withdrawCurrency = preferredLocalCurrency(u);
     if (!cur.local.find((c) => c.code === withdrawCurrency && c.enabled !== false)) {
-      withdrawCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'NGN' }).code;
+      withdrawCurrency = (cur.local.find((c) => c.enabled !== false) || { code: 'USD' }).code;
     }
     const bankFields = locked
       ? `<div id="wdFieldsBankLocked" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
@@ -1541,7 +1617,8 @@
     withdrawCryptoCoin = firstCrypto;
     renderWithdrawCryptoGrid();
     fillWithdrawNetworks();
-    if (!locked) loadWithdrawBanks(u);
+    syncWithdrawBankFieldsForCurrency();
+    if (!locked && !isIntlPayoutCurrency(withdrawCurrency)) loadWithdrawBanks(u);
   }
 
   let withdrawBanksCache = [];
@@ -1666,7 +1743,8 @@
     const cur = walletCurrencies().local.find((c) => c.code === withdrawCurrency);
     const rate = Number((cur && cur.rate) || (A().CONFIG && A().CONFIG.usdNgnRate) || 1600);
     const sym = currencySymbol(withdrawCurrency);
-    el.textContent = `$1 ≈ ${sym}${rate.toLocaleString()}`;
+    const pretty = rate >= 50 ? rate.toLocaleString() : Number(rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    el.textContent = `$1 ≈ ${sym}${pretty}`;
   }
 
   window.updateWithdrawLocalConvert = function () {
@@ -1685,6 +1763,10 @@
     refreshWithdrawCurrencyBtn();
     refreshWithdrawBankRate();
     updateWithdrawLocalConvert();
+    syncWithdrawBankFieldsForCurrency();
+    if (!window.__payoutBankLocked && !isIntlPayoutCurrency(withdrawCurrency)) {
+      loadWithdrawBanks(refreshUser() || {});
+    }
   };
 
   window.setWithdrawMethodCard = function (m) {
@@ -1832,11 +1914,11 @@
     }
     const network = ((document.getElementById('withdrawNetwork') || {}).value || '').trim();
     if (!dest) {
-      alert(isCrypto ? 'Enter wallet address' : 'Enter account number');
+      alert(isCrypto ? 'Enter wallet address' : (isIntlPayoutCurrency(withdrawCurrency) ? 'Enter IBAN / account number' : 'Enter account number'));
       return;
     }
     if (!isCrypto && !locked && !bankCode && !bankName) {
-      alert('Select your bank');
+      alert(isIntlPayoutCurrency(withdrawCurrency) ? 'Enter your bank or payment service name' : 'Select your bank');
       return;
     }
     if (!isCrypto && !accountName) {
