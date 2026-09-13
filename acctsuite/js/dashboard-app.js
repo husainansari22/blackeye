@@ -845,18 +845,19 @@
     const box = document.getElementById('adsListContainer');
     if (!box) return;
     let ads = expandAdsIntoUnits(u.ads || []);
-    if (adsFilter !== 'all') {
-      if (adsFilter === 'active') {
-        ads = ads.filter((a) => {
-          const parent = (u.ads || []).find((p) => String(p.id) === String(a.id));
-          const parentStock = parent ? Number(parent.stock) : Number(a.stock);
-          return a.status === 'active' && parentStock > 0;
-        });
-      } else if (adsFilter === 'removed') {
-        ads = ads.filter((a) => a.status === 'removed' && !isSoldOutOfMyAds(a));
-      } else {
-        ads = ads.filter((a) => a.status === adsFilter);
-      }
+    if (adsFilter === 'all') {
+      // All = live pipeline only. Removed stays under Removed; sold already excluded.
+      ads = ads.filter((a) => a.status !== 'removed');
+    } else if (adsFilter === 'active') {
+      ads = ads.filter((a) => {
+        const parent = (u.ads || []).find((p) => String(p.id) === String(a.id));
+        const parentStock = parent ? Number(parent.stock) : Number(a.stock);
+        return a.status === 'active' && parentStock > 0;
+      });
+    } else if (adsFilter === 'removed') {
+      ads = ads.filter((a) => a.status === 'removed' && !isSoldOutOfMyAds(a));
+    } else {
+      ads = ads.filter((a) => a.status === adsFilter);
     }
     const q = String(adsSearch || '')
       .trim()
