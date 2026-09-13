@@ -58,6 +58,7 @@
       releaseType: row.release_type || row.releaseType || 'auto',
       status: row.status,
       denyReason: row.deny_reason || row.denyReason || '',
+      reviewedBy: row.reviewed_by || row.reviewedBy || '',
       previewLink: row.preview_link || row.previewLink || '',
       username: row.username,
       password: row.password_plain || row.password || '',

@@ -423,8 +423,10 @@ function purchase_listing(int $buyerId, int $listingId): array {
         } else {
             $pdo->prepare('UPDATE users SET escrow_balance = escrow_balance + ? WHERE id = ?')->execute([money_f($price), (int)$ad['seller_id']]);
         }
+        // Sold-out listings stay status=active with stock 0 so they leave My Ads
+        // (market already requires stock > 0). Only seller/owner delete sets status=removed.
         $newStock = max(0, (int)$ad['stock'] - 1);
-        $newAdStatus = $newStock <= 0 ? 'removed' : (string)$ad['status'];
+        $newAdStatus = (string)$ad['status'];
         $pdo->prepare('UPDATE ads SET stock = ?, status = ? WHERE id = ?')->execute([$newStock, $newAdStatus, $listingId]);
         $pdo->prepare('INSERT INTO transactions (user_id, type, amount, status, note) VALUES (?, \'purchase\', ?, \'completed\', ?)')
             ->execute([$buyerId, money_f($price), 'Bought #' . $publicId]);

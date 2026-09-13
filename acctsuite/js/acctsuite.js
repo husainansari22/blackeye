@@ -763,11 +763,10 @@
     buyer.orders.unshift({ ...order, role: 'buyer' });
     seller.orders.unshift({ ...order, role: 'seller' });
 
-    // Reduce stock / remove listing if sold out
+    // Reduce stock; sold-out stays active+0 so it leaves My Ads (not Removed).
     const sellerAd = (seller.ads || []).find((a) => a.id === listing.id);
     if (sellerAd) {
       sellerAd.stock = Math.max(0, (sellerAd.stock || 1) - 1);
-      if (sellerAd.stock <= 0) sellerAd.status = 'removed';
     }
 
     pushNotification(buyer, {

@@ -740,16 +740,36 @@
    * My Ads shows each account unit as its own row.
    * Market still uses the parent ad (one card + stock).
    */
+  /** Sold listings leave My Ads. Intentional removals (Seller/Owner) stay under Removed. */
+  function isSoldOutOfMyAds(ad) {
+    const status = String((ad && ad.status) || '').toLowerCase();
+    const stock = Number(ad && ad.stock) || 0;
+    if (status === 'active' && !(stock > 0)) return true;
+    if (status === 'removed') {
+      const by = String((ad && (ad.reviewedBy || ad.reviewed_by)) || '')
+        .trim()
+        .toLowerCase();
+      if (by === 'seller' || by === 'owner') return false;
+      // Legacy sales flipped status to removed without changing reviewed_by (usually "AI Review").
+      return !by || by === 'ai review';
+    }
+    return false;
+  }
+
   function expandAdsIntoUnits(ads) {
     const out = [];
     (ads || []).forEach((ad) => {
       const status = String(ad.status || '').toLowerCase();
       const stock = Number(ad.stock) || 0;
-      const soldOut = status === 'active' && !(stock > 0);
       const creds = Array.isArray(ad.credentials) ? ad.credentials : [];
       const available = creds.filter((c) => String(c.status || 'available').toLowerCase() === 'available');
 
-      if (status === 'removed' || soldOut) {
+      // Sold-out (and legacy auto-sold→removed) leave My Ads entirely.
+      if (isSoldOutOfMyAds(ad)) {
+        return;
+      }
+
+      if (status === 'removed') {
         out.push(Object.assign({}, ad, { credentialId: null, unitIndex: 0, unitCount: 1 }));
         return;
       }
@@ -833,11 +853,7 @@
           return a.status === 'active' && parentStock > 0;
         });
       } else if (adsFilter === 'removed') {
-        ads = ads.filter((a) => {
-          const parent = (u.ads || []).find((p) => String(p.id) === String(a.id));
-          const parentStock = parent ? Number(parent.stock) : Number(a.stock);
-          return a.status === 'removed' || (a.status === 'active' && !(parentStock > 0));
-        });
+        ads = ads.filter((a) => a.status === 'removed' && !isSoldOutOfMyAds(a));
       } else {
         ads = ads.filter((a) => a.status === adsFilter);
       }
@@ -867,12 +883,12 @@
       const emptySub =
         adsFilter === 'pending'
           ? 'New uploads appear here until they are reviewed.'
-          : adsFilter === 'active'
-            ? 'Sold-out ads move to Removed — list a new product when you have stock.'
+            : adsFilter === 'active'
+            ? 'Sold ads leave My Ads. List a new product when you have stock.'
             : adsFilter === 'denied'
               ? 'Denied listings will show here with the reason.'
               : adsFilter === 'removed'
-                ? 'Removed or sold-out listings show here.'
+                ? 'Listings you removed show here — tap one to see details.'
                 : q
                   ? 'Try a different search.'
                   : 'Tap + to list a product.';
@@ -914,25 +930,28 @@
             ? `<span class="my-ads-row__instant"><i class="fa-solid fa-bolt"></i> Delivers Instantly</span>`
             : `<span class="my-ads-row__instant" style="color:#64748b;background:rgba(148,163,184,.15)"><i class="fa-solid fa-hand"></i> Manual</span>`;
         const canManage = status === 'pending' || status === 'active' || status === 'denied';
-        const isRemovedView = status === 'removed' || soldOut;
+        const isRemovedOnly = status === 'removed';
         const credArg = a.credentialId != null ? String(a.credentialId) : '';
-        const viewBtn = `<button type="button" onclick="event.stopPropagation();viewMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="View details" title="View details"><i class="fa-solid fa-eye"></i></button>`;
+        const viewBtn = isRemovedOnly
+          ? `<button type="button" onclick="event.stopPropagation();viewMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="View details" title="View details"><i class="fa-solid fa-eye"></i></button>`
+          : '';
         const actions = canManage
           ? `<div class="my-ads-row__actions">
-              ${viewBtn}
               <button type="button" onclick="event.stopPropagation();editMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="Edit ad"><i class="fa-solid fa-pencil"></i></button>
               <button type="button" class="is-danger" onclick="event.stopPropagation();deleteMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="Delete ad"><i class="fa-solid fa-trash"></i></button>
             </div>`
-          : `<div class="my-ads-row__actions">${viewBtn}</div>`;
+          : isRemovedOnly
+            ? `<div class="my-ads-row__actions">${viewBtn}</div>`
+            : '';
         const logo = productLogoMarkFor(a, 'my-ads-row__logo');
         const unitNote =
           a.unitCount > 1 && a.credentialId
             ? `<span class="text-[10px] text-slate-400">Unit ${a.unitIndex + 1} of ${a.unitCount}</span>`
             : '';
-        const rowClick = isRemovedView
+        const rowClick = isRemovedOnly
           ? `onclick="viewMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}');}"`
           : '';
-        return `<article class="my-ads-row${isRemovedView ? ' is-clickable' : ''}" ${rowClick}>
+        return `<article class="my-ads-row${isRemovedOnly ? ' is-clickable' : ''}" ${rowClick}>
           ${logo || '<div class="my-ads-row__logo" aria-hidden="true"></div>'}
           <div class="min-w-0">
             <p class="my-ads-row__title">${escapeHtml(a.title || 'Listing')}</p>
@@ -943,8 +962,7 @@
               ${actions}
             </div>
             ${status === 'pending' ? `<p class="my-ads-row__note">Pending review before Market.</p>` : ''}
-            ${soldOut ? `<p class="my-ads-row__note">This unit sold. Restock with new login details to list again.</p>` : ''}
-            ${status === 'removed' ? `<p class="my-ads-row__note">Tap to view full details of this removed listing.</p>` : ''}
+            ${isRemovedOnly ? `<p class="my-ads-row__note">Tap to view full details of this removed listing.</p>` : ''}
           </div>
           <span class="my-ads-row__status ${statusClass}">${statusLabel}</span>
           ${
@@ -1050,6 +1068,11 @@
     const ad = (u.ads || []).find((a) => String(a.id) === String(id));
     if (!ad) {
       alert('Listing not found.');
+      return;
+    }
+    const viewStatus = String(ad.status || '').toLowerCase();
+    if (viewStatus !== 'removed' || isSoldOutOfMyAds(ad)) {
+      alert('Only removed listings can be viewed here. Sold ads leave My Ads.');
       return;
     }
     let unit = {
