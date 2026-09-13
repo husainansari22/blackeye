@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AcctSuite">
+  <!-- App icon style: white rounded tile, purple bag, white A -->
+  <rect width="64" height="64" rx="14" fill="#FFFFFF"/>
+  <path fill="none" stroke="#7C3AED" stroke-width="3.2" stroke-linecap="round" d="M22 25c0-8.5 4.8-14.5 10.5-14.5S43 16.5 43 25"/>
+  <path fill="#8B5CF6" d="M13 27c0-2.6 2.1-4.7 4.7-4.7h26.6c2.6 0 4.7 2.1 4.7 4.7v3.2c1.2 1.4 2.2 3.8 2.2 6.6v17.2c0 5-4 9-9 9H19.8c-5 0-9-4-9-9V36.8c0-2.8 1-5.2 2.2-6.6V27z"/>
+  <rect x="18" y="24.4" width="25" height="3.8" rx="1.6" fill="#7C3AED"/>
+  <rect x="26" y="25.3" width="9" height="2.1" rx="1" fill="#FFFFFF"/>
+  <circle cx="30.5" cy="26.35" r=".95" fill="#6D28D9"/>
+  <path fill="#FFFFFF" d="M31.5 33.2 L38.8 50.2 H35.6 L33.9 45.6 H29.1 L27.4 50.2 H24.2 Z M30.05 42.9 H32.95 L31.5 38.7 Z"/>
+</svg>
