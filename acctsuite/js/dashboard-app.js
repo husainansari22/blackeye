@@ -914,19 +914,25 @@
             ? `<span class="my-ads-row__instant"><i class="fa-solid fa-bolt"></i> Delivers Instantly</span>`
             : `<span class="my-ads-row__instant" style="color:#64748b;background:rgba(148,163,184,.15)"><i class="fa-solid fa-hand"></i> Manual</span>`;
         const canManage = status === 'pending' || status === 'active' || status === 'denied';
+        const isRemovedView = status === 'removed' || soldOut;
         const credArg = a.credentialId != null ? String(a.credentialId) : '';
+        const viewBtn = `<button type="button" onclick="event.stopPropagation();viewMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="View details" title="View details"><i class="fa-solid fa-eye"></i></button>`;
         const actions = canManage
           ? `<div class="my-ads-row__actions">
-              <button type="button" onclick="editMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="Edit ad"><i class="fa-solid fa-pencil"></i></button>
-              <button type="button" class="is-danger" onclick="deleteMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="Delete ad"><i class="fa-solid fa-trash"></i></button>
+              ${viewBtn}
+              <button type="button" onclick="event.stopPropagation();editMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="Edit ad"><i class="fa-solid fa-pencil"></i></button>
+              <button type="button" class="is-danger" onclick="event.stopPropagation();deleteMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" aria-label="Delete ad"><i class="fa-solid fa-trash"></i></button>
             </div>`
-          : '';
+          : `<div class="my-ads-row__actions">${viewBtn}</div>`;
         const logo = productLogoMarkFor(a, 'my-ads-row__logo');
         const unitNote =
           a.unitCount > 1 && a.credentialId
             ? `<span class="text-[10px] text-slate-400">Unit ${a.unitIndex + 1} of ${a.unitCount}</span>`
             : '';
-        return `<article class="my-ads-row">
+        const rowClick = isRemovedView
+          ? `onclick="viewMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewMyAd('${escapeAttr(String(a.id))}','${escapeAttr(credArg)}');}"`
+          : '';
+        return `<article class="my-ads-row${isRemovedView ? ' is-clickable' : ''}" ${rowClick}>
           ${logo || '<div class="my-ads-row__logo" aria-hidden="true"></div>'}
           <div class="min-w-0">
             <p class="my-ads-row__title">${escapeHtml(a.title || 'Listing')}</p>
@@ -938,6 +944,7 @@
             </div>
             ${status === 'pending' ? `<p class="my-ads-row__note">Pending review before Market.</p>` : ''}
             ${soldOut ? `<p class="my-ads-row__note">This unit sold. Restock with new login details to list again.</p>` : ''}
+            ${status === 'removed' ? `<p class="my-ads-row__note">Tap to view full details of this removed listing.</p>` : ''}
           </div>
           <span class="my-ads-row__status ${statusClass}">${statusLabel}</span>
           ${
@@ -1031,6 +1038,109 @@
       if (window.AcctSuiteToast) window.AcctSuiteToast.success(credentialId ? 'Account unit deleted.' : 'Listing deleted.');
     } catch (e) {
       alert((e && e.message) || 'Could not delete listing.');
+    }
+  };
+
+  window.viewMyAd = function (id, credentialId) {
+    const u = refreshUser();
+    if (!u) {
+      if (typeof promptDashSignIn === 'function') promptDashSignIn('Sign in to view your ads.');
+      return;
+    }
+    const ad = (u.ads || []).find((a) => String(a.id) === String(id));
+    if (!ad) {
+      alert('Listing not found.');
+      return;
+    }
+    let unit = {
+      username: ad.username || '',
+      password: ad.password || '',
+      previewLink: ad.previewLink || '',
+      attachedEmail: ad.attachedEmail || '',
+      attachedEmailPassword: ad.attachedEmailPassword || '',
+      twoFA: ad.twoFA || '',
+      extraInfo: ad.extraInfo || '',
+      credStatus: '',
+    };
+    if (credentialId && Array.isArray(ad.credentials)) {
+      const hit = ad.credentials.find((c) => String(c.id) === String(credentialId));
+      if (hit) {
+        unit = {
+          username: hit.username || '',
+          password: hit.password || '',
+          previewLink: hit.previewLink || '',
+          attachedEmail: hit.attachedEmail || '',
+          attachedEmailPassword: hit.attachedEmailPassword || '',
+          twoFA: hit.twoFA || '',
+          extraInfo: hit.extraInfo || '',
+          credStatus: hit.status || '',
+        };
+      }
+    }
+    const parentStock = Number(ad.stock) || 0;
+    const soldOut = String(ad.status || '').toLowerCase() === 'active' && !(parentStock > 0);
+    const status = String(ad.status || '').toLowerCase();
+    let statusLabel = (ad.status || 'unknown').charAt(0).toUpperCase() + (ad.status || '').slice(1);
+    if (soldOut) statusLabel = 'Sold out';
+    if (status === 'removed') statusLabel = 'Removed';
+    const releaseLabel = ad.releaseType === 'manual' ? 'Manual delivery' : 'Delivers instantly';
+    const created =
+      ad.createdAt
+        ? new Date(ad.createdAt).toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '—';
+    const row = (label, value, mono) => {
+      const v = String(value || '').trim();
+      if (!v) return '';
+      return `<div class="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2.5">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-0.5">${label}</p>
+        <p class="text-sm text-slate-900 dark:text-white break-all ${mono ? 'font-mono text-[13px]' : ''}">${escapeHtml(v)}</p>
+      </div>`;
+    };
+    const body = document.getElementById('modalBody');
+    if (!body) return;
+    const modal = document.getElementById('appModal');
+    if (modal) modal.classList.remove('av-listing-modal');
+    body.innerHTML = `
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="min-w-0">
+          <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">${escapeHtml(statusLabel)}</p>
+          <h3 class="font-bold text-lg leading-snug text-slate-900 dark:text-white">${escapeHtml(ad.title || 'Listing')}</h3>
+        </div>
+        <span class="shrink-0 text-base font-extrabold text-brandPrimary">${money(ad.price)}</span>
+      </div>
+      <div class="space-y-2.5 max-h-[65vh] overflow-y-auto pr-0.5">
+        ${row('Category', ad.category || '—')}
+        ${row('Delivery', releaseLabel)}
+        ${row('Listed', created)}
+        ${row('Stock left', String(parentStock))}
+        ${unit.credStatus ? row('Unit status', unit.credStatus) : ''}
+        ${ad.description ? row('Description', ad.description) : ''}
+        ${status === 'denied' && ad.denyReason ? row('Denied reason', ad.denyReason) : ''}
+        <div class="pt-1">
+          <p class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">Login credentials</p>
+          <div class="space-y-2">
+            ${row('Username', unit.username || '—', true)}
+            ${row('Password', unit.password || '—', true)}
+            ${row('Preview link', unit.previewLink)}
+            ${row('Attached email', unit.attachedEmail, true)}
+            ${row('Email password', unit.attachedEmailPassword, true)}
+            ${row('2FA', unit.twoFA, true)}
+            ${row('Extra info', unit.extraInfo)}
+          </div>
+        </div>
+      </div>
+      <button type="button" onclick="closeModal()" class="mt-4 w-full bg-brandPrimary hover:bg-brandHover text-white font-bold py-3 rounded-xl">Close</button>
+    `;
+    if (typeof openModal === 'function') openModal();
+    else if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
     }
   };
 

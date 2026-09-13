@@ -1424,8 +1424,26 @@
   padding: 0.7rem 0.1rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.28);
 }
+.my-ads-row.is-clickable {
+  cursor: pointer;
+  border-radius: 0.75rem;
+  margin: 0 -0.25rem;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+  transition: background 0.15s ease;
+}
+.my-ads-row.is-clickable:hover {
+  background: rgba(139, 92, 246, 0.06);
+}
+.my-ads-row.is-clickable:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
 .dark .my-ads-row {
   border-bottom-color: rgba(51, 65, 85, 0.85);
+}
+.dark .my-ads-row.is-clickable:hover {
+  background: rgba(139, 92, 246, 0.12);
 }
 .my-ads-row__logo {
   width: 2.4rem;
