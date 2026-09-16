@@ -180,30 +180,31 @@
       const Api = global.AcctventaApi;
       const A = global.Acctventa;
       if (!Api || !A) return false;
-      let ok = false;
-      try {
-        ok = await Api.isAvailable();
-      } catch (e) {
-        return false;
-      }
-      if (!ok) return false;
+      // Do NOT gate on health — Hostinger often 429s health while market.list still works.
+      // Hitting market.list directly is the availability probe for guests.
       try {
         let marketRows = null;
         let marketFailed = false;
         try {
           const marketRes = await Api.market();
           marketRows = marketRes.listings || [];
+          if (Api.markAvailable) Api.markAvailable(true);
         } catch (e) {
           marketFailed = true;
           console.warn('Public market.list failed', e);
         }
         if (!marketFailed) setApiMarket(marketRows, { allowEmpty: true });
-        try {
-          const feed = await Api.storiesFeed().catch(() => ({ merchants: [] }));
-          global.__acctventaStoryFeed = feed.merchants || [];
-        } catch (e2) {
-          /* keep previous story feed */
-        }
+        // Soft-load stories later; do not compete with market on a cold host
+        setTimeout(function () {
+          Api.storiesFeed()
+            .then(function (feed) {
+              global.__acctventaStoryFeed = (feed && feed.merchants) || [];
+              try {
+                if (global.AcctventaUI && global.AcctventaUI.refreshAll) global.AcctventaUI.refreshAll();
+              } catch (e3) {}
+            })
+            .catch(function () {});
+        }, 1500);
         return !marketFailed;
       } catch (e) {
         console.warn('Public market hydrate failed', e);
@@ -223,9 +224,15 @@
     const Api = global.AcctventaApi;
     const A = global.Acctventa;
     if (!Api || !A) return false;
+    // Prefer session token over a separate health probe (health is rate-limited on Hostinger).
     let ok = false;
     try {
-      ok = await Api.isAvailable();
+      if (Api.getToken && Api.getToken()) {
+        ok = true;
+        if (Api.markAvailable) Api.markAvailable(true);
+      } else {
+        ok = await Api.isAvailable();
+      }
     } catch (e) {
       return false;
     }

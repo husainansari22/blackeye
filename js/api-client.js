@@ -97,28 +97,72 @@
 
   let available = null;
   let availableCheckedAt = 0;
-  // Never permanently cache a failed health check — cold hosts often fail once
-  // on first paint, which used to leave Home empty until a hard refresh.
-  const AVAILABLE_FALSE_TTL_MS = 2500;
-  const AVAILABLE_TRUE_TTL_MS = 60000;
+  let availableInflight = null;
+  let lastFailWasRateLimit = false;
+  // Hostinger shared plans 429/500 when many PHP hits land at once.
+  // Cache successes longer; back off hard on rate-limit; never stampede health.
+  const AVAILABLE_FALSE_TTL_MS = 8000;
+  const AVAILABLE_RATE_LIMIT_TTL_MS = 20000;
+  const AVAILABLE_TRUE_TTL_MS = 120000;
+
+  function markAvailable(ok) {
+    available = !!ok;
+    availableCheckedAt = Date.now();
+    return available;
+  }
+
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  async function probeAvailableOnce() {
+    try {
+      const r = await request('health');
+      lastFailWasRateLimit = false;
+      return !!(r && r.ok && r.installed !== false);
+    } catch (e) {
+      const status = e && e.status;
+      if (status === 429 || status === 503 || status === 502 || status === 500) {
+        lastFailWasRateLimit = true;
+        await sleep(800);
+        try {
+          const r2 = await request('health');
+          lastFailWasRateLimit = false;
+          return !!(r2 && r2.ok && r2.installed !== false);
+        } catch (e2) {
+          const st2 = e2 && e2.status;
+          lastFailWasRateLimit = st2 === 429 || st2 === 503 || st2 === 502 || st2 === 500;
+          return false;
+        }
+      }
+      lastFailWasRateLimit = false;
+      return false;
+    }
+  }
 
   async function isAvailable() {
     const now = Date.now();
+    const falseTtl = lastFailWasRateLimit ? AVAILABLE_RATE_LIMIT_TTL_MS : AVAILABLE_FALSE_TTL_MS;
     if (available === true && now - availableCheckedAt < AVAILABLE_TRUE_TTL_MS) return true;
-    if (available === false && now - availableCheckedAt < AVAILABLE_FALSE_TTL_MS) return false;
-    try {
-      const r = await request('health');
-      available = !!(r && r.ok && r.installed !== false);
-    } catch (_) {
-      available = false;
-    }
-    availableCheckedAt = Date.now();
-    return available;
+    if (available === false && now - availableCheckedAt < falseTtl) return false;
+    if (availableInflight) return availableInflight;
+    availableInflight = (async () => {
+      try {
+        return markAvailable(await probeAvailableOnce());
+      } catch (_) {
+        lastFailWasRateLimit = true;
+        return markAvailable(false);
+      } finally {
+        availableInflight = null;
+      }
+    })();
+    return availableInflight;
   }
 
   function clearAvailabilityCache() {
     available = null;
     availableCheckedAt = 0;
+    lastFailWasRateLimit = false;
   }
 
   function applySessionUser(user) {
@@ -228,6 +272,7 @@
     request,
     isAvailable,
     clearAvailabilityCache,
+    markAvailable,
     getToken,
     setToken,
     applySessionUser,

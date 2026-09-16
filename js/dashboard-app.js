@@ -3562,42 +3562,45 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (window.AcctventaApiSync) {
+      // Priority: fill Home listings first with ONE public call (no health stampede).
+      // Logged-in hydrate / KYC run after so Hostinger is less likely to 429.
+      let marketOk = false;
+      try {
+        if (window.AcctventaApiSync.hydratePublicMarket) {
+          marketOk = !!(await window.AcctventaApiSync.hydratePublicMarket());
+        }
+      } catch (e) {}
+      window.__acctventaBooted = true;
+      window.AcctventaUI.refreshAll();
+
+      let hydrated = false;
       try {
         const Api = window.AcctventaApi;
-        let online = false;
-        if (Api) {
-          // Retry health once — first probe often fails on cold Hostinger boots.
-          for (let attempt = 0; attempt < 2 && !online; attempt++) {
-            try {
-              if (attempt && Api.clearAvailabilityCache) Api.clearAvailabilityCache();
-              online = await Api.isAvailable();
-            } catch (e) {}
-            if (!online && attempt === 0) await new Promise((r) => setTimeout(r, 400));
-          }
-        }
-        if (online && Api) {
+        if (Api && Api.getToken && Api.getToken()) {
           if (window.AcctventaApiSync.ensureApiSession) {
             await window.AcctventaApiSync.ensureApiSession(Api);
           }
           if (typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
             window.AcctventaApiSync.patchAcctventaForApi();
           }
+          hydrated = !!(await window.AcctventaApiSync.hydrateFromApi());
+          if (hydrated) window.AcctventaUI.refreshAll();
+        } else if (typeof window.AcctventaApiSync.patchAcctventaForApi === 'function') {
+          // Still patch buy/cart helpers for guests once market is up
+          try {
+            window.AcctventaApiSync.patchAcctventaForApi();
+          } catch (e) {}
         }
-      } catch (e) {}
-      let hydrated = false;
-      try {
-        hydrated = !!(await window.AcctventaApiSync.hydrateFromApi());
       } catch (e) {
         hydrated = false;
       }
-      const marketEmpty =
-        !window.__acctventaApiMarket || !window.__acctventaApiMarket.length;
-      if ((!hydrated || marketEmpty) && window.AcctventaApiSync.hydratePublicMarket) {
+      if (!marketOk && !hydrated && window.AcctventaApiSync.hydratePublicMarket) {
         try {
+          await new Promise((r) => setTimeout(r, 1200));
           await window.AcctventaApiSync.hydratePublicMarket();
+          window.AcctventaUI.refreshAll();
         } catch (e) {}
       }
-      // Always re-pull orders/ads after hydrate so lists are never stuck empty
       try {
         if (hydrated && window.AcctventaApiSync.refreshOrdersFromApi) {
           await window.AcctventaApiSync.refreshOrdersFromApi();
@@ -3606,9 +3609,10 @@
           await window.AcctventaApiSync.refreshAdsFromApi();
         }
       } catch (e) {}
+    } else {
+      window.__acctventaBooted = true;
+      window.AcctventaUI.refreshAll();
     }
-    window.__acctventaBooted = true;
-    window.AcctventaUI.refreshAll();
     try {
       if (window.AcctventaKyc && refreshUser()) await window.AcctventaKyc.refreshStatus();
     } catch (e) {}

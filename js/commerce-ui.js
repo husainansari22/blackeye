@@ -421,23 +421,16 @@
     if (marketRefreshInFlight || !global.AcctventaApiSync) return;
     marketRefreshInFlight = true;
     try {
-      // Logged-in hydrate can fail (no session / cold health). Always fall
-      // through to the public market so Home/Top Merchants fill on first visit.
-      var hydrated = false;
-      if (usingApi() && global.AcctventaApiSync.hydrateFromApi) {
-        try {
-          hydrated = !!(await global.AcctventaApiSync.hydrateFromApi());
-        } catch (e) {
-          hydrated = false;
-        }
-      }
-      var marketEmpty =
-        !global.__acctventaApiMarket ||
-        !global.__acctventaApiMarket.length;
-      if ((!hydrated || marketEmpty) && global.AcctventaApiSync.hydratePublicMarket) {
+      // Always try the cheap public market first — fills Home without health/auth spam.
+      if (global.AcctventaApiSync.hydratePublicMarket) {
         try {
           await global.AcctventaApiSync.hydratePublicMarket();
         } catch (e2) {}
+      }
+      if (usingApi() && global.AcctventaApiSync.hydrateFromApi) {
+        try {
+          await global.AcctventaApiSync.hydrateFromApi();
+        } catch (e) {}
       }
       if (global.AcctventaUI) global.AcctventaUI.refreshAll();
     } catch (e) {
@@ -663,7 +656,9 @@
         refreshMarketListings();
       }
       if (tabId === 'home') {
-        loadSocialProof();
+        setTimeout(function () {
+          loadSocialProof();
+        }, 2000);
       }
       if (tabId === 'orders' || tabId === 'purchase') {
         refreshDisputesBanner();
@@ -708,8 +703,13 @@
   document.addEventListener('DOMContentLoaded', function () {
     wrapSwitchTab();
     refreshCartBadge();
-    loadSocialProof();
-    refreshDisputesBanner();
+    // Delay non-critical PHP calls so market.list wins the Hostinger connection budget
+    setTimeout(function () {
+      loadSocialProof();
+    }, 2500);
+    setTimeout(function () {
+      refreshDisputesBanner();
+    }, 3500);
     var cartBtn = document.getElementById('headerCartBtn');
     if (cartBtn && !cartBtn.__cartBound) {
       cartBtn.__cartBound = true;
