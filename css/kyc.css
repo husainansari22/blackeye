@@ -1,0 +1,444 @@
+/* Acctventa Business KYC — clean professional verification UI */
+
+#kycOverlay {
+  z-index: 145;
+}
+
+.kyc-side-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  letter-spacing: 0.01em;
+}
+
+.kyc-hero {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 1.25rem 0.25rem 2rem;
+  text-align: center;
+}
+
+.kyc-hero-icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0 auto 1.25rem;
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: #0ea5e9;
+  background: linear-gradient(160deg, rgba(14, 165, 233, 0.18), rgba(14, 165, 233, 0.04));
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  box-shadow: 0 12px 40px rgba(14, 165, 233, 0.12);
+}
+
+.kyc-hero-ok {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(160deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.04));
+}
+
+.kyc-hero-pending {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+  background: linear-gradient(160deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.04));
+}
+
+.kyc-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #0ea5e9;
+  margin-bottom: 0.5rem;
+}
+
+.kyc-hero h2 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin-bottom: 0.65rem;
+}
+
+.kyc-hero > p,
+.kyc-lead {
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.dark .kyc-hero > p,
+.dark .kyc-lead,
+.dark .kyc-muted {
+  color: #94a3b8;
+}
+
+.kyc-muted {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.kyc-bullets {
+  text-align: left;
+  margin: 0 auto 1.5rem;
+  max-width: 22rem;
+  space-y: 0.5rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.kyc-bullets li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.8rem;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.dark .kyc-bullets li {
+  color: #e2e8f0;
+}
+
+.kyc-bullets i {
+  color: #0ea5e9;
+  margin-top: 0.15rem;
+  width: 1rem;
+  text-align: center;
+}
+
+.kyc-alert {
+  text-align: left;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.85rem;
+  margin-bottom: 1rem;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #e11d48;
+}
+
+.kyc-btn-primary {
+  display: block;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0 auto 0.65rem;
+  background: #0ea5e9;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.kyc-btn-primary:hover {
+  background: #0284c7;
+}
+
+.kyc-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.kyc-btn-ghost {
+  display: block;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0 auto;
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.9rem;
+  border: none;
+  cursor: pointer;
+}
+
+.kyc-btn-ghost:hover {
+  color: #0ea5e9;
+}
+
+.kyc-section {
+  max-width: 440px;
+  margin: 0 auto;
+  padding-bottom: 3.5rem;
+}
+
+.kyc-section h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35rem;
+}
+
+.kyc-field {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.kyc-field > span {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+
+.kyc-req {
+  color: #0ea5e9;
+  font-weight: 800;
+}
+
+.kyc-field input,
+.kyc-field textarea,
+.kyc-field select {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.875rem;
+  color: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark .kyc-field input,
+.dark .kyc-field textarea,
+.dark .kyc-field select {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.kyc-field input:focus,
+.kyc-field textarea:focus,
+.kyc-field select:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.kyc-flow-footer {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  transition: opacity 0.15s ease;
+}
+
+.dark .kyc-flow-footer {
+  border-top-color: #1e293b;
+  background: rgba(15, 23, 42, 0.96);
+}
+
+/* While a field is focused / keyboard is opening — ignore footer taps (iOS ghost clicks). */
+.kyc-flow-footer.kyc-flow-footer--locked {
+  pointer-events: none !important;
+  opacity: 0.45;
+}
+
+.kyc-flow-footer.kyc-flow-footer--locked .kyc-btn-primary,
+.kyc-flow-footer.kyc-flow-footer--locked .kyc-btn-ghost {
+  pointer-events: none !important;
+}
+
+.kyc-nav {
+  display: flex;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+}
+
+.kyc-nav .kyc-btn-primary,
+.kyc-nav .kyc-btn-ghost {
+  margin: 0;
+  flex: 1;
+  max-width: none;
+}
+
+.kyc-nav .kyc-btn-ghost {
+  border: 1px solid #e2e8f0;
+}
+
+.dark .kyc-nav .kyc-btn-ghost {
+  border-color: #1e293b;
+}
+
+.kyc-field.kyc-field-error input,
+.kyc-field.kyc-field-error textarea,
+.kyc-field.kyc-field-error select {
+  border-color: #f43f5e;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12);
+}
+
+.kyc-doc {
+  border: 1px dashed #cbd5e1;
+  border-radius: 1rem;
+  padding: 0.9rem;
+  margin-bottom: 0.75rem;
+  background: rgba(148, 163, 184, 0.04);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.dark .kyc-doc {
+  border-color: #334155;
+}
+
+.kyc-doc-ok {
+  border-style: solid;
+  border-color: rgba(16, 185, 129, 0.55);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.kyc-doc-warn {
+  border-style: solid;
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.kyc-doc-bad {
+  border-style: solid;
+  border-color: rgba(244, 63, 94, 0.55);
+  background: rgba(244, 63, 94, 0.06);
+}
+
+.kyc-scanning {
+  opacity: 0.75;
+}
+
+.kyc-doc-top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.kyc-doc-preview {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.75rem;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.dark .kyc-doc-preview {
+  background: #1e293b;
+}
+
+.kyc-doc-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kyc-doc-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.kyc-doc-name {
+  font-size: 0.7rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kyc-doc-status {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-top: 0.2rem;
+  line-height: 1.35;
+}
+
+.kyc-doc-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.kyc-doc-btn {
+  flex: 1;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.55rem 0.5rem;
+  border-radius: 0.65rem;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  color: #334155;
+  background: #fff;
+}
+
+.dark .kyc-doc-btn {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.kyc-doc-btn-primary {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
+}
+
+.dark .kyc-doc-btn-primary {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
+}
+
+.kyc-summary {
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.dark .kyc-summary {
+  border-color: #1e293b;
+}
+
+.kyc-summary p {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.kyc-summary span {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.kyc-doc-summary {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 0.15rem;
+}
+
+.dark .kyc-doc-summary {
+  color: #94a3b8;
+}
