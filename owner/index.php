@@ -579,7 +579,8 @@ $tab = $_GET['tab'] ?? 'overview';
 <body class="av-app min-h-screen">
 <?php if (!$authed): ?>
   <div class="min-h-screen flex items-center justify-center p-4">
-    <form method="post" class="w-full max-w-sm av-card p-6 space-y-4">
+    <div class="w-full max-w-sm space-y-3">
+    <form method="post" class="av-card p-6 space-y-4">
       <input type="hidden" name="form" value="login">
       <div class="text-center">
         <div class="w-12 h-12 mx-auto rounded-xl bg-brand text-white flex items-center justify-center font-bold text-xl mb-2">A</div>
@@ -595,32 +596,33 @@ $tab = $_GET['tab'] ?? 'overview';
         <label class="text-xs text-slate-500">Password</label>
         <input name="password" type="password" autocomplete="current-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
-      <button class="w-full bg-brand text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
-      <details class="text-left border border-slate-200 dark:border-slate-700 rounded-xl p-3">
+      <button type="submit" class="w-full bg-brand text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
+    </form>
+    <div class="av-card p-4 space-y-3">
+      <details class="text-left">
         <summary class="text-xs font-semibold text-brand cursor-pointer">Reset password (uses api/config.php)</summary>
         <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">If sign-in fails after a password change, reset here with the <code class="text-[10px]">owner_password</code> value from Hostinger → <code class="text-[10px]">public_html/api/config.php</code>.</p>
-        <div class="space-y-2 mt-3">
+        <form id="ownerRecoverForm" method="post" class="space-y-2 mt-3">
+          <input type="hidden" name="form" value="owner_recover">
           <div>
             <label class="text-xs text-slate-500">Config password (owner_password)</label>
-            <input name="master_password" type="password" autocomplete="off" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
+            <input name="master_password" type="password" autocomplete="off" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
           </div>
           <div>
             <label class="text-xs text-slate-500">New password</label>
-            <input name="new_password" type="password" autocomplete="new-password" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
+            <input name="new_password" type="password" autocomplete="new-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
           </div>
           <div>
             <label class="text-xs text-slate-500">Confirm new password</label>
-            <input name="confirm_password" type="password" autocomplete="new-password" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
+            <input name="confirm_password" type="password" autocomplete="new-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
           </div>
-          <button type="submit" form="ownerRecoverForm" class="w-full border-2 border-brand text-brand font-semibold py-2.5 rounded-xl text-sm">Reset &amp; sign in</button>
-        </div>
+          <button type="submit" class="w-full border-2 border-brand text-brand font-semibold py-2.5 rounded-xl text-sm">Reset &amp; sign in</button>
+        </form>
       </details>
-      <form id="ownerRecoverForm" method="post" class="hidden">
-        <input type="hidden" name="form" value="owner_recover">
-      </form>
       <p class="text-[11px] text-slate-400 text-center leading-relaxed">Emergency tool: <a class="text-brand underline" href="/owner/emergency-reset.php">/owner/emergency-reset.php</a></p>
       <a href="/" class="block text-center text-xs text-brand">← Back to website</a>
-    </form>
+    </div>
+    </div>
   </div>
 <?php else:
   // Stats — every query wrapped so a Hostinger/DB blip cannot white-screen Owner Admin
