@@ -1,5 +1,22 @@
 <?php
 declare(strict_types=1);
+// Prevent a PHP fatal / DB blip from returning a blank white page on Hostinger
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+ob_start();
+set_exception_handler(static function (Throwable $e): void {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: text/html; charset=UTF-8');
+    }
+    $msg = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Owner Admin error</title></head><body style="font-family:system-ui;padding:2rem;max-width:40rem;margin:auto">';
+    echo '<h1 style="font-size:1.25rem">Owner Admin could not load</h1>';
+    echo '<p style="color:#64748b;font-size:0.9rem">The server hit an error while opening the control panel. Wait 30 seconds and refresh. If it keeps failing, open <a href="/owner/emergency-reset.php">emergency password reset</a>.</p>';
+    echo '<pre style="background:#f1f5f9;padding:1rem;border-radius:0.75rem;overflow:auto;font-size:0.75rem">' . $msg . '</pre>';
+    echo '<p><a href="/owner/">← Back to Owner login</a></p></body></html>';
+    exit;
+});
 session_start();
 require __DIR__ . '/../api/bootstrap.php';
 
@@ -17,13 +34,44 @@ if (isset($_GET['logout'])) {
 
 if (($_POST['form'] ?? '') === 'login') {
     $user = trim((string)($_POST['username'] ?? ''));
-    $pass = (string)($_POST['password'] ?? '');
+    $pass = trim((string)($_POST['password'] ?? ''));
     if (strcasecmp($user, owner_panel_username()) === 0 && owner_panel_password_verify($pass)) {
         $_SESSION['owner_ok'] = true;
         header('Location: /owner/');
         exit;
     }
     $error = 'Invalid owner username or password.';
+    try {
+        $diag = owner_login_diagnostics();
+        $error .= ' Server expects username "' . $diag['username'] . '" and a config password of '
+            . (int)$diag['configPassLen'] . ' characters'
+            . ($diag['configPassLen'] === 0 ? ' (owner_password is empty in api/config.php!)' : '')
+            . '. If that length is wrong, re-save config.php or open /owner/emergency-reset.php';
+    } catch (Throwable $e) {
+        $error .= ' (Could not read server config — check api/config.php syntax.)';
+    }
+}
+
+if (($_POST['form'] ?? '') === 'owner_recover') {
+    $master = trim((string)($_POST['master_password'] ?? ''));
+    $next = trim((string)($_POST['new_password'] ?? ''));
+    $confirm = trim((string)($_POST['confirm_password'] ?? ''));
+    $configPass = config_owner_password();
+    if ($configPass === '' || !hash_equals($configPass, $master)) {
+        $len = strlen($configPass);
+        $error = 'Recovery code does not match owner_password in api/config.php (server currently has '
+            . $len . ' characters). Re-save the file in Hostinger or use /owner/emergency-reset.php';
+    } elseif (strlen($next) < 6) {
+        $error = 'New password must be at least 6 characters.';
+    } elseif ($next !== $confirm) {
+        $error = 'New password and confirmation do not match.';
+    } else {
+        owner_password_set($next);
+        admin_password_set($next);
+        $_SESSION['owner_ok'] = true;
+        header('Location: /owner/?tab=settings&recovered=1');
+        exit;
+    }
 }
 
 $authed = !empty($_SESSION['owner_ok']);
@@ -541,31 +589,76 @@ $tab = $_GET['tab'] ?? 'overview';
       <?php if ($error): ?><p class="text-xs text-red-600"><?= h($error) ?></p><?php endif; ?>
       <div>
         <label class="text-xs text-slate-500">Username</label>
-        <input name="username" value="owner" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
+        <input name="username" autocomplete="username" value="<?= h(owner_panel_username()) ?>" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
       <div>
         <label class="text-xs text-slate-500">Password</label>
-        <input name="password" type="password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
+        <input name="password" type="password" autocomplete="current-password" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" required>
       </div>
       <button class="w-full bg-brand text-white font-bold py-3 rounded-xl text-sm">Sign in</button>
+      <details class="text-left border border-slate-200 dark:border-slate-700 rounded-xl p-3">
+        <summary class="text-xs font-semibold text-brand cursor-pointer">Reset password (uses api/config.php)</summary>
+        <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">If sign-in fails after a password change, reset here with the <code class="text-[10px]">owner_password</code> value from Hostinger → <code class="text-[10px]">public_html/api/config.php</code>.</p>
+        <div class="space-y-2 mt-3">
+          <div>
+            <label class="text-xs text-slate-500">Config password (owner_password)</label>
+            <input name="master_password" type="password" autocomplete="off" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">New password</label>
+            <input name="new_password" type="password" autocomplete="new-password" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Confirm new password</label>
+            <input name="confirm_password" type="password" autocomplete="new-password" form="ownerRecoverForm" class="mt-1 w-full border dark:border-slate-700 dark:bg-slate-950 rounded-xl px-3 py-2.5 text-base" minlength="6">
+          </div>
+          <button type="submit" form="ownerRecoverForm" class="w-full border-2 border-brand text-brand font-semibold py-2.5 rounded-xl text-sm">Reset &amp; sign in</button>
+        </div>
+      </details>
+      <form id="ownerRecoverForm" method="post" class="hidden">
+        <input type="hidden" name="form" value="owner_recover">
+      </form>
+      <p class="text-[11px] text-slate-400 text-center leading-relaxed">Emergency tool: <a class="text-brand underline" href="/owner/emergency-reset.php">/owner/emergency-reset.php</a></p>
       <a href="/" class="block text-center text-xs text-brand">← Back to website</a>
     </form>
   </div>
 <?php else:
-  // Stats
+  // Stats — every query wrapped so a Hostinger/DB blip cannot white-screen Owner Admin
   $stats = [
-    'users' => (int)db()->query('SELECT COUNT(*) c FROM users')->fetch()['c'],
-    'ads_pending' => (int)db()->query("SELECT COUNT(*) c FROM ads WHERE status='pending'")->fetch()['c'],
-    'orders' => (int)db()->query('SELECT COUNT(*) c FROM orders')->fetch()['c'],
-    'withdraw_pending' => (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='withdrawal' AND status='pending'")->fetch()['c'],
-    'deposit_pending' => (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='deposit' AND status='pending'")->fetch()['c'],
-    'volume' => (float)db()->query("SELECT COALESCE(SUM(price),0) s FROM orders WHERE status='completed'")->fetch()['s'],
+    'users' => 0,
+    'ads_pending' => 0,
+    'orders' => 0,
+    'withdraw_pending' => 0,
+    'deposit_pending' => 0,
+    'volume' => 0.0,
     'kyc_pending' => 0,
     'commission_total' => 0.0,
     'deposits_total' => 0.0,
     'withdrawals_total' => 0.0,
     'uploads_total' => 0,
+    'support_unread' => 0,
+    'support_threads' => 0,
+    'order_chats' => 0,
+    'reports_open' => 0,
   ];
+  try {
+    $stats['users'] = (int)db()->query('SELECT COUNT(*) c FROM users')->fetch()['c'];
+  } catch (Throwable $e) {}
+  try {
+    $stats['ads_pending'] = (int)db()->query("SELECT COUNT(*) c FROM ads WHERE status='pending'")->fetch()['c'];
+  } catch (Throwable $e) {}
+  try {
+    $stats['orders'] = (int)db()->query('SELECT COUNT(*) c FROM orders')->fetch()['c'];
+  } catch (Throwable $e) {}
+  try {
+    $stats['withdraw_pending'] = (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='withdrawal' AND status='pending'")->fetch()['c'];
+  } catch (Throwable $e) {}
+  try {
+    $stats['deposit_pending'] = (int)db()->query("SELECT COUNT(*) c FROM transactions WHERE type='deposit' AND status='pending'")->fetch()['c'];
+  } catch (Throwable $e) {}
+  try {
+    $stats['volume'] = (float)db()->query("SELECT COALESCE(SUM(price),0) s FROM orders WHERE status='completed'")->fetch()['s'];
+  } catch (Throwable $e) {}
   try {
     ensure_kyc_tables();
     $stats['kyc_pending'] = (int)db()->query("SELECT COUNT(*) c FROM kyc_submissions WHERE status IN ('needs_review','blurry_review','pending')")->fetch()['c'];
@@ -588,10 +681,6 @@ $tab = $_GET['tab'] ?? 'overview';
   try {
     $stats['uploads_total'] = (int)db()->query('SELECT COUNT(*) c FROM ads')->fetch()['c'];
   } catch (Throwable $e) {}
-  $stats['support_unread'] = 0;
-  $stats['support_threads'] = 0;
-  $stats['order_chats'] = 0;
-  $stats['reports_open'] = 0;
   try {
     ensure_support_tables();
     $stats['support_threads'] = (int)db()->query("SELECT COUNT(*) c FROM support_threads")->fetch()['c'];
@@ -612,7 +701,10 @@ $tab = $_GET['tab'] ?? 'overview';
       $stats['reports_open'] = (int)db()->query("SELECT COUNT(*) c FROM seller_reports")->fetch()['c'];
     } catch (Throwable $e2) {}
   }
-  $gw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
+  $gw = [];
+  try {
+    $gw = db()->query('SELECT * FROM gateway_settings WHERE id=1')->fetch() ?: [];
+  } catch (Throwable $e) {}
   $tabLabels = [
     'overview'=>'Overview','users'=>'Users','kyc'=>'KYC','ads'=>'Ads','orders'=>'Orders','chats'=>'Order chats',
     'reports'=>'Reports','wallet'=>'Wallet','support'=>'Inbox','currencies'=>'Currencies','gateways'=>'Gateways',
@@ -1530,7 +1622,12 @@ $tab = $_GET['tab'] ?? 'overview';
       </div>
     <?php endif; ?>
 
-    <?php if ($tab === 'orders'): $orders = db()->query('SELECT o.*, b.name buyer_name, s.name seller_name, s.balance seller_balance FROM orders o JOIN users b ON b.id=o.buyer_id JOIN users s ON s.id=o.seller_id ORDER BY o.created_at DESC LIMIT 200')->fetchAll(); ?>
+    <?php if ($tab === 'orders'):
+      $orders = [];
+      try {
+        $orders = db()->query('SELECT o.*, b.name buyer_name, s.name seller_name, s.balance seller_balance FROM orders o JOIN users b ON b.id=o.buyer_id JOIN users s ON s.id=o.seller_id ORDER BY o.created_at DESC LIMIT 200')->fetchAll();
+      } catch (Throwable $e) { $error = $error ?: ('Orders temporarily unavailable: ' . $e->getMessage()); }
+    ?>
       <div class="av-page">
         <div class="av-page-head">
           <div>

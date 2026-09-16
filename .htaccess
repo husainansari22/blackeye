@@ -59,6 +59,7 @@ RewriteRule ^seller/([^/]+)/?$ /seller.html [L,QSA]
 RewriteRule ^reset/?$ /reset.html [L,QSA]
 
 # Owner control panel
+RewriteRule ^owner/emergency-reset/?$ /owner/emergency-reset.php [L,QSA]
 RewriteRule ^owner/?$ /owner/index.php [L,QSA]
 
 # App HTML must not stick in mobile Safari / home-screen PWA cache

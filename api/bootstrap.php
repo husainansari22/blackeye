@@ -17,6 +17,25 @@ function app_config(): array {
     return $cfg;
 }
 
+/** Re-read api/config.php (bypasses PHP opcache — Hostinger often caches old passwords). */
+function load_config_fresh(): array {
+    $path = __DIR__ . '/config.php';
+    if (!is_file($path)) {
+        return [];
+    }
+    if (function_exists('opcache_invalidate')) {
+        @opcache_invalidate($path, true);
+    }
+    clearstatcache(true, $path);
+    $cfg = require $path;
+    return is_array($cfg) ? $cfg : [];
+}
+
+function config_owner_password(): string {
+    $cfg = load_config_fresh();
+    return (string)($cfg['owner_password'] ?? '');
+}
+
 function db(): PDO {
     static $pdo = null;
     if ($pdo instanceof PDO) return $pdo;
@@ -107,19 +126,76 @@ function staff_admin_username_set(string $username): void {
 
 /** Owner panel username — settings override config.php. */
 function owner_panel_username(): string {
-    $s = trim((string)setting_get('owner_username', ''));
-    if ($s !== '') return $s;
-    return (string)(app_config()['owner_username'] ?? 'owner');
+    try {
+        $s = trim((string)setting_get('owner_username', ''));
+        if ($s !== '') return $s;
+    } catch (Throwable $e) {
+        // DB may be briefly unavailable
+    }
+    $cfg = load_config_fresh();
+    if (!$cfg) $cfg = app_config();
+    return (string)($cfg['owner_username'] ?? 'owner');
 }
 
+/** Safe login hints when auth fails (never exposes the password). */
+function owner_login_diagnostics(): array {
+    $cfg = load_config_fresh();
+    if (!$cfg) {
+        try { $cfg = app_config(); } catch (Throwable $e) { $cfg = []; }
+    }
+    $configPass = (string)($cfg['owner_password'] ?? '');
+    $hasOwnerHash = false;
+    $hasAdminHash = false;
+    try {
+        $hasOwnerHash = (string)setting_get('owner_password_hash', '') !== '';
+        $hasAdminHash = (string)setting_get('admin_password_hash', '') !== '';
+    } catch (Throwable $e) {}
+    return [
+        'username' => owner_panel_username(),
+        'configPassLen' => strlen($configPass),
+        'hasOwnerHash' => $hasOwnerHash,
+        'hasAdminHash' => $hasAdminHash,
+        'authVersion' => 4,
+    ];
+}
+
+/**
+ * Owner Admin password check:
+ * 1) DB hash (Settings → Owner credentials)
+ * 2) Fresh api/config.php owner_password (Hostinger file)
+ * 3) Website Admin password (shared recovery)
+ * Stale DB hashes no longer permanently block config.php passwords.
+ */
 function owner_panel_password_verify(string $pass): bool {
     if ($pass === '') return false;
-    $hash = (string)setting_get('owner_password_hash', '');
-    if ($hash !== '') {
-        return password_verify($pass, $hash);
+    try {
+        $hash = (string)setting_get('owner_password_hash', '');
+        if ($hash !== '' && password_verify($pass, $hash)) {
+            return true;
+        }
+    } catch (Throwable $e) {
+        // fall through to config
     }
-    $cfg = app_config();
-    return hash_equals((string)($cfg['owner_password'] ?? ''), $pass);
+    $configPass = config_owner_password();
+    if ($configPass !== '' && hash_equals($configPass, $pass)) {
+        try {
+            setting_set('owner_password_hash', password_hash($pass, PASSWORD_DEFAULT));
+        } catch (Throwable $e) {}
+        return true;
+    }
+    try {
+        if (function_exists('admin_password_verify') && admin_password_verify($pass)) {
+            try {
+                setting_set('owner_password_hash', password_hash($pass, PASSWORD_DEFAULT));
+            } catch (Throwable $e) {}
+            return true;
+        }
+    } catch (Throwable $e) {}
+    return false;
+}
+
+function owner_password_set(string $newPass): void {
+    setting_set('owner_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
 }
 
 function owner_panel_credentials_set(string $username, string $newPass): void {
@@ -127,7 +203,7 @@ function owner_panel_credentials_set(string $username, string $newPass): void {
     $username = preg_replace('/[^a-z0-9._@-]/', '', $username) ?: 'owner';
     setting_set('owner_username', $username);
     if ($newPass !== '') {
-        setting_set('owner_password_hash', password_hash($newPass, PASSWORD_DEFAULT));
+        owner_password_set($newPass);
     }
 }
 
