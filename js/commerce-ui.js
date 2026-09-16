@@ -419,9 +419,16 @@
   var marketRefreshInFlight = false;
   async function refreshMarketListings() {
     if (marketRefreshInFlight || !global.AcctventaApiSync) return;
+    // Skip if Home already has fresh listings (boot just loaded them)
+    if (
+      global.__acctventaApiMarket &&
+      global.__acctventaApiMarket.length &&
+      marketRefreshInFlight === false
+    ) {
+      // still allow refresh, but hydratePublicMarket has its own 5s debounce
+    }
     marketRefreshInFlight = true;
     try {
-      // Always try the cheap public market first — fills Home without health/auth spam.
       if (global.AcctventaApiSync.hydratePublicMarket) {
         try {
           await global.AcctventaApiSync.hydratePublicMarket();

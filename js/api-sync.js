@@ -172,43 +172,96 @@
 
   let hydratePublicInflight = null;
   let hydrateFromApiInflight = null;
+  let lastPublicMarketAt = 0;
+  const MARKET_CACHE_KEY = 'acctventa_market_cache_v1';
+
+  function readMarketCache() {
+    try {
+      const raw = sessionStorage.getItem(MARKET_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.listings)) return null;
+      if (Date.now() - Number(parsed.at || 0) > 10 * 60 * 1000) return null;
+      return parsed.listings;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeMarketCache(listings) {
+    try {
+      sessionStorage.setItem(
+        MARKET_CACHE_KEY,
+        JSON.stringify({ at: Date.now(), listings: Array.isArray(listings) ? listings : [] })
+      );
+    } catch (e) {}
+  }
+
+  async function fetchMarketWithRetry(Api) {
+    let lastErr = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const marketRes = await Api.market();
+        return { ok: true, listings: marketRes.listings || [] };
+      } catch (e) {
+        lastErr = e;
+        const st = e && e.status;
+        if (st === 429 || st === 503 || st === 502 || st === 500) {
+          await new Promise((r) => setTimeout(r, 900 * Math.pow(2, attempt)));
+          continue;
+        }
+        break;
+      }
+    }
+    return { ok: false, error: lastErr };
+  }
 
   /** Public marketplace for guests (no login required). */
-  async function hydratePublicMarket() {
+  async function hydratePublicMarket(opts) {
+    const force = !!(opts && opts.force);
+    if (!force && lastPublicMarketAt && Date.now() - lastPublicMarketAt < 5000) {
+      return !!(global.__acctventaApiMarket && global.__acctventaApiMarket.length);
+    }
     if (hydratePublicInflight) return hydratePublicInflight;
     hydratePublicInflight = (async function () {
       const Api = global.AcctventaApi;
       const A = global.Acctventa;
       if (!Api || !A) return false;
-      // Do NOT gate on health — Hostinger often 429s health while market.list still works.
-      // Hitting market.list directly is the availability probe for guests.
-      try {
-        let marketRows = null;
-        let marketFailed = false;
+
+      // Instant paint from last successful fetch while we revalidate
+      const cached = readMarketCache();
+      if (cached && cached.length && (!global.__acctventaApiMarket || !global.__acctventaApiMarket.length)) {
+        setApiMarket(cached, { allowEmpty: false });
         try {
-          const marketRes = await Api.market();
-          marketRows = marketRes.listings || [];
+          if (global.AcctventaUI && global.AcctventaUI.refreshAll) global.AcctventaUI.refreshAll();
+        } catch (e0) {}
+      }
+
+      try {
+        const result = await fetchMarketWithRetry(Api);
+        if (result.ok) {
           if (Api.markAvailable) Api.markAvailable(true);
-        } catch (e) {
-          marketFailed = true;
-          console.warn('Public market.list failed', e);
+          setApiMarket(result.listings, { allowEmpty: true });
+          writeMarketCache(result.listings);
+          lastPublicMarketAt = Date.now();
+          // Soft-load stories later; do not compete with market on a cold host
+          setTimeout(function () {
+            Api.storiesFeed()
+              .then(function (feed) {
+                global.__acctventaStoryFeed = (feed && feed.merchants) || [];
+                try {
+                  if (global.AcctventaUI && global.AcctventaUI.refreshAll) global.AcctventaUI.refreshAll();
+                } catch (e3) {}
+              })
+              .catch(function () {});
+          }, 2500);
+          return true;
         }
-        if (!marketFailed) setApiMarket(marketRows, { allowEmpty: true });
-        // Soft-load stories later; do not compete with market on a cold host
-        setTimeout(function () {
-          Api.storiesFeed()
-            .then(function (feed) {
-              global.__acctventaStoryFeed = (feed && feed.merchants) || [];
-              try {
-                if (global.AcctventaUI && global.AcctventaUI.refreshAll) global.AcctventaUI.refreshAll();
-              } catch (e3) {}
-            })
-            .catch(function () {});
-        }, 1500);
-        return !marketFailed;
+        console.warn('Public market.list failed', result.error);
+        return !!(global.__acctventaApiMarket && global.__acctventaApiMarket.length);
       } catch (e) {
         console.warn('Public market hydrate failed', e);
-        return false;
+        return !!(global.__acctventaApiMarket && global.__acctventaApiMarket.length);
       }
     })();
     try {
