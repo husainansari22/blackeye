@@ -48,9 +48,15 @@ select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--bord
 .vpane-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ai-placeholder.hidden{display:none}
 canvas#out{z-index:1}
-/* Watermark cover disabled — it only hid Decart's tiny badge and was never the blank-pane cause */
-.wm-cover{display:none!important}
+/* Cover Decart's baked-in corner badge on this site only (pixels still contain it) */
+.wm-cover{
+  display:none;position:absolute;right:2px;bottom:2px;z-index:3;pointer-events:none;
+  width:132px;height:36px;border-radius:6px;
+  background:linear-gradient(135deg,#0a0a0a 0%,#111 100%);
+}
+.vpane.ai-pane.has-out .wm-cover{display:block}
 .vpane.ai-pane.fs-live{position:fixed;inset:0;z-index:9999;border-radius:0;aspect-ratio:auto;background:#000}
+.vpane.ai-pane.fs-live .wm-cover{width:160px;height:42px;right:8px;bottom:8px}
 .vctrl{display:flex;gap:8px;margin-top:8px;justify-content:center}
 .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
   background:var(--card2);color:#fff;display:flex;align-items:center;justify-content:center;
@@ -717,8 +723,7 @@ function showLucyVideo(remoteStream) {
   tryPlay();
   // Safari often needs a second assign on the next tick
   setTimeout(() => {
-    if (v.srcObject !== stream) v.srcObject = stream;
-    else v.srcObject = stream;
+    v.srcObject = stream;
     tryPlay();
     report("Lucy stream");
   }, 0);
