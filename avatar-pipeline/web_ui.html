@@ -47,7 +47,6 @@ select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--bord
 .vpane.ai-pane.has-out{border-color:rgba(225,29,46,.35);padding:0}
 .vpane-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ai-placeholder.hidden{display:none}
-#lucy-out{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:1}
 canvas#out{z-index:1}
 /* Small corner cover for Decart's baked-in badge — keep tiny so it never blanks the feed */
 .wm-cover{
@@ -124,6 +123,15 @@ textarea{min-height:100px;resize:vertical}
   background:#1f2937;color:#d1d5db;flex-shrink:0}
 .key-row.listening .tag{background:rgba(34,197,94,.15);color:#86efac}
 .key-row.missing .tag{background:rgba(239,68,68,.15);color:#fca5a5}
+.fold-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:transparent;border:none;color:#fff;font:inherit;font-weight:700;font-size:.95rem;
+  cursor:pointer;padding:0;margin-bottom:0;text-align:left}
+.fold-hdr .chev{color:var(--red);font-size:1.1rem;transition:transform .15s ease}
+.fold-hdr.open .chev{transform:rotate(180deg)}
+.fold-body{margin-top:12px}
+.fold-body.collapsed{display:none}
+#lucy-out{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:1}
+.vpane.ai-pane{position:relative;overflow:hidden}
 </style>
 </head>
 <body>
@@ -141,6 +149,26 @@ textarea{min-height:100px;resize:vertical}
 <div id="app-view" class="app hidden">
   <div id="cam-banner" class="banner hidden"></div>
   <p class="stats-bar" id="stats">Loading…</p>
+
+  <div class="card red-border" id="keys-listening-card">
+    <button type="button" class="fold-hdr open" id="keys-fold-hdr" onclick="toggleKeysFold()">
+      <span><span class="ico" style="display:inline">📡</span> Keys listening</span>
+      <span class="chev" id="keys-fold-chevron">▾</span>
+    </button>
+    <div class="fold-body" id="keys-fold-body">
+      <p class="cam-note">Saved Decart key for this site (masked). Green = ready for Go Live.</p>
+      <div id="keys-list" class="keys-list" style="margin-top:0">
+        <div class="key-row missing" id="key-row-main">
+          <span class="dot"></span>
+          <div class="meta">
+            <strong id="key-row-title">No key saved</strong>
+            <small id="key-row-detail">Save a dct_ key in the form below</small>
+          </div>
+          <span class="tag" id="key-row-tag">OFF</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="card red-border">
     <div class="card-hdr"><span class="ico">🔑</span> Lucy API Key</div>
@@ -163,19 +191,6 @@ textarea{min-height:100px;resize:vertical}
     <p id="lucy-key-err" class="err hidden"></p>
     <button class="btn-red" onclick="saveLucyKey()">💾 Save key</button>
     <button class="btn-ghost" onclick="clearLucyKey()">Clear saved key</button>
-
-    <div class="card-hdr" style="margin-top:16px;margin-bottom:8px"><span class="ico">📡</span> Keys listening</div>
-    <p class="cam-note" style="margin-bottom:0">Active Decart key saved for this site.</p>
-    <div id="keys-list" class="keys-list">
-      <div class="key-row missing" id="key-row-main">
-        <span class="dot"></span>
-        <div class="meta">
-          <strong id="key-row-title">No key saved</strong>
-          <small id="key-row-detail">Paste a dct_ key above and tap Save</small>
-        </div>
-        <span class="tag" id="key-row-tag">OFF</span>
-      </div>
-    </div>
   </div>
 
   <div class="card">
@@ -213,7 +228,8 @@ textarea{min-height:100px;resize:vertical}
       <div>
         <div class="vpane ai-pane" id="ai-pane">
           <canvas id="out" class="hidden"></canvas>
-          <video id="lucy-out" class="hidden" autoplay playsinline muted></video>
+          <video id="lucy-out" autoplay playsinline muted webkit-playsinline
+            style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:1;display:none"></video>
           <div class="wm-cover" id="wm-cover" aria-hidden="true"></div>
           <div class="vpane-placeholder ai-placeholder" id="ai-ph">
             <span class="ph-ico">✨</span>
@@ -324,6 +340,7 @@ async function doLogin() {
 function showApp() {
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("app-view").classList.remove("hidden");
+  restoreKeysFold();
   if (!window.isSecureContext) {
     document.getElementById("cam-banner").innerHTML =
       "Webcam needs HTTPS — use <a href='" + HTTPS_URL + "' style='color:#fca5a5'>" + HTTPS_URL + "</a>";
@@ -346,6 +363,7 @@ async function pollStats() {
   try {
     const d = await (await fetch("/api/status", { headers: { Authorization: "Bearer " + TOKEN } })).json();
     lucyConfigured = !!(d.lucy && d.lucy.configured);
+    if (d.lucy) renderKeysListening(d.lucy);
     const lucyBit = lucyConfigured
       ? ("Lucy ✓ " + (d.lucy.masked || "") + " · " + (d.lucy.model || ""))
       : "Lucy key missing";
@@ -401,7 +419,7 @@ function renderKeysListening(d) {
   } else {
     row.className = "key-row missing";
     title.textContent = "No key saved";
-    detail.textContent = "Paste a dct_ key above and tap Save";
+    detail.textContent = "Save a dct_ key in the Lucy API Key form below";
     tag.textContent = "OFF";
   }
 }
@@ -626,39 +644,108 @@ function showAiOutput() {
   document.getElementById("ai-pane").classList.add("has-out");
 }
 
+function toggleKeysFold() {
+  const body = document.getElementById("keys-fold-body");
+  const hdr = document.getElementById("keys-fold-hdr");
+  const open = body.classList.contains("collapsed");
+  body.classList.toggle("collapsed", !open);
+  hdr.classList.toggle("open", open);
+  try { localStorage.setItem("kelvin_keys_fold", open ? "open" : "closed"); } catch (_) {}
+}
+
+function restoreKeysFold() {
+  const pref = localStorage.getItem("kelvin_keys_fold") || "open";
+  const body = document.getElementById("keys-fold-body");
+  const hdr = document.getElementById("keys-fold-hdr");
+  if (!body || !hdr) return;
+  const open = pref !== "closed";
+  body.classList.toggle("collapsed", !open);
+  hdr.classList.toggle("open", open);
+}
+
+function hideLucyVideoEl() {
+  const v = document.getElementById("lucy-out");
+  if (!v) return;
+  v.classList.remove("hidden");
+  v.style.display = "none";
+  try { v.srcObject = null; } catch (_) {}
+}
+
 function showLucyVideo(remoteStream) {
   const v = document.getElementById("lucy-out");
+  const ph = document.getElementById("ai-ph");
   document.getElementById("out").classList.add("hidden");
-  document.getElementById("ai-ph").classList.add("hidden");
+  if (ph) {
+    ph.classList.add("hidden");
+    ph.style.display = "none";
+  }
+
+  // iOS Safari stays black if video was display:none / .hidden when srcObject is set.
+  // .hidden uses !important — must remove the class, not only set style.display.
   v.classList.remove("hidden");
-  v.setAttribute("playsinline", "");
-  v.setAttribute("webkit-playsinline", "");
+  v.style.display = "block";
+  v.style.visibility = "visible";
+  v.style.opacity = "1";
   v.muted = true;
-  v.autoplay = true;
+  v.defaultMuted = true;
+  v.playsInline = true;
+  v.setAttribute("playsinline", "true");
+  v.setAttribute("webkit-playsinline", "true");
+  v.setAttribute("muted", "");
+  v.setAttribute("autoplay", "");
+
+  let fresh = remoteStream;
   try {
-    // Some browsers need tracks enabled explicitly
-    remoteStream.getTracks().forEach((t) => { t.enabled = true; });
-  } catch (_) {}
-  v.srcObject = remoteStream;
+    fresh = new MediaStream();
+    (remoteStream.getTracks ? remoteStream.getTracks() : []).forEach((t) => {
+      try { t.enabled = true; } catch (_) {}
+      fresh.addTrack(t);
+    });
+  } catch (_) {
+    fresh = remoteStream;
+  }
+
+  try { v.pause(); } catch (_) {}
+  try { v.removeAttribute("src"); v.load(); } catch (_) {}
+  v.srcObject = fresh;
+  document.getElementById("ai-pane").classList.add("has-out");
+
   const tryPlay = () => {
     const p = v.play();
-    if (p && p.catch) p.catch((err) => {
-      document.getElementById("out-status").textContent = "Tap output to unmute/play · " + (err?.message || "");
-    });
+    if (p && p.catch) {
+      p.catch((err) => {
+        document.getElementById("out-status").textContent =
+          "Tap the black output panel to start video · " + (err && err.message ? err.message : "");
+      });
+    }
   };
+  // Force a layout pass so Safari allocates a decoder surface before play()
+  void v.offsetWidth;
   tryPlay();
-  v.onloadedmetadata = tryPlay;
+  v.onloadedmetadata = () => {
+    tryPlay();
+    document.getElementById("out-status").textContent =
+      "Lucy LIVE · " + (v.videoWidth || 0) + "x" + (v.videoHeight || 0);
+  };
+  v.onplaying = () => {
+    document.getElementById("out-status").textContent =
+      "Lucy LIVE · " + (v.videoWidth || 0) + "x" + (v.videoHeight || 0);
+  };
   v.oncanplay = tryPlay;
   v.onclick = tryPlay;
-  showAiOutput();
-  const tracks = remoteStream.getVideoTracks ? remoteStream.getVideoTracks() : [];
-  document.getElementById("out-status").textContent =
-    "Lucy stream · tracks=" + tracks.length + (tracks[0] ? (" · " + (tracks[0].label || tracks[0].readyState)) : " · no video track");
+  document.getElementById("ai-pane").onclick = tryPlay;
+
+  const tracks = fresh.getVideoTracks ? fresh.getVideoTracks() : [];
+  if (!tracks.length) {
+    document.getElementById("out-status").textContent = "Lucy connected but no video track yet…";
+  } else {
+    document.getElementById("out-status").textContent =
+      "Lucy stream · " + tracks[0].readyState + " · tap output if black";
+  }
 }
 
 function showLocalCanvas() {
-  document.getElementById("lucy-out").classList.add("hidden");
-  document.getElementById("lucy-out").srcObject = null;
+  hideLucyVideoEl();
   document.getElementById("out").classList.remove("hidden");
 }
 
@@ -686,14 +773,18 @@ async function startLucy() {
   // Reset output pane so we don't show a stale black frame
   document.getElementById("ai-pane").classList.remove("has-out");
   document.getElementById("ai-ph").classList.remove("hidden");
+  document.getElementById("ai-ph").style.display = "";
   document.getElementById("ai-ph").querySelector("span:last-child").textContent = "Connecting Lucy…";
-  const lucyVid = document.getElementById("lucy-out");
-  lucyVid.classList.add("hidden");
-  lucyVid.srcObject = null;
+  hideLucyVideoEl();
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   lucyRealtime = await lucyClient.realtime.connect(stream, {
     model,
     mirror: camMirrored ? true : false,
+    // Prefer H.264 for iPhone decode; Desktop Safari may still force VP8 per SDK
+    preferredVideoCodec: "h264",
     onRemoteStream: (remote) => {
       showLucyVideo(remote);
       document.getElementById("out-status").textContent = "Lucy LIVE · " + modelName;
@@ -708,6 +799,10 @@ async function startLucy() {
     },
     initialState
   });
+  if (isIOS) {
+    document.getElementById("out-status").textContent =
+      "Lucy connecting (iOS) · tap AI output if it stays black";
+  }
 
   if (lucyRealtime?.on) {
     lucyRealtime.on("remoteStream", (remote) => {
@@ -844,9 +939,15 @@ function stopStream() {
   try { if (lucyRealtime?.disconnect) lucyRealtime.disconnect(); } catch (_) {}
   lucyRealtime = null;
   lucyClient = null;
-  const lv = document.getElementById("lucy-out");
-  lv.srcObject = null;
-  lv.classList.add("hidden");
+  hideLucyVideoEl();
+  const ph = document.getElementById("ai-ph");
+  if (ph) {
+    ph.classList.remove("hidden");
+    ph.style.display = "";
+    const tip = ph.querySelector("span:last-child");
+    if (tip) tip.textContent = "AI output will appear here";
+  }
+  document.getElementById("ai-pane").classList.remove("has-out");
   if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
   document.getElementById("btn-start").disabled = false;
   document.getElementById("btn-stop").disabled = true;
