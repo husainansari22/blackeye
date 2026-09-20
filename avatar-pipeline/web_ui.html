@@ -110,6 +110,20 @@ textarea{min-height:100px;resize:vertical}
 .ok{color:#86efac;font-size:.8rem;margin-top:8px}
 .key-mask{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;color:#fff;
   background:#0d0d0d;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px}
+.keys-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.key-row{display:flex;align-items:center;gap:10px;background:#0d0d0d;border:1px solid var(--border);
+  border-radius:12px;padding:12px}
+.key-row .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:#6b7280}
+.key-row.listening .dot{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.25)}
+.key-row.missing .dot{background:#ef4444}
+.key-row .meta{flex:1;min-width:0}
+.key-row .meta strong{display:block;font-size:.9rem}
+.key-row .meta small{display:block;color:var(--muted);font-size:.72rem;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.key-row .tag{font-size:.65rem;font-weight:800;letter-spacing:.04em;padding:4px 8px;border-radius:999px;
+  background:#1f2937;color:#d1d5db;flex-shrink:0}
+.key-row.listening .tag{background:rgba(34,197,94,.15);color:#86efac}
+.key-row.missing .tag{background:rgba(239,68,68,.15);color:#fca5a5}
 </style>
 </head>
 <body>
@@ -145,11 +159,23 @@ textarea{min-height:100px;resize:vertical}
         </select>
       </div>
     </div>
-    <div id="lucy-key-mask" class="key-mask hidden"></div>
     <p id="lucy-key-msg" class="ok hidden"></p>
     <p id="lucy-key-err" class="err hidden"></p>
     <button class="btn-red" onclick="saveLucyKey()">💾 Save key</button>
     <button class="btn-ghost" onclick="clearLucyKey()">Clear saved key</button>
+
+    <div class="card-hdr" style="margin-top:16px;margin-bottom:8px"><span class="ico">📡</span> Keys listening</div>
+    <p class="cam-note" style="margin-bottom:0">Active Decart key saved for this site.</p>
+    <div id="keys-list" class="keys-list">
+      <div class="key-row missing" id="key-row-main">
+        <span class="dot"></span>
+        <div class="meta">
+          <strong id="key-row-title">No key saved</strong>
+          <small id="key-row-detail">Paste a dct_ key above and tap Save</small>
+        </div>
+        <span class="tag" id="key-row-tag">OFF</span>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -353,15 +379,31 @@ async function refreshLucyKey() {
   try {
     const d = await (await fetch("/api/lucy/key", { headers: { Authorization: "Bearer " + TOKEN } })).json();
     lucyConfigured = !!d.configured;
-    const mask = document.getElementById("lucy-key-mask");
-    if (d.configured) {
-      mask.textContent = "Saved: " + d.masked + " · " + (d.model || "lucy-2.5") + " · source=" + d.source;
-      mask.classList.remove("hidden");
-      if (d.model) document.getElementById("lucy-model").value = d.model;
-    } else {
-      mask.classList.add("hidden");
-    }
-  } catch (_) {}
+    renderKeysListening(d);
+    if (d.configured && d.model) document.getElementById("lucy-model").value = d.model;
+  } catch (_) {
+    renderKeysListening({ configured: false });
+  }
+}
+
+function renderKeysListening(d) {
+  const row = document.getElementById("key-row-main");
+  const title = document.getElementById("key-row-title");
+  const detail = document.getElementById("key-row-detail");
+  const tag = document.getElementById("key-row-tag");
+  if (!row) return;
+  if (d && d.configured) {
+    row.className = "key-row listening";
+    title.textContent = (d.model || "lucy-2.5") + " · Decart";
+    const when = d.updated_at ? new Date(d.updated_at * 1000).toLocaleString() : "saved";
+    detail.textContent = (d.masked || "dct_…") + " · source=" + (d.source || "saved") + " · " + when;
+    tag.textContent = "LISTENING";
+  } else {
+    row.className = "key-row missing";
+    title.textContent = "No key saved";
+    detail.textContent = "Paste a dct_ key above and tap Save";
+    tag.textContent = "OFF";
+  }
 }
 
 async function saveLucyKey() {
