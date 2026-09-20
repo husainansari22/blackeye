@@ -35,11 +35,14 @@ def api(token: str, method: str, path: str, **kwargs) -> requests.Response:
 
 def make_archive(dest: Path) -> None:
     ui = ROOT / "web_ui.html"
+    vendor = PROXY_DIR / "vendor" / "decart-sdk.js"
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
         for name in ("server.js", "package.json"):
             zf.write(PROXY_DIR / name, name)
         if ui.exists():
             zf.write(ui, "web_ui.html")
+        if vendor.exists():
+            zf.write(vendor, "vendor/decart-sdk.js")
 
 
 def tus_upload(token: str, archive: Path) -> None:

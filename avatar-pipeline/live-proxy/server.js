@@ -121,6 +121,14 @@ async function gpuHealthy() {
 
 app.use(express.json({ limit: "2mb" }));
 
+app.get("/vendor/decart-sdk.js", (_req, res) => {
+  const file = path.join(__dirname, "vendor", "decart-sdk.js");
+  if (!fs.existsSync(file)) return res.status(404).send("SDK missing");
+  res.setHeader("Content-Type", "text/javascript; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.sendFile(file);
+});
+
 app.get("/health", async (_req, res) => {
   const gpu = await gpuHealthy();
   res.json({ status: "ok", proxy: true, gpu, lucy: keyStatus().configured, target: TARGET });

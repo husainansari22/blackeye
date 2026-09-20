@@ -48,6 +48,15 @@ select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--bord
 .vpane-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ai-placeholder.hidden{display:none}
 #lucy-out{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+/* Cover Decart's baked-in corner badge on the output player (display only). */
+.wm-cover{
+  display:none;position:absolute;right:0;bottom:0;z-index:6;pointer-events:none;
+  width:46%;height:16%;min-width:110px;min-height:28px;
+  background:linear-gradient(to top left, #000 55%, rgba(0,0,0,.85) 75%, transparent 100%);
+}
+.vpane.ai-pane.has-out .wm-cover{display:block}
+.vpane.ai-pane.fs-live{position:fixed;inset:0;z-index:9999;border-radius:0;aspect-ratio:auto;background:#000}
+.vpane.ai-pane.fs-live .wm-cover{width:28%;height:10%;min-width:140px}
 .vctrl{display:flex;gap:8px;margin-top:8px;justify-content:center}
 .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
   background:var(--card2);color:#fff;display:flex;align-items:center;justify-content:center;
@@ -179,6 +188,7 @@ textarea{min-height:100px;resize:vertical}
         <div class="vpane ai-pane" id="ai-pane">
           <canvas id="out" class="hidden"></canvas>
           <video id="lucy-out" class="hidden" autoplay playsinline muted></video>
+          <div class="wm-cover" id="wm-cover" aria-hidden="true"></div>
           <div class="vpane-placeholder ai-placeholder" id="ai-ph">
             <span class="ph-ico">✨</span>
             <span>AI output will appear here</span>
@@ -233,10 +243,13 @@ textarea{min-height:100px;resize:vertical}
 </div>
 
 <script type="module">
-import { createDecartClient, models } from "https://esm.sh/@decartai/sdk@0.2.1";
-
+import { createDecartClient, models } from "/vendor/decart-sdk.js";
+window.__decart = { createDecartClient, models };
+window.dispatchEvent(new Event("decart-ready"));
+</script>
+<script>
 let TOKEN = localStorage.getItem("avatar_token") || "";
-let running = false, busy = false, rafId = null, stream = null, camHidden = false, camMirrored = true;
+let running = false, rafId = null, stream = null, camHidden = false, camMirrored = true;
 let camDevices = [], camIndex = 0;
 let engine = localStorage.getItem("kelvin_engine") || "lucy";
 let lucyClient = null, lucyRealtime = null, lucyRefFile = null;
@@ -254,7 +267,17 @@ if (location.protocol === "http:" && !/^(localhost|127\.0\.0\.1)$/.test(location
   location.replace(HTTPS_URL + location.pathname + location.search);
 }
 
-window.doLogin = async function doLogin() {
+async function waitDecart(ms=15000){
+  if (window.__decart) return window.__decart;
+  await new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error("Decart SDK failed to load")), ms);
+    window.addEventListener("decart-ready", () => { clearTimeout(t); res(); }, { once: true });
+    if (window.__decart) { clearTimeout(t); res(); }
+  });
+  return window.__decart;
+}
+
+async function doLogin() {
   const pw = document.getElementById("pw").value;
   const r = await fetch("/api/login", {
     method: "POST",
@@ -270,7 +293,7 @@ window.doLogin = async function doLogin() {
   TOKEN = d.token;
   localStorage.setItem("avatar_token", TOKEN);
   showApp();
-};
+}
 
 function showApp() {
   document.getElementById("login-view").classList.add("hidden");
@@ -309,7 +332,7 @@ async function pollStats() {
   } catch (_) {}
 }
 
-window.setEngine = function setEngine(mode, persist = true) {
+function setEngine(mode, persist = true) {
   engine = mode === "local" ? "local" : "lucy";
   if (persist) localStorage.setItem("kelvin_engine", engine);
   document.getElementById("mode-lucy").classList.toggle("active", engine === "lucy");
@@ -324,7 +347,7 @@ window.setEngine = function setEngine(mode, persist = true) {
       : "Local: clear front-facing face photo for identity swap.";
   document.getElementById("delay-card").classList.toggle("hidden", engine === "lucy");
   if (running) stopStream();
-};
+}
 
 async function refreshLucyKey() {
   try {
@@ -341,7 +364,7 @@ async function refreshLucyKey() {
   } catch (_) {}
 }
 
-window.saveLucyKey = async function saveLucyKey() {
+async function saveLucyKey() {
   const api_key = document.getElementById("lucy-key").value.trim();
   const model = document.getElementById("lucy-model").value;
   const err = document.getElementById("lucy-key-err");
@@ -369,9 +392,9 @@ window.saveLucyKey = async function saveLucyKey() {
   ok.classList.remove("hidden");
   await refreshLucyKey();
   pollStats();
-};
+}
 
-window.clearLucyKey = async function clearLucyKey() {
+async function clearLucyKey() {
   if (!confirm("Clear saved Lucy API key?")) return;
   await fetch("/api/lucy/key", { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } });
   document.getElementById("lucy-key").value = "";
@@ -379,7 +402,7 @@ window.clearLucyKey = async function clearLucyKey() {
   document.getElementById("lucy-key-msg").classList.remove("hidden");
   await refreshLucyKey();
   pollStats();
-};
+}
 
 async function mintLucyToken() {
   const r = await fetch("/api/lucy/token", {
@@ -421,9 +444,9 @@ async function initCameras() {
   }
 }
 
-window.restartCamera = async function restartCamera() { await initCameras(); };
+async function restartCamera() { await initCameras(); }
 
-window.previewCamera = async function previewCamera() {
+async function previewCamera() {
   const v = document.getElementById("cam");
   const st = document.getElementById("cam-status");
   if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
@@ -436,7 +459,7 @@ window.previewCamera = async function previewCamera() {
   } catch (e) {
     st.textContent = "Camera error: " + e.message;
   }
-};
+}
 
 async function getCam() {
   const sel = document.getElementById("cam-select");
@@ -447,30 +470,35 @@ async function getCam() {
   return navigator.mediaDevices.getUserMedia({ video, audio: false });
 }
 
-window.cycleCamera = async function cycleCamera() {
+async function cycleCamera() {
   if (camDevices.length < 2) return;
   camIndex = (camIndex + 1) % camDevices.length;
   document.getElementById("cam-select").value = camDevices[camIndex].deviceId;
   await previewCamera();
-};
+}
 
-window.toggleHide = function toggleHide() {
+function toggleHide() {
   camHidden = !camHidden;
   document.getElementById("cam").style.opacity = camHidden ? "0.15" : "1";
   document.getElementById("btn-hide").classList.toggle("on", camHidden);
-};
+}
 
-window.toggleFlip = function toggleFlip() {
+function toggleFlip() {
   camMirrored = !camMirrored;
   document.getElementById("cam").classList.toggle("no-mirror", !camMirrored);
   document.getElementById("btn-flip").classList.toggle("on", camMirrored);
-};
+}
 
-window.aiFullscreen = function aiFullscreen() {
+function aiFullscreen() {
+  const pane = document.getElementById("ai-pane");
   const el = engine === "lucy" ? document.getElementById("lucy-out") : document.getElementById("out");
-  if (el.requestFullscreen) el.requestFullscreen();
+  if (pane.requestFullscreen) pane.requestFullscreen().catch(() => {
+    if (el.requestFullscreen) el.requestFullscreen();
+  });
+  else if (pane.webkitRequestFullscreen) pane.webkitRequestFullscreen();
+  else if (el.requestFullscreen) el.requestFullscreen();
   else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-};
+}
 
 async function waitVideoReady(v, ms = 8000) {
   if (v.readyState >= 2 && v.videoWidth > 0) return;
@@ -480,7 +508,7 @@ async function waitVideoReady(v, ms = 8000) {
   });
 }
 
-window.onRefFile = async function onRefFile(e) {
+async function onRefFile(e) {
   const f = e.target.files[0];
   if (!f) return;
   lucyRefFile = f;
@@ -500,13 +528,11 @@ window.onRefFile = async function onRefFile(e) {
         image: f,
         enhance: true
       });
-    } catch (err) {
-      console.warn(err);
-    }
+    } catch (err) { console.warn(err); }
   }
-};
+}
 
-window.clearRef = async function clearRef() {
+async function clearRef() {
   lucyRefFile = null;
   document.getElementById("ref-card").classList.add("hidden");
   document.getElementById("ref-file").value = "";
@@ -515,16 +541,16 @@ window.clearRef = async function clearRef() {
   } else if (lucyRealtime) {
     try { await lucyRealtime.set({ image: null, prompt: document.getElementById("prompt").value }); } catch (_) {}
   }
-};
+}
 
-window.applyPreset = function applyPreset(key) {
+function applyPreset(key) {
   document.getElementById("prompt").value = PRESETS[key] || PRESETS.portrait;
   document.querySelectorAll(".chip[data-preset]").forEach((c) => c.classList.remove("active"));
   const el = document.querySelector('.chip[data-preset="' + key + '"]');
   if (el) el.classList.add("active");
-};
+}
 
-window.applyPrompt = async function applyPrompt() {
+async function applyPrompt() {
   const prompt = document.getElementById("prompt").value;
   if (engine === "lucy") {
     if (lucyRealtime) {
@@ -551,7 +577,7 @@ window.applyPrompt = async function applyPrompt() {
     })
   });
   document.getElementById("out-status").textContent = "Prompt applied";
-};
+}
 
 function showAiOutput() {
   document.getElementById("ai-ph").classList.add("hidden");
@@ -573,15 +599,13 @@ function showLocalCanvas() {
 }
 
 async function startLucy() {
+  const { createDecartClient, models } = await waitDecart();
   document.getElementById("out-status").textContent = "Minting Lucy client token…";
   const tok = await mintLucyToken();
   const modelName = document.getElementById("lucy-model").value || tok.model || "lucy-2.5";
   let model;
-  try {
-    model = models.realtime(modelName);
-  } catch (_) {
-    model = models.realtime("lucy-2.5");
-  }
+  try { model = models.realtime(modelName); }
+  catch (_) { model = models.realtime("lucy-2.5"); }
 
   if (!stream) stream = await getCam();
   const v = document.getElementById("cam");
@@ -622,7 +646,6 @@ async function startLucy() {
   }
 }
 
-/* -------- Local GPU path (existing) -------- */
 let ws = null, wsReady = false, pendingBlob = null, inFlight = 0, frames = 0;
 const cap = document.createElement("canvas"), capCtx = cap.getContext("2d");
 const outCanvas = document.getElementById("out"), outCtx = outCanvas.getContext("2d");
@@ -698,7 +721,7 @@ function scheduleFrame() {
   rafId = requestAnimationFrame(sendFrame);
 }
 
-window.startStream = async function startStream() {
+async function startStream() {
   document.getElementById("btn-start").disabled = true;
   try {
     if (engine === "lucy") {
@@ -729,16 +752,14 @@ window.startStream = async function startStream() {
     document.getElementById("btn-start").disabled = false;
     document.getElementById("out-status").textContent = e.message || String(e);
   }
-};
+}
 
-window.stopStream = function stopStream() {
+function stopStream() {
   running = false;
   if (rafId) cancelAnimationFrame(rafId);
   if (ws) { ws.close(); ws = null; wsReady = false; }
   pendingBlob = null; inFlight = 0;
-  try {
-    if (lucyRealtime?.disconnect) lucyRealtime.disconnect();
-  } catch (_) {}
+  try { if (lucyRealtime?.disconnect) lucyRealtime.disconnect(); } catch (_) {}
   lucyRealtime = null;
   lucyClient = null;
   const lv = document.getElementById("lucy-out");
@@ -749,7 +770,7 @@ window.stopStream = function stopStream() {
   document.getElementById("btn-stop").disabled = true;
   document.getElementById("live-badge").textContent = "AI OUTPUT";
   document.getElementById("out-status").textContent = "Stopped";
-};
+}
 </script>
 </body>
 </html>
