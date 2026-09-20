@@ -125,7 +125,15 @@ app.get("/vendor/decart-sdk.js", (_req, res) => {
   const file = path.join(__dirname, "vendor", "decart-sdk.js");
   if (!fs.existsSync(file)) return res.status(404).send("SDK missing");
   res.setHeader("Content-Type", "text/javascript; charset=utf-8");
-  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(file);
+});
+
+app.get("/vendor/frame-metadata-worker.js", (_req, res) => {
+  const file = path.join(__dirname, "vendor", "frame-metadata-worker.js");
+  if (!fs.existsSync(file)) return res.status(404).send("Worker missing");
+  res.setHeader("Content-Type", "text/javascript; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
   res.sendFile(file);
 });
 

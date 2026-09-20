@@ -53986,18 +53986,11 @@ function isFrameMetadataWorkerSameOrigin(workerUrl, pageOrigin) {
   return workerUrl.origin === pageOrigin;
 }
 function isFrameMetadataRuntimeSupported() {
-  if (typeof window === "undefined") return false;
-  try {
-    if (!isFrameMetadataWorkerSameOrigin(WORKER_URL(), window.location?.origin)) return false;
-  } catch {
-    return false;
-  }
-  const maybeWindow = window;
-  const userAgent = window.navigator?.userAgent?.toLowerCase() ?? "";
-  const isChromiumBased2 = /(?:chrome|chromium|crmo)\//.test(userAgent) && !/crios\//.test(userAgent);
-  const scriptTransformSupported = typeof maybeWindow.RTCRtpScriptTransform !== "undefined" && !isChromiumBased2;
-  const insertableStreamsSupported = typeof maybeWindow.RTCRtpSender?.prototype?.createEncodedStreams !== "undefined" && typeof maybeWindow.RTCRtpReceiver?.prototype?.createEncodedStreams !== "undefined";
-  return scriptTransformSupported || insertableStreamsSupported;
+  // Kelvin Live: never advertise frame_timing from this bundle.
+  // When the publisher claims frame_timing but the trailer stripper fails
+  // (missing worker / iOS transform quirks), Decart still connects and the
+  // remote <video> stays black with no error. Prefer visible video over G2G.
+  return false;
 }
 
 // node_modules/@decartai/sdk/dist/realtime/preflight-connectivity.js

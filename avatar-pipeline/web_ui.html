@@ -48,14 +48,9 @@ select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--bord
 .vpane-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ai-placeholder.hidden{display:none}
 canvas#out{z-index:1}
-/* Small corner cover for Decart's baked-in badge — keep tiny so it never blanks the feed */
-.wm-cover{
-  display:none;position:absolute;right:4px;bottom:4px;z-index:3;pointer-events:none;
-  width:118px;height:34px;border-radius:8px;background:#0a0a0a;
-}
-.vpane.ai-pane.has-out .wm-cover{display:block}
+/* Watermark cover disabled — it only hid Decart's tiny badge and was never the blank-pane cause */
+.wm-cover{display:none!important}
 .vpane.ai-pane.fs-live{position:fixed;inset:0;z-index:9999;border-radius:0;aspect-ratio:auto;background:#000}
-.vpane.ai-pane.fs-live .wm-cover{width:140px;height:38px;right:10px;bottom:10px}
 .vctrl{display:flex;gap:8px;margin-top:8px;justify-content:center}
 .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
   background:var(--card2);color:#fff;display:flex;align-items:center;justify-content:center;
@@ -285,7 +280,7 @@ textarea{min-height:100px;resize:vertical}
 </div>
 
 <script type="module">
-import { createDecartClient, models } from "/vendor/decart-sdk.js";
+import { createDecartClient, models } from "/vendor/decart-sdk.js?v=20260920b";
 window.__decart = { createDecartClient, models };
 window.dispatchEvent(new Event("decart-ready"));
 </script>
@@ -680,68 +675,63 @@ function showLucyVideo(remoteStream) {
     ph.style.display = "none";
   }
 
-  // iOS Safari stays black if video was display:none / .hidden when srcObject is set.
-  // .hidden uses !important — must remove the class, not only set style.display.
+  // Must be visible before srcObject (iOS). Never use .hidden (!important).
   v.classList.remove("hidden");
-  v.style.display = "block";
-  v.style.visibility = "visible";
-  v.style.opacity = "1";
+  v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:1;display:block;visibility:visible;opacity:1";
   v.muted = true;
   v.defaultMuted = true;
+  v.autoplay = true;
   v.playsInline = true;
-  v.setAttribute("playsinline", "true");
-  v.setAttribute("webkit-playsinline", "true");
+  v.setAttribute("playsinline", "");
+  v.setAttribute("webkit-playsinline", "");
   v.setAttribute("muted", "");
-  v.setAttribute("autoplay", "");
 
-  let fresh = remoteStream;
+  // Assign the SDK stream as-is — cloning/addTrack breaks Safari paint.
+  const stream = remoteStream;
   try {
-    fresh = new MediaStream();
-    (remoteStream.getTracks ? remoteStream.getTracks() : []).forEach((t) => {
-      try { t.enabled = true; } catch (_) {}
-      fresh.addTrack(t);
-    });
-  } catch (_) {
-    fresh = remoteStream;
-  }
-
-  try { v.pause(); } catch (_) {}
-  try { v.removeAttribute("src"); v.load(); } catch (_) {}
-  v.srcObject = fresh;
-  document.getElementById("ai-pane").classList.add("has-out");
+    (stream.getTracks ? stream.getTracks() : []).forEach((t) => { try { t.enabled = true; } catch (_) {} });
+  } catch (_) {}
 
   const tryPlay = () => {
     const p = v.play();
     if (p && p.catch) {
       p.catch((err) => {
         document.getElementById("out-status").textContent =
-          "Tap the black output panel to start video · " + (err && err.message ? err.message : "");
+          "Tap AI output to play · " + (err && err.message ? err.message : "");
       });
     }
   };
-  // Force a layout pass so Safari allocates a decoder surface before play()
+
+  const report = (label) => {
+    const vt = stream.getVideoTracks ? stream.getVideoTracks() : [];
+    const t = vt[0];
+    document.getElementById("out-status").textContent =
+      label + " · " + (v.videoWidth || 0) + "x" + (v.videoHeight || 0) +
+      " · rs=" + v.readyState +
+      (t ? (" · " + t.readyState + (t.muted ? " muted" : "")) : " · no-track");
+  };
+
+  v.srcObject = stream;
+  document.getElementById("ai-pane").classList.add("has-out");
   void v.offsetWidth;
   tryPlay();
-  v.onloadedmetadata = () => {
+  // Safari often needs a second assign on the next tick
+  setTimeout(() => {
+    if (v.srcObject !== stream) v.srcObject = stream;
+    else v.srcObject = stream;
     tryPlay();
-    document.getElementById("out-status").textContent =
-      "Lucy LIVE · " + (v.videoWidth || 0) + "x" + (v.videoHeight || 0);
-  };
-  v.onplaying = () => {
-    document.getElementById("out-status").textContent =
-      "Lucy LIVE · " + (v.videoWidth || 0) + "x" + (v.videoHeight || 0);
-  };
+    report("Lucy stream");
+  }, 0);
+
+  v.onloadedmetadata = () => { tryPlay(); report("Lucy LIVE"); };
+  v.onplaying = () => report("Lucy LIVE");
   v.oncanplay = tryPlay;
   v.onclick = tryPlay;
   document.getElementById("ai-pane").onclick = tryPlay;
 
-  const tracks = fresh.getVideoTracks ? fresh.getVideoTracks() : [];
-  if (!tracks.length) {
-    document.getElementById("out-status").textContent = "Lucy connected but no video track yet…";
-  } else {
-    document.getElementById("out-status").textContent =
-      "Lucy stream · " + tracks[0].readyState + " · tap output if black";
-  }
+  const tracks = stream.getVideoTracks ? stream.getVideoTracks() : [];
+  if (!tracks.length) report("Lucy connected, waiting for video track");
+  else report("Lucy stream");
 }
 
 function showLocalCanvas() {
