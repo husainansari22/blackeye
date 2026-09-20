@@ -21,6 +21,8 @@ export STREAM_ACCEL="${STREAM_ACCEL:-none}"
 export STREAM_ENGINES="${APP_DIR}/engines"
 export INSIGHTFACE_ROOT="${APP_DIR}/models"
 export PYTHONPATH="${APP_DIR}/StreamDiffusion:${APP_DIR}:${PYTHONPATH:-}"
+# Ensure HTTP client available for Decart token mint
+python -c "import httpx" 2>/dev/null || pip install -q httpx cryptography
 pkill -f "uvicorn app:app" 2>/dev/null || true
 sleep 2
 nohup python -m uvicorn app:app --host 127.0.0.1 --port 8080 --workers 1 >> server.log 2>&1 &

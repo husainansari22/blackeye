@@ -15,8 +15,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:24px}
 .hidden{display:none!important}
 .app{max-width:480px;margin:0 auto;padding:12px}
-
-/* login */
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
 .login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;
   padding:28px;width:100%;max-width:380px}
@@ -25,8 +23,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 .login-box input{width:100%;padding:14px;background:#0d0d0d;border:1px solid var(--border);
   border-radius:12px;color:#fff;font-size:1rem;margin-bottom:12px}
 .err{color:#f87171;font-size:.85rem;margin-top:8px}
-
-/* cards */
 .card{background:var(--card);border:1px solid var(--border);border-radius:16px;
   padding:16px;margin-bottom:14px}
 .card.red-border{border-color:rgba(225,29,46,.45)}
@@ -34,16 +30,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 .card-hdr .ico{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--red)}
 .badge-live{margin-left:auto;background:var(--red);color:#fff;font-size:.65rem;font-weight:800;
   padding:4px 10px;border-radius:999px;letter-spacing:.04em}
-
-/* camera select */
 .select-wrap{position:relative;margin-bottom:8px}
 select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--border);
   color:#fff;padding:14px 40px 14px 14px;border-radius:12px;font-size:.95rem}
 .select-wrap::after{content:"▾";position:absolute;right:14px;top:50%;transform:translateY(-50%);
   color:var(--red);pointer-events:none;font-size:1.1rem}
 .cam-note{font-size:.8rem;color:var(--muted);margin-bottom:12px}
-
-/* dual video */
 .dual{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .vpane{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:9/16}
 .vpane video{width:100%;height:100%;object-fit:cover;display:block}
@@ -52,9 +44,10 @@ select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--bord
 .vpane.ai-pane{border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
   flex-direction:column;color:var(--muted);font-size:.75rem;text-align:center;padding:8px}
 .vpane.ai-pane .ph-ico{font-size:1.8rem;color:var(--red);margin-bottom:8px;opacity:.7}
-.vpane.ai-pane.has-out{border-color:rgba(225,29,46,.35)}
+.vpane.ai-pane.has-out{border-color:rgba(225,29,46,.35);padding:0}
 .vpane-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ai-placeholder.hidden{display:none}
+#lucy-out{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
 .vctrl{display:flex;gap:8px;margin-top:8px;justify-content:center}
 .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
   background:var(--card2);color:#fff;display:flex;align-items:center;justify-content:center;
@@ -74,6 +67,12 @@ select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--bord
 .btn-apply{width:100%;padding:14px;border-radius:12px;border:1px solid var(--border);
   background:var(--card2);color:#fff;font-weight:600;cursor:pointer;margin-top:10px;
   display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-ghost{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-weight:600;cursor:pointer;margin-top:8px}
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.mode-btn{padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card2);
+  color:#fff;font-weight:700;cursor:pointer}
+.mode-btn.active{border-color:var(--red);background:rgba(225,29,46,.14);color:#fff}
 .slider-row{margin-bottom:14px}
 .slider-row label{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-bottom:6px}
 .slider-row label span{color:#fff;font-weight:600}
@@ -85,8 +84,11 @@ input[type=range]{width:100%;accent-color:var(--red);height:4px}
 .ref-card .meta strong{display:block;font-size:.9rem}
 .ref-card .meta small{color:var(--muted);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ref-x{background:var(--red);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-weight:700}
-textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;
-  color:#fff;padding:14px;font:inherit;font-size:.9rem;line-height:1.45;resize:vertical}
+textarea,input[type=password],input[type=text]{width:100%;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;
+  color:#fff;padding:14px;font:inherit;font-size:.9rem;line-height:1.45}
+textarea{min-height:100px;resize:vertical}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .chip{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card2);
   color:#fff;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:6px}
@@ -96,6 +98,9 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 #cam{transform:scaleX(-1)}
 #cam.no-mirror{transform:none}
 .banner{background:#422006;color:#fde68a;padding:10px 14px;font-size:.8rem;border-radius:12px;margin-bottom:12px}
+.ok{color:#86efac;font-size:.8rem;margin-top:8px}
+.key-mask{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;color:#fff;
+  background:#0d0d0d;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -103,7 +108,7 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 <div id="login-view" class="login">
   <div class="login-box">
     <h1>Kelvin Live</h1>
-    <p>RTX 4090 · full-body transform · WebSocket stream</p>
+    <p>Lucy realtime · optional local GPU fallback</p>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
     <button class="btn-red" onclick="doLogin()">Enter</button>
     <p id="login-err" class="err hidden"></p>
@@ -112,7 +117,40 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
 
 <div id="app-view" class="app hidden">
   <div id="cam-banner" class="banner hidden"></div>
-  <p class="stats-bar" id="stats">Loading GPU…</p>
+  <p class="stats-bar" id="stats">Loading…</p>
+
+  <div class="card red-border">
+    <div class="card-hdr"><span class="ico">🔑</span> Lucy API Key</div>
+    <p class="cam-note">Paste your Decart key (<code>dct_…</code>). Saved on the server — browser only gets short-lived tokens.</p>
+    <div class="field">
+      <label>API key</label>
+      <input id="lucy-key" type="password" placeholder="dct_…" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label>Model</label>
+      <div class="select-wrap">
+        <select id="lucy-model">
+          <option value="lucy-2.5">lucy-2.5 (full-body edit)</option>
+          <option value="lucy-2.1">lucy-2.1 (character)</option>
+          <option value="lucy-latest">lucy-latest</option>
+        </select>
+      </div>
+    </div>
+    <div id="lucy-key-mask" class="key-mask hidden"></div>
+    <p id="lucy-key-msg" class="ok hidden"></p>
+    <p id="lucy-key-err" class="err hidden"></p>
+    <button class="btn-red" onclick="saveLucyKey()">💾 Save key</button>
+    <button class="btn-ghost" onclick="clearLucyKey()">Clear saved key</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="ico">⚡</span> Engine</div>
+    <div class="mode-row">
+      <button class="mode-btn active" id="mode-lucy" onclick="setEngine('lucy')">Lucy Cloud</button>
+      <button class="mode-btn" id="mode-local" onclick="setEngine('local')">Local GPU</button>
+    </div>
+    <p class="cam-note" id="engine-note">Lucy uses your Decart credits for realtime full-body video-to-video.</p>
+  </div>
 
   <div class="card red-border">
     <div class="card-hdr"><span class="ico">📷</span> Camera Source</div>
@@ -140,6 +178,7 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
       <div>
         <div class="vpane ai-pane" id="ai-pane">
           <canvas id="out" class="hidden"></canvas>
+          <video id="lucy-out" class="hidden" autoplay playsinline muted></video>
           <div class="vpane-placeholder ai-placeholder" id="ai-ph">
             <span class="ph-ico">✨</span>
             <span>AI output will appear here</span>
@@ -155,7 +194,7 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
     <button class="btn btn-stop" id="btn-stop" onclick="stopStream()" disabled>⏹ Stop</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="delay-card">
     <div class="slider-row">
       <label>Camera Delay <span id="cam-delay-val">0.0s</span></label>
       <input type="range" id="cam-delay" min="0" max="2" step="0.1" value="0"
@@ -169,19 +208,19 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
   </div>
 
   <div class="card">
-    <input type="file" id="ref-file" accept="image/*" hidden onchange="uploadRef(event)"/>
-    <button class="btn-red" onclick="document.getElementById('ref-file').click()">⬆ Upload Face Reference</button>
-    <p class="stats-bar" style="margin:8px 0 0">Reference face replaces your face; camera keeps pose &amp; body.</p>
+    <input type="file" id="ref-file" accept="image/*" hidden onchange="onRefFile(event)"/>
+    <button class="btn-red" onclick="document.getElementById('ref-file').click()">⬆ Upload Reference Image</button>
+    <p class="cam-note" style="margin:8px 0 0" id="ref-help">Lucy: character / style reference. Local: face identity.</p>
     <div id="ref-card" class="ref-card hidden">
       <img id="ref-thumb" alt="reference"/>
-      <div class="meta"><strong>Face locked</strong><small id="ref-name">reference.jpg</small></div>
+      <div class="meta"><strong id="ref-title">Reference ready</strong><small id="ref-name">reference.jpg</small></div>
       <button class="ref-x" onclick="clearRef()">✕</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-hdr"><span class="ico">✨</span> Style prompt (no-reference mode)</div>
-    <textarea id="prompt">photorealistic portrait, sharp focus, natural skin, detailed face</textarea>
+    <div class="card-hdr"><span class="ico">✨</span> Prompt</div>
+    <textarea id="prompt">Transform into this character, same pose and motion as camera, photorealistic, sharp</textarea>
     <div class="chips">
       <button class="chip spark" onclick="applyPreset('portrait')">✨</button>
       <button class="chip" data-preset="hotel" onclick="applyPreset('hotel')">🏨 Hotel Room</button>
@@ -190,323 +229,527 @@ textarea{width:100%;min-height:100px;background:#0d0d0d;border:1px solid var(--b
     <button class="btn-apply" onclick="applyPrompt()">↻ Apply Prompt</button>
   </div>
 
-  <p class="stats-bar" id="out-status">Upload reference photo → Go Live</p>
+  <p class="stats-bar" id="out-status">Save Lucy API key → Go Live</p>
 </div>
 
-<script>
-let TOKEN=localStorage.getItem("avatar_token")||"";
-let running=false,busy=false,rafId=null,stream=null,videoMode=false,camHidden=false,camMirrored=true;
-let camDevices=[],camIndex=0;
-const CAP=384;
-const OUT=512;
-const HTTPS_URL="https://live.kelvinoz.com";
-const PRESETS={
-  portrait:"photorealistic portrait, same pose, detailed face, natural skin, sharp focus, professional lighting, 8k uhd",
-  hotel:"luxury hotel room background, warm ambient lighting, elegant interior, photorealistic",
-  airport:"modern airport terminal background, bright natural lighting, travel atmosphere, photorealistic"
+<script type="module">
+import { createDecartClient, models } from "https://esm.sh/@decartai/sdk@0.2.1";
+
+let TOKEN = localStorage.getItem("avatar_token") || "";
+let running = false, busy = false, rafId = null, stream = null, camHidden = false, camMirrored = true;
+let camDevices = [], camIndex = 0;
+let engine = localStorage.getItem("kelvin_engine") || "lucy";
+let lucyClient = null, lucyRealtime = null, lucyRefFile = null;
+let lucyConfigured = false;
+
+const CAP = 384;
+const HTTPS_URL = "https://live.kelvinoz.com";
+const PRESETS = {
+  portrait: "Transform into this character, same pose and expression, photorealistic, detailed face, natural skin, sharp focus",
+  hotel: "Same person from reference in a luxury hotel room, warm ambient lighting, elegant interior, photorealistic",
+  airport: "Same person from reference in a modern airport terminal, bright natural lighting, photorealistic"
 };
 
-if(location.protocol==="http:"&&!location.hostname.match(/^(localhost|127\\.0\\.0\\.1)$/)){
-  location.replace(HTTPS_URL+location.pathname+location.search);
+if (location.protocol === "http:" && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+  location.replace(HTTPS_URL + location.pathname + location.search);
 }
 
-async function doLogin(){
-  const pw=document.getElementById("pw").value;
-  const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({password:pw})});
-  const d=await r.json();
-  if(!r.ok){
-    document.getElementById("login-err").textContent=d.detail||"Failed";
-    document.getElementById("login-err").classList.remove("hidden");return;
+window.doLogin = async function doLogin() {
+  const pw = document.getElementById("pw").value;
+  const r = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: pw })
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    document.getElementById("login-err").textContent = d.detail || "Failed";
+    document.getElementById("login-err").classList.remove("hidden");
+    return;
   }
-  TOKEN=d.token; localStorage.setItem("avatar_token",TOKEN);
+  TOKEN = d.token;
+  localStorage.setItem("avatar_token", TOKEN);
   showApp();
-}
+};
 
-function showApp(){
+function showApp() {
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("app-view").classList.remove("hidden");
-  if(!window.isSecureContext){
-    document.getElementById("cam-banner").innerHTML=
-      "Webcam needs HTTPS — use <a href='"+HTTPS_URL+"' style='color:#fca5a5'>"+HTTPS_URL+"</a> or https://69.162.106.209:20001";
+  if (!window.isSecureContext) {
+    document.getElementById("cam-banner").innerHTML =
+      "Webcam needs HTTPS — use <a href='" + HTTPS_URL + "' style='color:#fca5a5'>" + HTTPS_URL + "</a>";
     document.getElementById("cam-banner").classList.remove("hidden");
   }
-  pollStats(); setInterval(pollStats,2000);
-  initCameras().catch(()=>{});
+  setEngine(engine, false);
+  refreshLucyKey();
+  pollStats();
+  setInterval(pollStats, 2500);
+  initCameras().catch(() => {});
 }
 
-if(TOKEN) fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}}).then(r=>{if(r.ok)showApp();});
-
-async function pollStats(){
-  if(!TOKEN)return;
-  try{
-    const d=await(await fetch("/api/status",{headers:{Authorization:"Bearer "+TOKEN}})).json();
-    document.getElementById("stats").textContent=
-      (d.ready?"Ready":"Loading")+" · "+(d.acceleration||"gpu")+" · "+d.fps+" fps · "+d.latency_ms+"ms"+
-      (d.has_reference?" · ref ✓":"")+(d.last_error?" · ⚠":"");
-    document.getElementById("live-badge").style.background=running?"#16a34a":"#e11d2e";
-  }catch(e){}
+if (TOKEN) {
+  fetch("/api/status", { headers: { Authorization: "Bearer " + TOKEN } })
+    .then((r) => { if (r.ok) showApp(); });
 }
 
-async function initCameras(){
-  const sel=document.getElementById("cam-select");
-  const st=document.getElementById("cam-status");
-  try{
-    if(!navigator.mediaDevices?.getUserMedia) throw new Error("No camera API");
-    const tmp=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-    tmp.getTracks().forEach(t=>t.stop());
-    const devs=await navigator.mediaDevices.enumerateDevices();
-    camDevices=devs.filter(d=>d.kind==="videoinput");
-    sel.innerHTML="";
-    camDevices.forEach((d,i)=>{
-      const o=document.createElement("option");
-      o.value=d.deviceId;
-      o.textContent=d.label||("Camera "+(i+1));
+async function pollStats() {
+  if (!TOKEN) return;
+  try {
+    const d = await (await fetch("/api/status", { headers: { Authorization: "Bearer " + TOKEN } })).json();
+    lucyConfigured = !!(d.lucy && d.lucy.configured);
+    const lucyBit = lucyConfigured
+      ? ("Lucy ✓ " + (d.lucy.masked || "") + " · " + (d.lucy.model || ""))
+      : "Lucy key missing";
+    document.getElementById("stats").textContent =
+      engine === "lucy"
+        ? (running ? "Lucy LIVE" : "Lucy ready") + " · " + lucyBit
+        : ((d.ready ? "GPU Ready" : "GPU Loading") + " · " + (d.acceleration || "gpu") +
+          " · " + d.fps + " fps · " + d.latency_ms + "ms" + (d.has_reference ? " · ref ✓" : ""));
+    document.getElementById("live-badge").style.background = running ? "#16a34a" : "#e11d2e";
+  } catch (_) {}
+}
+
+window.setEngine = function setEngine(mode, persist = true) {
+  engine = mode === "local" ? "local" : "lucy";
+  if (persist) localStorage.setItem("kelvin_engine", engine);
+  document.getElementById("mode-lucy").classList.toggle("active", engine === "lucy");
+  document.getElementById("mode-local").classList.toggle("active", engine === "local");
+  document.getElementById("engine-note").textContent =
+    engine === "lucy"
+      ? "Lucy uses your Decart credits for realtime full-body video-to-video."
+      : "Local GPU uses InsightFace / StreamDiffusion on your 4090 (face / style).";
+  document.getElementById("ref-help").textContent =
+    engine === "lucy"
+      ? "Lucy: character / outfit reference image (optional but recommended)."
+      : "Local: clear front-facing face photo for identity swap.";
+  document.getElementById("delay-card").classList.toggle("hidden", engine === "lucy");
+  if (running) stopStream();
+};
+
+async function refreshLucyKey() {
+  try {
+    const d = await (await fetch("/api/lucy/key", { headers: { Authorization: "Bearer " + TOKEN } })).json();
+    lucyConfigured = !!d.configured;
+    const mask = document.getElementById("lucy-key-mask");
+    if (d.configured) {
+      mask.textContent = "Saved: " + d.masked + " · " + (d.model || "lucy-2.5") + " · source=" + d.source;
+      mask.classList.remove("hidden");
+      if (d.model) document.getElementById("lucy-model").value = d.model;
+    } else {
+      mask.classList.add("hidden");
+    }
+  } catch (_) {}
+}
+
+window.saveLucyKey = async function saveLucyKey() {
+  const api_key = document.getElementById("lucy-key").value.trim();
+  const model = document.getElementById("lucy-model").value;
+  const err = document.getElementById("lucy-key-err");
+  const ok = document.getElementById("lucy-key-msg");
+  err.classList.add("hidden");
+  ok.classList.add("hidden");
+  if (!api_key) {
+    err.textContent = "Paste your Decart API key first";
+    err.classList.remove("hidden");
+    return;
+  }
+  const r = await fetch("/api/lucy/key", {
+    method: "PUT",
+    headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key, model })
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    err.textContent = d.detail || "Save failed";
+    err.classList.remove("hidden");
+    return;
+  }
+  document.getElementById("lucy-key").value = "";
+  ok.textContent = "Key saved · " + (d.masked || "");
+  ok.classList.remove("hidden");
+  await refreshLucyKey();
+  pollStats();
+};
+
+window.clearLucyKey = async function clearLucyKey() {
+  if (!confirm("Clear saved Lucy API key?")) return;
+  await fetch("/api/lucy/key", { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } });
+  document.getElementById("lucy-key").value = "";
+  document.getElementById("lucy-key-msg").textContent = "Key cleared";
+  document.getElementById("lucy-key-msg").classList.remove("hidden");
+  await refreshLucyKey();
+  pollStats();
+};
+
+async function mintLucyToken() {
+  const r = await fetch("/api/lucy/token", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      origin: location.origin,
+      model: document.getElementById("lucy-model").value
+    })
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.detail || "Token mint failed");
+  return d;
+}
+
+async function initCameras() {
+  const sel = document.getElementById("cam-select");
+  const st = document.getElementById("cam-status");
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("No camera API");
+    const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    tmp.getTracks().forEach((t) => t.stop());
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    camDevices = devs.filter((d) => d.kind === "videoinput");
+    sel.innerHTML = "";
+    camDevices.forEach((d, i) => {
+      const o = document.createElement("option");
+      o.value = d.deviceId;
+      o.textContent = d.label || ("Camera " + (i + 1));
       sel.appendChild(o);
     });
-    const ext=camDevices.findIndex(d=>/webcam|usb|hd|external|full/i.test(d.label));
-    camIndex=ext>=0?ext:(camDevices.length>1?camDevices.length-1:0);
-    if(camDevices[camIndex]) sel.value=camDevices[camIndex].deviceId;
-    st.textContent=camDevices.length+" cameras ready.";
+    const ext = camDevices.findIndex((d) => /webcam|usb|hd|external|full/i.test(d.label));
+    camIndex = ext >= 0 ? ext : (camDevices.length > 1 ? camDevices.length - 1 : 0);
+    if (camDevices[camIndex]) sel.value = camDevices[camIndex].deviceId;
+    st.textContent = camDevices.length + " cameras ready.";
     await previewCamera();
-  }catch(e){ st.textContent="Camera error: "+e.message; }
+  } catch (e) {
+    st.textContent = "Camera error: " + e.message;
+  }
 }
 
-async function restartCamera(){ await initCameras(); }
+window.restartCamera = async function restartCamera() { await initCameras(); };
 
-async function previewCamera(){
-  const v=document.getElementById("cam");
-  const st=document.getElementById("cam-status");
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
-  try{
-    stream=await getCam();
-    v.srcObject=stream;
-    await v.play().catch(()=>{});
-    await waitVideoReady(v,6000);
-    const b=frameBrightness();
-    st.textContent=camDevices.length+" cameras ready."+(b<12?" · ⚠ black feed — try another camera":"");
-  }catch(e){ st.textContent="Camera error: "+e.message; }
+window.previewCamera = async function previewCamera() {
+  const v = document.getElementById("cam");
+  const st = document.getElementById("cam-status");
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+  try {
+    stream = await getCam();
+    v.srcObject = stream;
+    await v.play().catch(() => {});
+    await waitVideoReady(v, 6000);
+    st.textContent = camDevices.length + " cameras ready.";
+  } catch (e) {
+    st.textContent = "Camera error: " + e.message;
+  }
+};
+
+async function getCam() {
+  const sel = document.getElementById("cam-select");
+  const id = sel?.value;
+  const video = id
+    ? { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
+    : { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
+  return navigator.mediaDevices.getUserMedia({ video, audio: false });
 }
 
-async function getCam(){
-  const sel=document.getElementById("cam-select");
-  const id=sel?.value;
-  const video=id?{deviceId:{exact:id},width:{ideal:1280},height:{ideal:720}}:{width:{ideal:1280},height:{ideal:720}};
-  return navigator.mediaDevices.getUserMedia({video,audio:false});
-}
-
-async function cycleCamera(){
-  if(camDevices.length<2)return;
-  camIndex=(camIndex+1)%camDevices.length;
-  document.getElementById("cam-select").value=camDevices[camIndex].deviceId;
+window.cycleCamera = async function cycleCamera() {
+  if (camDevices.length < 2) return;
+  camIndex = (camIndex + 1) % camDevices.length;
+  document.getElementById("cam-select").value = camDevices[camIndex].deviceId;
   await previewCamera();
-}
+};
 
-function toggleHide(){
-  camHidden=!camHidden;
-  document.getElementById("cam").style.opacity=camHidden?"0.15":"1";
-  document.getElementById("btn-hide").classList.toggle("on",camHidden);
-}
+window.toggleHide = function toggleHide() {
+  camHidden = !camHidden;
+  document.getElementById("cam").style.opacity = camHidden ? "0.15" : "1";
+  document.getElementById("btn-hide").classList.toggle("on", camHidden);
+};
 
-function toggleFlip(){
-  camMirrored=!camMirrored;
-  document.getElementById("cam").classList.toggle("no-mirror",!camMirrored);
-  document.getElementById("btn-flip").classList.toggle("on",camMirrored);
-}
+window.toggleFlip = function toggleFlip() {
+  camMirrored = !camMirrored;
+  document.getElementById("cam").classList.toggle("no-mirror", !camMirrored);
+  document.getElementById("btn-flip").classList.toggle("on", camMirrored);
+};
 
-function aiFullscreen(){
-  const c=document.getElementById("out");
-  if(c.requestFullscreen) c.requestFullscreen();
-  else if(c.webkitRequestFullscreen) c.webkitRequestFullscreen();
-}
+window.aiFullscreen = function aiFullscreen() {
+  const el = engine === "lucy" ? document.getElementById("lucy-out") : document.getElementById("out");
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+};
 
-async function waitVideoReady(v,ms=8000){
-  if(v.readyState>=2&&v.videoWidth>0)return;
-  await new Promise((res,rej)=>{
-    const t=setTimeout(()=>rej(new Error("Camera timeout")),ms);
-    v.onloadedmetadata=()=>{clearTimeout(t);v.play().then(res).catch(res);};
+async function waitVideoReady(v, ms = 8000) {
+  if (v.readyState >= 2 && v.videoWidth > 0) return;
+  await new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error("Camera timeout")), ms);
+    v.onloadedmetadata = () => { clearTimeout(t); v.play().then(res).catch(res); };
   });
 }
 
-async function uploadRef(e){
-  const f=e.target.files[0]; if(!f)return;
-  const fd=new FormData(); fd.append("file",f);
-  const r=await fetch("/api/reference",{method:"POST",headers:{Authorization:"Bearer "+TOKEN},body:fd});
-  if(!r.ok){alert("Upload failed");return;}
-  document.getElementById("ref-thumb").src=URL.createObjectURL(f);
-  document.getElementById("ref-name").textContent=f.name;
+window.onRefFile = async function onRefFile(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  lucyRefFile = f;
+  document.getElementById("ref-thumb").src = URL.createObjectURL(f);
+  document.getElementById("ref-name").textContent = f.name;
+  document.getElementById("ref-title").textContent = engine === "lucy" ? "Lucy reference" : "Face locked";
   document.getElementById("ref-card").classList.remove("hidden");
-}
+  if (engine === "local") {
+    const fd = new FormData();
+    fd.append("file", f);
+    const r = await fetch("/api/reference", { method: "POST", headers: { Authorization: "Bearer " + TOKEN }, body: fd });
+    if (!r.ok) alert("Local reference upload failed");
+  } else if (lucyRealtime) {
+    try {
+      await lucyRealtime.set({
+        prompt: document.getElementById("prompt").value,
+        image: f,
+        enhance: true
+      });
+    } catch (err) {
+      console.warn(err);
+    }
+  }
+};
 
-async function clearRef(){
-  await fetch("/api/reference",{method:"DELETE",headers:{Authorization:"Bearer "+TOKEN}});
+window.clearRef = async function clearRef() {
+  lucyRefFile = null;
   document.getElementById("ref-card").classList.add("hidden");
-}
+  document.getElementById("ref-file").value = "";
+  if (engine === "local") {
+    await fetch("/api/reference", { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } });
+  } else if (lucyRealtime) {
+    try { await lucyRealtime.set({ image: null, prompt: document.getElementById("prompt").value }); } catch (_) {}
+  }
+};
 
-function applyPreset(key){
-  document.getElementById("prompt").value=PRESETS[key]||PRESETS.portrait;
-  document.querySelectorAll(".chip[data-preset]").forEach(c=>c.classList.remove("active"));
-  const el=document.querySelector('.chip[data-preset="'+key+'"]');
-  if(el) el.classList.add("active");
-}
+window.applyPreset = function applyPreset(key) {
+  document.getElementById("prompt").value = PRESETS[key] || PRESETS.portrait;
+  document.querySelectorAll(".chip[data-preset]").forEach((c) => c.classList.remove("active"));
+  const el = document.querySelector('.chip[data-preset="' + key + '"]');
+  if (el) el.classList.add("active");
+};
 
-async function applyPrompt(){
-  await fetch("/api/settings",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},
-    body:JSON.stringify({
-      prompt:document.getElementById("prompt").value,
-      negative:"blurry, distorted, deformed, ugly, bad anatomy, cartoon, low quality",
-      steps:2,strength:0.58,reference_strength:0.82
-    })});
-  document.getElementById("out-status").textContent="Prompt applied";
-  if(running&&pipelineReady) document.getElementById("out-status").textContent="Prompt applied · streaming";
-}
+window.applyPrompt = async function applyPrompt() {
+  const prompt = document.getElementById("prompt").value;
+  if (engine === "lucy") {
+    if (lucyRealtime) {
+      try {
+        const payload = { prompt, enhance: true };
+        if (lucyRefFile) payload.image = lucyRefFile;
+        await lucyRealtime.set(payload);
+        document.getElementById("out-status").textContent = "Lucy prompt applied";
+      } catch (e) {
+        document.getElementById("out-status").textContent = "Prompt error: " + e.message;
+      }
+    } else {
+      document.getElementById("out-status").textContent = "Prompt saved — applied when you Go Live";
+    }
+    return;
+  }
+  await fetch("/api/settings", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt,
+      negative: "blurry, distorted, deformed, ugly, bad anatomy, cartoon, low quality",
+      steps: 2, strength: 0.58, reference_strength: 0.82
+    })
+  });
+  document.getElementById("out-status").textContent = "Prompt applied";
+};
 
-let pipelineReady=true;
-let ws=null, wsReady=false, pendingBlob=null, inFlight=0;
-const cap=document.createElement("canvas"), capCtx=cap.getContext("2d");
-const outCanvas=document.getElementById("out"), outCtx=outCanvas.getContext("2d");
-let frames=0, lastOutBlob=null;
-
-function wsUrl(){
-  const proto=location.protocol==="https:"?"wss:":"ws:";
-  return proto+"//"+location.host+"/ws/stream?token="+encodeURIComponent(TOKEN);
-}
-
-function connectWs(){
-  if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING)) return;
-  wsReady=false;
-  ws=new WebSocket(wsUrl());
-  ws.binaryType="arraybuffer";
-  ws.onopen=()=>{wsReady=true; if(pendingBlob) flushWs();};
-  ws.onmessage=async(e)=>{
-    if(typeof e.data==="string"){try{const j=JSON.parse(e.data); if(j.error) document.getElementById("out-status").textContent="Error: "+j.error;}catch(_){} return;}
-    inFlight=Math.max(0,inFlight-1);
-    lastOutBlob=e.data;
-    const t0=performance.now();
-    const blob=new Blob([e.data],{type:"image/jpeg"});
-    const b=await createImageBitmap(blob);
-    outCanvas.width=b.width; outCanvas.height=b.height;
-    outCtx.drawImage(b,0,0);
-    showAiOutput();
-    frames++;
-    document.getElementById("out-status").textContent="Live · frame "+frames;
-    if(pendingBlob) flushWs();
-  };
-  ws.onclose=()=>{wsReady=false; if(running) setTimeout(connectWs,500);};
-  ws.onerror=()=>{wsReady=false;};
-}
-
-function flushWs(){
-  if(!wsReady||!pendingBlob||inFlight>0) return;
-  inFlight=1;
-  ws.send(pendingBlob);
-  pendingBlob=null;
-}
-
-function captureFrame(){
-  const v=document.getElementById("cam");
-  const vw=v.videoWidth||CAP, vh=v.videoHeight||CAP;
-  cap.width=CAP; cap.height=CAP;
-  capCtx.fillStyle="#000"; capCtx.fillRect(0,0,CAP,CAP);
-  const scale=Math.min(CAP/vw,CAP/vh);
-  const dw=vw*scale,dh=vh*scale;
-  if(camMirrored){ capCtx.save(); capCtx.translate(CAP,0); capCtx.scale(-1,1); }
-  capCtx.drawImage(v,(CAP-dw)/2,(CAP-dh)/2,dw,dh);
-  if(camMirrored) capCtx.restore();
-}
-
-function frameBrightness(){
-  captureFrame();
-  const d=capCtx.getImageData(0,0,CAP,CAP).data;
-  let s=0; for(let i=0;i<d.length;i+=4) s+=d[i]+d[i+1]+d[i+2];
-  return s/(d.length/4)/3;
-}
-
-function showAiOutput(){
-  document.getElementById("out").classList.remove("hidden");
+function showAiOutput() {
   document.getElementById("ai-ph").classList.add("hidden");
   document.getElementById("ai-pane").classList.add("has-out");
 }
 
-async function sendFrame(){
-  if(!running)return;
-  const v=document.getElementById("cam");
-  if(v.readyState<2||!v.videoWidth){ scheduleFrame(); return; }
-  captureFrame();
-  if(frameBrightness()<12){
-    document.getElementById("out-status").textContent="⚠ Camera black — pick another camera";
-    scheduleFrame(); return;
+function showLucyVideo(remoteStream) {
+  const v = document.getElementById("lucy-out");
+  document.getElementById("out").classList.add("hidden");
+  v.classList.remove("hidden");
+  v.srcObject = remoteStream;
+  showAiOutput();
+}
+
+function showLocalCanvas() {
+  document.getElementById("lucy-out").classList.add("hidden");
+  document.getElementById("lucy-out").srcObject = null;
+  document.getElementById("out").classList.remove("hidden");
+}
+
+async function startLucy() {
+  document.getElementById("out-status").textContent = "Minting Lucy client token…";
+  const tok = await mintLucyToken();
+  const modelName = document.getElementById("lucy-model").value || tok.model || "lucy-2.5";
+  let model;
+  try {
+    model = models.realtime(modelName);
+  } catch (_) {
+    model = models.realtime("lucy-2.5");
   }
-  if(frames===0) document.getElementById("out-status").textContent="Processing first frame…";
-  cap.toBlob(blob=>{
-    if(!blob){scheduleFrame();return;}
-    if(wsReady){
-      pendingBlob=blob;
-      flushWs();
-    }else{
-      connectWs();
-      pendingBlob=blob;
-      fetchFallback(blob);
-    }
-    scheduleFrame();
-  },"image/jpeg",0.85);
-}
 
-async function fetchFallback(blob){
-  if(busy) return;
-  busy=true;
-  try{
-    const r=await fetch("/process-frame",{
-      method:"POST",
-      headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"image/jpeg"},
-      body:blob
+  if (!stream) stream = await getCam();
+  const v = document.getElementById("cam");
+  v.srcObject = stream;
+  await waitVideoReady(v);
+
+  lucyClient = createDecartClient({ apiKey: tok.apiKey });
+  const initialState = {
+    prompt: { text: document.getElementById("prompt").value, enhance: true }
+  };
+  if (lucyRefFile) initialState.image = lucyRefFile;
+
+  document.getElementById("out-status").textContent = "Connecting Lucy WebRTC…";
+  lucyRealtime = await lucyClient.realtime.connect(stream, {
+    model,
+    mirror: camMirrored ? "auto" : false,
+    onRemoteStream: (remote) => {
+      showLucyVideo(remote);
+      document.getElementById("out-status").textContent = "Lucy LIVE · " + modelName;
+    },
+    onError: (err) => {
+      console.error(err);
+      document.getElementById("out-status").textContent = "Lucy error: " + (err?.message || err);
+    },
+    onDisconnect: (reason) => {
+      document.getElementById("out-status").textContent = "Lucy disconnected: " + (reason || "");
+    },
+    initialState
+  });
+
+  if (lucyRealtime?.on) {
+    lucyRealtime.on("connectionChange", (state) => {
+      document.getElementById("out-status").textContent = "Lucy · " + state;
+      if (state === "generating" || state === "connected") {
+        document.getElementById("live-badge").textContent = "LIVE";
+      }
     });
-    if(r.ok){
-      const buf=await r.blob();
-      const b=await createImageBitmap(buf);
-      outCanvas.width=b.width; outCanvas.height=b.height;
-      outCtx.drawImage(b,0,0);
-      showAiOutput(); frames++;
-    }
-  }catch(e){}
-  finally{busy=false;}
+  }
 }
 
-function scheduleFrame(){
-  if(!running)return;
-  rafId=requestAnimationFrame(sendFrame);
+/* -------- Local GPU path (existing) -------- */
+let ws = null, wsReady = false, pendingBlob = null, inFlight = 0, frames = 0;
+const cap = document.createElement("canvas"), capCtx = cap.getContext("2d");
+const outCanvas = document.getElementById("out"), outCtx = outCanvas.getContext("2d");
+
+function wsUrl() {
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  return proto + "//" + location.host + "/ws/stream?token=" + encodeURIComponent(TOKEN);
 }
 
-async function startStream(){
-  document.getElementById("btn-start").disabled=true;
-  try{
-    const v=document.getElementById("cam");
-    if(!videoMode){
-      stream=await getCam();
-      v.srcObject=stream;
-      await waitVideoReady(v);
+function connectWs() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  wsReady = false;
+  ws = new WebSocket(wsUrl());
+  ws.binaryType = "arraybuffer";
+  ws.onopen = () => { wsReady = true; if (pendingBlob) flushWs(); };
+  ws.onmessage = async (e) => {
+    if (typeof e.data === "string") {
+      try {
+        const j = JSON.parse(e.data);
+        if (j.error) document.getElementById("out-status").textContent = "Error: " + j.error;
+      } catch (_) {}
+      return;
     }
-    if(!v.videoWidth) throw new Error("No camera — allow access");
-    await applyPrompt();
-    connectWs();
-    running=true; frames=0; pendingBlob=null; inFlight=0;
-    document.getElementById("btn-stop").disabled=false;
-    document.getElementById("live-badge").textContent="LIVE";
+    inFlight = Math.max(0, inFlight - 1);
+    const blob = new Blob([e.data], { type: "image/jpeg" });
+    const b = await createImageBitmap(blob);
+    outCanvas.width = b.width; outCanvas.height = b.height;
+    outCtx.drawImage(b, 0, 0);
+    showLocalCanvas();
+    showAiOutput();
+    frames++;
+    document.getElementById("out-status").textContent = "Local LIVE · frame " + frames;
+    if (pendingBlob) flushWs();
+  };
+  ws.onclose = () => { wsReady = false; if (running && engine === "local") setTimeout(connectWs, 500); };
+}
+
+function flushWs() {
+  if (!wsReady || !pendingBlob || inFlight > 0) return;
+  inFlight = 1;
+  ws.send(pendingBlob);
+  pendingBlob = null;
+}
+
+function captureFrame() {
+  const v = document.getElementById("cam");
+  const vw = v.videoWidth || CAP, vh = v.videoHeight || CAP;
+  cap.width = CAP; cap.height = CAP;
+  capCtx.fillStyle = "#000";
+  capCtx.fillRect(0, 0, CAP, CAP);
+  const scale = Math.min(CAP / vw, CAP / vh);
+  const dw = vw * scale, dh = vh * scale;
+  if (camMirrored) { capCtx.save(); capCtx.translate(CAP, 0); capCtx.scale(-1, 1); }
+  capCtx.drawImage(v, (CAP - dw) / 2, (CAP - dh) / 2, dw, dh);
+  if (camMirrored) capCtx.restore();
+}
+
+async function sendFrame() {
+  if (!running || engine !== "local") return;
+  const v = document.getElementById("cam");
+  if (v.readyState < 2 || !v.videoWidth) { scheduleFrame(); return; }
+  captureFrame();
+  cap.toBlob((blob) => {
+    if (!blob) { scheduleFrame(); return; }
+    if (wsReady) { pendingBlob = blob; flushWs(); }
+    else { connectWs(); pendingBlob = blob; }
     scheduleFrame();
-  }catch(e){ alert(e.message); document.getElementById("btn-start").disabled=false; }
+  }, "image/jpeg", 0.85);
 }
 
-function stopStream(){
-  running=false;
-  if(rafId) cancelAnimationFrame(rafId);
-  if(ws){ws.close(); ws=null; wsReady=false;}
-  pendingBlob=null; inFlight=0;
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
-  document.getElementById("btn-start").disabled=false;
-  document.getElementById("btn-stop").disabled=true;
-  document.getElementById("live-badge").textContent="AI OUTPUT";
-  document.getElementById("out-status").textContent="Stopped";
+function scheduleFrame() {
+  if (!running || engine !== "local") return;
+  rafId = requestAnimationFrame(sendFrame);
 }
+
+window.startStream = async function startStream() {
+  document.getElementById("btn-start").disabled = true;
+  try {
+    if (engine === "lucy") {
+      if (!lucyConfigured) {
+        await refreshLucyKey();
+        if (!lucyConfigured) throw new Error("Save your Lucy / Decart API key first");
+      }
+      await startLucy();
+      running = true;
+      document.getElementById("btn-stop").disabled = false;
+      document.getElementById("live-badge").textContent = "LIVE";
+      return;
+    }
+    const v = document.getElementById("cam");
+    stream = await getCam();
+    v.srcObject = stream;
+    await waitVideoReady(v);
+    if (!v.videoWidth) throw new Error("No camera — allow access");
+    await applyPrompt();
+    showLocalCanvas();
+    connectWs();
+    running = true; frames = 0; pendingBlob = null; inFlight = 0;
+    document.getElementById("btn-stop").disabled = false;
+    document.getElementById("live-badge").textContent = "LIVE";
+    scheduleFrame();
+  } catch (e) {
+    alert(e.message || String(e));
+    document.getElementById("btn-start").disabled = false;
+    document.getElementById("out-status").textContent = e.message || String(e);
+  }
+};
+
+window.stopStream = function stopStream() {
+  running = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  if (ws) { ws.close(); ws = null; wsReady = false; }
+  pendingBlob = null; inFlight = 0;
+  try {
+    if (lucyRealtime?.disconnect) lucyRealtime.disconnect();
+  } catch (_) {}
+  lucyRealtime = null;
+  lucyClient = null;
+  const lv = document.getElementById("lucy-out");
+  lv.srcObject = null;
+  lv.classList.add("hidden");
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+  document.getElementById("btn-start").disabled = false;
+  document.getElementById("btn-stop").disabled = true;
+  document.getElementById("live-badge").textContent = "AI OUTPUT";
+  document.getElementById("out-status").textContent = "Stopped";
+};
 </script>
 </body>
 </html>

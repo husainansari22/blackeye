@@ -275,6 +275,8 @@ async def login(body: dict):
 
 @app.get("/api/status")
 async def status(token: str = Depends(require_token)):
+    from lucy_backend import key_status as lucy_key_status
+
     has_ref = (
         getattr(pipeline, "_reference_rgb", None) is not None
         or getattr(pipeline, "_reference", None) is not None
@@ -286,6 +288,7 @@ async def status(token: str = Depends(require_token)):
             mode = "stream+ref"
         else:
             mode = f"{mode}+ref"
+    lucy = lucy_key_status()
     return {
         "ready": pipeline.ready,
         "device": DEVICE,
@@ -296,7 +299,51 @@ async def status(token: str = Depends(require_token)):
         "frame_size": FRAME_SIZE,
         "acceleration": getattr(pipeline, "acceleration", "lcm"),
         "last_error": pipeline.last_error,
+        "lucy": lucy,
     }
+
+
+@app.get("/api/lucy/key")
+async def lucy_get_key(token: str = Depends(require_token)):
+    from lucy_backend import key_status
+
+    return key_status()
+
+
+@app.put("/api/lucy/key")
+async def lucy_put_key(body: dict, token: str = Depends(require_token)):
+    from lucy_backend import save_api_key
+
+    api_key = (body.get("api_key") or body.get("apiKey") or "").strip()
+    model = (body.get("model") or "").strip() or None
+    try:
+        return save_api_key(api_key, model=model)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/api/lucy/key")
+async def lucy_delete_key(token: str = Depends(require_token)):
+    from lucy_backend import clear_api_key
+
+    return clear_api_key()
+
+
+@app.post("/api/lucy/token")
+async def lucy_mint_token(request: Request, body: dict | None = None, token: str = Depends(require_token)):
+    from lucy_backend import create_decart_client_token
+
+    body = body or {}
+    origin = (
+        (body.get("origin") or "").strip()
+        or request.headers.get("origin")
+        or f"{request.url.scheme}://{request.headers.get('host', '')}"
+    )
+    model = (body.get("model") or "").strip() or None
+    try:
+        return await create_decart_client_token(model=model, origin=origin, expires_in=300)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/reference")

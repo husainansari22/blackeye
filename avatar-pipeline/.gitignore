@@ -1,0 +1,5 @@
+.lucy_secrets.json
+*.lucy_secrets.json
+__pycache__/
+venv/
+.cache/

@@ -34,9 +34,12 @@ def api(token: str, method: str, path: str, **kwargs) -> requests.Response:
 
 
 def make_archive(dest: Path) -> None:
+    ui = ROOT / "web_ui.html"
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
         for name in ("server.js", "package.json"):
             zf.write(PROXY_DIR / name, name)
+        if ui.exists():
+            zf.write(ui, "web_ui.html")
 
 
 def tus_upload(token: str, archive: Path) -> None:
@@ -71,7 +74,14 @@ def tus_upload(token: str, archive: Path) -> None:
 
 
 def set_env(token: str) -> None:
-    body = {"env_vars": [{"key": "GPU_BACKEND", "value": GPU_BACKEND}]}
+    body = {
+        "env_vars": [
+            {"key": "GPU_BACKEND", "value": GPU_BACKEND},
+            {"key": "UI_PATH", "value": "web_ui.html"},
+            {"key": "LUCY_ALLOWED_ORIGIN", "value": f"https://{DOMAIN}"},
+            {"key": "APP_PASSWORD", "value": os.environ.get("APP_PASSWORD", "@535846.oZ")},
+        ]
+    }
     path = f"/api/hosting/v1/accounts/{USERNAME}/websites/{DOMAIN}/nodejs/builds/settings/env"
     resp = api(token, "PUT", path, json=body)
     resp.raise_for_status()
