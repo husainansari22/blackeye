@@ -47,16 +47,16 @@ select{width:100%;appearance:none;background:#0d0d0d;border:1px solid var(--bord
 .vpane.ai-pane.has-out{border-color:rgba(225,29,46,.35);padding:0}
 .vpane-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ai-placeholder.hidden{display:none}
-#lucy-out{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
-/* Cover Decart's baked-in corner badge on the output player (display only). */
+#lucy-out{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:1}
+canvas#out{z-index:1}
+/* Small corner cover for Decart's baked-in badge — keep tiny so it never blanks the feed */
 .wm-cover{
-  display:none;position:absolute;right:0;bottom:0;z-index:6;pointer-events:none;
-  width:46%;height:16%;min-width:110px;min-height:28px;
-  background:linear-gradient(to top left, #000 55%, rgba(0,0,0,.85) 75%, transparent 100%);
+  display:none;position:absolute;right:4px;bottom:4px;z-index:3;pointer-events:none;
+  width:118px;height:34px;border-radius:8px;background:#0a0a0a;
 }
 .vpane.ai-pane.has-out .wm-cover{display:block}
 .vpane.ai-pane.fs-live{position:fixed;inset:0;z-index:9999;border-radius:0;aspect-ratio:auto;background:#000}
-.vpane.ai-pane.fs-live .wm-cover{width:28%;height:10%;min-width:140px}
+.vpane.ai-pane.fs-live .wm-cover{width:140px;height:38px;right:10px;bottom:10px}
 .vctrl{display:flex;gap:8px;margin-top:8px;justify-content:center}
 .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
   background:var(--card2);color:#fff;display:flex;align-items:center;justify-content:center;
@@ -587,9 +587,31 @@ function showAiOutput() {
 function showLucyVideo(remoteStream) {
   const v = document.getElementById("lucy-out");
   document.getElementById("out").classList.add("hidden");
+  document.getElementById("ai-ph").classList.add("hidden");
   v.classList.remove("hidden");
+  v.setAttribute("playsinline", "");
+  v.setAttribute("webkit-playsinline", "");
+  v.muted = true;
+  v.autoplay = true;
+  try {
+    // Some browsers need tracks enabled explicitly
+    remoteStream.getTracks().forEach((t) => { t.enabled = true; });
+  } catch (_) {}
   v.srcObject = remoteStream;
+  const tryPlay = () => {
+    const p = v.play();
+    if (p && p.catch) p.catch((err) => {
+      document.getElementById("out-status").textContent = "Tap output to unmute/play · " + (err?.message || "");
+    });
+  };
+  tryPlay();
+  v.onloadedmetadata = tryPlay;
+  v.oncanplay = tryPlay;
+  v.onclick = tryPlay;
   showAiOutput();
+  const tracks = remoteStream.getVideoTracks ? remoteStream.getVideoTracks() : [];
+  document.getElementById("out-status").textContent =
+    "Lucy stream · tracks=" + tracks.length + (tracks[0] ? (" · " + (tracks[0].label || tracks[0].readyState)) : " · no video track");
 }
 
 function showLocalCanvas() {
@@ -619,12 +641,21 @@ async function startLucy() {
   if (lucyRefFile) initialState.image = lucyRefFile;
 
   document.getElementById("out-status").textContent = "Connecting Lucy WebRTC…";
+  // Reset output pane so we don't show a stale black frame
+  document.getElementById("ai-pane").classList.remove("has-out");
+  document.getElementById("ai-ph").classList.remove("hidden");
+  document.getElementById("ai-ph").querySelector("span:last-child").textContent = "Connecting Lucy…";
+  const lucyVid = document.getElementById("lucy-out");
+  lucyVid.classList.add("hidden");
+  lucyVid.srcObject = null;
+
   lucyRealtime = await lucyClient.realtime.connect(stream, {
     model,
-    mirror: camMirrored ? "auto" : false,
+    mirror: camMirrored ? true : false,
     onRemoteStream: (remote) => {
       showLucyVideo(remote);
       document.getElementById("out-status").textContent = "Lucy LIVE · " + modelName;
+      document.getElementById("live-badge").textContent = "LIVE";
     },
     onError: (err) => {
       console.error(err);
@@ -637,10 +668,19 @@ async function startLucy() {
   });
 
   if (lucyRealtime?.on) {
+    lucyRealtime.on("remoteStream", (remote) => {
+      showLucyVideo(remote);
+      document.getElementById("out-status").textContent = "Lucy LIVE · " + modelName;
+    });
     lucyRealtime.on("connectionChange", (state) => {
       document.getElementById("out-status").textContent = "Lucy · " + state;
       if (state === "generating" || state === "connected") {
         document.getElementById("live-badge").textContent = "LIVE";
+        // If stream already exists on session, attach it
+        try {
+          const rs = lucyRealtime.remoteStream || lucyRealtime.media?.remoteStream;
+          if (rs) showLucyVideo(rs);
+        } catch (_) {}
       }
     });
   }
