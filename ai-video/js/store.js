@@ -1,6 +1,5 @@
 /**
  * GPU server + chat persistence (local only).
- * Paste your rented GPU base URL, save, then Deploy to make it active.
  */
 (function (global) {
   const KEY = "vidchat.v1";
@@ -11,6 +10,7 @@
     cleanExport: true,
     chats: [],
     activeChatId: null,
+    genMode: "video", // video | photo
   };
 
   function load() {
@@ -40,9 +40,28 @@
     return u.replace(/\/+$/, "");
   }
 
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   const Store = {
     get() {
       return load();
+    },
+
+    getGenMode() {
+      return load().genMode === "photo" ? "photo" : "video";
+    },
+
+    setGenMode(mode) {
+      const s = load();
+      s.genMode = mode === "photo" ? "photo" : "video";
+      save(s);
     },
 
     getActiveServer() {
@@ -54,7 +73,7 @@
       return load().servers;
     },
 
-    upsertServer({ id, name, url, token, healthPath, generatePath, streamPath }) {
+    upsertServer({ id, name, url, token, healthPath, generatePath, imagePath, streamPath }) {
       const s = load();
       const entry = {
         id: id || uid(),
@@ -63,6 +82,7 @@
         token: (token || "").trim(),
         healthPath: (healthPath || "/health").trim() || "/health",
         generatePath: (generatePath || "/v1/generate").trim() || "/v1/generate",
+        imagePath: (imagePath || "/v1/image").trim() || "/v1/image",
         streamPath: (streamPath || "/v1/stream").trim() || "/v1/stream",
         savedAt: Date.now(),
       };
@@ -82,7 +102,6 @@
       save(s);
     },
 
-    /** Deploy = mark as active endpoint for generation */
     deploy(id) {
       const s = load();
       const found = s.servers.find((x) => x.id === id);
@@ -125,35 +144,62 @@
       }
     },
 
-    async generateVideo({ prompt, duration = 4, aspect = "9:16" }) {
+    /**
+     * Generate photo or video via deployed GPU.
+     * attachments: [{ name, type, dataUrl }]
+     */
+    async generate({ prompt, mode = "video", attachments = [], duration = 4, aspect = "9:16" }) {
       const server = Store.getActiveServer();
       if (!server) throw new Error("No GPU server deployed. Open GPU Servers and Deploy one.");
 
-      const path = server.generatePath.startsWith("/")
-        ? server.generatePath
-        : "/" + server.generatePath;
-      const headers = {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      };
+      const isPhoto = mode === "photo";
+      const rawPath = isPhoto
+        ? server.imagePath || "/v1/image"
+        : server.generatePath || "/v1/generate";
+      const path = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
+
+      const headers = { Accept: "application/json, image/*, video/*" };
       if (server.token) headers.Authorization = "Bearer " + server.token;
 
-      const body = {
-        prompt,
-        duration,
-        aspect_ratio: aspect,
-        // Clean export: do not request watermark / AI label overlays from your worker
-        watermark: false,
-        add_ai_label: false,
-        clean_export: Store.getCleanExport(),
-      };
-
-      const res = await fetch(server.url + path, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        mode: "cors",
-      });
+      let res;
+      if (attachments.length) {
+        const form = new FormData();
+        form.append("prompt", prompt);
+        form.append("mode", isPhoto ? "photo" : "video");
+        form.append("duration", String(duration));
+        form.append("aspect_ratio", isPhoto ? "1:1" : aspect);
+        form.append("watermark", "false");
+        form.append("add_ai_label", "false");
+        form.append("clean_export", Store.getCleanExport() ? "true" : "false");
+        for (let i = 0; i < attachments.length; i++) {
+          const a = attachments[i];
+          const blob = await (await fetch(a.dataUrl)).blob();
+          form.append("files", blob, a.name || "upload-" + i);
+          form.append("reference", blob, a.name || "upload-" + i);
+        }
+        res = await fetch(server.url + path, {
+          method: "POST",
+          headers,
+          body: form,
+          mode: "cors",
+        });
+      } else {
+        headers["Content-Type"] = "application/json";
+        res = await fetch(server.url + path, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            prompt,
+            mode: isPhoto ? "photo" : "video",
+            duration,
+            aspect_ratio: isPhoto ? "1:1" : aspect,
+            watermark: false,
+            add_ai_label: false,
+            clean_export: Store.getCleanExport(),
+          }),
+          mode: "cors",
+        });
+      }
 
       if (!res.ok) {
         const text = await res.text().catch(() => "");
@@ -164,24 +210,22 @@
       if (ct.includes("application/json")) {
         const data = await res.json();
         return {
-          url: data.url || data.video_url || data.output || null,
+          kind: isPhoto ? "photo" : "video",
+          url: data.url || data.video_url || data.image_url || data.output || null,
           data,
         };
       }
       const blob = await res.blob();
-      return { url: URL.createObjectURL(blob), data: null };
+      return { kind: isPhoto ? "photo" : "video", url: URL.createObjectURL(blob), data: null };
     },
 
-    streamUrl() {
-      const server = Store.getActiveServer();
-      if (!server) return null;
-      const path = server.streamPath.startsWith("/")
-        ? server.streamPath
-        : "/" + server.streamPath;
-      return server.url + path;
+    // legacy alias
+    generateVideo(opts) {
+      return Store.generate({ ...opts, mode: "video" });
     },
 
-    // —— chats ——
+    fileToDataUrl,
+
     listChats() {
       return load().chats;
     },
@@ -195,7 +239,7 @@
       const s = load();
       const chat = {
         id: uid(),
-        title: "New video chat",
+        title: "New chat",
         createdAt: Date.now(),
         messages: [],
       };
@@ -211,13 +255,22 @@
       save(s);
     },
 
+    deleteChat(id) {
+      const s = load();
+      s.chats = s.chats.filter((c) => c.id !== id);
+      if (s.activeChatId === id) {
+        s.activeChatId = s.chats[0]?.id || null;
+      }
+      save(s);
+    },
+
     appendMessage(chatId, msg) {
       const s = load();
       const chat = s.chats.find((c) => c.id === chatId);
       if (!chat) return null;
       chat.messages.push({ id: uid(), createdAt: Date.now(), ...msg });
-      if (chat.title === "New video chat" && msg.role === "user") {
-        chat.title = String(msg.content || "").slice(0, 42) || "Video chat";
+      if ((chat.title === "New chat" || chat.title === "New video chat") && msg.role === "user") {
+        chat.title = String(msg.content || "Chat").slice(0, 42) || "Chat";
       }
       save(s);
       return chat;

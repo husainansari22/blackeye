@@ -110,16 +110,20 @@
       if (e.target.id === "gpu-modal") closeModal();
     });
 
+    function readServerForm() {
+      return {
+        name: $("#gpu-name").value,
+        url: $("#gpu-url").value,
+        token: $("#gpu-token").value,
+        healthPath: $("#gpu-health").value || "/health",
+        generatePath: $("#gpu-generate").value || "/v1/generate",
+        imagePath: $("#gpu-image").value || "/v1/image",
+      };
+    }
+
     $("#gpu-save")?.addEventListener("click", () => {
       try {
-        const entry = VidChatStore.upsertServer({
-          name: $("#gpu-name").value,
-          url: $("#gpu-url").value,
-          token: $("#gpu-token").value,
-          healthPath: $("#gpu-health").value || "/health",
-          generatePath: $("#gpu-generate").value || "/v1/generate",
-          streamPath: $("#gpu-stream").value || "/v1/stream",
-        });
+        const entry = VidChatStore.upsertServer(readServerForm());
         toast("Saved " + entry.name);
         $("#gpu-url").value = entry.url;
         renderServerList($("#server-list"));
@@ -131,14 +135,7 @@
 
     $("#gpu-save-deploy")?.addEventListener("click", async () => {
       try {
-        const entry = VidChatStore.upsertServer({
-          name: $("#gpu-name").value,
-          url: $("#gpu-url").value,
-          token: $("#gpu-token").value,
-          healthPath: $("#gpu-health").value || "/health",
-          generatePath: $("#gpu-generate").value || "/v1/generate",
-          streamPath: $("#gpu-stream").value || "/v1/stream",
-        });
+        const entry = VidChatStore.upsertServer(readServerForm());
         VidChatStore.deploy(entry.id);
         toast("Saved & deployed");
         renderServerList($("#server-list"));
@@ -179,7 +176,7 @@
     <div class="field">
       <label for="gpu-url">GPU server URL</label>
       <input id="gpu-url" type="url" inputmode="url" placeholder="https://xxxx-8000.proxy.runpod.net" autocomplete="off" />
-      <p class="hint">Base URL only. Paths below are appended when calling health / generate / stream.</p>
+      <p class="hint">Base URL only. Paths below are appended for health / video / photo.</p>
     </div>
     <div class="field">
       <label for="gpu-token">Auth token (optional)</label>
@@ -190,18 +187,18 @@
       <input id="gpu-health" placeholder="/health" value="/health" />
     </div>
     <div class="field">
-      <label for="gpu-generate">Generate path (Chat)</label>
+      <label for="gpu-generate">Video generate path</label>
       <input id="gpu-generate" placeholder="/v1/generate" value="/v1/generate" />
     </div>
     <div class="field">
-      <label for="gpu-stream">Stream path (Live Studio)</label>
-      <input id="gpu-stream" placeholder="/v1/stream" value="/v1/stream" />
+      <label for="gpu-image">Photo generate path</label>
+      <input id="gpu-image" placeholder="/v1/image" value="/v1/image" />
     </div>
 
     <div class="toggle-row">
       <div>
         <strong style="font-size:14px">Clean export</strong>
-        <p>Do not add watermarks or “AI generated” overlays from this app when requesting video from your GPU.</p>
+        <p>Do not add watermarks or “AI generated” overlays from this app when requesting media from your GPU.</p>
       </div>
       <label class="switch">
         <input type="checkbox" id="clean-export" checked />

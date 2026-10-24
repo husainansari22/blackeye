@@ -8,6 +8,12 @@
   const promptEl = document.getElementById("prompt");
   const sendBtn = document.getElementById("send");
   const form = document.getElementById("composer");
+  const attachStrip = document.getElementById("attach-strip");
+  const fileInput = document.getElementById("file-input");
+  const btnAttach = document.getElementById("btn-attach");
+
+  /** @type {{ id: string, name: string, type: string, dataUrl: string }[]} */
+  let pendingAttachments = [];
 
   VidChatGpuPanel.inject();
 
@@ -22,17 +28,86 @@
   menuBtn.addEventListener("click", openSidebar);
   backdrop.addEventListener("click", closeSidebar);
 
+  function updateSendEnabled() {
+    sendBtn.disabled = !(promptEl.value.trim() || pendingAttachments.length);
+  }
+
   promptEl.addEventListener("input", () => {
     promptEl.style.height = "auto";
     promptEl.style.height = Math.min(promptEl.scrollHeight, 160) + "px";
-    sendBtn.disabled = !promptEl.value.trim();
+    updateSendEnabled();
   });
 
   promptEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      form.requestSubmit();
+      if (!sendBtn.disabled) form.requestSubmit();
     }
+  });
+
+  function syncModeUi() {
+    const mode = VidChatStore.getGenMode();
+    document.getElementById("mode-video").classList.toggle("active", mode === "video");
+    document.getElementById("mode-photo").classList.toggle("active", mode === "photo");
+    promptEl.placeholder =
+      mode === "photo"
+        ? "Describe the photo to generate…"
+        : "Describe the video to generate…";
+  }
+
+  document.getElementById("mode-video").onclick = () => {
+    VidChatStore.setGenMode("video");
+    syncModeUi();
+  };
+  document.getElementById("mode-photo").onclick = () => {
+    VidChatStore.setGenMode("photo");
+    syncModeUi();
+  };
+
+  function renderAttachments() {
+    if (!pendingAttachments.length) {
+      attachStrip.classList.remove("show");
+      attachStrip.innerHTML = "";
+      updateSendEnabled();
+      return;
+    }
+    attachStrip.classList.add("show");
+    attachStrip.innerHTML = pendingAttachments
+      .map((a) => {
+        const media = a.type.startsWith("video/")
+          ? `<video src="${a.dataUrl}" muted></video>`
+          : `<img src="${a.dataUrl}" alt="" />`;
+        return `<div class="attach-chip" data-id="${a.id}">${media}<button type="button" class="rm" aria-label="Remove">✕</button></div>`;
+      })
+      .join("");
+    attachStrip.querySelectorAll(".attach-chip").forEach((chip) => {
+      chip.querySelector(".rm").onclick = () => {
+        pendingAttachments = pendingAttachments.filter((x) => x.id !== chip.dataset.id);
+        renderAttachments();
+      };
+    });
+    updateSendEnabled();
+  }
+
+  btnAttach.onclick = () => fileInput.click();
+  fileInput.addEventListener("change", async () => {
+    const files = Array.from(fileInput.files || []);
+    fileInput.value = "";
+    for (const file of files) {
+      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) continue;
+      if (file.size > 25 * 1024 * 1024) {
+        VidChatGpuPanel.toast("File too large (max 25MB)");
+        continue;
+      }
+      const dataUrl = await VidChatStore.fileToDataUrl(file);
+      pendingAttachments.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        name: file.name,
+        type: file.type,
+        dataUrl,
+      });
+    }
+    renderAttachments();
   });
 
   function ensureChat() {
@@ -40,6 +115,25 @@
     if (!chat) chat = VidChatStore.newChat();
     return chat;
   }
+
+  function startNewChat() {
+    VidChatStore.newChat();
+    pendingAttachments = [];
+    renderAttachments();
+    promptEl.value = "";
+    promptEl.style.height = "auto";
+    updateSendEnabled();
+    renderAll();
+    closeSidebar();
+    promptEl.focus();
+    VidChatGpuPanel.toast("New chat");
+  }
+
+  document.getElementById("btn-new-chat").onclick = startNewChat;
+  document.getElementById("btn-new-chat-top").onclick = startNewChat;
+  document.getElementById("nav-chat").onclick = () => {
+    closeSidebar();
+  };
 
   function renderChatList() {
     const chats = VidChatStore.listChats();
@@ -49,33 +143,53 @@
       (chats.length
         ? chats
             .map(
-              (c) =>
-                `<button class="chat-item ${active && active.id === c.id ? "active" : ""}" data-id="${c.id}" type="button">${escapeHtml(c.title)}</button>`
+              (c) => `
+          <div class="chat-item ${active && active.id === c.id ? "active" : ""}" data-id="${c.id}">
+            <button class="chat-item-title" type="button" data-open="${c.id}">${escapeHtml(c.title)}</button>
+            <button class="chat-item-del" type="button" data-del="${c.id}" title="Delete chat" aria-label="Delete chat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>`
             )
             .join("")
-        : '<p style="padding:8px 12px;font-size:13px;color:var(--text-dim)">No chats yet</p>');
+        : '<p style="padding:8px 12px;font-size:13px;color:var(--text-dim)">No chats yet — tap <strong>New chat</strong></p>');
 
-    chatList.querySelectorAll(".chat-item").forEach((btn) => {
+    chatList.querySelectorAll("[data-open]").forEach((btn) => {
       btn.onclick = () => {
-        VidChatStore.setActiveChat(btn.dataset.id);
+        VidChatStore.setActiveChat(btn.getAttribute("data-open"));
         renderAll();
         closeSidebar();
+      };
+    });
+    chatList.querySelectorAll("[data-del]").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-del");
+        const title = VidChatStore.listChats().find((c) => c.id === id)?.title || "chat";
+        if (!confirm('Delete "' + title + '"?')) return;
+        VidChatStore.deleteChat(id);
+        if (!VidChatStore.getActiveChat()) {
+          // stay on empty state
+        }
+        renderAll();
+        VidChatGpuPanel.toast("Chat deleted");
       };
     });
   }
 
   function emptyState() {
+    const mode = VidChatStore.getGenMode();
     return `
       <div class="empty-state">
         <div class="empty-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1 5h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
         </div>
-        <h1>What video will you create?</h1>
-        <p>ChatGPT-style prompts → your rented GPU. Import a server link, Deploy, then generate.</p>
+        <h1>What can I help with?</h1>
+        <p>Upload a photo or video, choose <strong>Photo</strong> or <strong>Video</strong>, then describe what you want. Use <strong>New chat</strong> in the sidebar (or the pencil on mobile).</p>
         <div class="suggestions">
-          <button class="sug" type="button" data-prompt="Cinematic drone shot over a misty mountain lake at sunrise, 4 seconds, vertical"><strong>Drone sunrise</strong><span>Misty lake · vertical · cinematic</span></button>
-          <button class="sug" type="button" data-prompt="Handheld street fashion walk in Tokyo neon rain, shallow depth of field, vertical phone video"><strong>Tokyo neon walk</strong><span>Fashion · rain · vertical</span></button>
-          <button class="sug" type="button" data-prompt="Macro shot of coffee pour into ceramic cup, steam rising, warm kitchen light, vertical"><strong>Coffee pour</strong><span>Macro · cozy · vertical</span></button>
+          <button class="sug" type="button" data-prompt="Cinematic drone shot over a misty mountain lake at sunrise" data-set-mode="video"><strong>Drone sunrise</strong><span>Video · misty lake</span></button>
+          <button class="sug" type="button" data-prompt="Portrait photo of a person in soft window light, 85mm look" data-set-mode="photo"><strong>Soft portrait</strong><span>Photo · natural light</span></button>
+          <button class="sug" type="button" data-prompt="Transform my upload into neon Tokyo night style" data-set-mode="video"><strong>Restyle upload</strong><span>Attach a file first, then send</span></button>
           <button class="sug" type="button" data-open-gpu><strong>Connect GPU</strong><span>Paste rented server URL &amp; Deploy</span></button>
         </div>
       </div>`;
@@ -87,6 +201,11 @@
       messagesInner.innerHTML = emptyState();
       messagesInner.querySelectorAll("[data-prompt]").forEach((btn) => {
         btn.onclick = () => {
+          const m = btn.getAttribute("data-set-mode");
+          if (m) {
+            VidChatStore.setGenMode(m);
+            syncModeUi();
+          }
           promptEl.value = btn.getAttribute("data-prompt");
           promptEl.dispatchEvent(new Event("input"));
           form.requestSubmit();
@@ -102,11 +221,28 @@
       .map((m) => {
         const isUser = m.role === "user";
         let media = "";
+        if (m.attachments && m.attachments.length) {
+          media +=
+            '<div class="msg-attachments">' +
+            m.attachments
+              .map((a) =>
+                a.type && a.type.startsWith("video/")
+                  ? `<video src="${escapeAttr(a.dataUrl)}" controls playsinline></video>`
+                  : `<img src="${escapeAttr(a.dataUrl)}" alt="" />`
+              )
+              .join("") +
+            "</div>";
+        }
         if (m.videoUrl) {
-          media = `<div class="video-card"><video src="${escapeAttr(m.videoUrl)}" controls playsinline></video>
-            <div class="video-meta"><span class="badge">Clean export</span><span>No app watermark</span></div></div>`;
+          media += `<div class="video-card"><video src="${escapeAttr(m.videoUrl)}" controls playsinline></video>
+            <div class="video-meta"><span class="badge">Video</span><span>Clean export</span></div></div>`;
+        }
+        if (m.imageUrl) {
+          media += `<div class="photo-card"><img class="square" src="${escapeAttr(m.imageUrl)}" alt="Generated" />
+            <div class="video-meta"><span class="badge">Photo</span><span>Clean export</span></div></div>`;
         } else if (m.preview) {
-          media = `<div class="video-card"><canvas class="preview-canvas" data-seed="${escapeAttr(m.preview)}" width="360" height="640"></canvas>
+          const kind = m.previewKind === "photo" ? "photo" : "video";
+          media += `<div class="${kind === "photo" ? "photo-card" : "video-card"}"><canvas class="preview-canvas ${kind === "photo" ? "square" : ""}" data-seed="${escapeAttr(m.preview)}" data-kind="${kind}" width="360" height="${kind === "photo" ? 360 : 640}"></canvas>
             <div class="video-meta"><span class="badge">Local preview</span><span>Connect GPU for real render</span></div></div>`;
         }
         return `
@@ -127,24 +263,26 @@
   function drawPreview(canvas) {
     const ctx = canvas.getContext("2d");
     const seed = canvas.getAttribute("data-seed") || "preview";
+    const kind = canvas.getAttribute("data-kind") || "video";
+    const w = canvas.width;
+    const h = canvas.height;
     let t = 0;
     const colors = ["#0f766e", "#134e4a", "#115e59", "#042f2e"];
     function frame() {
       t += 0.02;
-      const g = ctx.createLinearGradient(0, 0, 360, 640);
+      const g = ctx.createLinearGradient(0, 0, w, h);
       g.addColorStop(0, colors[Math.floor(t) % colors.length]);
       g.addColorStop(1, "#111");
       ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 360, 640);
+      ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.font = "600 18px sans-serif";
-      ctx.fillText("Preview", 24, 48);
+      ctx.fillText(kind === "photo" ? "Photo preview" : "Video preview", 24, 48);
       ctx.font = "13px sans-serif";
       ctx.fillStyle = "rgba(255,255,255,0.55)";
-      wrapText(ctx, seed, 24, 80, 300, 18);
-      // soft moving orb — not a social “AI label”
+      wrapText(ctx, seed, 24, 80, w - 48, 18);
       ctx.beginPath();
-      ctx.arc(180 + Math.sin(t) * 40, 320 + Math.cos(t * 0.8) * 30, 48, 0, Math.PI * 2);
+      ctx.arc(w / 2 + Math.sin(t) * 40, h / 2 + Math.cos(t * 0.8) * 30, 48, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(16,163,127,0.35)";
       ctx.fill();
       canvas._raf = requestAnimationFrame(frame);
@@ -180,48 +318,63 @@
   function renderAll() {
     renderChatList();
     renderMessages();
+    syncModeUi();
     VidChatGpuPanel.refresh();
   }
-
-  document.getElementById("btn-new-chat").onclick = () => {
-    VidChatStore.newChat();
-    renderAll();
-    closeSidebar();
-    promptEl.focus();
-  };
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const text = promptEl.value.trim();
-    if (!text) return;
+    if (!text && !pendingAttachments.length) return;
 
+    const mode = VidChatStore.getGenMode();
+    const attachments = pendingAttachments.slice();
     const chat = ensureChat();
-    VidChatStore.appendMessage(chat.id, { role: "user", content: text });
+
+    const userContent =
+      text ||
+      (attachments.length
+        ? "Use my upload" + (attachments.length > 1 ? "s" : "") + " as reference."
+        : "");
+
+    VidChatStore.appendMessage(chat.id, {
+      role: "user",
+      content: userContent,
+      attachments: attachments.map((a) => ({
+        name: a.name,
+        type: a.type,
+        dataUrl: a.dataUrl,
+      })),
+      genMode: mode,
+    });
+
     promptEl.value = "";
     promptEl.style.height = "auto";
-    sendBtn.disabled = true;
+    pendingAttachments = [];
+    renderAttachments();
+    updateSendEnabled();
     renderAll();
 
-    const thinkingId = "thinking";
     VidChatStore.appendMessage(chat.id, {
       role: "assistant",
-      content: "Sending prompt to your deployed GPU…",
-      _tmp: thinkingId,
+      content:
+        mode === "photo"
+          ? "Generating photo on your deployed GPU…"
+          : "Generating video on your deployed GPU…",
     });
     renderAll();
 
     try {
       const active = VidChatStore.getActiveServer();
       if (!active) {
-        // Keep last assistant msg as guidance + local preview
         const s = VidChatStore.get();
         const c = s.chats.find((x) => x.id === chat.id);
         if (c && c.messages.length) {
           const last = c.messages[c.messages.length - 1];
           last.content =
-            "No GPU server is deployed yet.\n\nOpen GPU Servers → paste your rented GPU URL → Save & Deploy, then send this prompt again.\n\nShowing a local motion preview so you can check the UI on your phone.";
-          last.preview = text;
-          delete last._tmp;
+            "No GPU server is deployed yet.\n\nOpen GPU Servers → paste your rented GPU URL → Save & Deploy, then send again.\n\nShowing a local preview so you can check the UI.";
+          last.preview = userContent;
+          last.previewKind = mode;
           localStorage.setItem("vidchat.v1", JSON.stringify(s));
         }
         VidChatGpuPanel.toast("Import & deploy a GPU server first");
@@ -229,16 +382,28 @@
         return;
       }
 
-      const result = await VidChatStore.generateVideo({ prompt: text });
+      const result = await VidChatStore.generate({
+        prompt: userContent,
+        mode,
+        attachments,
+      });
       const s = VidChatStore.get();
       const c = s.chats.find((x) => x.id === chat.id);
       if (c && c.messages.length) {
         const last = c.messages[c.messages.length - 1];
-        last.content = result.url
-          ? "Here’s your clip from " + active.name + ". Clean export is on — this app does not burn in watermarks or AI labels."
-          : "GPU responded but no video URL was returned. Check your worker’s /v1/generate JSON shape (url / video_url / output).";
-        if (result.url) last.videoUrl = result.url;
-        else last.preview = text;
+        if (result.url) {
+          last.content =
+            mode === "photo"
+              ? "Here’s your photo from " + active.name + ". Clean export — no app watermark."
+              : "Here’s your video from " + active.name + ". Clean export — no app watermark.";
+          if (mode === "photo") last.imageUrl = result.url;
+          else last.videoUrl = result.url;
+        } else {
+          last.content =
+            "GPU responded but no media URL was returned. Check /v1/generate or /v1/image response shape.";
+          last.preview = userContent;
+          last.previewKind = mode;
+        }
         localStorage.setItem("vidchat.v1", JSON.stringify(s));
       }
       renderAll();
@@ -250,8 +415,9 @@
         last.content =
           "Could not reach your GPU: " +
           (err.message || "error") +
-          "\n\nTips: enable CORS on the worker, confirm the generate path, and that the Deployed URL is reachable from this phone.";
-        last.preview = text;
+          "\n\nTips: enable CORS, confirm generate/image paths, and that the Deployed URL is reachable.";
+        last.preview = userContent;
+        last.previewKind = mode;
         localStorage.setItem("vidchat.v1", JSON.stringify(s));
       }
       renderAll();
@@ -259,5 +425,6 @@
     }
   });
 
+  syncModeUi();
   renderAll();
 })();
