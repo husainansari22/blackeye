@@ -203,12 +203,13 @@
     </div>
     <div class="field">
       <label for="gpu-url">GPU server URL</label>
-      <input id="gpu-url" type="url" inputmode="url" placeholder="https://….proxy.vast.ai" autocomplete="off" />
-      <p class="hint">Must be <strong>https://</strong> (Vast → Open → copy that link). Raw http://IP is blocked on this site and often firewalled.</p>
+      <input id="gpu-url" type="url" inputmode="url" placeholder="https://gpu.kelvinoz.com" autocomplete="off" />
+      <p class="hint">Use <strong>https://gpu.kelvinoz.com</strong> (HTTPS proxy to your Vast Comfy port). Do not paste http://162…</p>
     </div>
     <div class="field">
-      <label for="gpu-token">Auth token (optional)</label>
-      <input id="gpu-token" type="password" placeholder="Bearer token if your API requires it" autocomplete="off" />
+      <label for="gpu-token">Auth (optional)</label>
+      <input id="gpu-token" type="password" placeholder="Vast basic auth as user:password" autocomplete="off" />
+      <p class="hint">If Comfy asks for login, paste <code>username:password</code> here (from Vast / Caddy).</p>
     </div>
     <div class="field">
       <label for="gpu-health">Health path</label>

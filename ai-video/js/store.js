@@ -131,6 +131,21 @@
       );
     },
 
+    /** user:pass → Basic, otherwise Bearer */
+    authHeader(token) {
+      const t = (token || "").trim();
+      if (!t) return "";
+      if (t.includes(":") && !/^Bearer\s/i.test(t) && !/^Basic\s/i.test(t)) {
+        try {
+          return "Basic " + btoa(t);
+        } catch {
+          return "Bearer " + t;
+        }
+      }
+      if (/^Bearer\s|^Basic\s/i.test(t)) return t;
+      return "Bearer " + t;
+    },
+
     async ping(server) {
       const base = (server.url || "").replace(/\/+$/, "");
       if (!base) return { ok: false, status: 0, error: "missing_url" };
@@ -155,7 +170,7 @@
       }
 
       const headers = {};
-      if (server.token) headers.Authorization = "Bearer " + server.token;
+      if (server.token) headers.Authorization = Store.authHeader(server.token);
 
       let lastErr = "unreachable";
       for (const path of candidates) {
@@ -205,7 +220,7 @@
       const path = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
 
       const headers = { Accept: "application/json, image/*, video/*" };
-      if (server.token) headers.Authorization = "Bearer " + server.token;
+      if (server.token) headers.Authorization = Store.authHeader(server.token);
 
       let res;
       if (attachments.length) {
@@ -287,7 +302,7 @@
       const rawPath = server.animatePath || "/v1/animate";
       const path = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
       const headers = { Accept: "application/json, video/*" };
-      if (server.token) headers.Authorization = "Bearer " + server.token;
+      if (server.token) headers.Authorization = Store.authHeader(server.token);
 
       const form = new FormData();
       form.append("mode", mode === "replace" ? "replace" : "animate");
