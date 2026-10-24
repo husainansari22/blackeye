@@ -123,26 +123,57 @@
     },
 
     async ping(server) {
-      const path = server.healthPath.startsWith("/")
-        ? server.healthPath
-        : "/" + server.healthPath;
+      const base = (server.url || "").replace(/\/+$/, "");
+      if (!base) return { ok: false, status: 0, error: "missing_url" };
+
+      // Phone site is HTTPS — browsers block http:// GPU URLs (mixed content)
+      if (
+        typeof location !== "undefined" &&
+        location.protocol === "https:" &&
+        /^http:\/\//i.test(base)
+      ) {
+        return {
+          ok: false,
+          status: 0,
+          error: "mixed_content",
+          message:
+            "Use an https:// GPU link (Vast Open / proxy URL). http:// is blocked on this site.",
+        };
+      }
+
+      const candidates = [];
+      const custom = (server.healthPath || "/health").trim() || "/health";
+      candidates.push(custom.startsWith("/") ? custom : "/" + custom);
+      // ComfyUI + common worker fallbacks
+      for (const p of ["/", "/system_stats", "/health", "/ready"]) {
+        if (!candidates.includes(p)) candidates.push(p);
+      }
+
       const headers = {};
       if (server.token) headers.Authorization = "Bearer " + server.token;
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 8000);
-      try {
-        const res = await fetch(server.url + path, {
-          method: "GET",
-          headers,
-          signal: ctrl.signal,
-          mode: "cors",
-        });
-        return { ok: res.ok, status: res.status };
-      } catch (err) {
-        return { ok: false, status: 0, error: err.message || "unreachable" };
-      } finally {
-        clearTimeout(t);
+
+      let lastErr = "unreachable";
+      for (const path of candidates) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        try {
+          const res = await fetch(base + path, {
+            method: "GET",
+            headers,
+            signal: ctrl.signal,
+            mode: "cors",
+          });
+          if (res.ok || res.status === 401 || res.status === 403) {
+            return { ok: true, status: res.status, path };
+          }
+          lastErr = "http_" + res.status;
+        } catch (err) {
+          lastErr = err.name === "AbortError" ? "timeout" : err.message || "unreachable";
+        } finally {
+          clearTimeout(t);
+        }
       }
+      return { ok: false, status: 0, error: lastErr };
     },
 
     /**

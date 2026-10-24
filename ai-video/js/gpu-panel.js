@@ -49,11 +49,17 @@
           refreshGpuUi();
           renderServerList(listEl);
           const ping = await VidChatStore.ping(server);
-          toast(
-            ping.ok
-              ? "GPU online · health " + ping.status
-              : "Saved & deployed, but health check failed (CORS or offline). You can still try generating."
-          );
+          if (ping.ok) toast("GPU online · health " + ping.status);
+          else if (ping.error === "mixed_content")
+            toast(ping.message || "Need https:// GPU URL (not http://)");
+          else if (ping.error === "timeout" || ping.error === "unreachable")
+            toast("GPU offline or port closed. Vast → Open → paste the https link.");
+          else
+            toast(
+              "Deployed, but health failed (" +
+                (ping.error || "?") +
+                "). Check CORS / paths."
+            );
         } catch (e) {
           toast(e.message);
         }
@@ -143,7 +149,16 @@
         refreshGpuUi();
         const ping = await VidChatStore.ping(entry);
         if (ping.ok) toast("GPU online · ready to generate");
-        else toast("Deployed. Health unreachable from browser (check CORS on your GPU API).");
+        else if (ping.error === "mixed_content")
+          toast(ping.message || "Need https:// GPU URL (not http://)");
+        else if (ping.error === "timeout" || ping.error === "unreachable")
+          toast("GPU offline or port closed. On Vast tap Open and paste that https link.");
+        else
+          toast(
+            "Deployed, but health failed (" +
+              (ping.error || ping.status || "?") +
+              "). Check CORS / API paths."
+          );
       } catch (e) {
         toast(e.message);
       }
@@ -176,8 +191,8 @@
     </div>
     <div class="field">
       <label for="gpu-url">GPU server URL</label>
-      <input id="gpu-url" type="url" inputmode="url" placeholder="https://xxxx-8000.proxy.runpod.net" autocomplete="off" />
-      <p class="hint">Base URL only. Paths below are appended for health / video / photo.</p>
+      <input id="gpu-url" type="url" inputmode="url" placeholder="https://….proxy.vast.ai" autocomplete="off" />
+      <p class="hint">Must be <strong>https://</strong> (Vast → Open → copy that link). Raw http://IP is blocked on this site and often firewalled.</p>
     </div>
     <div class="field">
       <label for="gpu-token">Auth token (optional)</label>
