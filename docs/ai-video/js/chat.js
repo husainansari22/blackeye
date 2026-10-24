@@ -543,7 +543,7 @@
           else last.videoUrl = result.url;
         } else {
           last.content =
-            "GPU responded but no media URL was returned. Check /v1/generate or /v1/image response shape.";
+            "GPU responded but no media URL was returned. Check /generate or /generate/sync output.";
           last.preview = userContent;
           last.previewKind = mode;
         }

@@ -122,8 +122,8 @@
         url: $("#gpu-url").value,
         token: $("#gpu-token").value,
         healthPath: $("#gpu-health").value || "/health",
-        generatePath: $("#gpu-generate").value || "/v1/generate",
-        imagePath: $("#gpu-image").value || "/v1/image",
+        generatePath: $("#gpu-generate").value || "/generate",
+        imagePath: $("#gpu-image").value || "/generate/sync",
         animatePath: $("#gpu-animate").value || "/v1/animate",
       };
     }
@@ -207,9 +207,9 @@
       <p class="hint">Use <strong>https://gpu.kelvinoz.com</strong> (HTTPS proxy to your Vast Comfy port). Do not paste http://162…</p>
     </div>
     <div class="field">
-      <label for="gpu-token">Auth (optional)</label>
-      <input id="gpu-token" type="password" placeholder="Vast basic auth as user:password" autocomplete="off" />
-      <p class="hint">If Comfy asks for login, paste <code>username:password</code> here (from Vast / Caddy).</p>
+      <label for="gpu-token">Auth (Jupyter token)</label>
+      <input id="gpu-token" type="password" placeholder="hex token from Vast Open / Jupyter URL" autocomplete="off" />
+      <p class="hint">Paste the Jupyter token only (long hex). Sent as <code>Bearer</code>. Or <code>user:pass</code> for Basic.</p>
     </div>
     <div class="field">
       <label for="gpu-health">Health path</label>
@@ -217,11 +217,11 @@
     </div>
     <div class="field">
       <label for="gpu-generate">Video generate path</label>
-      <input id="gpu-generate" placeholder="/v1/generate" value="/v1/generate" />
+      <input id="gpu-generate" placeholder="/generate" value="/generate" />
     </div>
     <div class="field">
       <label for="gpu-image">Photo generate path</label>
-      <input id="gpu-image" placeholder="/v1/image" value="/v1/image" />
+      <input id="gpu-image" placeholder="/generate/sync" value="/generate/sync" />
     </div>
     <div class="field">
       <label for="gpu-animate">Animate path</label>

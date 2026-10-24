@@ -81,8 +81,8 @@
         url: normalizeUrl(url),
         token: (token || "").trim(),
         healthPath: (healthPath || "/health").trim() || "/health",
-        generatePath: (generatePath || "/v1/generate").trim() || "/v1/generate",
-        imagePath: (imagePath || "/v1/image").trim() || "/v1/image",
+        generatePath: (generatePath || "/generate").trim() || "/generate",
+        imagePath: (imagePath || "/generate/sync").trim() || "/generate/sync",
         animatePath: (animatePath || "/v1/animate").trim() || "/v1/animate",
         streamPath: (streamPath || "/v1/stream").trim() || "/v1/stream",
         savedAt: Date.now(),
@@ -122,102 +122,243 @@
       return !!load().cleanExport;
     },
 
+    isMixedContentUrl(url) {
+      const base = (url || "").trim();
+      return (
+        typeof location !== "undefined" &&
+        location.protocol === "https:" &&
+        /^http:\/\//i.test(base)
+      );
+    },
+
+    /** user:pass → Basic, otherwise Bearer */
+    authHeader(token) {
+      const t = (token || "").trim();
+      if (!t) return "";
+      if (t.includes(":") && !/^Bearer\s/i.test(t) && !/^Basic\s/i.test(t)) {
+        try {
+          return "Basic " + btoa(t);
+        } catch {
+          return "Bearer " + t;
+        }
+      }
+      if (/^Bearer\s|^Basic\s/i.test(t)) return t;
+      return "Bearer " + t;
+    },
+
     async ping(server) {
-      const path = server.healthPath.startsWith("/")
-        ? server.healthPath
-        : "/" + server.healthPath;
+      const base = (server.url || "").replace(/\/+$/, "");
+      if (!base) return { ok: false, status: 0, error: "missing_url" };
+
+      // Phone site is HTTPS — browsers block http:// GPU URLs (mixed content)
+      if (Store.isMixedContentUrl(base)) {
+        return {
+          ok: false,
+          status: 0,
+          error: "mixed_content",
+          message:
+            "Stop using http://162… — tap Vast → Open and paste the https:// link instead.",
+        };
+      }
+
+      const candidates = [];
+      const custom = (server.healthPath || "/health").trim() || "/health";
+      candidates.push(custom.startsWith("/") ? custom : "/" + custom);
+      // ComfyUI + common worker fallbacks
+      for (const p of ["/", "/system_stats", "/health", "/ready"]) {
+        if (!candidates.includes(p)) candidates.push(p);
+      }
+
       const headers = {};
-      if (server.token) headers.Authorization = "Bearer " + server.token;
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 8000);
-      try {
-        const res = await fetch(server.url + path, {
+      if (server.token) headers.Authorization = Store.authHeader(server.token);
+
+      let lastErr = "unreachable";
+      for (const path of candidates) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        try {
+          const res = await fetch(base + path, {
+            method: "GET",
+            headers,
+            signal: ctrl.signal,
+            mode: "cors",
+          });
+          if (res.ok || res.status === 401 || res.status === 403) {
+            return { ok: true, status: res.status, path };
+          }
+          lastErr = "http_" + res.status;
+        } catch (err) {
+          const msg = String(err && err.message ? err.message : err || "");
+          if (
+            err.name === "AbortError" ||
+            /aborted|abort/i.test(msg) ||
+            /Failed to fetch|NetworkError|Load failed/i.test(msg)
+          ) {
+            lastErr = "timeout";
+          } else {
+            lastErr = msg || "unreachable";
+          }
+        } finally {
+          clearTimeout(t);
+        }
+      }
+      return { ok: false, status: 0, error: lastErr };
+    },
+
+    _headers(server) {
+      const headers = {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+      if (server.token) headers.Authorization = Store.authHeader(server.token);
+      return headers;
+    },
+
+    _outputToUrl(item) {
+      if (!item) return null;
+      if (item.url) return item.url;
+      if (item.data) {
+        const mime =
+          item.mime ||
+          (String(item.filename || "").endsWith(".mp4")
+            ? "video/mp4"
+            : String(item.filename || "").endsWith(".webp")
+              ? "image/webp"
+              : "image/png");
+        return "data:" + mime + ";base64," + item.data;
+      }
+      return null;
+    },
+
+    async _waitResult(server, requestId, timeoutMs) {
+      const base = server.url.replace(/\/+$/, "");
+      const headers = Store._headers(server);
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        const res = await fetch(base + "/result/" + encodeURIComponent(requestId), {
           method: "GET",
           headers,
-          signal: ctrl.signal,
           mode: "cors",
         });
-        return { ok: res.ok, status: res.status };
-      } catch (err) {
-        return { ok: false, status: 0, error: err.message || "unreachable" };
-      } finally {
-        clearTimeout(t);
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error("GPU result failed (" + res.status + "): " + (text || res.statusText));
+        }
+        const data = await res.json();
+        const status = String(data.status || "").toLowerCase();
+        if (status === "completed" || status === "success") return data;
+        if (status === "failed" || status === "error") {
+          throw new Error(data.message || "Generation failed on GPU");
+        }
+        await new Promise((r) => setTimeout(r, 2000));
       }
+      throw new Error("GPU timed out waiting for result");
+    },
+
+    _photoSize(aspect) {
+      const a = String(aspect || "1:1");
+      if (a === "16:9") return { width: 1024, height: 576 };
+      if (a === "9:16") return { width: 576, height: 1024 };
+      if (a === "4:3") return { width: 896, height: 672 };
+      return { width: 768, height: 768 };
+    },
+
+    _normPath(raw, fallback) {
+      const p = ((raw || fallback || "") + "").trim() || fallback;
+      return p.startsWith("/") ? p : "/" + p;
     },
 
     /**
-     * Generate photo or video via deployed GPU.
-     * attachments: [{ name, type, dataUrl }]
+     * Generate via Vast ComfyUI API Wrapper.
+     * Photo → POST /generate/sync (Text2Image). Video → POST /generate + poll /result.
      */
     async generate({ prompt, mode = "video", attachments = [], duration = 4, aspect = "9:16" }) {
       const server = Store.getActiveServer();
       if (!server) throw new Error("No GPU server deployed. Open GPU Servers and Deploy one.");
 
       const isPhoto = mode === "photo";
-      const rawPath = isPhoto
-        ? server.imagePath || "/v1/image"
-        : server.generatePath || "/v1/generate";
-      const path = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
+      const base = server.url.replace(/\/+$/, "");
+      const headers = Store._headers(server);
+      const requestId =
+        (crypto.randomUUID && crypto.randomUUID()) ||
+        "req-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
 
-      const headers = { Accept: "application/json, image/*, video/*" };
-      if (server.token) headers.Authorization = "Bearer " + server.token;
-
-      let res;
-      if (attachments.length) {
-        const form = new FormData();
-        form.append("prompt", prompt);
-        form.append("mode", isPhoto ? "photo" : "video");
-        form.append("duration", String(duration));
-        form.append("aspect_ratio", isPhoto ? "1:1" : aspect);
-        form.append("watermark", "false");
-        form.append("add_ai_label", "false");
-        form.append("clean_export", Store.getCleanExport() ? "true" : "false");
-        for (let i = 0; i < attachments.length; i++) {
-          const a = attachments[i];
-          const blob = await (await fetch(a.dataUrl)).blob();
-          form.append("files", blob, a.name || "upload-" + i);
-          form.append("reference", blob, a.name || "upload-" + i);
+      let payload;
+      let path;
+      if (isPhoto) {
+        const size = Store._photoSize(aspect === "9:16" ? "1:1" : aspect);
+        let text = prompt || "a photo";
+        if (attachments && attachments[0] && String(attachments[0].type || "").startsWith("image/")) {
+          text = (prompt || "same subject") + ", photorealistic";
         }
-        res = await fetch(server.url + path, {
-          method: "POST",
-          headers,
-          body: form,
-          mode: "cors",
-        });
+        path = Store._normPath(server.imagePath, "/generate/sync");
+        payload = {
+          input: {
+            request_id: requestId,
+            modifier: "Text2Image",
+            modifications: {
+              prompt: text,
+              negative_prompt: Store.getCleanExport()
+                ? "blurry, low quality, watermark, text, logo"
+                : "blurry, low quality",
+              seed: "__RANDOM_INT__",
+              steps: 20,
+              cfg_scale: 7.5,
+              width: size.width,
+              height: size.height,
+              sampler_name: "dpmpp_2m",
+            },
+            return_outputs_as_base64: true,
+          },
+        };
       } else {
-        headers["Content-Type"] = "application/json";
-        res = await fetch(server.url + path, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            prompt,
-            mode: isPhoto ? "photo" : "video",
-            duration,
-            aspect_ratio: isPhoto ? "1:1" : aspect,
-            watermark: false,
-            add_ai_label: false,
-            clean_export: Store.getCleanExport(),
-          }),
-          mode: "cors",
-        });
+        const wfRes = await fetch("js/wan_t2v_workflow.json?v=6", { cache: "no-store" });
+        if (!wfRes.ok) throw new Error("Could not load video workflow");
+        const workflow = await wfRes.json();
+        if (workflow["6"] && workflow["6"].inputs) {
+          workflow["6"].inputs.text = prompt || "cinematic video";
+        }
+        if (workflow["7"] && workflow["7"].inputs) {
+          workflow["7"].inputs.text = Store.getCleanExport()
+            ? "watermark, text, logo, blurry, low quality, static"
+            : workflow["7"].inputs.text;
+        }
+        if (workflow["49"] && workflow["49"].inputs && duration) {
+          // Wan VACE length ≈ frames; ~16 fps → ~16*seconds (+1 odd)
+          const frames = Math.max(17, Math.min(81, Math.round(Number(duration) * 16) | 1));
+          workflow["49"].inputs.length = frames;
+        }
+        path = Store._normPath(server.generatePath, "/generate");
+        payload = {
+          input: {
+            request_id: requestId,
+            workflow_json: workflow,
+            return_outputs_as_base64: true,
+          },
+        };
       }
 
+      const res = await fetch(base + path, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        mode: "cors",
+      });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error("GPU generate failed (" + res.status + "): " + (text || res.statusText));
       }
-
-      const ct = res.headers.get("content-type") || "";
-      if (ct.includes("application/json")) {
-        const data = await res.json();
-        return {
-          kind: isPhoto ? "photo" : "video",
-          url: data.url || data.video_url || data.image_url || data.output || null,
-          data,
-        };
+      let data = await res.json();
+      const status = String(data.status || "").toLowerCase();
+      if (!isPhoto || (status && status !== "completed" && status !== "success")) {
+        const id = data.id || requestId;
+        if (!isPhoto || status === "pending" || status === "processing" || status === "queued") {
+          data = await Store._waitResult(server, id, isPhoto ? 180000 : 600000);
+        }
       }
-      const blob = await res.blob();
-      return { kind: isPhoto ? "photo" : "video", url: URL.createObjectURL(blob), data: null };
+      const outputs = data.output || [];
+      const url = Store._outputToUrl(outputs[0]);
+      return { kind: isPhoto ? "photo" : "video", url, data };
     },
 
     // legacy alias
@@ -242,7 +383,7 @@
       const rawPath = server.animatePath || "/v1/animate";
       const path = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
       const headers = { Accept: "application/json, video/*" };
-      if (server.token) headers.Authorization = "Bearer " + server.token;
+      if (server.token) headers.Authorization = Store.authHeader(server.token);
 
       const form = new FormData();
       form.append("mode", mode === "replace" ? "replace" : "animate");

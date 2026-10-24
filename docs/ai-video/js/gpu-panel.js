@@ -49,11 +49,17 @@
           refreshGpuUi();
           renderServerList(listEl);
           const ping = await VidChatStore.ping(server);
-          toast(
-            ping.ok
-              ? "GPU online · health " + ping.status
-              : "Saved & deployed, but health check failed (CORS or offline). You can still try generating."
-          );
+          if (ping.ok) toast("GPU online · health " + ping.status);
+          else if (ping.error === "mixed_content")
+            toast(ping.message || "Need https:// GPU URL (not http://)");
+          else if (ping.error === "timeout" || ping.error === "unreachable")
+            toast("GPU offline or port closed. Vast → Open → paste the https link.");
+          else
+            toast(
+              "Deployed, but health failed (" +
+                (ping.error || "?") +
+                "). Check CORS / paths."
+            );
         } catch (e) {
           toast(e.message);
         }
@@ -116,15 +122,25 @@
         url: $("#gpu-url").value,
         token: $("#gpu-token").value,
         healthPath: $("#gpu-health").value || "/health",
-        generatePath: $("#gpu-generate").value || "/v1/generate",
-        imagePath: $("#gpu-image").value || "/v1/image",
+        generatePath: $("#gpu-generate").value || "/generate",
+        imagePath: $("#gpu-image").value || "/generate/sync",
         animatePath: $("#gpu-animate").value || "/v1/animate",
       };
     }
 
+    function warnIfHttp(url) {
+      if (VidChatStore.isMixedContentUrl(url)) {
+        toast("http:// IP links are blocked. Vast → Open → copy the https:// URL, then paste here.");
+        return true;
+      }
+      return false;
+    }
+
     $("#gpu-save")?.addEventListener("click", () => {
       try {
-        const entry = VidChatStore.upsertServer(readServerForm());
+        const form = readServerForm();
+        if (warnIfHttp(form.url)) return;
+        const entry = VidChatStore.upsertServer(form);
         toast("Saved " + entry.name);
         $("#gpu-url").value = entry.url;
         renderServerList($("#server-list"));
@@ -136,14 +152,25 @@
 
     $("#gpu-save-deploy")?.addEventListener("click", async () => {
       try {
-        const entry = VidChatStore.upsertServer(readServerForm());
+        const form = readServerForm();
+        if (warnIfHttp(form.url)) return;
+        const entry = VidChatStore.upsertServer(form);
         VidChatStore.deploy(entry.id);
         toast("Saved & deployed");
         renderServerList($("#server-list"));
         refreshGpuUi();
         const ping = await VidChatStore.ping(entry);
         if (ping.ok) toast("GPU online · ready to generate");
-        else toast("Deployed. Health unreachable from browser (check CORS on your GPU API).");
+        else if (ping.error === "mixed_content")
+          toast(ping.message || "Need https:// GPU URL (not http://)");
+        else if (ping.error === "timeout" || ping.error === "unreachable")
+          toast("GPU offline or port closed. On Vast tap Open and paste that https link.");
+        else
+          toast(
+            "Deployed, but health failed (" +
+              (ping.error || ping.status || "?") +
+              "). Check CORS / paths."
+          );
       } catch (e) {
         toast(e.message);
       }
@@ -176,12 +203,13 @@
     </div>
     <div class="field">
       <label for="gpu-url">GPU server URL</label>
-      <input id="gpu-url" type="url" inputmode="url" placeholder="https://xxxx-8000.proxy.runpod.net" autocomplete="off" />
-      <p class="hint">Base URL only. Paths below are appended for health / video / photo.</p>
+      <input id="gpu-url" type="url" inputmode="url" placeholder="https://gpu.kelvinoz.com" autocomplete="off" />
+      <p class="hint">Use <strong>https://gpu.kelvinoz.com</strong> (HTTPS proxy to your Vast Comfy port). Do not paste http://162…</p>
     </div>
     <div class="field">
-      <label for="gpu-token">Auth token (optional)</label>
-      <input id="gpu-token" type="password" placeholder="Bearer token if your API requires it" autocomplete="off" />
+      <label for="gpu-token">Auth (Jupyter token)</label>
+      <input id="gpu-token" type="password" placeholder="hex token from Vast Open / Jupyter URL" autocomplete="off" />
+      <p class="hint">Paste the Jupyter token only (long hex). Sent as <code>Bearer</code>. Or <code>user:pass</code> for Basic.</p>
     </div>
     <div class="field">
       <label for="gpu-health">Health path</label>
@@ -189,11 +217,11 @@
     </div>
     <div class="field">
       <label for="gpu-generate">Video generate path</label>
-      <input id="gpu-generate" placeholder="/v1/generate" value="/v1/generate" />
+      <input id="gpu-generate" placeholder="/generate" value="/generate" />
     </div>
     <div class="field">
       <label for="gpu-image">Photo generate path</label>
-      <input id="gpu-image" placeholder="/v1/image" value="/v1/image" />
+      <input id="gpu-image" placeholder="/generate/sync" value="/generate/sync" />
     </div>
     <div class="field">
       <label for="gpu-animate">Animate path</label>

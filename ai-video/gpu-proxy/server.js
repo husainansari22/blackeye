@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
-const TARGET = process.env.GPU_BACKEND || "http://162.43.170.108:30002";
+const TARGET = process.env.GPU_BACKEND || "http://162.43.170.108:30661";
 const BASIC = process.env.GPU_BASIC_AUTH || ""; // user:pass optional server-side
 
 const app = express();
