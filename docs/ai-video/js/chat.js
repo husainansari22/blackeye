@@ -10,12 +10,15 @@
   const form = document.getElementById("composer");
   const attachStrip = document.getElementById("attach-strip");
   const fileInput = document.getElementById("file-input");
+  const fileInputImage = document.getElementById("file-input-image");
   const btnAttach = document.getElementById("btn-attach");
 
   /** @type {{ id: string, name: string, type: string, dataUrl: string }[]} */
   let pendingAttachments = [];
+  let awaitingImageToVideo = false;
 
   VidChatGpuPanel.inject();
+  VidChatAnimate.inject({ onGenerate: handleAnimateGenerate });
 
   function openSidebar() {
     sidebar.classList.add("open");
@@ -89,11 +92,12 @@
     updateSendEnabled();
   }
 
-  btnAttach.onclick = () => fileInput.click();
-  fileInput.addEventListener("change", async () => {
-    const files = Array.from(fileInput.files || []);
-    fileInput.value = "";
+  async function addFiles(files, { imagesOnly = false } = {}) {
     for (const file of files) {
+      if (imagesOnly && !file.type.startsWith("image/")) {
+        VidChatGpuPanel.toast("Image to Video needs a photo");
+        continue;
+      }
       if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) continue;
       if (file.size > 25 * 1024 * 1024) {
         VidChatGpuPanel.toast("File too large (max 25MB)");
@@ -108,7 +112,128 @@
       });
     }
     renderAttachments();
+  }
+
+  btnAttach.onclick = () => {
+    awaitingImageToVideo = false;
+    fileInput.click();
+  };
+  fileInput.addEventListener("change", async () => {
+    const files = Array.from(fileInput.files || []);
+    fileInput.value = "";
+    await addFiles(files);
   });
+  fileInputImage?.addEventListener("change", async () => {
+    const files = Array.from(fileInputImage.files || []);
+    fileInputImage.value = "";
+    pendingAttachments = [];
+    await addFiles(files, { imagesOnly: true });
+    if (pendingAttachments.length) {
+      VidChatStore.setGenMode("video");
+      syncModeUi();
+      promptEl.placeholder = "Describe the video you want from this image…";
+      promptEl.focus();
+      VidChatGpuPanel.toast("Image added — describe your video");
+    }
+    awaitingImageToVideo = false;
+  });
+
+  function startImageToVideo() {
+    VidChatStore.setGenMode("video");
+    syncModeUi();
+    awaitingImageToVideo = true;
+    fileInputImage.click();
+  }
+
+  function startTextToVideo() {
+    VidChatStore.setGenMode("video");
+    syncModeUi();
+    pendingAttachments = [];
+    renderAttachments();
+    promptEl.placeholder = "Describe the video to generate…";
+    promptEl.focus();
+    VidChatGpuPanel.toast("Text to Video — type your prompt");
+  }
+
+  async function handleAnimateGenerate(payload) {
+    const chat = ensureChat();
+    const label =
+      (payload.mode === "replace" ? "Replace" : "Animate") +
+      " · " +
+      payload.resolution +
+      (payload.prompt ? " — " + payload.prompt : "");
+
+    VidChatStore.appendMessage(chat.id, {
+      role: "user",
+      content: "Realistic Animate — " + label,
+      attachments: [
+        { name: payload.sourceImage.name, type: payload.sourceImage.type, dataUrl: payload.sourceImage.dataUrl },
+        { name: payload.referenceVideo.name, type: payload.referenceVideo.type, dataUrl: payload.referenceVideo.dataUrl },
+      ],
+      genMode: "animate",
+    });
+    VidChatStore.appendMessage(chat.id, {
+      role: "assistant",
+      content: "Running realistic " + (payload.mode === "replace" ? "Replace" : "Animate") + " on your GPU…",
+    });
+    renderAll();
+
+    try {
+      const active = VidChatStore.getActiveServer();
+      if (!active) {
+        const s = VidChatStore.get();
+        const c = s.chats.find((x) => x.id === chat.id);
+        if (c?.messages?.length) {
+          const last = c.messages[c.messages.length - 1];
+          last.content =
+            "No GPU deployed yet. Open GPU Servers → paste your rented URL → Save & Deploy, then run Animate again.\n\nShowing a local preview.";
+          last.preview = label;
+          last.previewKind = "video";
+          localStorage.setItem("vidchat.v1", JSON.stringify(s));
+        }
+        VidChatGpuPanel.toast("Deploy a GPU server first");
+        renderAll();
+        return;
+      }
+
+      const result = await VidChatStore.animate(payload);
+      const s = VidChatStore.get();
+      const c = s.chats.find((x) => x.id === chat.id);
+      if (c?.messages?.length) {
+        const last = c.messages[c.messages.length - 1];
+        if (result.url) {
+          last.content =
+            "Here’s your " +
+            (payload.mode === "replace" ? "Replace" : "Animate") +
+            " result from " +
+            active.name +
+            ". Clean export — no app watermark.";
+          last.videoUrl = result.url;
+        } else {
+          last.content = "GPU responded but no video URL was returned. Check /v1/animate response shape.";
+          last.preview = label;
+          last.previewKind = "video";
+        }
+        localStorage.setItem("vidchat.v1", JSON.stringify(s));
+      }
+      renderAll();
+    } catch (err) {
+      const s = VidChatStore.get();
+      const c = s.chats.find((x) => x.id === chat.id);
+      if (c?.messages?.length) {
+        const last = c.messages[c.messages.length - 1];
+        last.content =
+          "Animate could not reach your GPU: " +
+          (err.message || "error") +
+          "\n\nEnable CORS and expose POST /v1/animate on the worker.";
+        last.preview = label;
+        last.previewKind = "video";
+        localStorage.setItem("vidchat.v1", JSON.stringify(s));
+      }
+      renderAll();
+      VidChatGpuPanel.toast("Animate failed");
+    }
+  }
 
   function ensureChat() {
     let chat = VidChatStore.getActiveChat();
@@ -178,19 +303,44 @@
   }
 
   function emptyState() {
-    const mode = VidChatStore.getGenMode();
     return `
       <div class="empty-state">
         <div class="empty-logo">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
         </div>
         <h1>What can I help with?</h1>
-        <p>Upload a photo or video, choose <strong>Photo</strong> or <strong>Video</strong>, then describe what you want. Use <strong>New chat</strong> in the sidebar (or the pencil on mobile).</p>
+        <p>Pick a feature to start — or type below. Upload references anytime with <strong>+</strong>.</p>
         <div class="suggestions">
-          <button class="sug" type="button" data-prompt="Cinematic drone shot over a misty mountain lake at sunrise" data-set-mode="video"><strong>Drone sunrise</strong><span>Video · misty lake</span></button>
-          <button class="sug" type="button" data-prompt="Portrait photo of a person in soft window light, 85mm look" data-set-mode="photo"><strong>Soft portrait</strong><span>Photo · natural light</span></button>
-          <button class="sug" type="button" data-prompt="Transform my upload into neon Tokyo night style" data-set-mode="video"><strong>Restyle upload</strong><span>Attach a file first, then send</span></button>
-          <button class="sug" type="button" data-open-gpu><strong>Connect GPU</strong><span>Paste rented server URL &amp; Deploy</span></button>
+          <button class="feature-card" type="button" data-feature="image-to-video">
+            <div class="feature-ico i2v" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M17 9l4 3-4 3V9z"/></svg>
+            </div>
+            <div class="body">
+              <strong>Image to Video</strong>
+              <span>Upload a photo, then describe the motion and scene you want.</span>
+            </div>
+            <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="feature-card" type="button" data-feature="text-to-video">
+            <div class="feature-ico t2v" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h14"/><path d="M17 10l4 2-4 2v-4z"/></svg>
+            </div>
+            <div class="body">
+              <strong>Text to Video</strong>
+              <span>Write a prompt and generate a clip from words alone.</span>
+            </div>
+            <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="feature-card" type="button" data-feature="animate">
+            <div class="feature-ico anim" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l3 6 6 .5-4.5 4 1.5 6.5L12 17l-6 3.5L7.5 14 3 9.5 9 9z"/></svg>
+            </div>
+            <div class="body">
+              <strong>Realistic Animate</strong>
+              <span>Source image + reference video · Animate or Replace · motion control.</span>
+            </div>
+            <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
         </div>
       </div>`;
   }
@@ -199,20 +349,13 @@
     const chat = VidChatStore.getActiveChat();
     if (!chat || !chat.messages.length) {
       messagesInner.innerHTML = emptyState();
-      messagesInner.querySelectorAll("[data-prompt]").forEach((btn) => {
+      messagesInner.querySelectorAll("[data-feature]").forEach((btn) => {
         btn.onclick = () => {
-          const m = btn.getAttribute("data-set-mode");
-          if (m) {
-            VidChatStore.setGenMode(m);
-            syncModeUi();
-          }
-          promptEl.value = btn.getAttribute("data-prompt");
-          promptEl.dispatchEvent(new Event("input"));
-          form.requestSubmit();
+          const f = btn.getAttribute("data-feature");
+          if (f === "image-to-video") startImageToVideo();
+          else if (f === "text-to-video") startTextToVideo();
+          else if (f === "animate") VidChatAnimate.open();
         };
-      });
-      messagesInner.querySelectorAll("[data-open-gpu]").forEach((btn) => {
-        btn.onclick = () => VidChatGpuPanel.open();
       });
       return;
     }

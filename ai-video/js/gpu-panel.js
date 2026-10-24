@@ -118,6 +118,7 @@
         healthPath: $("#gpu-health").value || "/health",
         generatePath: $("#gpu-generate").value || "/v1/generate",
         imagePath: $("#gpu-image").value || "/v1/image",
+        animatePath: $("#gpu-animate").value || "/v1/animate",
       };
     }
 
@@ -193,6 +194,10 @@
     <div class="field">
       <label for="gpu-image">Photo generate path</label>
       <input id="gpu-image" placeholder="/v1/image" value="/v1/image" />
+    </div>
+    <div class="field">
+      <label for="gpu-animate">Animate path</label>
+      <input id="gpu-animate" placeholder="/v1/animate" value="/v1/animate" />
     </div>
 
     <div class="toggle-row">

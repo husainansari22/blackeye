@@ -73,7 +73,7 @@
       return load().servers;
     },
 
-    upsertServer({ id, name, url, token, healthPath, generatePath, imagePath, streamPath }) {
+    upsertServer({ id, name, url, token, healthPath, generatePath, imagePath, animatePath, streamPath }) {
       const s = load();
       const entry = {
         id: id || uid(),
@@ -83,6 +83,7 @@
         healthPath: (healthPath || "/health").trim() || "/health",
         generatePath: (generatePath || "/v1/generate").trim() || "/v1/generate",
         imagePath: (imagePath || "/v1/image").trim() || "/v1/image",
+        animatePath: (animatePath || "/v1/animate").trim() || "/v1/animate",
         streamPath: (streamPath || "/v1/stream").trim() || "/v1/stream",
         savedAt: Date.now(),
       };
@@ -222,6 +223,64 @@
     // legacy alias
     generateVideo(opts) {
       return Store.generate({ ...opts, mode: "video" });
+    },
+
+    /**
+     * Realistic Animate / Replace — source image + reference video.
+     */
+    async animate({
+      sourceImage,
+      referenceVideo,
+      mode = "animate",
+      resolution = "720p",
+      seed = -1,
+      prompt = "",
+    }) {
+      const server = Store.getActiveServer();
+      if (!server) throw new Error("No GPU server deployed. Open GPU Servers and Deploy one.");
+
+      const rawPath = server.animatePath || "/v1/animate";
+      const path = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
+      const headers = { Accept: "application/json, video/*" };
+      if (server.token) headers.Authorization = "Bearer " + server.token;
+
+      const form = new FormData();
+      form.append("mode", mode === "replace" ? "replace" : "animate");
+      form.append("resolution", resolution);
+      form.append("seed", String(seed));
+      form.append("prompt", prompt || "");
+      form.append("watermark", "false");
+      form.append("add_ai_label", "false");
+      form.append("clean_export", Store.getCleanExport() ? "true" : "false");
+
+      const imgBlob = await (await fetch(sourceImage.dataUrl)).blob();
+      const vidBlob = await (await fetch(referenceVideo.dataUrl)).blob();
+      form.append("source_image", imgBlob, sourceImage.name || "source.jpg");
+      form.append("reference_video", vidBlob, referenceVideo.name || "reference.mp4");
+
+      const res = await fetch(server.url + path, {
+        method: "POST",
+        headers,
+        body: form,
+        mode: "cors",
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error("Animate failed (" + res.status + "): " + (text || res.statusText));
+      }
+
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const data = await res.json();
+        return {
+          kind: "video",
+          url: data.url || data.video_url || data.output || null,
+          data,
+        };
+      }
+      const blob = await res.blob();
+      return { kind: "video", url: URL.createObjectURL(blob), data: null };
     },
 
     fileToDataUrl,

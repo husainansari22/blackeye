@@ -32,6 +32,18 @@ When `clean_export` / `watermark: false` / `add_ai_label: false`, do **not** bur
 
 Return an image (`image/jpeg`) or JSON `{ "url": "..." }`.
 
+### `POST /v1/animate`
+`multipart/form-data`:
+- `source_image` — JPEG/PNG character image
+- `reference_video` — MP4/MOV motion reference
+- `mode` — `animate` | `replace`
+- `resolution` — `480p` | `720p` | `1080p`
+- `seed` — integer (`-1` = random)
+- `prompt` — optional guidance
+- `watermark` / `add_ai_label` / `clean_export`
+
+Return `video/mp4` or JSON `{ "url": "..." }`.
+
 ## CORS
 
 Allow the Pages origin (or `*`) so phones can call your worker from the browser.
