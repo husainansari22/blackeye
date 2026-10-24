@@ -128,9 +128,19 @@
       };
     }
 
+    function warnIfHttp(url) {
+      if (VidChatStore.isMixedContentUrl(url)) {
+        toast("http:// IP links are blocked. Vast → Open → copy the https:// URL, then paste here.");
+        return true;
+      }
+      return false;
+    }
+
     $("#gpu-save")?.addEventListener("click", () => {
       try {
-        const entry = VidChatStore.upsertServer(readServerForm());
+        const form = readServerForm();
+        if (warnIfHttp(form.url)) return;
+        const entry = VidChatStore.upsertServer(form);
         toast("Saved " + entry.name);
         $("#gpu-url").value = entry.url;
         renderServerList($("#server-list"));
@@ -142,7 +152,9 @@
 
     $("#gpu-save-deploy")?.addEventListener("click", async () => {
       try {
-        const entry = VidChatStore.upsertServer(readServerForm());
+        const form = readServerForm();
+        if (warnIfHttp(form.url)) return;
+        const entry = VidChatStore.upsertServer(form);
         VidChatStore.deploy(entry.id);
         toast("Saved & deployed");
         renderServerList($("#server-list"));
@@ -157,7 +169,7 @@
           toast(
             "Deployed, but health failed (" +
               (ping.error || ping.status || "?") +
-              "). Check CORS / API paths."
+              "). Check CORS / paths."
           );
       } catch (e) {
         toast(e.message);

@@ -122,22 +122,27 @@
       return !!load().cleanExport;
     },
 
+    isMixedContentUrl(url) {
+      const base = (url || "").trim();
+      return (
+        typeof location !== "undefined" &&
+        location.protocol === "https:" &&
+        /^http:\/\//i.test(base)
+      );
+    },
+
     async ping(server) {
       const base = (server.url || "").replace(/\/+$/, "");
       if (!base) return { ok: false, status: 0, error: "missing_url" };
 
       // Phone site is HTTPS — browsers block http:// GPU URLs (mixed content)
-      if (
-        typeof location !== "undefined" &&
-        location.protocol === "https:" &&
-        /^http:\/\//i.test(base)
-      ) {
+      if (Store.isMixedContentUrl(base)) {
         return {
           ok: false,
           status: 0,
           error: "mixed_content",
           message:
-            "Use an https:// GPU link (Vast Open / proxy URL). http:// is blocked on this site.",
+            "Stop using http://162… — tap Vast → Open and paste the https:// link instead.",
         };
       }
 
@@ -168,7 +173,16 @@
           }
           lastErr = "http_" + res.status;
         } catch (err) {
-          lastErr = err.name === "AbortError" ? "timeout" : err.message || "unreachable";
+          const msg = String(err && err.message ? err.message : err || "");
+          if (
+            err.name === "AbortError" ||
+            /aborted|abort/i.test(msg) ||
+            /Failed to fetch|NetworkError|Load failed/i.test(msg)
+          ) {
+            lastErr = "timeout";
+          } else {
+            lastErr = msg || "unreachable";
+          }
         } finally {
           clearTimeout(t);
         }
