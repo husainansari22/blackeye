@@ -1,0 +1,9 @@
+# Prefer fresh JS/CSS so phone clients pick up GPU-panel fixes quickly
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=120"
+  </FilesMatch>
+</IfModule>
